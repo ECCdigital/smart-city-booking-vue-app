@@ -11,7 +11,8 @@ import {
 } from "@/utilities/access-apps";
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
-import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
+import { runConnectionTest } from "@/utilities/access-connection-test";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 export default {
@@ -23,6 +24,7 @@ export default {
     AccessAuditExport,
     SaltoIqActivationSection,
     SaltoConnectionTest,
+    ConnectionTestAlert,
   },
   props: {
     tenant: { type: Object, required: true },
@@ -168,29 +170,13 @@ export default {
     async testConnection(provider) {
       this.$set(this.testing, provider, true);
       this.$set(this.testResult, provider, null);
-
-      try {
-        const response = await ApiAccessAppsService.testConnection(
-          this.tenant.id,
-          this.testCredentials(provider),
-          provider
-        );
-
-        this.$set(this.testResult, provider, {
-          success: response.data.success === true,
-          message: response.data.message,
-        });
-      } catch (error) {
-        this.$set(this.testResult, provider, {
-          success: false,
-          message:
-            error.response?.data?.message ||
-            error.message ||
-            this.$t("accessPoint.connection.error.message"),
-        });
-      } finally {
-        this.$set(this.testing, provider, false);
-      }
+      const result = await runConnectionTest(
+        this.tenant.id,
+        this.testCredentials(provider),
+        provider
+      );
+      this.$set(this.testResult, provider, result);
+      this.$set(this.testing, provider, false);
     },
   },
 };
@@ -347,23 +333,7 @@ export default {
             <!-- Testergebnis -->
             <v-row v-if="testResult.nuki" dense>
               <v-col cols="12">
-                <v-alert
-                  :color="testResult.nuki.success ? 'success' : 'error'"
-                  dense
-                  text
-                >
-                  <div v-if="testResult.nuki.success">
-                    <v-icon left>mdi-check-circle</v-icon>
-                    {{
-                      testResult.nuki.message ||
-                      $t("accessPoint.tenant.connectionSuccess")
-                    }}
-                  </div>
-                  <div v-else>
-                    <v-icon left>mdi-alert-circle</v-icon>
-                    {{ testResult.nuki.message }}
-                  </div>
-                </v-alert>
+                <ConnectionTestAlert :result="testResult.nuki" />
               </v-col>
             </v-row>
 

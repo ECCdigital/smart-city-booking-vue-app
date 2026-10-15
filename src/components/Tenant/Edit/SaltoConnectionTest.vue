@@ -1,6 +1,7 @@
 <script>
-import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
 import { saltoSecretSources } from "@/utilities/access-apps";
+import { runConnectionTest } from "@/utilities/access-connection-test";
 
 const T = "accessPoint.tenant.salto.connectionTest";
 
@@ -64,6 +65,7 @@ function iqSummary(iqs) {
  */
 export default {
   name: "SaltoConnectionTest",
+  components: { ConnectionTestAlert },
   props: {
     tenantId: { type: String, required: true },
     /** The Salto KS application as the form holds it. */
@@ -245,27 +247,12 @@ export default {
       this.testing = true;
       this.result = null;
 
-      try {
-        const response = await ApiAccessAppsService.testConnection(
-          this.tenantId,
-          this.credentials(),
-          "salto-ks"
-        );
-        this.result = {
-          ...response.data,
-          success: response.data.success === true,
-        };
-      } catch (error) {
-        this.result = {
-          success: false,
-          message:
-            error.response?.data?.message ||
-            error.message ||
-            this.$t("accessPoint.connection.error.message"),
-        };
-      } finally {
-        this.testing = false;
-      }
+      this.result = await runConnectionTest(
+        this.tenantId,
+        this.credentials(),
+        "salto-ks"
+      );
+      this.testing = false;
     },
   },
 };
@@ -345,21 +332,7 @@ export default {
             {{ testedWithText }}
           </div>
         </v-sheet>
-        <v-alert
-          v-else
-          :color="result.success ? 'success' : 'error'"
-          dense
-          text
-        >
-          <div v-if="result.success">
-            <v-icon left>mdi-check-circle</v-icon>
-            {{ result.message || $t("accessPoint.tenant.connectionSuccess") }}
-          </div>
-          <div v-else>
-            <v-icon left>mdi-alert-circle</v-icon>
-            {{ result.message }}
-          </div>
-        </v-alert>
+        <ConnectionTestAlert v-else :result="result" />
       </v-col>
     </v-row>
 

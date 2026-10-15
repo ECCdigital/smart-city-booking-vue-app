@@ -407,6 +407,21 @@ describe("TenantEditAccess connection test for Salto KS", () => {
     expect(text).not.toContain("Missing required fields");
   });
 
+  it("says in German that the test failed when the backend fails", async () => {
+    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+    ApiAccessAppsService.testConnection.mockRejectedValueOnce({
+      message: "Request failed with status code 500",
+      response: { status: 500, data: "Could not test access connection" },
+    });
+
+    await testButton(wrapper).trigger("click");
+    await flushPromises();
+
+    const text = saltoPanel(wrapper).text();
+    expect(text).toContain("Die Verbindung konnte nicht hergestellt werden.");
+    expect(text).not.toContain("Request failed");
+  });
+
   it("shows a failure without checks as the plain message", async () => {
     const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
 

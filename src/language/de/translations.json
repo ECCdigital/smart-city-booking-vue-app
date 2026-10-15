@@ -3058,7 +3058,7 @@
     "connection": {
       "error": {
         "title": "Verbindung fehlgeschlagen",
-        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+        "message": "Die Verbindung konnte nicht hergestellt werden."
       }
     },
     "load": {
