@@ -112,6 +112,12 @@ export default {
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;
     },
+    toIqActivation() {
+      this.$refs.iqActivation?.$el.scrollIntoView?.({
+        behavior: "smooth",
+        block: "start",
+      });
+    },
     resetValidation() {
       if (this.$refs.form) this.$refs.form.resetValidation();
     },
@@ -583,11 +589,14 @@ export default {
               :app="localApps['salto-ks']"
               :secret-configured="saltoSecretConfigured"
               :password-configured="saltoPasswordConfigured"
+              :activation-shown="localApps['salto-ks'].active"
+              @to-activation="toIqActivation"
             />
 
             <!-- IQ activation for remote-open -->
             <SaltoIqActivationSection
               v-if="localApps['salto-ks'].active"
+              ref="iqActivation"
               :tenant-id="tenant.id"
             />
           </AppPanel>
