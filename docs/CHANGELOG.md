@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Added
 
+-   Salto KS, „Verbindung testen“ with the stored secrets ([ECCdigital/tickets#575](https://github.com/ECCdigital/tickets/issues/575)): an empty Client Secret or Passwort field is sent empty and the backend tests with the stored one, as long as client id, System-User and Umgebung are the stored ones; the site plays no part. Next to the button it says what the test runs with („Testet mit den gespeicherten Secrets.“), and a secret the backend cannot take is named with its reason („Die Client-ID ist neu. Gib das passende Client Secret ein.“). Requires the backend with ECCdigital/tickets#575
 -   Booking form: a period that ends at or before its begin is named below „Buchungszeitraum“ and not saved (ECCdigital/tickets#493); a toast says „Ungültige Endzeit“, and no availability is asked for it. The backend refuses it as before
 -   A required custom field in the booking form and its preview is marked with a red asterisk, as E-Mail and Zahlungsanbieter are
 -   Saving the booking form with a required field still missing marks that field and scrolls to the first one, besides the toast „Fehlende Angaben“. A create checks the whole form, an update the custom fields only, as before
