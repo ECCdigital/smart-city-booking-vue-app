@@ -24,6 +24,13 @@ const SIGNS = {
   todo: ["mdi-alert", "warning"],
 };
 
+/**
+ * The answers that stop the test before Salto is asked, each with what is
+ * missing: a secret that cannot be taken (with the reason), or a required
+ * field (field only).
+ */
+const MISSING_CODES = ["missing_secret", "missing_fields"];
+
 /** The statuses that ask the admin to look, counted in the headline. */
 const HINT_STATUSES = ["failed", "unknown", "not_verifiable", "todo"];
 
@@ -98,12 +105,12 @@ export default {
       }
       return this.$t("accessPoint.tenant.salto.connectionTest.basisMixed");
     },
-    missingSecret() {
-      return this.result?.code === "missing_secret";
+    stoppedForMissing() {
+      return MISSING_CODES.includes(this.result?.code);
     },
     /** A test that ran and answered per check. */
     checklist() {
-      return !this.missingSecret && !!this.result?.checks;
+      return !this.stoppedForMissing && !!this.result?.checks;
     },
     summary() {
       return iqSummary(this.result?.details?.iqs || []);
@@ -141,13 +148,22 @@ export default {
       });
     },
     missingTexts() {
-      return (this.result?.missing || []).map(this.missingText);
+      const missing = this.result?.missing || [];
+      return this.result.code === "missing_fields"
+        ? missing.map(this.missingFieldText)
+        : missing.map(this.missingText);
     },
   },
   methods: {
     missingText({ field, reason }) {
       const key = `${T}.missing.${field}.${reason}`;
       return this.$te(key) ? this.$t(key) : this.$t(`${T}.missing.fallback`);
+    },
+    missingFieldText({ field }) {
+      const key = `${T}.missingFields.${field}`;
+      return this.$te(key)
+        ? this.$t(key)
+        : this.$t(`${T}.missingFields.fallback`);
     },
     /** One row of the checklist: status, sign, value and hint. */
     row(key, check = { status: "skipped" }) {
@@ -260,7 +276,7 @@ export default {
     <!-- Testergebnis -->
     <v-row v-if="result" dense>
       <v-col cols="12">
-        <v-alert v-if="missingSecret" type="warning" text dense>
+        <v-alert v-if="stoppedForMissing" type="warning" text dense>
           <div v-for="(text, index) in missingTexts" :key="index">
             {{ text }}
           </div>

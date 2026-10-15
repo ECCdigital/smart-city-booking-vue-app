@@ -391,6 +391,22 @@ describe("TenantEditAccess connection test for Salto KS", () => {
     expect(text).not.toContain("Missing secrets");
   });
 
+  it("names per field which required entry is missing", async () => {
+    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+
+    await runTest(wrapper, {
+      success: false,
+      code: "missing_fields",
+      message: "Missing required fields: clientId, username",
+      missing: [{ field: "clientId" }, { field: "username" }],
+    });
+
+    const text = saltoPanel(wrapper).text();
+    expect(text).toContain("Die Client-ID fehlt. Tragen Sie sie ein.");
+    expect(text).toContain("Der System-User fehlt. Tragen Sie ihn ein.");
+    expect(text).not.toContain("Missing required fields");
+  });
+
   it("shows a failure without checks as the plain message", async () => {
     const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
 

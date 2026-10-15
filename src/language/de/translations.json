@@ -2768,6 +2768,13 @@
             },
             "fallback": "Für den Test fehlt ein Secret. Geben Sie Client Secret und Passwort ein."
           },
+          "missingFields": {
+            "clientId": "Die Client-ID fehlt. Tragen Sie sie ein.",
+            "clientSecret": "Das Client Secret fehlt. Tragen Sie es ein.",
+            "username": "Der System-User fehlt. Tragen Sie ihn ein.",
+            "password": "Das Passwort des System-Users fehlt. Tragen Sie es ein.",
+            "fallback": "Für den Test fehlt eine Angabe. Prüfen Sie die API-Zugangsdaten."
+          },
           "headline": {
             "connected": "Verbunden mit Salto KS ({environment})",
             "connectedWithHints": "Verbunden mit Salto KS ({environment}), {count} Hinweis | Verbunden mit Salto KS ({environment}), {count} Hinweise",
