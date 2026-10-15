@@ -5,8 +5,10 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   formatAccessPointErrorMessage,
+  isProviderNotActiveError,
   splitAccessPointFieldError,
 } from "@/utilities/access-point-errors";
+import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -112,6 +114,9 @@ export default {
       providerLocks: [],
       loadingLocks: false,
       lockLoadError: "",
+      // The provider whose listing answered that the tenant has not switched
+      // it on: the access point is saved all the same and checked once it is.
+      inactiveProvider: "",
       prefilling: false,
       prefillHint: "",
       // Counts the openings: the location input starts afresh on each.
@@ -321,6 +326,23 @@ export default {
       if (!Array.isArray(supported) || supported.length === 0) return false;
       return !supported.includes(this.form.mode);
     },
+    // Lock and mode are judged against the provider's listing. While the
+    // provider is not active there is none, and the backend saves without
+    // it - the hint says so, so a save without a check is no surprise.
+    providerInactiveHint() {
+      const provider = this.inactiveProvider;
+      if (!provider) return "";
+      if (this.isEdit && this.form.provider !== provider) return "";
+
+      const title =
+        this.providers.find((p) => p.id === provider)?.title ||
+        createLockAndAccessAppDefaults()[provider]?.title ||
+        provider;
+      const key = this.isLocker ? "locker" : "door";
+      return this.$t(`accessPoint.management.providerInactive.${key}`, {
+        provider: title,
+      });
+    },
     canPrefillLocation() {
       if (!this.isEdit) return false;
       const provider = this.providers.find((p) => p.id === this.form.provider);
@@ -342,10 +364,14 @@ export default {
     open(isOpen) {
       if (isOpen) this.reset();
     },
+    // The picker's own listing; an access point opened for editing has
+    // none, its listing comes from `reset()`.
     pickerProvider(provider) {
+      if (this.isEdit) return;
       this.providerLocks = [];
       this.pickerLockId = "";
-      if (provider) this.fetchProviderLocks();
+      this.inactiveProvider = "";
+      if (provider) this.fetchProviderLocks(provider);
     },
     // The provider list may still be loading while the dialog opens: a dialog
     // that opened on the bare form for want of a listing chooses its way in
@@ -399,6 +425,7 @@ export default {
       this.saveError = "";
       this.prefillHint = "";
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       this.providerLocks = [];
       this.pickerLockId = "";
       this.advancedPanel = [];
@@ -413,6 +440,7 @@ export default {
         this.mode = MANUAL_MODE;
         this.pickerProvider = "";
         this.presetProvider = "";
+        if (this.listsOnEdit(source)) this.fetchProviderLocks(source.provider);
       } else {
         this.chooseWayIn();
       }
@@ -445,20 +473,34 @@ export default {
       this.form.mode = blank.mode;
       if (preset) this.applyProviderDefaults(preset);
     },
-    async fetchProviderLocks() {
+    // A stored access point is checked against its provider's listing on
+    // every save, so the dialog reads it too: to say what the save will
+    // find. An active provider that lists nothing (Pareva) is not asked; a
+    // provider that is not active is, and its answer says so.
+    listsOnEdit(accessPoint) {
+      if (!accessPoint.provider || !accessPoint.externalId) return false;
+      const active = this.providers.find((p) => p.id === accessPoint.provider);
+      return !active || canListAccessPoints(active);
+    },
+    async fetchProviderLocks(provider) {
       this.loadingLocks = true;
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       try {
         const response = await ApiAccessAppsService.getAccessPoints(
           this.tenantId,
-          this.pickerProvider
+          provider
         );
         this.providerLocks = response.data || [];
       } catch (error) {
         this.providerLocks = [];
-        this.lockLoadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.load.error.message",
-        });
+        if (isProviderNotActiveError(error)) {
+          this.inactiveProvider = provider;
+        } else {
+          this.lockLoadError = formatAccessPointErrorMessage(error, {
+            fallbackKey: "accessPoint.load.error.message",
+          });
+        }
       } finally {
         this.loadingLocks = false;
       }
@@ -919,6 +961,16 @@ export default {
               </v-select>
             </v-col>
           </v-row>
+
+          <v-alert
+            v-if="providerInactiveHint"
+            class="provider-inactive-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ providerInactiveHint }}
+          </v-alert>
 
           <!-- Mode, QR rules and address describe a door; a locker system has
                none of them -->
