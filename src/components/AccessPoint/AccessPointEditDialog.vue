@@ -8,7 +8,10 @@ import {
   isProviderNotActiveError,
   splitAccessPointFieldError,
 } from "@/utilities/access-point-errors";
-import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
+import {
+  createLockAndAccessAppDefaults,
+  SALTO_PROVIDER,
+} from "@/utilities/access-apps";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -38,7 +41,6 @@ const PREFILL_ORIGIN = "nuki";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
-const SALTO_PROVIDER = "salto-ks";
 const SALTO_MODES = ["remote"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [

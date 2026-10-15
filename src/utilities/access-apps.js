@@ -12,6 +12,9 @@
  */
 export const LOCK_AND_ACCESS_APP_IDS = ["pareva", "ifbs", "nuki", "salto-ks"];
 
+/** The id of Salto KS as a provider and as a tenant application. */
+export const SALTO_PROVIDER = "salto-ks";
+
 /**
  * The application a tenant has stored under `id`, if it has one the current
  * schema knows.

@@ -1,9 +1,10 @@
 <script>
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
-import { saltoSecretSources } from "@/utilities/access-apps";
+import { SALTO_PROVIDER, saltoSecretSources } from "@/utilities/access-apps";
 import { runConnectionTest } from "@/utilities/access-connection-test";
 
-const T = "accessPoint.tenant.salto.connectionTest";
+/** Where the texts of the connection test live in the catalogue. */
+const I18N_PREFIX = "accessPoint.tenant.salto.connectionTest";
 
 /** The checks in the order an admin works through them. */
 const CHECKS = [
@@ -100,12 +101,12 @@ export default {
 
       const sources = Object.values(this.sources).map(({ source }) => source);
       if (sources.every((source) => source === "stored")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisStored");
+        return this.$t(`${I18N_PREFIX}.basisStored`);
       }
       if (sources.every((source) => source === "form")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisForm");
+        return this.$t(`${I18N_PREFIX}.basisForm`);
       }
-      return this.$t("accessPoint.tenant.salto.connectionTest.basisMixed");
+      return this.$t(`${I18N_PREFIX}.basisMixed`);
     },
     stoppedForMissing() {
       return MISSING_CODES.includes(this.result?.code);
@@ -122,22 +123,25 @@ export default {
       return CHECKS.map((key) => this.row(key, this.result.checks[key]));
     },
     headline() {
-      if (!this.result.success) return this.$t(`${T}.headline.notConnected`);
+      if (!this.result.success)
+        return this.$t(`${I18N_PREFIX}.headline.notConnected`);
       const environment = this.result.environment;
       const count = this.rows.filter((row) =>
         HINT_STATUSES.includes(row.status)
       ).length;
       return count
-        ? this.$tc(`${T}.headline.connectedWithHints`, count, {
+        ? this.$tc(`${I18N_PREFIX}.headline.connectedWithHints`, count, {
             environment,
             count,
           })
-        : this.$t(`${T}.headline.connected`, { environment });
+        : this.$t(`${I18N_PREFIX}.headline.connected`, { environment });
     },
     testedWithText() {
       const source = (field) =>
-        this.$t(`${T}.sources.${this.result.testedWith?.[field] || "form"}`);
-      return this.$t(`${T}.testedWith`, {
+        this.$t(
+          `${I18N_PREFIX}.sources.${this.result.testedWith?.[field] || "form"}`
+        );
+      return this.$t(`${I18N_PREFIX}.testedWith`, {
         clientSecret: source("clientSecret"),
         password: source("password"),
       });
@@ -149,6 +153,9 @@ export default {
         minute: "2-digit",
       });
     },
+    toActivationText() {
+      return this.$t(`${I18N_PREFIX}.iqs.toActivation`);
+    },
     missingTexts() {
       const missing = this.result?.missing || [];
       return this.result.code === "missing_fields"
@@ -158,14 +165,16 @@ export default {
   },
   methods: {
     missingText({ field, reason }) {
-      const key = `${T}.missing.${field}.${reason}`;
-      return this.$te(key) ? this.$t(key) : this.$t(`${T}.missing.fallback`);
-    },
-    missingFieldText({ field }) {
-      const key = `${T}.missingFields.${field}`;
+      const key = `${I18N_PREFIX}.missing.${field}.${reason}`;
       return this.$te(key)
         ? this.$t(key)
-        : this.$t(`${T}.missingFields.fallback`);
+        : this.$t(`${I18N_PREFIX}.missing.fallback`);
+    },
+    missingFieldText({ field }) {
+      const key = `${I18N_PREFIX}.missingFields.${field}`;
+      return this.$te(key)
+        ? this.$t(key)
+        : this.$t(`${I18N_PREFIX}.missingFields.fallback`);
     },
     /** One row of the checklist: status, sign, value and hint. */
     row(key, check = { status: "skipped" }) {
@@ -175,44 +184,48 @@ export default {
       let jump = false;
 
       if (status === "skipped") {
-        value = this.$t(`${T}.status.skipped`);
+        value = this.$t(`${I18N_PREFIX}.status.skipped`);
       } else if (status === "unknown") {
-        hint = this.$t(`${T}.status.unknown`);
+        hint = this.$t(`${I18N_PREFIX}.status.unknown`);
       } else if (status === "not_verifiable") {
-        value = this.$t(`${T}.status.notVerifiable`);
-        hint = this.$t(`${T}.status.notVerifiableHint`);
+        value = this.$t(`${I18N_PREFIX}.status.notVerifiable`);
+        hint = this.$t(`${I18N_PREFIX}.status.notVerifiableHint`);
       } else if (status === "failed") {
-        const failure = `${T}.failures.${check.code}`;
+        const failure = `${I18N_PREFIX}.failures.${check.code}`;
         hint =
           check.code && this.$te(failure)
             ? this.$t(failure)
-            : this.$t(`${T}.failures.other`, { message: this.result.message });
+            : this.$t(`${I18N_PREFIX}.failures.other`, {
+                message: this.result.message,
+              });
       }
 
       if (key === "credentials") {
         value = this.result.environment || value;
       }
       if (key === "site" && status === "ok") {
-        value = this.$tc(`${T}.site`, check.locks || 0, {
+        value = this.$tc(`${I18N_PREFIX}.site`, check.locks || 0, {
           count: check.locks || 0,
         });
       }
       if (key === "iqs" && status === "ok") {
         const summary = this.summary;
         value = summary.total
-          ? this.$t(`${T}.iqs.summary`, summary)
-          : this.$t(`${T}.iqs.none`);
+          ? this.$t(`${I18N_PREFIX}.iqs.summary`, summary)
+          : this.$t(`${I18N_PREFIX}.iqs.none`);
         const hints = [];
         if (summary.open) {
           status = "todo";
           jump = this.activationShown;
           hints.push(
-            this.$tc(`${T}.iqs.open`, summary.open, { count: summary.open })
+            this.$tc(`${I18N_PREFIX}.iqs.open`, summary.open, {
+              count: summary.open,
+            })
           );
         }
         if (summary.offline) {
           hints.push(
-            this.$tc(`${T}.iqs.offline`, summary.offline, {
+            this.$tc(`${I18N_PREFIX}.iqs.offline`, summary.offline, {
               count: summary.offline,
             })
           );
@@ -223,7 +236,7 @@ export default {
       const [icon, color] = SIGNS[status] || SIGNS.unknown;
       return {
         key,
-        label: this.$t(`${T}.checks.${key}`),
+        label: this.$t(`${I18N_PREFIX}.checks.${key}`),
         status,
         value,
         hint,
@@ -250,7 +263,7 @@ export default {
       this.result = await runConnectionTest(
         this.tenantId,
         this.credentials(),
-        "salto-ks"
+        SALTO_PROVIDER
       );
       this.testing = false;
     },
@@ -316,11 +329,7 @@ export default {
                   data-test="salto-to-activation"
                   @click="$emit('to-activation')"
                 >
-                  {{
-                    $t(
-                      "accessPoint.tenant.salto.connectionTest.iqs.toActivation"
-                    )
-                  }}
+                  {{ toActivationText }}
                 </v-btn>
               </v-list-item-action>
             </v-list-item>

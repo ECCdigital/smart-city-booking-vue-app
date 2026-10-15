@@ -6,6 +6,7 @@ import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCu
 import {
   emptyCustomerService,
   findTenantApp,
+  SALTO_PROVIDER,
   saltoEnvironment,
   saltoIdentityChanged,
 } from "@/utilities/access-apps";
@@ -68,7 +69,7 @@ export default {
   },
   computed: {
     storedSalto() {
-      return findTenantApp(this.tenant.applications, "salto-ks") || null;
+      return findTenantApp(this.tenant.applications, SALTO_PROVIDER) || null;
     },
     allowAuditExport() {
       return BookingPermissionService.allowAuditExport();
@@ -135,7 +136,7 @@ export default {
       if (
         !stored ||
         !this.activatedIqCount ||
-        !saltoIdentityChanged(stored, this.localApps["salto-ks"])
+        !saltoIdentityChanged(stored, this.localApps[SALTO_PROVIDER])
       ) {
         return Promise.resolve(true);
       }
