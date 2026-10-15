@@ -214,6 +214,7 @@
             <div class="section-header__text">
               <div class="section-header__title booking-page__name">
                 {{ booking.name || "–" }}
+                <BookedViaBadge :booked-via="booking.bookedVia" />
               </div>
               <div v-if="booking.mail" class="section-header__subtitle">
                 {{ booking.mail }}
@@ -332,6 +333,12 @@
                   }}
                 </span>
               </div>
+              <div class="booking-fact booking-page__booked-via">
+                <span class="booking-fact__label">
+                  {{ bookedViaTitle }}
+                </span>
+                <span class="booking-fact__value">{{ bookedVia }}</span>
+              </div>
               <div class="booking-fact">
                 <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
@@ -403,6 +410,8 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
@@ -417,6 +426,7 @@ export default {
   name: "BookingPage",
   components: {
     AdminLayout,
+    BookedViaBadge,
     BookingAccessPoints,
     BookingDocumentActions,
     BookingPageEmptyState,
@@ -473,6 +483,12 @@ export default {
     },
     paymentProvider() {
       return paymentProviderLabel(this.booking.paymentProvider);
+    },
+    bookedViaTitle() {
+      return bookedViaTitle();
+    },
+    bookedVia() {
+      return bookedViaLabel(this.booking.bookedVia);
     },
     /** The state read as a path (spec N2). */
     path() {

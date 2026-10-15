@@ -255,10 +255,166 @@ describe("EventCreate", () => {
     }
   );
 
+  describe("participation link", () => {
+    // Any change brings up „Änderungen übernehmen“.
+    async function edit(store, parent, field, value) {
+      await store.dispatch("events/updateForm", { parent, field, value });
+      await flushPromises();
+    }
+    const rename = (store) => edit(store, "information", "name", "Lesung");
+
+    it.each([
+      ["Hybrid", 1],
+      ["Online", 2],
+    ])(
+      "holds back the save of a %s event without a link",
+      async (_name, format) => {
+        const { wrapper, store } = await mountEditor({
+          event: storedEvent({ format, eventLocation: { url: "" } }),
+        });
+        await rename(store);
+
+        expect(find(wrapper, "event-save").attributes("disabled")).toBe(
+          "disabled"
+        );
+        expect(find(wrapper, "participation-link-hint").text()).toContain(
+          "gültigen https-Link zur Teilnahme"
+        );
+      }
+    );
+
+    it("holds back the save of an event with an http link", async () => {
+      const { wrapper, store } = await mountEditor({
+        event: storedEvent({
+          format: 1,
+          eventLocation: { url: "http://meet.example/abc" },
+        }),
+      });
+      await rename(store);
+
+      expect(find(wrapper, "event-save").attributes("disabled")).toBe(
+        "disabled"
+      );
+    });
+
+    it("saves once a valid link is entered", async () => {
+      const { wrapper, store } = await mountEditor({
+        event: storedEvent({ format: 2, eventLocation: { url: "" } }),
+      });
+      await edit(store, "eventLocation", "url", "https://meet.example/abc");
+
+      expect(find(wrapper, "participation-link-hint").exists()).toBe(false);
+      await find(wrapper, "event-save").trigger("click");
+      await flushPromises();
+
+      expect(ApiEventService.addEvent).toHaveBeenCalled();
+    });
+
+    it("saves a presence event without a link", async () => {
+      const { wrapper, store } = await mountEditor({
+        event: storedEvent({ format: 0, eventLocation: { url: "" } }),
+      });
+      await rename(store);
+
+      expect(
+        find(wrapper, "event-save").attributes("disabled")
+      ).toBeUndefined();
+      expect(find(wrapper, "participation-link-hint").exists()).toBe(false);
+    });
+  });
+
   it("keeps a free tenant free of supervision texts", async () => {
     const { wrapper } = await mountEditor({ supervisionLevel: "free" });
 
     expect(find(wrapper, "publication-wish-hint").exists()).toBe(false);
     expect(find(wrapper, "review-panel").exists()).toBe(false);
+  });
+});
+
+describe("EventCreate - location", () => {
+  const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+  const ADDRESS_WITHOUT_POINT = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    meta: { source: "manual", additional: null },
+  };
+  const save = (wrapper) =>
+    wrapper
+      .findAll("button")
+      .filter((b) => b.text() === "Änderungen übernehmen")
+      .at(0);
+
+  it("locks „Änderungen übernehmen“ while the location may not be saved, and says why", async () => {
+    const { wrapper, store } = await mountEditor();
+
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: ADDRESS_WITHOUT_POINT,
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBe("disabled");
+    expect(find(wrapper, "location-refusal").text()).toBe(
+      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+    );
+  });
+
+  it("saves an event with an old location without point, sending it back word for word", async () => {
+    let sent;
+    ApiEventService.addEvent.mockImplementation(() => {
+      sent = store.state.events.form.location;
+      return Promise.resolve({});
+    });
+    const { wrapper, store } = await mountEditor({
+      event: storedEvent({ location: OLD_TEXT }),
+    });
+
+    await store.dispatch("events/updateForm", {
+      parent: "information",
+      field: "name",
+      value: "Neuer Name",
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBeUndefined();
+    expect(find(wrapper, "location-refusal").exists()).toBe(false);
+    await save(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(ApiEventService.addEvent).toHaveBeenCalled();
+    expect(sent).toBe(OLD_TEXT);
+  });
+
+  it("measures the location against the saved one after a save", async () => {
+    const { wrapper, store } = await mountEditor({
+      event: storedEvent({ location: OLD_TEXT }),
+    });
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: {
+        ...ADDRESS_WITHOUT_POINT,
+        coordinates: { type: "Point", points: [14.7213, 51.9526] },
+      },
+    });
+    await flushPromises();
+    await save(wrapper).trigger("click");
+    await flushPromises();
+
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: OLD_TEXT,
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBe("disabled");
+    expect(find(wrapper, "location-refusal").text()).toBe(
+      "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+    );
   });
 });

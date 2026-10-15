@@ -105,6 +105,30 @@ describe("heroDraftFromResponse, on the amended Block shape", () => {
     expect(draft.heroLayout.blocks[0]).toEqual(expect.objectContaining(block));
   });
 
+  /**
+   * The backend refuses `invertInDarkMode` on a Block that follows the
+   * App-Logo, so completing the derived default's logo Block must not add it.
+   */
+  it("adds no invert switch to an image Block that follows the App-Logo", () => {
+    const draft = heroDraftFromResponse({
+      heroLayout: layout({
+        blocks: [
+          {
+            id: "logo",
+            type: "image",
+            zone: "middle-center",
+            image: { source: "app-logo", url: null, width: null, height: null },
+            alt: { de: "Logo" },
+          },
+        ],
+      }),
+    });
+    const block = draft.heroLayout.blocks[0];
+
+    expect(block).toMatchObject({ maxHeight: "md", panel: null });
+    expect("invertInDarkMode" in block).toBe(false);
+  });
+
   it("reads the legacy Panel strings into the shape the Draft holds", () => {
     // `"none"` and `"translucent"` are accepted on input and normalised;
     // export is always `null` or the object (Shared contract, „Panel“).

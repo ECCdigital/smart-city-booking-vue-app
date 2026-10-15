@@ -107,8 +107,40 @@ describe("BookingExportButton", () => {
   it("spans the filter over every column", async () => {
     const { headers, autoFilter } = await exportRows([booking()]);
 
-    expect(headers).toHaveLength(27);
-    expect(autoFilter).toBe("A1:AA1");
+    expect(headers).toHaveLength(28);
+    expect(autoFilter).toBe("A1:AB1");
+  });
+
+  it("writes the Buchungsweg beside the assigned user", async () => {
+    const { headers, rows } = await exportRows([
+      booking({ id: "u", bookedVia: "user", assignedUserId: "erika" }),
+      booking({ id: "g", bookedVia: "guest" }),
+      booking({ id: "a", bookedVia: "admin" }),
+      booking({ id: "old" }),
+    ]);
+
+    expect(headers).toContain("Zugewiesener Benutzer");
+    expect(headers).toContain("Buchungsweg");
+    expect(rows.map((row) => [row["ID der Buchung"], row.Buchungsweg])).toEqual(
+      [
+        ["u", "Angemeldet"],
+        ["g", "Gast"],
+        ["a", "Admin"],
+        ["old", "Unbekannt"],
+      ]
+    );
+  });
+
+  it("fills the Payment Provider column from paymentProvider", async () => {
+    const { rows } = await exportRows([
+      booking({ id: "inv", paymentProvider: "invoice" }),
+      booking({ id: "none" }),
+    ]);
+
+    expect(rows.map((row) => row["Payment Provider"])).toEqual([
+      "Rechnung",
+      "",
+    ]);
   });
 
   it("keeps the rejection reason column", async () => {

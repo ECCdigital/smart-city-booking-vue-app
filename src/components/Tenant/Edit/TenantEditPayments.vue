@@ -222,7 +222,11 @@
           <v-col cols="12">
             <v-card
               :color="
-                modelApps.ePayBL.clientP12
+                $vuetify.theme.dark
+                  ? modelApps.ePayBL.clientP12
+                    ? 'success darken-3'
+                    : 'error darken-3'
+                  : modelApps.ePayBL.clientP12
                   ? 'success lighten-5'
                   : 'error lighten-5'
               "
@@ -231,7 +235,9 @@
               <v-card-text
                 :class="
                   (modelApps.ePayBL.clientP12 ? 'success' : 'error') +
-                  '--text text--darken-1 d-flex justify-space-between align-center'
+                  ($vuetify.theme.dark
+                    ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                    : '--text text--darken-1 d-flex justify-space-between align-center')
                 "
               >
                 <div>
@@ -345,7 +351,11 @@
           <v-col cols="12">
             <v-card
               :color="
-                modelTenant?.invoiceTemplate
+                $vuetify.theme.dark
+                  ? modelTenant?.invoiceTemplate
+                    ? 'success darken-3'
+                    : 'error darken-3'
+                  : modelTenant?.invoiceTemplate
                   ? 'success lighten-5'
                   : 'error lighten-5'
               "
@@ -355,7 +365,9 @@
               <v-card-text
                 :class="
                   (modelTenant?.invoiceTemplate ? 'success' : 'error') +
-                  '--text text--darken-1 d-flex justify-space-between align-center'
+                  ($vuetify.theme.dark
+                    ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                    : '--text text--darken-1 d-flex justify-space-between align-center')
                 "
               >
                 <div>
@@ -519,7 +531,11 @@
         <v-col>
           <v-card
             :color="
-              modelTenant?.receiptTemplate
+              $vuetify.theme.dark
+                ? modelTenant?.receiptTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.receiptTemplate
                 ? 'success lighten-5'
                 : 'error lighten-5'
             "
@@ -528,7 +544,9 @@
             <v-card-text
               :class="
                 (modelTenant?.receiptTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
               "
             >
               <div>
@@ -561,7 +579,11 @@
         <v-col>
           <v-card
             :color="
-              modelTenant?.cancellationTemplate
+              $vuetify.theme.dark
+                ? modelTenant?.cancellationTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.cancellationTemplate
                 ? 'success lighten-5'
                 : 'error lighten-5'
             "
@@ -570,7 +592,9 @@
             <v-card-text
               :class="
                 (modelTenant?.cancellationTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
               "
             >
               <div>

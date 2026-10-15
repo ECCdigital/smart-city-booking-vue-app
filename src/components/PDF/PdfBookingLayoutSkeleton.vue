@@ -185,9 +185,11 @@ export default {
 </script>
 
 <style scoped>
+/* A miniature of the receipt, drawn in the theme's surfaces and rules so it
+   follows .theme--dark (ECCdigital/tickets#307). */
 .layout-skeleton {
-  background: #fafafa;
-  border: 1px solid #ececec;
+  background: var(--scb-surface-tint-faint);
+  border: 1px solid var(--scb-surface-border);
   border-radius: 6px;
   padding: 12px;
   min-height: 148px;
@@ -197,7 +199,12 @@ export default {
   display: block;
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(90deg, #e4e4e4 0%, #ededed 50%, #e4e4e4 100%);
+  background: linear-gradient(
+    90deg,
+    var(--scb-surface-border) 0%,
+    var(--scb-rule-strong) 50%,
+    var(--scb-surface-border) 100%
+  );
   transition: opacity 0.2s ease, width 0.2s ease;
 }
 
@@ -213,7 +220,7 @@ export default {
   align-items: center;
   gap: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--scb-rule);
   transition: opacity 0.2s ease;
 }
 
@@ -278,18 +285,18 @@ export default {
 }
 
 .layout-skeleton__table {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--scb-surface-border);
   border-radius: 4px;
   overflow: hidden;
-  background: #fff;
+  background: var(--scb-surface);
 }
 
 .layout-skeleton__table-head {
   display: grid;
   gap: 6px;
   padding: 6px 8px;
-  background: #eeeeee;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--scb-surface-tint);
+  border-bottom: 1px solid var(--scb-surface-border);
 }
 
 .layout-skeleton__table--3col .layout-skeleton__table-head {
@@ -304,14 +311,14 @@ export default {
   display: block;
   height: 5px;
   border-radius: 2px;
-  background: #d5d5d5;
+  background: var(--scb-surface-border);
 }
 
 .layout-skeleton__table-row {
   display: grid;
   gap: 6px;
   padding: 7px 8px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--scb-rule);
 }
 
 .layout-skeleton__table--3col .layout-skeleton__table-row {
@@ -323,7 +330,7 @@ export default {
 }
 
 .layout-skeleton__table-row:nth-child(even) {
-  background: #f7f7f7;
+  background: var(--scb-surface-tint);
 }
 
 .layout-skeleton__bar--wide {
@@ -342,7 +349,7 @@ export default {
 
 .layout-skeleton__table-total {
   padding: 8px;
-  border-top: 2px solid #333;
+  border-top: 2px solid var(--scb-text);
 }
 
 .layout-skeleton__bar--total {

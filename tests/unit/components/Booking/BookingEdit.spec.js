@@ -37,6 +37,7 @@ vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
 
 import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 
@@ -222,6 +223,36 @@ describe("BookingEdit", () => {
       expect(wrapper.emitted("saved")).toHaveLength(1);
     });
 
+    it("saves the comment of the series alone, not the series", async () => {
+      const { wrapper } = await mountEdit({
+        groupBooking: {
+          id: "grp-1",
+          tenantId: "tenant-1",
+          bookingIds: ["bk-1", "bk-2"],
+          mail: "erika@example.org",
+          hooks: [],
+          internalComments: "Alt",
+        },
+      });
+      saveAnswers({ data: {} });
+      ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
+      await wrapper
+        .findAllComponents({ name: "v-textarea" })
+        .wrappers.find(
+          (field) => field.props("label") === "Interne Bemerkung der Serie"
+        )
+        .find("textarea")
+        .setValue("Neu");
+
+      await submit(wrapper);
+
+      expect(ApiGroupBookingService.updateGroupBooking).toHaveBeenCalledWith(
+        "tenant-1",
+        "grp-1",
+        { internalComments: "Neu" }
+      );
+    });
+
     it.each(["rejected", "cancelled"])(
       "saves a %s booking without a reason - the reason is asked where it is rejected or cancelled",
       async (status) => {
@@ -358,6 +389,132 @@ describe("BookingEdit", () => {
       expect(inlineError(wrapper).exists()).toBe(false);
       expect(wrapper.emitted("reload")).toHaveLength(1);
       expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+  });
+
+  /**
+   * A save with a required field still missing marks that field, besides
+   * the toast, and sends nothing. A create checks the whole form, an update
+   * the custom fields only.
+   */
+  describe("a required field still missing", () => {
+    const RATING = {
+      id: "rating",
+      caption: "Bewerten Sie uns",
+      inputType: "string",
+      usageOptions: { context: "checkout", requiredInCheckout: true },
+    };
+
+    function withRating(base) {
+      const [item] = base.bookableItems;
+      return {
+        ...base,
+        bookableItems: [
+          {
+            ...item,
+            _bookableUsed: { ...item._bookableUsed, customFields: [RATING] },
+          },
+        ],
+        customFieldDefinitions: [RATING],
+        customFieldValues: [],
+      };
+    }
+
+    function invalidLabels(wrapper) {
+      return wrapper
+        .findAll(".v-input.error--text label")
+        .wrappers.map((label) => label.text().replace(/\s+/g, " "));
+    }
+
+    it("marks a missing custom field on a create", async () => {
+      const { wrapper, store } = await mountEdit({
+        booking: withRating(draft()),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+      expect(lastToast(store)).toMatchObject({
+        title: "Fehlende Angaben",
+        type: "error",
+      });
+    });
+
+    it("marks the missing custom field on an update", async () => {
+      const { wrapper } = await mountEdit({ booking: withRating(booking()) });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The end lies after the begin (ECCdigital/tickets#493). The form names a
+   * backwards period before the save; the backend refuses it as well.
+   */
+  describe("a period that ends before it begins", () => {
+    const BEGIN = 1_700_000_000_000;
+    const ENDS_AFTER_BEGIN = "Die Endzeit muss nach der Startzeit liegen.";
+
+    function periodError(wrapper) {
+      return wrapper.find(".booking-period-error");
+    }
+
+    it.each([
+      ["before the begin", BEGIN - 3_600_000],
+      ["at the begin", BEGIN],
+    ])(
+      "is named at the period and not created when it ends %s",
+      async (_, timeEnd) => {
+        const { wrapper, store } = await mountEdit({
+          booking: { ...draft(), timeBegin: BEGIN, timeEnd },
+        });
+        saveAnswers({ data: {} });
+
+        expect(periodError(wrapper).text()).toBe(ENDS_AFTER_BEGIN);
+
+        await submit(wrapper);
+
+        expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+        expect(lastToast(store)).toMatchObject({
+          title: "Ungültige Endzeit",
+          message: ENDS_AFTER_BEGIN,
+          type: "error",
+        });
+      }
+    );
+
+    it("is not saved on an existing booking", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 }),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+
+    it("asks for no availability", async () => {
+      const { wrapper } = await mountEdit({
+        booking: { ...draft(), timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 },
+      });
+
+      await wrapper.vm.validateAllBookableItems();
+      await flushPromises();
+
+      expect(ApiCheckoutService.validateCheckoutItem).not.toHaveBeenCalled();
+    });
+
+    it("names nothing when the end lies after the begin", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+
+      expect(periodError(wrapper).exists()).toBe(false);
     });
   });
 

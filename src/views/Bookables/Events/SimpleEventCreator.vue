@@ -4,11 +4,11 @@ import Tiptap from "@/components/Tiptap.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
-import AddressLookup from "@/components/commons/AddressLookup.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 
 export default {
   name: "SimpleEventCreator",
-  components: { Tiptap, MediaReferenceField, AddressLookup },
+  components: { Tiptap, MediaReferenceField, LocationInput },
   data() {
     return {
       api: {
@@ -43,7 +43,7 @@ export default {
         });
     },
     submitForm() {
-      if (!this.$refs.eventForm.validate()) {
+      if (!this.$refs.eventForm.validate() || this.locationRefusal) {
         return;
       }
       ApiEventService.addEvent(this.needsRegistration)
@@ -70,6 +70,8 @@ export default {
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
+      storedLocation: "events/storedLocation",
+      locationRefusal: "events/locationRefusal",
     }),
     // A publicly listed event carries public media only — the reference guard
     // of the backend refuses the save otherwise (§4.3).
@@ -258,13 +260,10 @@ export default {
         });
       },
     },
+    // The location in its stored form; the input reads every form of it.
     location: {
       get() {
-        const loc = this.$store.state.events.form.location;
-        if (typeof loc === "string") {
-          return { display_address: loc };
-        }
-        return loc || { display_address: null };
+        return this.$store.state.events.form.location ?? null;
       },
       set(value) {
         this.updateValue({
@@ -448,7 +447,7 @@ export default {
       </v-row>
       <v-row class="mt-6">
         <v-col cols="12">
-          <h4 class="title">Adresse</h4>
+          <h4 class="title">Veranstaltungsort</h4>
           <v-divider></v-divider>
         </v-col>
         <v-col cols="12">
@@ -462,7 +461,8 @@ export default {
           ></v-text-field>
         </v-col>
         <v-col cols="12">
-          <AddressLookup v-model="location" label="Adresse" />
+          <div class="subtitle-1 mb-2">Standort</div>
+          <LocationInput v-model="location" :stored="storedLocation" />
         </v-col>
       </v-row>
       <v-row> </v-row>
@@ -566,8 +566,14 @@ export default {
         elevation="2"
         rounded
         @click="submitForm"
-        :disabled="!formValid"
+        :disabled="!formValid || !!locationRefusal"
         >Absenden</v-btn
+      >
+      <span
+        v-if="locationRefusal"
+        class="text-caption error--text ml-2"
+        data-test="location-refusal"
+        >{{ $t(locationRefusal) }}</span
       >
     </v-form>
   </div>

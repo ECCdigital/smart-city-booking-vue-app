@@ -1,13 +1,21 @@
 <script>
 import debounce from "lodash/debounce";
 import BaseSection from "@/components/commons/BaseSection.vue";
+import {
+  TENANT_DESCRIPTION_MAX_LENGTH,
+  tenantDescriptionRule,
+} from "@/entities/tenant";
 
 export default {
   name: "TenantEditGeneral",
   components: { BaseSection },
   props: { tenant: { type: Object, required: true } },
   data() {
-    return { valid: false };
+    return {
+      valid: false,
+      descriptionMax: TENANT_DESCRIPTION_MAX_LENGTH,
+      descriptionRules: [tenantDescriptionRule(this.$t.bind(this))],
+    };
   },
   computed: {
     model: {
@@ -58,6 +66,24 @@ export default {
             label="Name"
             :rules="[(v) => !!v || 'Pflichtfeld']"
             v-model="model.name"
+          />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col>
+          <v-textarea
+            background-color="accent"
+            filled
+            dense
+            auto-grow
+            rows="2"
+            :label="$t('tenant.description.label')"
+            :hint="$t('tenant.description.hint')"
+            persistent-hint
+            :counter="descriptionMax"
+            :rules="descriptionRules"
+            v-model="model.description"
+            data-test="tenant-description"
           />
         </v-col>
       </v-row>

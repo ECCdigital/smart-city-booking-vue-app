@@ -1,7 +1,17 @@
+/** The short description the storefront shows next to the tenant's name. */
+export const TENANT_DESCRIPTION_MAX_LENGTH = 300;
+
+/** The form rule for the short description; it is optional. */
+export const tenantDescriptionRule = ($t) => (v) =>
+  !v ||
+  v.length <= TENANT_DESCRIPTION_MAX_LENGTH ||
+  $t("tenant.description.too-long", { max: TENANT_DESCRIPTION_MAX_LENGTH });
+
 class Tenant {
   constructor({
     id,
     name,
+    description,
     contactName,
     location,
     mail,
@@ -42,6 +52,7 @@ class Tenant {
   }) {
     this.id = id;
     this.name = name;
+    this.description = description || "";
     this.contactName = contactName;
     this.location = location;
     this.mail = mail;

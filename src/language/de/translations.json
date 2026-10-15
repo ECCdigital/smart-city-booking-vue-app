@@ -315,7 +315,7 @@
       "legacy-cover-active": "Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet werden.",
       "legacy-cover-adopt": "Als Bild übernehmen",
       "location": "Standort",
-      "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte.",
+      "location-hint": "Wo Buchende hin müssen. Der Punkt erscheint auf der Objektseite auf der Karte, und nach ihm sortiert die Suche nach Entfernung.",
       "type": "Typ",
       "type-hint": "Bestimmt Darstellung und Icon im Katalog. Lässt sich nach dem Anlegen nicht mehr ändern.",
       "type-fixed": "Wird beim Anlegen festgelegt.",
@@ -971,6 +971,9 @@
     },
     "list": {
       "search": "Name, ID oder Veranstalter"
+    },
+    "participation-link": {
+      "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
     }
   },
   "instance": {
@@ -1210,6 +1213,11 @@
     }
   },
   "tenant": {
+    "description": {
+      "label": "Kurzbeschreibung (optional)",
+      "hint": "Beschreiben Sie den Mandanten für Buchende. Die Beschreibung bespielsweise erscheint im Katalog oder auf eingebundenen Webseiten.",
+      "too-long": "Höchstens {max} Zeichen."
+    },
     "home": {
       "section": "Meine Mandanten",
       "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
@@ -1520,6 +1528,21 @@
     }
   },
   "booking": {
+    "booked-via": {
+      "title": "Buchungsweg",
+      "unknown": "Unbekannt",
+      "values": {
+        "user": "Angemeldet",
+        "guest": "Gast",
+        "admin": "Admin"
+      },
+      "hint": {
+        "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
+        "guest": "Diese Buchung wurde erstellt von einem Gast.",
+        "admin": "Diese Buchung wurde erstellt von einem Admin.",
+        "unknown": "Es ist nicht bekannt, über welchen Weg diese Buchung erstellt wurde."
+      }
+    },
     "delete": {
       "success": {
         "title": "Erfolgreich gelöscht",
@@ -2550,11 +2573,9 @@
       },
       "location": {
         "title": "Standort",
-        "address": "Adresse",
-        "coordinates": "Koordinaten",
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
-        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillApplied": "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern.",
         "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
       },
       "config": {
@@ -3036,6 +3057,55 @@
       }
     }
   },
+  "location": {
+    "search": {
+      "label": "Anschrift oder Ort suchen",
+      "notListed": "Nicht dabei? „{text}“ auf der Karte setzen",
+      "noHit": "Kein Treffer. „{text}“ auf der Karte setzen",
+      "notListedHint": "Der Text kommt in den Zusatz.",
+      "unavailable": "Suche gerade nicht erreichbar, setze den Punkt auf der Karte",
+      "searchText": "Text suchen"
+    },
+    "fields": {
+      "street": "Straße",
+      "houseNumber": "Nr.",
+      "postcode": "PLZ",
+      "city": "Ort",
+      "country": "Land",
+      "additional": "Zusatz",
+      "additionalPlaceholder": "z. B. Halle 2, Hintereingang"
+    },
+    "point": {
+      "search": "Punkt aus der Suche",
+      "map": "Punkt von Hand gesetzt",
+      "nuki": "Punkt von NUKI",
+      "none": "Kein Punkt",
+      "missing": "Punkt fehlt.",
+      "missingText": "Gespeichert ist nur der Text „{text}“.",
+      "missingAddress": "Setze den Punkt auf der Karte oder suche die Anschrift.",
+      "clear": "Standort leeren"
+    },
+    "suggestion": {
+      "address": "Anschrift am neuen Punkt: {address}",
+      "adopt": "Übernehmen",
+      "keepAddress": "Anschrift behalten",
+      "point": "Die Anschrift liegt {distance} m vom Punkt. Punkt zur Anschrift verschieben?",
+      "move": "Verschieben",
+      "keepPoint": "Punkt behalten"
+    },
+    "map": {
+      "place": "Klicke in die Karte, wo „{text}“ liegt.",
+      "cancel": "Abbrechen",
+      "unavailable": "Karte gerade nicht erreichbar",
+      "sources": "Datenquellen",
+      "search": "Suche"
+    },
+    "reason": {
+      "pointNotSet": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
+      "addressWithoutPoint": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
+      "oldTextWithoutPoint": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+    }
+  },
   "invoice": {
     "create": {
       "success": {
@@ -3367,8 +3437,8 @@
   },
   "filter": {
     "title": "Filter",
-    "none": "Keine Einschränkung",
-    "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
+    "none": "Keine Filter ausgewählt",
+    "active": "1 Filter aktiv | {n} Filter aktiv",
     "reset": "zurücksetzen",
     "resetAll": "Alle zurücksetzen",
     "empty": "Keine Einträge",

@@ -74,6 +74,20 @@
           dense
           data-test="tenant-name"
         />
+        <v-textarea
+          v-model="form.description"
+          :label="$t('tenant.description.label')"
+          :hint="$t('tenant.description.hint')"
+          persistent-hint
+          :counter="descriptionMax"
+          :rules="rules.description"
+          auto-grow
+          rows="2"
+          outlined
+          dense
+          class="mb-2"
+          data-test="tenant-description"
+        />
         <div class="booking-caption">
           {{ $t("tenant.onboarding.tenant.contact") }}
         </div>
@@ -179,6 +193,10 @@ import {
   creationFieldErrorKey,
   isFormallyValidMail,
 } from "@/utils/tenantOnboarding";
+import {
+  TENANT_DESCRIPTION_MAX_LENGTH,
+  tenantDescriptionRule,
+} from "@/entities/tenant";
 import { rateLimitMessage } from "@/utils/rateLimit";
 
 /**
@@ -208,6 +226,7 @@ export default {
     return {
       form: {
         name: "",
+        description: "",
         contactName: this.prefill.contactName || "",
         mail: this.prefill.mail || "",
         phone: "",
@@ -225,7 +244,9 @@ export default {
             isFormallyValidMail(v) ||
             this.$t("tenant.onboarding.errors.mail-invalid"),
         ],
+        description: [tenantDescriptionRule(this.$t.bind(this))],
       },
+      descriptionMax: TENANT_DESCRIPTION_MAX_LENGTH,
     };
   },
   computed: {

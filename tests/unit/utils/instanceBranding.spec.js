@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandingForSave } from "@/utils/instanceBranding";
+import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 
 /**
  * The Hero Editor owns the Background (hero layout spec, "Stale-overwrite
@@ -38,5 +38,183 @@ describe("brandingForSave", () => {
   it("passes an empty branding through", () => {
     expect(brandingForSave(null)).toBeNull();
     expect(brandingForSave(undefined)).toBeUndefined();
+  });
+});
+
+describe("brandingForSave with the fields of map #510", () => {
+  it("sends the accent colour, set or empty", () => {
+    const set = brandingForSave({
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "#f59e0b" },
+      },
+    });
+    const empty = brandingForSave({
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "" },
+      },
+    });
+
+    expect(set.theme.colors.accent).toBe("#f59e0b");
+    expect(empty.theme.colors.accent).toBe("");
+  });
+
+  it("sends back every field the backend delivered, untouched", () => {
+    // The backend resets a field the payload leaves out to its default.
+    const delivered = {
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "" },
+      },
+      header: "secondary",
+      authLogoSize: "lg",
+      logoDark: { source: "media", mediaId: "m2", url: null },
+      footerLogos: [
+        {
+          image: { source: "media", mediaId: "m3", url: null },
+          size: "md",
+          link: "",
+          imageDark: null,
+        },
+      ],
+      font: { source: "curated", id: "inter" },
+    };
+
+    const payload = brandingForSave(delivered);
+
+    expect(payload.header).toBe("secondary");
+    expect(payload.authLogoSize).toBe("lg");
+    expect(payload.logoDark).toEqual(delivered.logoDark);
+    expect(payload.footerLogos).toEqual(delivered.footerLogos);
+    expect(payload.font).toEqual(delivered.font);
+  });
+});
+
+describe("brandingForSave with the font", () => {
+  const reference = { source: "media", mediaId: "f1", url: null };
+
+  it("sends the system font as null and a font of the list by its id", () => {
+    expect(brandingForSave({ font: null }).font).toBeNull();
+    expect(
+      brandingForSave({ font: { source: "curated", id: "figtree" } }).font
+    ).toEqual({ source: "curated", id: "figtree" });
+  });
+
+  it("sends the tick of a new own font alone", () => {
+    const payload = brandingForSave({
+      font: { source: "media", reference, license: { confirmed: true } },
+    });
+
+    expect(payload.font).toEqual({
+      source: "media",
+      reference,
+      license: { confirmed: true },
+    });
+  });
+
+  it("sends a stored confirmation as the tick, never its person or time", () => {
+    const payload = brandingForSave({
+      font: {
+        source: "media",
+        reference,
+        license: {
+          confirmedAt: "2026-10-01T08:00:00.000Z",
+          confirmedBy: "admin@example.org",
+        },
+      },
+    });
+
+    expect(payload.font.license).toEqual({ confirmed: true });
+  });
+
+  it("sends an own font without tick without a licence", () => {
+    const payload = brandingForSave({
+      font: { source: "media", reference, license: null },
+    });
+
+    expect(payload.font).toEqual({ source: "media", reference });
+  });
+});
+
+describe("brandingForSave with the header bar and the variant of the App-Logo", () => {
+  it("sends the header and the variant as the form holds them", () => {
+    const logoDark = { source: "media", mediaId: "m2", url: null };
+
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      header: "neutral",
+      logoDark,
+    });
+
+    expect(payload.header).toBe("neutral");
+    expect(payload.logoDark).toEqual(logoDark);
+  });
+
+  it("sends a branding that never stored them with Primär and without variant", () => {
+    const payload = brandingForSave(defaultBranding());
+
+    expect(payload.header).toBe("primary");
+    expect(payload).toHaveProperty("logoDark", null);
+  });
+});
+
+describe("brandingForSave with footer logos", () => {
+  it("sends the footer logos in their order with size, link and variant", () => {
+    const footerLogos = [
+      {
+        image: { source: "media", mediaId: "bmwsb", url: null },
+        size: "lg",
+        link: "https://www.bmwsb.bund.de",
+        imageDark: null,
+      },
+      {
+        image: { source: "media", mediaId: "land", url: null },
+        size: "md",
+        link: "",
+        imageDark: { source: "media", mediaId: "land-dunkel", url: null },
+      },
+    ];
+
+    const payload = brandingForSave({ active: true, footerLogos });
+
+    expect(payload.footerLogos).toEqual(footerLogos);
+  });
+});
+
+describe("brandingForSave with the size of the logo on the auth pages", () => {
+  it("sends S for a branding that never stored a size, as today", () => {
+    const stored = { active: false, theme: { colors: { primary: "" } } };
+
+    const payload = brandingForSave({ ...defaultBranding(), ...stored });
+
+    expect(payload.authLogoSize).toBe("sm");
+  });
+
+  it("sends the chosen size", () => {
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      authLogoSize: "md",
+    });
+
+    expect(payload.authLogoSize).toBe("md");
+  });
+});
+
+describe("defaultBranding", () => {
+  it("reads a branding without font as the system font", () => {
+    expect(defaultBranding().font).toBeNull();
+  });
+
+  it("reads a branding without footer logos as one with none", () => {
+    expect(defaultBranding().footerLogos).toEqual([]);
+  });
+
+  it("reads a branding without accent colour as one with an empty accent", () => {
+    expect(defaultBranding().theme.colors).toEqual({
+      primary: "",
+      secondary: "",
+      accent: "",
+    });
   });
 });

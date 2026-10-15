@@ -614,14 +614,17 @@ export default {
       this.editingComment = false;
       this.editedComment = "";
     },
-    /** The series has no editor; the comment is saved here and the page reloaded. */
+    /**
+     * The series has no editor; the comment alone is saved here, as the
+     * booking editor does, and the page reloaded.
+     */
     async saveComment() {
       this.savingComment = true;
       try {
         await ApiGroupBookingService.updateGroupBooking(
           this.groupBooking.tenantId,
           this.groupBooking.id,
-          { ...this.groupBooking, internalComments: this.editedComment }
+          { internalComments: this.editedComment }
         );
         this.editingComment = false;
         this.editedComment = "";

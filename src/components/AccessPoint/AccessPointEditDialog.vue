@@ -2,7 +2,7 @@
 import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
-import AddressLookup from "@/components/commons/AddressLookup.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   formatAccessPointErrorMessage,
   splitAccessPointFieldError,
@@ -20,8 +20,12 @@ import {
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
+import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
+// The origin of a point taken over with „Vorbelegen“: it counts as one set
+// by hand, so a changed address asks before the point follows.
+const PREFILL_ORIGIN = "nuki";
 
 /**
  * The Öffnungsart of a Nuki access point: which action Nuki performs when the
@@ -66,7 +70,7 @@ function emptyForm() {
 
 export default {
   name: "AccessPointEditDialog",
-  components: { AddressLookup },
+  components: { LocationInput },
   props: {
     open: { type: Boolean, default: false },
     // The access point to edit; `null` opens the dialog in create mode.
@@ -110,6 +114,8 @@ export default {
       lockLoadError: "",
       prefilling: false,
       prefillHint: "",
+      // Counts the openings: the location input starts afresh on each.
+      opening: 0,
     };
   },
   computed: {
@@ -320,10 +326,16 @@ export default {
       const provider = this.providers.find((p) => p.id === this.form.provider);
       return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
-    coordinates() {
-      const points = this.form.location?.coordinates?.points;
-      if (!Array.isArray(points) || points.length < 2) return "";
-      return `${points[1]}, ${points[0]}`;
+    // The location as stored, against which the input measures "unchanged":
+    // none for a new access point.
+    storedLocation() {
+      return this.accessPoint?.location ?? null;
+    },
+    // Why the location may not be saved, or "": the backend's rule, measured
+    // against the stored location the same way the bookable's is.
+    saveRefusal() {
+      const key = locationRefusal(this.form.location, this.storedLocation);
+      return key ? this.$t(key) : "";
     },
   },
   watch: {
@@ -391,6 +403,7 @@ export default {
       this.pickerLockId = "";
       this.advancedPanel = [];
       this.validationRulesTouched = false;
+      this.opening += 1;
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
@@ -487,16 +500,19 @@ export default {
           this.form.id,
           this.tenantId
         );
-        const location = response.data;
+        const point = pointOf(response.data);
 
-        if (!location) {
+        if (!point) {
           this.prefillHint = this.$t(
             "accessPoint.management.location.prefillEmpty"
           );
           return;
         }
 
-        this.form.location = { ...(this.form.location || {}), ...location };
+        // The input sets the point and asks the reverse search for an
+        // address, which it only suggests. It hands the location out
+        // through `input`, which clears the hint - so the hint comes after.
+        this.$refs.location.setPoint(point, PREFILL_ORIGIN);
         this.prefillHint = this.$t(
           "accessPoint.management.location.prefillApplied"
         );
@@ -598,7 +614,7 @@ export default {
       return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
     },
     async submit() {
-      if (!this.$refs.form.validate()) return;
+      if (this.saveRefusal || !this.$refs.form.validate()) return;
       if (!this.parseConfig()) {
         this.advancedPanel = [0];
         return;
@@ -946,15 +962,15 @@ export default {
                 {{ $t("accessPoint.management.location.title") }}
               </span>
             </div>
-            <AddressLookup
+            <LocationInput
+              ref="location"
+              :key="opening"
               :value="form.location"
-              :label="$t('accessPoint.management.location.address')"
+              :stored="storedLocation"
+              narrow
+              class="mb-2"
               @input="onLocationChange"
             />
-            <div v-if="coordinates" class="text-caption text--secondary mb-2">
-              {{ $t("accessPoint.management.location.coordinates") }}:
-              {{ coordinates }}
-            </div>
             <div v-if="!isEdit" class="text-caption text--secondary mb-2">
               {{ $t("accessPoint.management.location.prefillAfterSave") }}
             </div>
@@ -1015,6 +1031,12 @@ export default {
       <v-divider />
       <v-card-actions>
         <v-spacer />
+        <span
+          v-if="saveRefusal"
+          class="save-refusal text-caption error--text px-2"
+        >
+          {{ saveRefusal }}
+        </span>
         <v-btn text :disabled="saving" @click="close">
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
@@ -1022,6 +1044,7 @@ export default {
           class="save-access-point"
           color="primary"
           :loading="saving"
+          :disabled="!!saveRefusal"
           @click="submit"
         >
           {{ $t("accessPoint.management.save") }}

@@ -43,7 +43,7 @@ const changes = (wrapper) => wrapper.emitted("change") || [];
 describe("FilterCard", () => {
   it("names in its head how many restrictions are active", async () => {
     const wrapper = mountCard([STATUS, TYPE]);
-    expect(head(wrapper)).toContain("Keine Einschränkung");
+    expect(head(wrapper)).toContain("Keine Filter ausgewählt");
 
     await wrapper.setProps({
       sections: [
@@ -51,7 +51,7 @@ describe("FilterCard", () => {
         { ...TYPE, selected: "door" },
       ],
     });
-    expect(head(wrapper)).toContain("3 Einschränkungen aktiv");
+    expect(head(wrapper)).toContain("3 Filter aktiv");
   });
 
   it("ticks and unticks a row, handing on the section's next selection", async () => {
