@@ -2477,6 +2477,7 @@
       "close": "Schließen",
       "required": "Pflichtfeld",
       "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
       "iqNotActivated": "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „{tab}“ › Salto KS › „{section}“. Speichern können Sie schon jetzt.",
       "providerInactive": {
         "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
