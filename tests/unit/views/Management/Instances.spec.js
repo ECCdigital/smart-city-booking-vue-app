@@ -274,7 +274,7 @@ describe("Instances save in „Single Sign-On“", () => {
 });
 
 describe("Instances save in „Admin“", () => {
-  it("keeps the save back without an admin and toasts the save error beside the banner", async () => {
+  it("keeps the save back without an admin and toasts the missing admin beside the banner", async () => {
     ApiInstanceService.updateInstance.mockClear();
     const { wrapper, addToast } = await mountView(
       { tab: "owners" },
@@ -290,7 +290,7 @@ describe("Instances save in „Admin“", () => {
     expect(ApiInstanceService.updateInstance).not.toHaveBeenCalled();
     expect(wrapper.find("[data-test='owners-missing']").exists()).toBe(true);
     expect(addToast).toHaveBeenLastCalledWith(expect.anything(), {
-      message: "Fehler beim Aktualisieren der Instanz",
+      message: "Instanz muss mindestens einen Admin haben",
       type: "error",
     });
   });
