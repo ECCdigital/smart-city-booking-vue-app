@@ -5,6 +5,7 @@ import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
 import { emptyCustomerService } from "@/utilities/access-apps";
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
+import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
@@ -16,6 +17,7 @@ export default {
     AccessAppCustomerServiceFields,
     AccessAuditExport,
     SaltoIqActivationSection,
+    SaltoConnectionTest,
   },
   props: {
     tenant: { type: Object, required: true },
@@ -33,8 +35,8 @@ export default {
         "salto-ks": false,
         "salto-ks-password": false,
       },
-      testing: { nuki: false, "salto-ks": false },
-      testResult: { nuki: null, "salto-ks": null },
+      testing: { nuki: false },
+      testResult: { nuki: null },
     };
   },
   watch: {
@@ -115,16 +117,6 @@ export default {
     },
     testCredentials(provider) {
       const app = this.localApps[provider];
-      if (provider === "salto-ks") {
-        return {
-          clientId: app.clientId || undefined,
-          clientSecret: app.clientSecret || undefined,
-          username: app.username || undefined,
-          password: app.password || undefined,
-          siteId: app.siteId || undefined,
-          environment: app.environment,
-        };
-      }
       return {
         apiToken: app.apiToken || undefined,
         apiBaseUrl: app.apiBaseUrl,
@@ -586,43 +578,12 @@ export default {
               </v-col>
             </v-row>
 
-            <!-- Testergebnis -->
-            <v-row v-if="testResult['salto-ks']" dense>
-              <v-col cols="12">
-                <v-alert
-                  :color="testResult['salto-ks'].success ? 'success' : 'error'"
-                  dense
-                  text
-                >
-                  <div v-if="testResult['salto-ks'].success">
-                    <v-icon left>mdi-check-circle</v-icon>
-                    {{
-                      testResult["salto-ks"].message ||
-                      $t("accessPoint.tenant.connectionSuccess")
-                    }}
-                  </div>
-                  <div v-else>
-                    <v-icon left>mdi-alert-circle</v-icon>
-                    {{ testResult["salto-ks"].message }}
-                  </div>
-                </v-alert>
-              </v-col>
-            </v-row>
-
-            <!-- Aktion -->
-            <v-row dense class="mt-2">
-              <v-col class="text-right">
-                <v-btn
-                  color="primary"
-                  :loading="testing['salto-ks']"
-                  :disabled="testing['salto-ks']"
-                  @click="testConnection('salto-ks')"
-                >
-                  <v-icon left>mdi-connection</v-icon>
-                  {{ $t("accessPoint.tenant.testConnection") }}
-                </v-btn>
-              </v-col>
-            </v-row>
+            <SaltoConnectionTest
+              :tenant-id="tenant.id"
+              :app="localApps['salto-ks']"
+              :secret-configured="saltoSecretConfigured"
+              :password-configured="saltoPasswordConfigured"
+            />
 
             <!-- IQ activation for remote-open -->
             <SaltoIqActivationSection
