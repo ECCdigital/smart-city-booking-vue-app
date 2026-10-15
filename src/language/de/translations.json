@@ -2677,7 +2677,6 @@
     },
     "comingSoon": {
       "badge": "Bald verfügbar",
-      "salto": "Die Salto-KS-Anbindung befindet sich noch in der Fertigstellung. Die Konfiguration wird zu einem späteren Zeitpunkt freigeschaltet.",
       "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
     },
     "tenant": {
@@ -2715,7 +2714,7 @@
       },
       "salto": {
         "providerTitle": "Salto KS – Cloud-Schließanlage",
-        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
+        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende öffnen die Tür während ihres Buchungszeitraums per App.",
         "providerLink": "Mehr über Salto KS",
         "activate": "Salto KS aktivieren",
         "clientId": "Client-ID",
@@ -2736,6 +2735,16 @@
         "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
         "environmentAccept": "Accept (Sandbox)",
         "environmentProduction": "Production",
+        "prerequisites": {
+          "title": "Voraussetzungen in Salto KS",
+          "intro": "Biletado meldet sich bei Salto KS als System-User an. Richten Sie ihn in Salto KS so ein, bevor Sie die Zugangsdaten unten eintragen:",
+          "systemUser": "Ein eigener System-User nur für Biletado, kein persönliches Konto. Sein Name zeigt den Zweck, etwa „Biletado – nicht löschen“.",
+          "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",
+          "remoteOpening": "Dazu „Remote Opening“ unter Lock Options, auch wenn die Rolle schon vergeben ist.",
+          "mailbox": "Sein Postfach bleibt erreichbar: Beim Aktivieren eines IQ schickt Salto die PIN dorthin.",
+          "appBan": "Den System-User nie in der Salto-App aktivieren. Sonst scheitert die Aktivierung des IQ hier, oder das Fernöffnen danach.",
+          "note": "Rolle und „Remote Opening“ kann Biletado über die API nicht prüfen. Stellen Sie beides in Salto KS selbst sicher."
+        },
         "iq": {
           "title": "IQ-Aktivierung für Remote-Open",
           "refresh": "IQ-Liste aktualisieren",
@@ -2804,7 +2813,7 @@
           },
           "discardConfirm": {
             "title": "Aktivierung verwerfen?",
-            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine Neu-Aktivierung über den Assistenten gelingt erst, wenn der System-User dort als nicht aktiviert gilt (z. B. nach einem IQ-Reset) – andernfalls ist ein Salto-seitiger Reset des Users bzw. IQs nötig.",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: in Salto KS einen System-User anlegen, der nie aktiviert war, ihn unter API-Zugangsdaten eintragen und die IQs neu aktivieren.",
             "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
             "cancel": "Abbrechen",
             "confirm": "Verwerfen"

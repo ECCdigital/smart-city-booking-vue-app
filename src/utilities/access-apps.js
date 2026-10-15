@@ -90,7 +90,7 @@ export function createLockAndAccessAppDefaults() {
       username: "",
       password: "",
       siteId: "",
-      environment: "accept",
+      environment: "production",
       active: false,
     },
   };
