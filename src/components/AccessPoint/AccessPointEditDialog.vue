@@ -5,8 +5,13 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   formatAccessPointErrorMessage,
+  isProviderNotActiveError,
   splitAccessPointFieldError,
 } from "@/utilities/access-point-errors";
+import {
+  createLockAndAccessAppDefaults,
+  SALTO_PROVIDER,
+} from "@/utilities/access-apps";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -36,6 +41,7 @@ const PREFILL_ORIGIN = "nuki";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
+const SALTO_MODES = ["remote"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -112,6 +118,12 @@ export default {
       providerLocks: [],
       loadingLocks: false,
       lockLoadError: "",
+      // The provider whose listing answered that the tenant has not switched
+      // it on: the access point is saved all the same and checked once it is.
+      inactiveProvider: "",
+      // The mode a Salto door was stored on that Salto KS does not support;
+      // the form proposes `remote` instead.
+      unsupportedStoredMode: "",
       prefilling: false,
       prefillHint: "",
       // Counts the openings: the location input starts afresh on each.
@@ -208,10 +220,20 @@ export default {
       return this.showModeToggle && this.mode === PROVIDER_MODE;
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
-    // dialog shows what is coming - but they cannot be chosen. An access point
+    // dialog shows what is coming - but they cannot be chosen. A Nuki door
     // already stored on one keeps it; only picking it anew is barred.
+    //
+    // A Salto door opens remotely or not at all, for good: the backend
+    // refuses `authorization` and `both` at every Salto lock (tickets#499), so
+    // the dialog offers `remote` alone, without a „coming soon“ for the rest.
+    // A Salto door stored on one of them opens on `remote`, and the hint
+    // names the stored mode (`reset()`).
     modeOptions() {
-      return ["authorization", "remote", "both"].map((value) => {
+      const modes =
+        this.form.provider === SALTO_PROVIDER
+          ? SALTO_MODES
+          : ["authorization", "remote", "both"];
+      return modes.map((value) => {
         const comingSoon = isComingSoonAccessPointMode(value);
         return {
           value,
@@ -316,10 +338,55 @@ export default {
         (lock) => lock.externalId === this.form.externalId
       );
     },
+    doorModeHint() {
+      if (this.unsupportedStoredMode) {
+        return this.$t("accessPoint.management.storedModeUnsupported", {
+          stored: this.$t(
+            `accessPoint.management.modes.${this.unsupportedStoredMode}`
+          ),
+          proposed: this.$t(`accessPoint.management.modes.${SALTO_MODES[0]}`),
+        });
+      }
+      return this.unsupportedMode
+        ? this.$t("accessPoint.management.modeUnsupported")
+        : "";
+    },
     unsupportedMode() {
       const supported = this.matchingLock?.supportedModes;
       if (!Array.isArray(supported) || supported.length === 0) return false;
       return !supported.includes(this.form.mode);
+    },
+    // A Salto lock whose IQ is not activated, or needs re-activation, lists
+    // no modes: it can do nothing right now. The backend saves the door all
+    // the same (tickets#570); the hint says why it does not open yet and
+    // where the IQ is activated - on the tab of the locking systems, not here.
+    iqNotActivatedHint() {
+      if (this.form.provider !== SALTO_PROVIDER) return "";
+      const supported = this.matchingLock?.supportedModes;
+      if (!Array.isArray(supported) || supported.length > 0) return "";
+
+      return this.$t("accessPoint.management.iqNotActivated", {
+        tab: this.$t("accessPoint.management.providersTab"),
+        section: this.$t("accessPoint.tenant.salto.iq.title"),
+      });
+    },
+    // Lock and mode are judged against the provider's listing. While the
+    // provider is not active there is none, and the backend saves without
+    // it - the hint says so, so a save without a check is no surprise.
+    providerInactiveHint() {
+      const provider = this.inactiveProvider;
+      if (!provider) return "";
+      const picked = this.showPicker && this.pickerProvider === provider;
+      if (!picked && this.form.provider !== provider) return "";
+
+      const title =
+        this.providers.find((p) => p.id === provider)?.title ||
+        createLockAndAccessAppDefaults()[provider]?.title ||
+        provider;
+      const key = this.isLocker ? "locker" : "door";
+      return this.$t(`accessPoint.management.providerInactive.${key}`, {
+        provider: title,
+      });
     },
     canPrefillLocation() {
       if (!this.isEdit) return false;
@@ -342,10 +409,14 @@ export default {
     open(isOpen) {
       if (isOpen) this.reset();
     },
+    // The picker's own listing; an access point opened for editing has
+    // none, its listing comes from `reset()`.
     pickerProvider(provider) {
+      if (this.isEdit) return;
       this.providerLocks = [];
       this.pickerLockId = "";
-      if (provider) this.fetchProviderLocks();
+      this.inactiveProvider = "";
+      if (provider) this.fetchProviderLocks(provider);
     },
     // The provider list may still be loading while the dialog opens: a dialog
     // that opened on the bare form for want of a listing chooses its way in
@@ -373,6 +444,22 @@ export default {
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
     },
+    // A provider typed in that is not active for the tenant has its listing
+    // asked all the same, so the dialog can say that lock and mode are
+    // checked once it is (tickets#311). The listing of an active provider is
+    // the picker's; this asks only whether the provider is on.
+    onProviderChange(provider) {
+      this.applyProviderDefaults(provider);
+      if (!provider || this.providers.some((p) => p.id === provider)) return;
+      this.checkProviderActive(provider);
+    },
+    async checkProviderActive(provider) {
+      try {
+        await ApiAccessAppsService.getAccessPoints(this.tenantId, provider);
+      } catch (error) {
+        if (isProviderNotActiveError(error)) this.inactiveProvider = provider;
+      }
+    },
     // True where the lock lists its Öffnungsarten and this one is not among
     // them - a listing that says nothing leaves every option alone.
     isUnsupportedOpenAction(openAction) {
@@ -383,6 +470,15 @@ export default {
       const source = this.accessPoint;
       this.form = source ? { ...emptyForm(), ...source } : emptyForm();
       this.form.providerLocationId = this.form.providerLocationId || "";
+      this.unsupportedStoredMode = "";
+      if (
+        this.form.provider === SALTO_PROVIDER &&
+        !isLockerAccessPoint(this.form) &&
+        !SALTO_MODES.includes(this.form.mode)
+      ) {
+        this.unsupportedStoredMode = this.form.mode;
+        this.form.mode = SALTO_MODES[0];
+      }
       const { openAction, ...config } = source?.config || {};
       // A stored value outside the five - written into the JSON text past an
       // older backend - is kept and saved back unchanged, rather than being
@@ -399,6 +495,7 @@ export default {
       this.saveError = "";
       this.prefillHint = "";
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       this.providerLocks = [];
       this.pickerLockId = "";
       this.advancedPanel = [];
@@ -413,6 +510,7 @@ export default {
         this.mode = MANUAL_MODE;
         this.pickerProvider = "";
         this.presetProvider = "";
+        if (this.listsOnEdit(source)) this.fetchProviderLocks(source.provider);
       } else {
         this.chooseWayIn();
       }
@@ -445,20 +543,34 @@ export default {
       this.form.mode = blank.mode;
       if (preset) this.applyProviderDefaults(preset);
     },
-    async fetchProviderLocks() {
+    // A stored access point is checked against its provider's listing on
+    // every save, so the dialog reads it too: to say what the save will
+    // find. An active provider that lists nothing (Pareva) is not asked; a
+    // provider that is not active is, and its answer says so.
+    listsOnEdit(accessPoint) {
+      if (!accessPoint.provider || !accessPoint.externalId) return false;
+      const active = this.providers.find((p) => p.id === accessPoint.provider);
+      return !active || canListAccessPoints(active);
+    },
+    async fetchProviderLocks(provider) {
       this.loadingLocks = true;
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       try {
         const response = await ApiAccessAppsService.getAccessPoints(
           this.tenantId,
-          this.pickerProvider
+          provider
         );
         this.providerLocks = response.data || [];
       } catch (error) {
         this.providerLocks = [];
-        this.lockLoadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.load.error.message",
-        });
+        if (isProviderNotActiveError(error)) {
+          this.inactiveProvider = provider;
+        } else {
+          this.lockLoadError = formatAccessPointErrorMessage(error, {
+            fallbackKey: "accessPoint.load.error.message",
+          });
+        }
       } finally {
         this.loadingLocks = false;
       }
@@ -819,7 +931,7 @@ export default {
                 class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
-                @change="applyProviderDefaults"
+                @change="onProviderChange"
                 :label="$t('accessPoint.management.fields.provider')"
                 background-color="accent"
                 filled
@@ -852,6 +964,7 @@ export default {
             </v-col>
             <v-col v-if="!isLocker" cols="12" md="6">
               <v-select
+                ref="modeSelect"
                 v-model="form.mode"
                 :items="modeOptions"
                 :label="$t('accessPoint.management.fields.mode')"
@@ -859,11 +972,7 @@ export default {
                 filled
                 dense
                 :rules="requiredRule"
-                :hint="
-                  unsupportedMode
-                    ? $t('accessPoint.management.modeUnsupported')
-                    : ''
-                "
+                :hint="doorModeHint"
                 persistent-hint
               >
                 <template v-slot:item="{ item }">
@@ -919,6 +1028,26 @@ export default {
               </v-select>
             </v-col>
           </v-row>
+
+          <v-alert
+            v-if="iqNotActivatedHint"
+            class="iq-not-activated-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ iqNotActivatedHint }}
+          </v-alert>
+
+          <v-alert
+            v-if="providerInactiveHint"
+            class="provider-inactive-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ providerInactiveHint }}
+          </v-alert>
 
           <!-- Mode, QR rules and address describe a door; a locker system has
                none of them -->

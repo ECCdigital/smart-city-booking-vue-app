@@ -1,7 +1,8 @@
 <script>
-// The guided first-activation ceremony of a Salto KS IQ (backend spec
-// docs/specs/salto-ks-remote-open.md §3): acknowledge the app ban, secure the
-// first secret and trigger the PIN mail, capture the mailed PIN once, done.
+// The guided first activation of a Salto KS IQ: acknowledge that the system
+// user is never activated in the Salto app (that would rotate the secret the
+// backend stored), secure the first secret and trigger the PIN mail, capture
+// the mailed PIN once, done.
 // The parent owns the API calls and passes them in as async function props
 // that resolve on success and reject with a translated message.
 import { iqDisplayName } from "./iqActivationState";

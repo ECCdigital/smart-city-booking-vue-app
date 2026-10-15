@@ -2481,6 +2481,12 @@
       "close": "Schließen",
       "required": "Pflichtfeld",
       "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
+      "iqNotActivated": "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „{tab}“ › Salto KS › „{section}“. Speichern können Sie schon jetzt.",
+      "providerInactive": {
+        "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
+        "locker": "{provider} ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      },
       "table": {
         "assignment": "Zuordnung",
         "unassigned": "Keinem Buchungsobjekt zugeordnet",
@@ -2681,7 +2687,6 @@
     },
     "comingSoon": {
       "badge": "Bald verfügbar",
-      "salto": "Die Salto-KS-Anbindung befindet sich noch in der Fertigstellung. Die Konfiguration wird zu einem späteren Zeitpunkt freigeschaltet.",
       "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
     },
     "tenant": {
@@ -2719,7 +2724,7 @@
       },
       "salto": {
         "providerTitle": "Salto KS – Cloud-Schließanlage",
-        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
+        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende öffnen die Tür während ihres Buchungszeitraums per App.",
         "providerLink": "Mehr über Salto KS",
         "activate": "Salto KS aktivieren",
         "clientId": "Client-ID",
@@ -2740,6 +2745,88 @@
         "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
         "environmentAccept": "Accept (Sandbox)",
         "environmentProduction": "Production",
+        "prerequisites": {
+          "title": "Voraussetzungen in Salto KS",
+          "intro": "Biletado meldet sich bei Salto KS als System-User an. Richten Sie ihn in Salto KS so ein, bevor Sie die Zugangsdaten unten eintragen:",
+          "systemUser": "Ein eigener System-User nur für Biletado, kein persönliches Konto. Sein Name zeigt den Zweck, etwa „Biletado – nicht löschen“.",
+          "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",
+          "remoteOpening": "Dazu „Remote Opening“ unter Lock Options, auch wenn die Rolle schon vergeben ist.",
+          "mailbox": "Sein Postfach bleibt erreichbar: Beim Aktivieren eines IQ schickt Salto die PIN dorthin.",
+          "appBan": "Aktivieren Sie den System-User nie in der Salto-App. Sonst scheitert hier die Aktivierung des IQ oder danach das Fernöffnen.",
+          "note": "Rolle und „Remote Opening“ kann Biletado über die API nicht prüfen. Stellen Sie beides in Salto KS selbst sicher."
+        },
+        "connectionTest": {
+          "basisStored": "Testet mit den gespeicherten Secrets.",
+          "basisForm": "Testet mit den Secrets aus dem Formular.",
+          "basisMixed": "Testet mit gespeicherten Secrets und Secrets aus dem Formular.",
+          "missing": {
+            "clientSecret": {
+              "client_id_changed": "Die Client-ID ist neu. Geben Sie das passende Client Secret ein.",
+              "environment_changed": "Die Umgebung ist neu. Geben Sie das Client Secret für diese Umgebung ein.",
+              "not_stored": "Es ist kein Client Secret gespeichert. Geben Sie es ein."
+            },
+            "password": {
+              "username_changed": "Der System-User ist neu. Geben Sie sein Passwort ein.",
+              "environment_changed": "Die Umgebung ist neu. Geben Sie das Passwort des System-Users für diese Umgebung ein.",
+              "not_stored": "Es ist kein Passwort des System-Users gespeichert. Geben Sie es ein."
+            },
+            "fallback": "Für den Test fehlt ein Secret. Geben Sie Client Secret und Passwort ein."
+          },
+          "missingFields": {
+            "clientId": "Die Client-ID fehlt. Tragen Sie sie ein.",
+            "clientSecret": "Das Client Secret fehlt. Tragen Sie es ein.",
+            "username": "Der System-User fehlt. Tragen Sie ihn ein.",
+            "password": "Das Passwort des System-Users fehlt. Tragen Sie es ein.",
+            "fallback": "Für den Test fehlt eine Angabe. Prüfen Sie die API-Zugangsdaten."
+          },
+          "headline": {
+            "connected": "Verbunden mit Salto KS ({environment})",
+            "connectedWithHints": "Verbunden mit Salto KS ({environment}), {count} Hinweis | Verbunden mit Salto KS ({environment}), {count} Hinweise",
+            "notConnected": "Keine Verbindung zu Salto KS"
+          },
+          "checks": {
+            "credentials": "Client-ID und Client Secret",
+            "login": "Anmeldung des System-Users",
+            "site": "Site",
+            "remoteAccess": "Fernöffnen für den System-User",
+            "remoteLockingRight": "Recht zum Fernöffnen an den Türen",
+            "iqs": "IQs"
+          },
+          "status": {
+            "skipped": "nicht geprüft",
+            "unknown": "Salto hat dazu nichts geliefert. Testen Sie später erneut.",
+            "notVerifiable": "über die API nicht prüfbar",
+            "notVerifiableHint": "Prüfen Sie in Salto KS selbst, dass der System-User an den Türen fernöffnen darf, siehe „Voraussetzungen in Salto KS“ oben."
+          },
+          "failures": {
+            "invalid_client": "Salto lehnt Client-ID oder Client Secret ab. Prüfen Sie beide und ob sie zur gewählten Umgebung gehören.",
+            "invalid_grant": "Salto lehnt System-User oder Passwort ab. Prüfen Sie beide und ob der System-User zur gewählten Umgebung gehört.",
+            "site_forbidden": "Salto gibt die Site nicht heraus. Die Site-ID ist falsch, oder der System-User hat dort nicht die Rolle „site_admin“.",
+            "site_missing": "Es ist keine Site eingetragen. Tragen Sie die Site-ID ein.",
+            "timeout": "Salto antwortet nicht innerhalb von 30 Sekunden. Testen Sie später erneut.",
+            "remote_access_off": "Der System-User darf nicht fernöffnen. Erlauben Sie in Salto KS „Remote Opening“ unter Lock Options.",
+            "other": "Salto meldet: {message}"
+          },
+          "site": "{count} Schloss | {count} Schlösser",
+          "iqs": {
+            "summary": "{total} IQs, {ready} von {needed} aktiviert",
+            "none": "Keine IQs an dieser Site",
+            "open": "{count} IQ braucht eine Aktivierung, bevor seine Türen fernöffnen. | {count} IQs brauchen eine Aktivierung, bevor ihre Türen fernöffnen.",
+            "offline": "{count} IQ offline. | {count} IQs offline.",
+            "toActivation": "Zur Aktivierung"
+          },
+          "testedWith": "Getestet mit: Client Secret {clientSecret}, Passwort {password}",
+          "sources": {
+            "stored": "gespeichert",
+            "form": "aus dem Formular"
+          }
+        },
+        "identityChange": {
+          "title": "Aktivierungen ruhen lassen?",
+          "text": "Sie ändern Site, System-User oder Umgebung. Die Aktivierung von {count} IQ gehört zu den bisherigen Angaben und ruht nach dem Speichern. Wechseln Sie zurück, gilt sie wieder. Unter den neuen Angaben braucht jedes IQ eine eigene Aktivierung. | Sie ändern Site, System-User oder Umgebung. Die Aktivierungen von {count} IQs gehören zu den bisherigen Angaben und ruhen nach dem Speichern. Wechseln Sie zurück, gelten sie wieder. Unter den neuen Angaben braucht jedes IQ eine eigene Aktivierung.",
+          "cancel": "Abbrechen",
+          "confirm": "Trotzdem speichern"
+        },
         "iq": {
           "title": "IQ-Aktivierung für Remote-Open",
           "refresh": "IQ-Liste aktualisieren",
@@ -2808,13 +2895,13 @@
           },
           "discardConfirm": {
             "title": "Aktivierung verwerfen?",
-            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine Neu-Aktivierung über den Assistenten gelingt erst, wenn der System-User dort als nicht aktiviert gilt (z. B. nach einem IQ-Reset) – andernfalls ist ein Salto-seitiger Reset des Users bzw. IQs nötig.",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: Legen Sie in Salto KS einen System-User an, der nie aktiviert war, tragen Sie ihn unter API-Zugangsdaten ein und aktivieren Sie die IQs neu.",
             "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
             "cancel": "Abbrechen",
             "confirm": "Verwerfen"
           },
           "errors": {
-            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert (vermutlich eine frühere Aktivierung über die Salto-App). Das ist per API nicht behebbar – Ausweg: Salto-seitiger Reset des Users bzw. IQs, siehe Einrichtungsanleitung.",
+            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert, vermutlich früher über die Salto-App. Über die API lässt sich das nicht beheben. Legen Sie in Salto KS einen neuen System-User an, der nie aktiviert war, tragen Sie ihn unter API-Zugangsdaten ein, speichern Sie und aktivieren Sie die IQs neu. Die Aktivierungen des bisherigen System-Users ruhen dann.",
             "salto_iq_activation_exists": "Für dieses IQ existiert bereits eine Aktivierung. Erst verwerfen, dann neu starten.",
             "salto_iq_invalid_pin": "Bitte die 4-stellige PIN aus der E-Mail eingeben.",
             "salto_iq_activation_not_started": "Für dieses IQ ist keine Aktivierung gestartet – bitte den Assistenten von vorn beginnen.",
@@ -2975,7 +3062,7 @@
     "connection": {
       "error": {
         "title": "Verbindung fehlgeschlagen",
-        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+        "message": "Die Verbindung konnte nicht hergestellt werden."
       }
     },
     "load": {

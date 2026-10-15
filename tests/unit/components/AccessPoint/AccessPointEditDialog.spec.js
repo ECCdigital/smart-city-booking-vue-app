@@ -117,6 +117,11 @@ function locationField(wrapper, name) {
     .find("input");
 }
 
+/** The select of the door's Modus (`form.mode`). */
+function modeSelect(wrapper) {
+  return wrapper.findComponent({ ref: "modeSelect" });
+}
+
 function labels(wrapper) {
   return wrapper.findAll("label").wrappers.map((label) => label.text());
 }
@@ -897,6 +902,325 @@ describe("AccessPointEditDialog", () => {
         "Den Anbieter „dummy“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste."
       );
       expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+  });
+
+  /**
+   * An access point may be prepared before its provider is switched on
+   * (tickets#311). The listing of the provider then answers
+   * `404 <provider>_application_not_found`, and the dialog says that lock and
+   * mode are checked once the provider is active - and saves without it.
+   */
+  describe("when the provider is not active for the tenant", () => {
+    const SALTO_DOOR = {
+      ...DOOR,
+      id: "ap-salto",
+      provider: "salto-ks",
+      externalId: "lock-salto",
+    };
+
+    function notActive(provider) {
+      const code = `${provider.replace("-", "_")}_application_not_found`;
+      return lifecycleError(404, code, { tenant: "t1" });
+    }
+
+    it("asks the listing of the stored provider when a door is opened for editing", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+
+      await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "salto-ks"
+      );
+    });
+
+    it("says that lock and mode are checked once the provider is active", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Salto KS ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Nicht gefunden oder nicht zugänglich."
+      );
+    });
+
+    it("says it for an Anlage in the words of an Anlage", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("ifbs"));
+
+      const wrapper = await mountDialog({
+        accessPoint: LOCKER,
+        providers: [PROVIDERS[0]],
+      });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Parkraumservice ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+    });
+
+    it("saves the renamed door all the same", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, label: "Labortür" },
+      });
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+      await wrapper.find(".label-field input").setValue("Labortür");
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        id: "ap-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+      });
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("says nothing of the kind while the provider lists its locks", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
+    it("says nothing of the kind when the listing fails otherwise", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        lifecycleError(500, "internal_error")
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
+    it("does not ask an active provider that lists nothing", async () => {
+      await mountDialog({
+        accessPoint: { ...LOCKER, provider: "pareva", externalId: "p-1" },
+        providers: [PAREVA],
+      });
+
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    });
+
+    it("asks the listing of a provider typed in for a new access point and says it", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("salto-ks");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "salto-ks"
+      );
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Salto KS ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+    });
+
+    it("does not ask the listing of an active provider typed in", async () => {
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("pareva");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
+    it("shows the hint instead of a load error in the picker", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("nuki"));
+
+      const wrapper = await mountDialog({ providers: [PROVIDERS[0]] });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toContain(
+        "Nuki ist für diesen Mandanten noch nicht aktiv."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Nicht gefunden oder nicht zugänglich."
+      );
+    });
+  });
+
+  /**
+   * A Salto lock whose IQ is not activated, or needs re-activation, lists no
+   * modes: it can do nothing right now. The door is saved all the same
+   * (tickets#570), and the dialog says why it does not open yet and where the
+   * IQ is activated.
+   */
+  describe("a Salto door whose IQ is not activated", () => {
+    const SALTO = {
+      id: "salto-ks",
+      title: "Salto KS",
+      providerCapabilities: LISTS,
+    };
+    const SALTO_DOOR = {
+      ...DOOR,
+      id: "ap-salto",
+      provider: "salto-ks",
+      externalId: "lock-salto",
+    };
+
+    function saltoLock(supportedModes) {
+      return {
+        id: "lock-salto",
+        externalId: "lock-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+        supportedModes,
+      };
+    }
+
+    it("says that the door opens once the IQ is activated, and where", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(wrapper.find(".iq-not-activated-hint").text()).toBe(
+        "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „Schließsysteme“ › Salto KS › „IQ-Aktivierung für Remote-Open“. Speichern können Sie schon jetzt."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt."
+      );
+    });
+
+    it("saves the renamed door all the same", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, label: "Labortür" },
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+      await wrapper.find(".label-field input").setValue("Labortür");
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        id: "ap-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+        mode: "remote",
+      });
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("says nothing of the kind while the lock opens remotely", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock(["remote"])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(wrapper.find(".iq-not-activated-hint").exists()).toBe(false);
+    });
+
+    it("says nothing of the kind while Salto KS is not active", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        lifecycleError(404, "salto_ks_application_not_found", { tenant: "t1" })
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".iq-not-activated-hint").exists()).toBe(false);
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(true);
+    });
+
+    it("offers a Salto door the mode remote alone", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      const items = modeSelect(wrapper).props("items");
+      expect(items.map((item) => item.value)).toEqual(["remote"]);
+      expect(items[0].disabled).toBe(false);
+      expect(items[0].description).not.toContain("Fertigstellung");
+    });
+
+    it("proposes remote for a Salto door stored on a PIN mode and names the stored one", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock(["remote"])],
+      });
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, mode: "remote" },
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: { ...SALTO_DOOR, mode: "both" },
+        providers: [SALTO],
+      });
+
+      expect(modeSelect(wrapper).text()).toContain("Öffnen per App");
+      expect(dialogText(wrapper)).toContain(
+        "Gespeichert ist „PIN-Code & App“, das Salto KS nicht unterstützt. Mit Speichern wird „Öffnen per App“ übernommen."
+      );
+
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload.mode).toBe("remote");
+    });
+
+    it("names no stored mode for a Salto door stored on remote", async () => {
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(dialogText(wrapper)).not.toContain("Gespeichert ist");
+    });
+
+    it("keeps the PIN modes in sight, not choosable, for a Nuki door", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      const items = modeSelect(wrapper).props("items");
+      expect(items.map((item) => [item.value, item.disabled])).toEqual([
+        ["authorization", true],
+        ["remote", false],
+        ["both", true],
+      ]);
     });
   });
 
