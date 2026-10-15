@@ -63,7 +63,7 @@ export default {
 
 <template>
   <v-container class="auth-page">
-    <img :src="appLogo" alt="" class="auth-page__logo" />
+    <img :src="appLogo" alt="" class="auth-page__logo auth-page__logo--plate" />
 
     <v-card outlined class="section-card auth-page__card mx-auto">
       <h1 class="v-card__title section-header auth-page__title">
@@ -121,6 +121,14 @@ export default {
   max-width: 240px;
   margin: 0 auto 56px;
   object-fit: contain;
+}
+
+/* A light plate under .theme--dark, so a dark logo does not vanish. */
+.auth-page__logo--plate {
+  box-sizing: content-box;
+  padding: var(--scb-logo-plate-padding);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-logo-plate);
 }
 
 .auth-page__card {

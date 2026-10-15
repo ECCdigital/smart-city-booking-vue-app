@@ -99,3 +99,41 @@ describe("EventCard review badge", () => {
     expect(badge(wrapper).exists()).toBe(false);
   });
 });
+
+describe("EventCard price", () => {
+  // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
+  // the dark card (ECCdigital/tickets#307). The link token lightens it under
+  // .theme--dark; the bare Vuetify class `primary--text` cannot.
+  it("is drawn in the link colour, not the bare primary colour", async () => {
+    const wrapper = await mountCard(
+      item({ attendees: { priceCategories: { price: 12 } } })
+    );
+    const price = wrapper.find(".event-card__price");
+
+    expect(price.exists()).toBe(true);
+    expect(price.classes()).not.toContain("primary--text");
+  });
+});
+
+describe("EventCard text in dark mode", () => {
+  // Vuetify's fixed greys (`grey--text text--darken-2`, …) stayed dark under
+  // .theme--dark. Labels and values read --scb-text-muted, notes
+  // --scb-text-caption; both follow the theme.
+  it("uses no fixed Vuetify grey", async () => {
+    const wrapper = await mountCard(
+      item({
+        information: {
+          ...item().information,
+          teaserText: "<p>Kurz</p>",
+          flags: ["a", "b", "c", "d"],
+        },
+        eventLocation: { name: "Rathaus" },
+        attendees: { maxAttendees: 10, priceCategories: { price: 12 } },
+      })
+    );
+
+    expect(wrapper.find(".event-card__muted").exists()).toBe(true);
+    expect(wrapper.find(".event-card__caption").exists()).toBe(true);
+    expect(wrapper.findAll(".grey--text")).toHaveLength(0);
+  });
+});

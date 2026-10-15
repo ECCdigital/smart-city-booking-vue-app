@@ -6,7 +6,7 @@
       property per row. A control that does not fit its row drops a line
       rather than running out of the editor.
     -->
-    <v-sheet v-if="splitToolbar" class="grey lighten-4 pa-2 tiptap-toolbar">
+    <v-sheet v-if="splitToolbar" class="tiptap-bar pa-2 tiptap-toolbar">
       <div class="tiptap-toolbar__row">
         <span class="tiptap-toolbar__caption text-caption text--secondary">
           {{ $t("richtext.group.character") }}
@@ -159,7 +159,7 @@
         </div>
       </div>
     </v-sheet>
-    <v-sheet v-else class="grey lighten-4 pa-2 d-flex">
+    <v-sheet v-else class="tiptap-bar pa-2 d-flex">
       <v-btn
         v-for="button in legacyButtons"
         :key="button.icon"
@@ -748,6 +748,12 @@ export default {
    and a wrapping controls column, so the six-step scale and the colour dots
    fit a 420 px form column by dropping a line instead of running out of the
    editor. `HeroBlockForm.vue` draws its text Block's rows on the same grid. */
+/* The leiste over the editor: a light strip in the light theme, a faint
+   one under .theme--dark. Above the sheet's own theme background. */
+.v-sheet.tiptap-bar.tiptap-bar {
+  background-color: var(--scb-surface-tint);
+}
+
 .tiptap-toolbar__row {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);

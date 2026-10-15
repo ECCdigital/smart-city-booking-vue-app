@@ -13,7 +13,7 @@
       style="overflow: hidden; width: 100%; min-width: 350px; max-width: 500px"
     >
       <v-card-text class="text-center custom-card">
-        <v-img :src="appLogo" max-width="150" class="mb-4 mx-auto" />
+        <img :src="appLogo" alt="" class="booking-status__logo mb-4 mx-auto" />
         <div v-if="bookingInfo">
           <div class="text-h5 font-weight-bold">
             {{ bookingInfo.title }}
@@ -386,4 +386,16 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* A light plate under .theme--dark, so a dark logo does not vanish. */
+.booking-status__logo {
+  display: block;
+  box-sizing: content-box;
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  padding: var(--scb-logo-plate-padding);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-logo-plate);
+}
+</style>

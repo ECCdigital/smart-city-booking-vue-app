@@ -18,8 +18,7 @@
         >
           <v-chip
             outlined
-            color="primary"
-            class="multi-stepper__circle primary--text font-weight-bold"
+            class="multi-stepper__circle font-weight-bold"
             :class="{
               'success d-inline-flex pa-0 justify-center':
                 index < currentRouteIndex() && !updateEvent,
@@ -186,9 +185,12 @@ export default {
   }
 }
 
-.multi-stepper__circle {
+// The number in the theme colour, lightened under .theme--dark
+// (ECCdigital/tickets#307).
+.v-chip.multi-stepper__circle {
   width: 32px;
   height: 32px;
+  color: var(--scb-text-link);
 }
 
 .multi-stepper__link {

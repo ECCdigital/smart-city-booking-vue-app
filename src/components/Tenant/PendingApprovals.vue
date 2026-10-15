@@ -15,7 +15,9 @@
         <div>
           <div class="title mb-1">
             Freigabe ausstehend für
-            <strong class="primary--text">{{ approval.tenantName }}</strong>
+            <strong class="pending-approvals__tenant">{{
+              approval.tenantName
+            }}</strong>
           </div>
 
           <p class="mb-1 text--secondary">
@@ -71,4 +73,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* The theme colour, lightened under .theme--dark (ECCdigital/tickets#307). */
+.pending-approvals__tenant {
+  color: var(--scb-text-link);
+}
+</style>
