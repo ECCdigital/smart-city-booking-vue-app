@@ -25,6 +25,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Salto doors offer only „Öffnen per App“ ([ECCdigital/tickets#499](https://github.com/ECCdigital/tickets/issues/499)), a backend change the Admin UI follows without code of its own: from backend 4.4.0 a Salto lock reports the mode `remote` alone, keypad locks included, so the access point dialog says at a Salto door saved with „PIN-Code“ or „PIN-Code & App“ that the lock does not support the mode, and the backend refuses to save it (`unsupported_mode`). Guests get no PIN for a Salto door any more. Nuki doors are unchanged
+-   Comments on Salto KS no longer point to the backend spec that was never committed; they say what they mean themselves (ECCdigital/tickets#581). No behaviour change
 -   Event form, „Veranstaltungsort“: with format Hybrid or Online, „Veranstaltungslink zur Teilnahme\*“ is required and must be a full https address (ECCdigital/tickets#457, `src/utils/eventParticipationLink.js`); an empty field, `http://…` or an address without scheme shows a hint at the field and keeps „Weiter“ closed. Editing an existing event, „Änderungen übernehmen“ and „Absenden“ stay disabled until the link is valid, with a hint in the sidebar. Präsenz shows no link field and needs none. The backend does not check the link yet
 -   The booking list keeps the column „Buchungsobjekte“ at most 220px wide, so the table no longer scrolls sideways for it: chips that do not fit side by side wrap below each other, a long title ends in an ellipsis
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
