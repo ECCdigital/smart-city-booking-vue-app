@@ -1018,6 +1018,39 @@ describe("AccessPointEditDialog", () => {
       expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
     });
 
+    it("asks the listing of a provider typed in for a new access point and says it", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("salto-ks");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "salto-ks"
+      );
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Salto KS ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+    });
+
+    it("does not ask the listing of an active provider typed in", async () => {
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("pareva");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
     it("shows the hint instead of a load error in the picker", async () => {
       ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("nuki"));
 

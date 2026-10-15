@@ -355,7 +355,8 @@ export default {
     providerInactiveHint() {
       const provider = this.inactiveProvider;
       if (!provider) return "";
-      if (this.isEdit && this.form.provider !== provider) return "";
+      const picked = this.showPicker && this.pickerProvider === provider;
+      if (!picked && this.form.provider !== provider) return "";
 
       const title =
         this.providers.find((p) => p.id === provider)?.title ||
@@ -421,6 +422,22 @@ export default {
 
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
+    },
+    // A provider typed in that is not active for the tenant has its listing
+    // asked all the same, so the dialog can say that lock and mode are
+    // checked once it is (tickets#311). The listing of an active provider is
+    // the picker's; this asks only whether the provider is on.
+    onProviderChange(provider) {
+      this.applyProviderDefaults(provider);
+      if (!provider || this.providers.some((p) => p.id === provider)) return;
+      this.checkProviderActive(provider);
+    },
+    async checkProviderActive(provider) {
+      try {
+        await ApiAccessAppsService.getAccessPoints(this.tenantId, provider);
+      } catch (error) {
+        if (isProviderNotActiveError(error)) this.inactiveProvider = provider;
+      }
     },
     // True where the lock lists its Öffnungsarten and this one is not among
     // them - a listing that says nothing leaves every option alone.
@@ -884,7 +901,7 @@ export default {
                 class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
-                @change="applyProviderDefaults"
+                @change="onProviderChange"
                 :label="$t('accessPoint.management.fields.provider')"
                 background-color="accent"
                 filled
