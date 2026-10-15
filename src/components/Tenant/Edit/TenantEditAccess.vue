@@ -127,7 +127,7 @@ export default {
     /**
      * Asks before a save that changes site, System-User or environment of
      * Salto KS while IQs are activated: their activations rest under another
-     * identity (ECCdigital/tickets#505).
+     * identity (ECCdigital/tickets#574, decided in ECCdigital/tickets#505).
      *
      * @returns {Promise<boolean>} Whether the save may go on
      */
