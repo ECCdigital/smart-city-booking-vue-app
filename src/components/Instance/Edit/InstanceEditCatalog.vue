@@ -78,206 +78,33 @@
       </v-col>
     </v-row>
 
-    <SubSection
-      class="mt-7"
-      title="Theme"
-      icon="mdi-palette"
-      description="Passen Sie das Erscheinungsbild Ihres Portals an, indem Sie ein benutzerdefiniertes Theme aktivieren und die Primär- und Sekundärfarben festlegen."
-      no-margin
-    >
-      <v-row class="theme-switch-row">
-        <v-col cols="12" md="6">
-          <v-switch
-            v-model="local.branding.active"
-            color="primary"
-            label="Benutzerdefiniertes Theme"
-            class="mt-0"
-            hide-details
-            @change="emitUpdate"
-          ></v-switch>
-        </v-col>
-      </v-row>
-
-      <v-row class="theme-hint-row mt-3">
-        <v-col cols="12">
-          <div class="d-flex align-start theme-contrast-hint">
-            <v-icon small color="grey" class="mr-2 theme-contrast-hint__icon">
-              mdi-information-outline
-            </v-icon>
-            <span class="text--secondary text-body-2">
-              Achten Sie darauf, dass beide Farben sowohl auf hellen als auch
-              auf dunklen Hintergründen gut sichtbar sind. Die Vorschau unter
-              den Feldern zeigt beide Fälle.
-            </span>
-          </div>
-        </v-col>
-      </v-row>
-
-      <!-- The colour fields carry neither hint nor rules, so their message
-           area is hidden and the preview tiles sit right beneath them. -->
-      <v-row class="theme-fields-row">
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="local.branding.theme.colors.primary"
-            label="Primärfarbe"
-            background-color="accent"
-            filled
-            dense
-            hide-details
-            @input="emitUpdate"
-          >
-            <template v-slot:append>
-              <v-menu offset-y>
-                <template v-slot:activator="{ on, attrs }">
-                  <v-btn
-                    icon
-                    small
-                    v-bind="attrs"
-                    v-on="on"
-                    :color="local.branding.theme.colors.primary"
-                    :style="{
-                      backgroundColor: local.branding.theme.colors.primary,
-                    }"
-                  >
-                    <v-icon small>mdi-palette</v-icon>
-                  </v-btn>
-                </template>
-                <v-color-picker
-                  v-model="local.branding.theme.colors.primary"
-                  mode="hexa"
-                  show-swatches
-                  swatches-max-height="200px"
-                  @input="emitUpdate"
-                ></v-color-picker>
-              </v-menu>
-            </template>
-          </v-text-field>
-        </v-col>
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="local.branding.theme.colors.secondary"
-            label="Sekundärfarbe"
-            background-color="accent"
-            filled
-            dense
-            hide-details
-            @input="emitUpdate"
-          >
-            <template v-slot:append>
-              <v-menu offset-y>
-                <template v-slot:activator="{ on, attrs }">
-                  <v-btn
-                    icon
-                    small
-                    v-bind="attrs"
-                    v-on="on"
-                    :color="local.branding.theme.colors.secondary"
-                    :style="{
-                      backgroundColor: local.branding.theme.colors.secondary,
-                    }"
-                  >
-                    <v-icon small>mdi-palette</v-icon>
-                  </v-btn>
-                </template>
-                <v-color-picker
-                  v-model="local.branding.theme.colors.secondary"
-                  mode="hexa"
-                  show-swatches
-                  swatches-max-height="200px"
-                  @input="emitUpdate"
-                ></v-color-picker>
-              </v-menu>
-            </template>
-          </v-text-field>
-        </v-col>
-      </v-row>
-
-      <!-- Same grid as the two colour fields, so each tile sits flush with
-           the field above it. -->
-      <v-row class="theme-preview">
-        <v-col
-          v-for="surface in previewSurfaces"
-          :key="surface.key"
-          cols="12"
-          md="6"
-        >
-          <div
-            class="theme-preview__tile"
-            :class="`theme-preview__tile--${surface.key}`"
-            :data-surface="surface.key"
-          >
-            <span class="theme-preview__label">{{ surface.label }}</span>
-            <div class="theme-preview__icons">
-              <v-icon
-                v-for="icon in previewIcons"
-                :key="icon.role"
-                :color="icon.color"
-                :title="icon.title"
-                :data-role="icon.role"
-                class="theme-preview__icon"
-              >
-                {{ icon.name }}
-              </v-icon>
-            </div>
-          </div>
-        </v-col>
-      </v-row>
-    </SubSection>
-
-    <SubSection
-      class="mt-7"
-      title="Logo & Favicon"
-      icon="mdi-image-area"
-      description="Wählen Sie Logo und Favicon aus der Mediathek der Instanz. Beide werden allen Besuchern des Portals ausgeliefert, daher sind nur öffentliche Medien wählbar."
-      no-margin
-    >
-      <v-row>
-        <v-col cols="12" md="6">
-          <MediaReferenceField
-            v-model="logo"
-            :scope="mediaScope"
-            label="Logo"
-            public-only
-            :public-only-reason="publicOnlyReason"
-            empty-label="Kein Logo ausgewählt"
-            hint="Wird im Kopfbereich des Portals angezeigt, idealerweise 200 × 50 Pixel."
-          />
-          <MediaReferenceImage
-            v-if="logo"
-            :reference="logo"
-            :scope="mediaScope"
-            size="sm"
-            lazy-size="thumb"
-            :height="72"
-            contain
-            rounded
-            class="mt-2"
-          />
-        </v-col>
-        <v-col cols="12" md="6">
-          <MediaReferenceField
-            v-model="favicon"
-            :scope="mediaScope"
-            label="Favicon"
-            public-only
-            :public-only-reason="publicOnlyReason"
-            empty-label="Kein Favicon ausgewählt"
-            hint="Erscheint im Browser-Tab und sollte quadratisch sein, z. B. 32 × 32 oder 64 × 64 Pixel."
-          />
-          <MediaReferenceImage
-            v-if="favicon"
-            :reference="favicon"
-            :scope="mediaScope"
-            size="thumb"
-            :lazy-size="null"
-            :height="72"
-            contain
-            rounded
-            class="mt-2"
-          />
-        </v-col>
-      </v-row>
-    </SubSection>
+    <!-- The appearance by area of the page (map #510). Each section is its own
+         component: it reads the branding and sends the fields it changes as a
+         `patch`. A section with rules has `validate` and `resetValidation`;
+         the tab calls them through its ref, listed in SECTION_REFS. -->
+    <PortalColors
+      ref="colors"
+      :branding="local.branding"
+      @patch="patchBranding"
+    />
+    <PortalHeader
+      ref="header"
+      :branding="local.branding"
+      @patch="patchBranding"
+    />
+    <PortalFont ref="font" :branding="local.branding" @patch="patchBranding" />
+    <PortalAuthPages
+      ref="authPages"
+      :branding="local.branding"
+      :portal-name="localCatalog.name"
+      @patch="patchBranding"
+    />
+    <PortalFooter
+      ref="footer"
+      :branding="local.branding"
+      :portal-name="localCatalog.name"
+      @patch="patchBranding"
+    />
 
     <SubSection
       class="mt-8"
@@ -313,6 +140,8 @@
       v-model="heroEditorOpen"
       :portal-url="instance.portalUrl || ''"
       :theme-colors="themeColors"
+      :app-logo="appLogo"
+      :app-logo-dark="appLogoDark"
       @closed="$emit('refetch')"
     />
   </BaseSection>
@@ -320,17 +149,24 @@
 
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
-import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
-import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import SubSection from "@/components/commons/SubSection.vue";
 import HeroEditorDialog from "@/components/Instance/Edit/HeroEditorDialog.vue";
-import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
-import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
+import PortalColors from "@/components/Instance/Edit/PortalColors.vue";
+import PortalHeader from "@/components/Instance/Edit/PortalHeader.vue";
+import PortalFont from "@/components/Instance/Edit/PortalFont.vue";
+import PortalAuthPages from "@/components/Instance/Edit/PortalAuthPages.vue";
+import PortalFooter from "@/components/Instance/Edit/PortalFooter.vue";
+import { defaultBranding } from "@/utils/instanceBranding";
+import { isAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
-// Logo and favicon are served to every visitor of the portal, so they may only
-// ever point at public media — the backend refuses anything else on save.
-const PUBLIC_ONLY_REASON =
-  "Logo und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
+// The refs of the sections of the appearance, in the order of the page.
+const SECTION_REFS = Object.freeze([
+  "colors",
+  "header",
+  "font",
+  "authPages",
+  "footer",
+]);
 
 const REQUIRED_MESSAGE = "Pflichtfeld";
 const ABSOLUTE_URL_MESSAGE =
@@ -344,37 +180,17 @@ const BACKGROUND_LABELS = Object.freeze({
   image: "Bild",
 });
 
-// The two surfaces the portal paints the theme colours on. Their colours are
-// fixed on purpose: a light tile stays light while the admin UI runs dark.
-const PREVIEW_SURFACES = Object.freeze([
-  { key: "light", label: "Helle Fläche (Light-Mode)" },
-  { key: "dark", label: "Dunkle Fläche (Dark-Mode)" },
-]);
-
-/**
- * Whether `value` is an absolute http(s) address. The Live Preview of the
- * Hero Editor needs the origin of the Portal-URL, which a bare host or a
- * relative path does not have.
- */
-function isAbsoluteHttpUrl(value) {
-  try {
-    const url = new URL(value);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") && !!url.hostname
-    );
-  } catch {
-    return false;
-  }
-}
-
 export default {
   name: "InstanceEditCatalog",
   components: {
     SubSection,
-    MediaReferenceField,
-    MediaReferenceImage,
     BaseSection,
     HeroEditorDialog,
+    PortalColors,
+    PortalHeader,
+    PortalFont,
+    PortalAuthPages,
+    PortalFooter,
   },
   props: {
     instance: { type: Object, required: true },
@@ -399,50 +215,9 @@ export default {
         { text: "Öffentlich", value: "public" },
         { text: "Privat", value: "private" },
       ],
-      mediaScope: MEDIA_SCOPE.INSTANCE,
-      publicOnlyReason: PUBLIC_ONLY_REASON,
-      previewSurfaces: PREVIEW_SURFACES,
     };
   },
   computed: {
-    /**
-     * One icon per theme colour, drawn on each preview tile. An empty colour
-     * leaves the icon in the tile's own text colour, so the tile never breaks
-     * while the user is still typing.
-     */
-    previewIcons() {
-      const colors = this.local.branding.theme.colors;
-      return [
-        {
-          role: "primary",
-          name: "mdi-calendar-check",
-          title: "Primärfarbe",
-          color: colors.primary || undefined,
-        },
-        {
-          role: "secondary",
-          name: "mdi-map-marker",
-          title: "Sekundärfarbe",
-          color: colors.secondary || undefined,
-        },
-      ];
-    },
-    logo: {
-      get() {
-        return this.brandingImage("logo");
-      },
-      set(value) {
-        this.setBrandingImage("logo", value);
-      },
-    },
-    favicon: {
-      get() {
-        return this.brandingImage("favicon");
-      },
-      set(value) {
-        this.setBrandingImage("favicon", value);
-      },
-    },
     tenantsOptions() {
       return this.tenants.map((t) => ({
         id: t.id,
@@ -471,6 +246,17 @@ export default {
      */
     themeColors() {
       return this.instance.branding?.theme?.colors || null;
+    },
+    /**
+     * The saved App-Logo and its variant, for the same reason as the colours.
+     * Only the reference counts: a legacy `logoUrl` is no App-Logo to the
+     * backend, so a Block could not follow it.
+     */
+    appLogo() {
+      return this.instance.branding?.logo || null;
+    },
+    appLogoDark() {
+      return this.instance.branding?.logoDark || null;
     },
     backgroundLabel() {
       const type = this.instance.branding?.background?.type;
@@ -506,44 +292,25 @@ export default {
   },
   methods: {
     cloneInstance(instance) {
-      const cloned = { ...instance };
-      cloned.branding = {
-        ...defaultBranding(),
-        ...(instance.branding || {}),
+      const defaults = defaultBranding();
+      const branding = instance.branding || {};
+      const theme = branding.theme || {};
+      return {
+        ...instance,
+        branding: {
+          ...defaults,
+          ...branding,
+          theme: {
+            ...defaults.theme,
+            ...theme,
+            colors: { ...defaults.theme.colors, ...(theme.colors || {}) },
+          },
+        },
       };
-      cloned.branding.theme = {
-        colors: { primary: "", secondary: "" },
-        ...((instance.branding && instance.branding.theme) || {}),
-      };
-      cloned.branding.theme.colors = {
-        primary: "",
-        secondary: "",
-        ...(((instance.branding && instance.branding.theme) || {}).colors ||
-          {}),
-      };
-      return cloned;
     },
-    /**
-     * A branding image as the form reads it: the stored media reference or —
-     * as long as the media import has not converted it — the legacy address,
-     * which reads as an external reference (§4.9 of the media spec).
-     */
-    brandingImage(name) {
-      const { reference, readField } = BRANDING_IMAGES[name];
-      return (
-        this.local.branding[reference] || this.local.branding[readField] || null
-      );
-    },
-    /**
-     * Writes the reference and drops the legacy address along with it. The
-     * read field is derived from the reference on the way out (§4.9); an
-     * address left behind would resurface the old image the moment the user
-     * removes the reference again.
-     */
-    setBrandingImage(name, value) {
-      const { reference, readField } = BRANDING_IMAGES[name];
-      this.$set(this.local.branding, reference, value || null);
-      this.$set(this.local.branding, readField, "");
+    /** Takes the top-level fields of the branding a section changed. */
+    patchBranding(changes) {
+      this.local.branding = { ...this.local.branding, ...changes };
       this.emitUpdate();
     },
     emitUpdate() {
@@ -571,10 +338,31 @@ export default {
             ? REQUIRED_MESSAGE
             : detail.message || "Ungültiger Wert"
         );
+      this.sectionsWith("showApiErrors").forEach((section) =>
+        section.showApiErrors(details)
+      );
     },
-    /** The fields of this tab that carry rules. Refs, so not a computed. */
+    /** The view saved the tab; the sections that care get to know. */
+    onSaved() {
+      this.sectionsWith("onSaved").forEach((section) => section.onSaved());
+    },
+    /** The sections of the appearance that have `method`. Refs, so no computed. */
+    sectionsWith(method) {
+      return SECTION_REFS.map((name) => this.$refs[name]).filter(
+        (section) => section && typeof section[method] === "function"
+      );
+    },
+    /**
+     * The fields of this tab that carry rules, and the sections that check
+     * their own. Refs, so not a computed.
+     */
     validatedFields() {
-      return [this.$refs.nameField, this.$refs.portalUrlField].filter(Boolean);
+      const sections = this.sectionsWith("validate");
+      return [
+        this.$refs.nameField,
+        this.$refs.portalUrlField,
+        ...sections,
+      ].filter(Boolean);
     },
     validate() {
       this.nameApiErrors = [];
@@ -596,66 +384,5 @@ export default {
 <style scoped>
 .hero-entry-card {
   gap: 12px;
-}
-
-/* Tighten the vertical rhythm of the theme block: the rows keep their
-   horizontal gutters, only the space between switch, fields and tiles shrinks. */
-.theme-switch-row > .col {
-  padding-bottom: 0;
-}
-
-.theme-hint-row > .col {
-  padding-top: var(--scb-space-2);
-  padding-bottom: 0;
-}
-
-.theme-contrast-hint__icon {
-  margin-top: 2px;
-}
-
-.theme-fields-row > .col {
-  padding-top: var(--scb-space-2);
-  padding-bottom: var(--scb-space-1);
-}
-
-.theme-preview > .col {
-  padding-top: var(--scb-space-1);
-}
-
-.theme-preview__tile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--scb-space-4);
-  padding: var(--scb-space-3) var(--scb-space-4);
-  border-radius: var(--scb-radius-surface);
-  border: 1px solid var(--scb-surface-border);
-}
-
-/* Literal colours on purpose: the tiles mimic the portal's light and dark
-   surfaces and must not follow the admin UI's own theme. */
-.theme-preview__tile--light {
-  background: #fff;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.theme-preview__tile--dark {
-  background: #1e1e1e;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.theme-preview__label {
-  font-size: var(--scb-font-size-xs);
-}
-
-.theme-preview__icons {
-  display: flex;
-  gap: var(--scb-space-3);
-}
-
-/* Beats Vuetify's `.theme--light.v-icon` so an icon without a colour takes
-   the tile's text colour, not the admin theme's. */
-.theme-preview__tile .theme-preview__icon {
-  color: inherit;
 }
 </style>

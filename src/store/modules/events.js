@@ -1,3 +1,6 @@
+import Vue from "vue";
+import { locationRefusal } from "@/utils/locationLogic";
+
 const namespaced = true;
 const defaultState = {
   id: null,
@@ -31,7 +34,7 @@ const defaultState = {
     address: {
       street: null,
       house_number: null,
-      post_code: null,
+      postcode: null,
       city: null,
       suburb: null,
       state: null,
@@ -69,15 +72,18 @@ const state = {
   // backend's alone and changes through its own operations, so it lives next
   // to the form: never saved with it, never an unsaved change of it.
   review: null,
+  // The location as stored, against which an unchanged one is told apart:
+  // `null` for a new event. The backend lets an unchanged location pass
+  // whatever it holds, a new or changed one only with a point.
+  storedLocation: null,
 };
 
 const mutations = {
   UPDATE(state, payload) {
-    if (payload.parent) {
-      state.form[payload.parent][payload.field] = payload.value;
-    } else {
-      state.form[payload.field] = payload.value;
-    }
+    // A field the loaded event lacks (an event without location) becomes
+    // reactive on its first change.
+    const target = payload.parent ? state.form[payload.parent] : state.form;
+    Vue.set(target, payload.field, payload.value);
   },
   UPDATE_SPEAKER(state, payload) {
     state.form.eventOrganizer.speakers.push(payload);
@@ -109,6 +115,10 @@ const mutations = {
     const { review = null, ...form } = payload;
     state.form = form;
     state.review = review;
+    state.storedLocation = form.location ?? null;
+  },
+  SET_STORED_LOCATION(state, location) {
+    state.storedLocation = location ?? null;
   },
   SET_REVIEW(state, review) {
     state.review = review || null;
@@ -116,6 +126,7 @@ const mutations = {
   CLEAR(state) {
     state.form = JSON.parse(JSON.stringify(defaultState));
     state.review = null;
+    state.storedLocation = null;
   },
   UPDATE_SCHEDULES_FOR_DAY(state, payload) {
     // add schedules to the day
@@ -137,6 +148,10 @@ const actions = {
   },
   restoreFromApi({ commit }, payload) {
     commit("RESTORE", payload);
+  },
+  /** After a save: the location sent is the one stored now. */
+  locationSaved({ commit }, location) {
+    commit("SET_STORED_LOCATION", location);
   },
   setReview({ commit }, review) {
     commit("SET_REVIEW", review);
@@ -176,6 +191,10 @@ const actions = {
 const getters = {
   form: (state) => state.form,
   review: (state) => state.review,
+  storedLocation: (state) => state.storedLocation,
+  /** Why the location may not be saved (`location.reason.*`), or `null`. */
+  locationRefusal: (state) =>
+    locationRefusal(state.form.location, state.storedLocation),
   speakers: (state) => state.form.eventOrganizer.speakers,
   priceCategories: (state) => state.form.attendees.priceCategories,
   schedules: (state) => state.form.schedules,

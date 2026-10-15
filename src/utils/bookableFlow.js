@@ -897,7 +897,9 @@ const everyOption = () => true;
  * Expert options show by `shown(option)`, the expert-mode rule as the caller
  * asks it - every option by default. What ParkraumService takes over reads
  * from the tenant's `accessPoints` (none by default: nothing). In the flow a step not `visited` yet is
- * `open` and shows no rows; by default every step was.
+ * `open` and shows no rows; by default every step was. `stored` is the
+ * bookable as stored (`null` for a new one), against which the location is
+ * checked.
  */
 export function overviewBlocks(
   bookable,
@@ -906,10 +908,11 @@ export function overviewBlocks(
     shown = everyOption,
     eventTitlesById = {},
     accessPoints = [],
+    stored = null,
   } = {}
 ) {
   const options = { shown, eventTitlesById, accessPoints };
-  const issues = bookableIssues(bookable, { shown, accessPoints });
+  const issues = bookableIssues(bookable, { shown, accessPoints, stored });
   const blocks = FLOW_STEPS.map((step) => {
     const rows = stepRows(step, bookable, options).map((row) => ({
       ...row,

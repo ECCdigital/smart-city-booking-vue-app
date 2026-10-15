@@ -92,12 +92,16 @@
       </div>
 
       <div class="bookable-basics__field" data-field="location">
-        <AddressLookup
-          :value="location"
-          :label="$t('bookable.identity.location')"
+        <div class="bookable-basics__label">
+          {{ $t("bookable.identity.location") }}
+        </div>
+        <LocationInput
+          :value="bookable.location"
+          :stored="storedLocation"
+          :tenant-id="bookable.tenantId"
           @input="patch({ location: $event })"
         />
-        <div class="bookable-basics__hint bookable-basics__hint--tight">
+        <div class="bookable-basics__hint">
           {{ $t("bookable.identity.location-hint") }}
         </div>
       </div>
@@ -173,7 +177,7 @@
 <script>
 import Tiptap from "@/components/Tiptap.vue";
 import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
-import AddressLookup from "@/components/commons/AddressLookup.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import ChipCombobox from "@/components/commons/ChipCombobox.vue";
 import ApiEventService from "@/services/api/ApiEventService";
 import ApiTagsService from "@/services/api/ApiTagsService";
@@ -197,7 +201,7 @@ import { externalReferenceOf } from "@/utils/mediaReference";
  */
 export default {
   name: "BookableEditIdentity",
-  components: { Tiptap, MediaReferenceList, AddressLookup, ChipCombobox },
+  components: { Tiptap, MediaReferenceList, LocationInput, ChipCombobox },
   mixins: [bookableEditing],
   props: {
     isNew: { type: Boolean, default: false },
@@ -222,12 +226,15 @@ export default {
     tagsShown() {
       return this.expertOptionShown("tags");
     },
-    /** A location stored as plain text, read as an address. */
-    location() {
-      const location = this.bookable.location;
-      return typeof location === "string"
-        ? { display_address: location }
-        : location || { display_address: null, lat: null, lng: null };
+    /**
+     * The location as stored, against which the input measures „unchanged“:
+     * none for a new bookable. Outside `BookableEdit` nothing is provided,
+     * and the input measures against the location it opened with.
+     */
+    storedLocation() {
+      if (this.isNew) return null;
+      const stored = this.bookableExpertMode.stored;
+      return stored ? stored.location ?? null : undefined;
     },
     images() {
       return this.bookable.images || [];
@@ -324,10 +331,6 @@ export default {
   font-size: var(--scb-font-size-xs);
   line-height: var(--scb-line-height-base);
   color: var(--scb-text-muted);
-}
-/* AddressLookup keeps room for its own (empty) details line. */
-.bookable-basics__hint--tight {
-  margin-top: calc(-1 * var(--scb-space-4));
 }
 .bookable-basics__url {
   word-break: break-all;
