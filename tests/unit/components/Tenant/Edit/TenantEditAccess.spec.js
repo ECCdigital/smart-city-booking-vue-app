@@ -164,7 +164,9 @@ describe("TenantEditAccess panel for Salto KS", () => {
     expect(text).toContain("Remote Opening");
     expect(text).toContain("Lock Options");
     expect(text).toContain("Postfach");
-    expect(text).toContain("Salto-App");
+    expect(text).toContain(
+      "Aktivieren Sie den System-User nie in der Salto-App."
+    );
 
     const credentials = panel
       .findAll(".section-title")

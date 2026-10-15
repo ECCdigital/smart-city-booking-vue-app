@@ -2748,7 +2748,7 @@
           "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",
           "remoteOpening": "Dazu „Remote Opening“ unter Lock Options, auch wenn die Rolle schon vergeben ist.",
           "mailbox": "Sein Postfach bleibt erreichbar: Beim Aktivieren eines IQ schickt Salto die PIN dorthin.",
-          "appBan": "Den System-User nie in der Salto-App aktivieren. Sonst scheitert die Aktivierung des IQ hier, oder das Fernöffnen danach.",
+          "appBan": "Aktivieren Sie den System-User nie in der Salto-App. Sonst scheitert hier die Aktivierung des IQ oder danach das Fernöffnen.",
           "note": "Rolle und „Remote Opening“ kann Biletado über die API nicht prüfen. Stellen Sie beides in Salto KS selbst sicher."
         },
         "connectionTest": {
@@ -2891,7 +2891,7 @@
           },
           "discardConfirm": {
             "title": "Aktivierung verwerfen?",
-            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: in Salto KS einen System-User anlegen, der nie aktiviert war, ihn unter API-Zugangsdaten eintragen und die IQs neu aktivieren.",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: Legen Sie in Salto KS einen System-User an, der nie aktiviert war, tragen Sie ihn unter API-Zugangsdaten ein und aktivieren Sie die IQs neu.",
             "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
             "cancel": "Abbrechen",
             "confirm": "Verwerfen"
