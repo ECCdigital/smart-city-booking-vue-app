@@ -121,18 +121,18 @@ export default {
       this.apps = map;
     },
     /**
-     * Merge the managed apps back into the tenant. Merging rather than
-     * replacing matters: the payment apps are edited on another page and must
-     * survive a save here.
+     * The tenant's applications with the managed apps merged back in.
+     * Merging rather than replacing matters: the payment apps are edited on
+     * another page and must survive a save here.
      */
-    replaceApps() {
+    mergedApps() {
       const untouched = (this.tenant.applications || []).filter(
         (app) => !LOCK_AND_ACCESS_APP_IDS.includes(app.id)
       );
 
       const managed = Object.values(this.apps).map(withoutUnchangedSecrets);
 
-      this.tenant.applications = [...untouched, ...managed];
+      return [...untouched, ...managed];
     },
     onUpdateTenant(next) {
       this.tenant = { ...this.tenant, ...next };
@@ -156,11 +156,17 @@ export default {
         return;
       }
 
-      this.replaceApps();
+      const providers = this.$refs.providers;
+      if (providers?.confirmSave && !(await providers.confirmSave())) return;
+
+      // The tenant keeps what is stored until the save succeeds: the
+      // providers compare against it.
+      const applications = this.mergedApps();
       this.inProgress = true;
 
       try {
-        await ApiTenantService.submitTenant(this.tenant);
+        await ApiTenantService.submitTenant({ ...this.tenant, applications });
+        this.tenant.applications = applications;
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,
           apps: this.apps,

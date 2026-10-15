@@ -97,6 +97,39 @@ export function createLockAndAccessAppDefaults() {
 }
 
 /**
+ * The environment of a Salto KS application. Configurations from before the
+ * environment switch only carried a free-text API URL: an accept host meant
+ * accept, anything else production. Without a URL it is accept, as the
+ * backend reads it - only a new setup starts on production.
+ *
+ * @param {Object} app A Salto KS application
+ * @returns {"accept"|"production"}
+ */
+export function saltoEnvironment(app) {
+  if (app.environment) return app.environment;
+  const legacyUrl = String(app.apiBaseUrl || "");
+  return legacyUrl && !legacyUrl.includes("accept") ? "production" : "accept";
+}
+
+/**
+ * Whether two Salto KS applications differ in what an IQ activation belongs
+ * to: site, System-User and environment. Client id and secrets are no part
+ * of it, a rotation keeps the activations. The values are compared as
+ * entered, so another spelling of the same site counts as a change.
+ *
+ * @param {Object} stored The stored Salto KS application
+ * @param {Object} next The Salto KS application about to be saved
+ * @returns {boolean}
+ */
+export function saltoIdentityChanged(stored, next) {
+  return (
+    (stored.siteId || "") !== (next.siteId || "") ||
+    (stored.username || "") !== (next.username || "") ||
+    saltoEnvironment(stored) !== saltoEnvironment(next)
+  );
+}
+
+/**
  * Drop the secret fields that were left empty. An empty field means
  * "unchanged", and leaving the key out is what keeps the stored (encrypted)
  * value on the server.

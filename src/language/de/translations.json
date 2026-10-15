@@ -2810,6 +2810,12 @@
             "form": "aus dem Formular"
           }
         },
+        "identityChange": {
+          "title": "Aktivierungen ruhen lassen?",
+          "text": "Sie ändern Site, System-User oder Umgebung. Die Aktivierung von {count} IQ gehört zu den bisherigen Angaben und ruht nach dem Speichern. Wechseln Sie zurück, gilt sie wieder. Unter den neuen Angaben braucht jedes IQ eine eigene Aktivierung. | Sie ändern Site, System-User oder Umgebung. Die Aktivierungen von {count} IQs gehören zu den bisherigen Angaben und ruhen nach dem Speichern. Wechseln Sie zurück, gelten sie wieder. Unter den neuen Angaben braucht jedes IQ eine eigene Aktivierung.",
+          "cancel": "Abbrechen",
+          "confirm": "Trotzdem speichern"
+        },
         "iq": {
           "title": "IQ-Aktivierung für Remote-Open",
           "refresh": "IQ-Liste aktualisieren",
@@ -2884,7 +2890,7 @@
             "confirm": "Verwerfen"
           },
           "errors": {
-            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert (vermutlich eine frühere Aktivierung über die Salto-App). Das ist per API nicht behebbar – Ausweg: Salto-seitiger Reset des Users bzw. IQs, siehe Einrichtungsanleitung.",
+            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert, vermutlich früher über die Salto-App. Über die API lässt sich das nicht beheben. Legen Sie in Salto KS einen neuen System-User an, der nie aktiviert war, tragen Sie ihn unter API-Zugangsdaten ein, speichern Sie und aktivieren Sie die IQs neu. Die Aktivierungen des bisherigen System-Users ruhen dann.",
             "salto_iq_activation_exists": "Für dieses IQ existiert bereits eine Aktivierung. Erst verwerfen, dann neu starten.",
             "salto_iq_invalid_pin": "Bitte die 4-stellige PIN aus der E-Mail eingeben.",
             "salto_iq_activation_not_started": "Für dieses IQ ist keine Aktivierung gestartet – bitte den Assistenten von vorn beginnen.",

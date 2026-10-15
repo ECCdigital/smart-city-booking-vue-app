@@ -8,6 +8,7 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: {
     testConnection: vi.fn(),
     getSaltoIqs: vi.fn(() => Promise.resolve({ data: [] })),
+    startSaltoIqActivation: vi.fn(),
   },
 }));
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
@@ -601,5 +602,55 @@ describe("TenantEditAccess checklist of the Salto KS connection test", () => {
     ).toBe(
       "Getestet mit: Client Secret gespeichert, Passwort aus dem Formular"
     );
+  });
+});
+
+/**
+ * Salto hands out the first secret once per System-User and IQ. When the
+ * System-User was activated at the IQ before, the one way out measured is a
+ * new System-User; untested resets in Salto KS are not named
+ * (ECCdigital/tickets#508).
+ */
+describe("TenantEditAccess activation of an IQ the System-User was activated at", () => {
+  it("names a new System-User as the way out", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValueOnce({
+      data: [{ ...IQ, id: "1", state: "not_activated" }],
+    });
+    ApiAccessAppsService.startSaltoIqActivation.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: { code: "salto_iq_already_activated_at_salto" },
+      },
+    });
+    const wrapper = await mountAccess(storedSalto({ active: true }));
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    const startButton = saltoPanel(wrapper)
+      .findAll("button")
+      .filter((b) => b.text().includes("Aktivierung starten"))
+      .at(0);
+    await startButton.trigger("click");
+    await wrapper.vm.$nextTick();
+    const wizard = () =>
+      [...document.querySelectorAll(".v-dialog")].find((d) =>
+        d.textContent.includes("IQ aktivieren")
+      );
+    wizard().querySelector("input[type='checkbox']").click();
+    await wrapper.vm.$nextTick();
+    [...wizard().querySelectorAll("button")]
+      .find((b) => b.textContent.includes("Weiter"))
+      .click();
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    const text = wizard().querySelector(".v-alert.error--text").textContent;
+    expect(text).toContain("bereits aktiviert");
+    expect(text).toContain("neuen System-User");
+    expect(text).toContain("nie aktiviert war");
+    expect(text).toContain("aktivieren Sie die IQs neu");
+    expect(text).toContain("ruhen");
+    expect(text).not.toContain("Reset");
+    expect(text).not.toContain("Einrichtungsanleitung");
   });
 });

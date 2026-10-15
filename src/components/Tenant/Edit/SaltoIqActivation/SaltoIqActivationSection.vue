@@ -9,6 +9,7 @@ import SaltoIqActivationWizardDialog from "./SaltoIqActivationWizardDialog.vue";
 import {
   stateMeta,
   actionOrder,
+  hasActivation,
   iqDisplayName,
   formatTimestamp,
 } from "./iqActivationState";
@@ -43,6 +44,9 @@ export default {
     needsAction() {
       return this.iqs.length - this.readyCount;
     },
+    activatedCount() {
+      return this.iqs.filter(hasActivation).length;
+    },
     // The tenant has no stored active Salto app yet - the wizard starts
     // after the tenant is saved with the app switched on.
     notConfigured() {
@@ -56,11 +60,20 @@ export default {
     },
     // Discarding a pending activation only drops the stored secret; on any
     // state beyond that the system user stays activated at Salto, so a fresh
-    // wizard run only works after a Salto-side reset of the user or IQ.
+    // wizard run at that IQ only works with a new system user.
     discardWarningKey() {
       return this.discardIq && this.discardIq.state === "pending_pin"
         ? "accessPoint.tenant.salto.iq.discardConfirm.pendingText"
         : "accessPoint.tenant.salto.iq.discardConfirm.activatedWarning";
+    },
+  },
+  watch: {
+    // The tenant page asks before a change that lets these activations rest.
+    activatedCount: {
+      immediate: true,
+      handler(count) {
+        this.$emit("update:activated-count", count);
+      },
     },
   },
   mounted() {
