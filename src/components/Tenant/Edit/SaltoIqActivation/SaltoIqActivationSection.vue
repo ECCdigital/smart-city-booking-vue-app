@@ -1,9 +1,8 @@
 <script>
-// IQ activation checklist for Salto KS remote-open (backend spec
-// docs/specs/salto-ks-remote-open.md §3): a progress header, the IQs sorted
-// by required action, inline PIN capture for pending activations, and the
-// guided modal wizard for first activations. Completed IQs collapse to a
-// single line. This component owns the IQ list and all wizard API calls.
+// IQ activation checklist for Salto KS remote-open: a progress header, the
+// IQs sorted by required action, inline PIN capture for pending activations,
+// and the guided modal wizard for first activations. Completed IQs collapse
+// to a single line. This component owns the IQ list and all wizard API calls.
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SaltoIqActivationWizardDialog from "./SaltoIqActivationWizardDialog.vue";
