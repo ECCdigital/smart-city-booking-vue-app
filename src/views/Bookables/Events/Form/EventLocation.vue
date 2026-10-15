@@ -127,10 +127,14 @@
           </v-row>
           <v-row class="pa-2">
             <v-col cols="12">
-              <h4 class="title">Adresse</h4>
+              <h4 class="title">Standort</h4>
             </v-col>
             <v-col cols="12">
-              <AddressLookup v-model="location" label="Adresse" />
+              <LocationInput
+                v-model="location"
+                :stored="storedLocation"
+                :tenant-id="form.tenantId || null"
+              />
             </v-col>
             <v-col class="col-12 text-subtitle-2">*Pflichtfelder</v-col>
           </v-row>
@@ -154,7 +158,7 @@ import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
-import AddressLookup from "@/components/commons/AddressLookup.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   isHttpsUrl,
   needsParticipationLink,
@@ -188,7 +192,7 @@ export default {
     ValidationProvider,
     ValidationObserver,
     Pager,
-    AddressLookup,
+    LocationInput,
   },
   data() {
     return {
@@ -327,13 +331,10 @@ export default {
         });
       },
     },
+    // The location in its stored form; the input reads every form of it.
     location: {
       get() {
-        const loc = this.$store.state.events.form.location;
-        if (typeof loc === "string") {
-          return { display_address: loc };
-        }
-        return loc || { display_address: null };
+        return this.$store.state.events.form.location ?? null;
       },
       set(value) {
         this.updateValue({
@@ -355,6 +356,7 @@ export default {
     },
     ...mapGetters({
       form: "events/form",
+      storedLocation: "events/storedLocation",
     }),
   },
   created() {

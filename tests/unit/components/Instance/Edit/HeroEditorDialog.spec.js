@@ -2021,3 +2021,63 @@ describe("HeroEditorDialog, the preview tile of „Darstellung“", () => {
     });
   });
 });
+
+describe("HeroEditorDialog, an image Block and the App-Logo", () => {
+  const APP_LOGO = Object.freeze({ source: "media", mediaId: "logo" });
+  const APP_LOGO_DARK = Object.freeze({
+    source: "media",
+    mediaId: "logo-dark",
+  });
+
+  function withLogoBlock(image) {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({
+        blocks: [heroImageBlock({ id: "logo", image })],
+      }),
+      isDefault: false,
+    });
+  }
+
+  async function chooseSource(wrapper, label) {
+    const found = blockForm(wrapper)
+      .findAll(".hero-block-form__source button")
+      .wrappers.find((entry) => entry.text().trim() === label);
+    await found.trigger("click");
+    await wrapper.vm.$nextTick();
+  }
+
+  it("hands the form the saved App-Logo and its variant", async () => {
+    const wrapper = await openEditor(withLogoBlock(APP_LOGO), {
+      appLogo: APP_LOGO,
+      appLogoDark: APP_LOGO_DARK,
+    });
+    await row(wrapper, "logo").trigger("click");
+
+    expect(blockForm(wrapper).props("appLogo")).toEqual(APP_LOGO);
+    expect(blockForm(wrapper).props("appLogoDark")).toEqual(APP_LOGO_DARK);
+  });
+
+  it("saves a Block switched to the App-Logo without media id and invert switch", async () => {
+    const wrapper = await openEditor(withLogoBlock(APP_LOGO), {
+      appLogo: APP_LOGO,
+    });
+    await row(wrapper, "logo").trigger("click");
+    ApiCatalogService.updateHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: layout(),
+        background: BACKGROUND,
+        name: "Marktplatz",
+      },
+    });
+
+    await chooseSource(wrapper, "App-Logo");
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+
+    const saved =
+      ApiCatalogService.updateHeroLayout.mock.calls.at(-1)[0].heroLayout
+        .blocks[0];
+    expect(saved.image).toEqual({ source: "app-logo" });
+    expect("invertInDarkMode" in saved).toBe(false);
+  });
+});

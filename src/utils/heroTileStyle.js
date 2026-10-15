@@ -9,6 +9,7 @@
 
 import {
   HERO_FIXED_TOKEN_COLORS,
+  heroTokenSwatch,
   isHeroHexColor,
 } from "@/utils/heroBlockValidation";
 import {
@@ -80,15 +81,15 @@ export function heroTextStyle(block, themeColors = null) {
 }
 
 /**
- * A text colour as the ink it paints. `white` is fixed, the two branded
- * tokens come out of the instance's own colours and a custom `#rrggbb` stands
- * as it is.
+ * A text colour as the ink it paints. `white` is fixed, the branded tokens
+ * come out of the instance's own colours („Akzent“ falls back to the primary
+ * colour) and a custom `#rrggbb` stands as it is.
  */
 function ink(color, themeColors) {
   if (color === "white") {
     return HERO_FIXED_TOKEN_COLORS.white;
   }
-  const hex = (themeColors || {})[color] || color;
+  const hex = heroTokenSwatch(color, themeColors) || color;
 
   return isHeroHexColor(hex) ? hex : DEFAULT_INK;
 }
@@ -270,12 +271,12 @@ export function heroPanelStyle(panel, themeColors = null) {
 }
 
 /**
- * A Panel colour as the fill it paints: the two fixed tokens, the two branded
- * ones out of the instance's own colours, or a custom `#rrggbb` as it stands.
+ * A Panel colour as the fill it paints: the two fixed tokens, the branded
+ * ones out of the instance's own colours („Akzent“ falls back to the primary
+ * colour), or a custom `#rrggbb` as it stands.
  */
 function fill(color, opacity, themeColors) {
-  const hex =
-    HERO_FIXED_TOKEN_COLORS[color] || (themeColors || {})[color] || color;
+  const hex = heroTokenSwatch(color, themeColors) || color;
 
   return isHeroHexColor(hex) ? rgba(hex, opacity) : UNRESOLVED_COLOR;
 }

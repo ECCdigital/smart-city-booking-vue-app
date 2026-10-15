@@ -787,7 +787,7 @@ describe("GroupBookingPage", () => {
       );
     });
 
-    it("saves the internal comment through the series and reloads", async () => {
+    it("saves the internal comment alone through the series and reloads", async () => {
       ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
       const groupBooking = series(["requested"], {
         internalComments: "Alt",
@@ -805,7 +805,7 @@ describe("GroupBookingPage", () => {
       expect(ApiGroupBookingService.updateGroupBooking).toHaveBeenCalledWith(
         "tenant-1",
         "grp-1",
-        expect.objectContaining({ id: "grp-1", internalComments: "Neu" })
+        { internalComments: "Neu" }
       );
       expect(ApiGroupBookingService.getGroupBooking).toHaveBeenCalledTimes(2);
       expect(wrapper.find("textarea").exists()).toBe(false);

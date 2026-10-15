@@ -246,6 +246,8 @@
               :blocks="blocks"
               :locale="locale"
               :theme-colors="themeColors"
+              :app-logo="appLogo"
+              :app-logo-dark="appLogoDark"
               :background="draft.background"
               :errors="selectedBlockErrors"
               @input="patchSelectedBlock"
@@ -430,6 +432,13 @@ export default {
      * are painted with them, so „Primärfarbe“ shows what the portal shows.
      */
     themeColors: { type: Object, default: null },
+    /**
+     * The instance's saved App-Logo and its variant for dark mode. An image
+     * Block with the source „App-Logo“ shows them, and a Block of the
+     * Mediathek that holds the App-Logo's media id is told it is a copy.
+     */
+    appLogo: { type: Object, default: null },
+    appLogoDark: { type: Object, default: null },
   },
   data() {
     return {
