@@ -27,6 +27,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-surface-tint: rgba(0, 0, 0, 0.03); // section header strip, item hover
   --scb-surface-tint-faint: rgba(0, 0, 0, 0.02); // expansion-panel header
   --scb-surface-raised: var(--v-accent-base, #f5f5f5); // status / price tiles
+  // A dark banner laid over a map, and its text: the banners of the
+  // location input (LocationInput). The same in both themes.
+  --scb-overlay: rgba(31, 35, 40, 0.88);
+  --scb-on-overlay: #fff;
   // Behind the instance logo (app bar, login pages, public booking status)
   // and the providers' logos (AppPanel): none in the light theme, the one
   // the logos are made for.

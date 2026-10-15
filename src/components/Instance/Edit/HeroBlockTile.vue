@@ -20,8 +20,8 @@
           {{ line }}
         </span>
         <MediaReferenceImage
-          v-if="block.image"
-          :reference="block.image"
+          v-if="picture"
+          :reference="picture"
           :scope="mediaScope"
           size="sm"
           lazy-size="thumb"
@@ -45,6 +45,7 @@ import {
   heroBlockSummary,
   heroHtmlFirstLine,
   heroLocalizedText,
+  isHeroAppLogo,
 } from "@/utils/heroBlocks";
 import {
   heroAlignStyle,
@@ -80,6 +81,8 @@ export default {
     themeColors: { type: Object, default: null },
     /** The locale the header toggle selects. */
     locale: { type: String, default: "de" },
+    /** The instance's saved App-Logo, for a Block that follows it. */
+    appLogo: { type: Object, default: null },
   },
   computed: {
     /**
@@ -117,6 +120,13 @@ export default {
         ...heroAlignStyle(this.block.align),
         ...heroPanelStyle(this.block.panel, this.themeColors),
       };
+    },
+    /**
+     * The image the Block paints: its medium, or the App-Logo it follows —
+     * nothing while the instance has none, as in the storefront.
+     */
+    picture() {
+      return isHeroAppLogo(this.block.image) ? this.appLogo : this.block.image;
     },
     textStyle() {
       return heroTextStyle(this.block, this.themeColors);

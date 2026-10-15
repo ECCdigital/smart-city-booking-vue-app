@@ -29,6 +29,7 @@ describe("OnboardingTenantStep — required contact", () => {
       name: "Verein",
       contactName: "Alex Beispiel",
       mail: "alex@example.org",
+      description: "",
       phone: "",
       website: "",
       location: "",
@@ -58,6 +59,39 @@ describe("OnboardingTenantStep — required contact", () => {
     const wrapper = mountStep();
     await input(wrapper, "tenant-name").setValue("Verein");
     await input(wrapper, field).setValue(value);
+
+    await submit(wrapper);
+
+    expect(wrapper.emitted("submit")).toBeUndefined();
+  });
+});
+
+describe("OnboardingTenantStep — the short description", () => {
+  // Vuetify puts `data-test` on the textarea itself.
+  const textarea = (wrapper) => find(wrapper, "tenant-description");
+
+  it("submits the short description", async () => {
+    const wrapper = mountStep();
+    await input(wrapper, "tenant-name").setValue("Verein");
+    await textarea(wrapper).setValue("Sport und Kultur im Quartier.");
+
+    await submit(wrapper);
+
+    expect(wrapper.emitted("submit")[0][0]).toMatchObject({
+      description: "Sport und Kultur im Quartier.",
+    });
+  });
+
+  it("counts up to 300 characters", () => {
+    const wrapper = mountStep();
+
+    expect(wrapper.find(".v-counter").text()).toBe("0 / 300");
+  });
+
+  it("submits nothing beyond 300 characters", async () => {
+    const wrapper = mountStep();
+    await input(wrapper, "tenant-name").setValue("Verein");
+    await textarea(wrapper).setValue("x".repeat(301));
 
     await submit(wrapper);
 

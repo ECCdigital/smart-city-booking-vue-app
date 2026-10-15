@@ -17,6 +17,7 @@
 
 import { isBookableEditSectionVisible } from "@/utils/bookableEditSections";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
+import { locationRefusal } from "@/utils/locationLogic";
 
 const message = (name) => `bookable.validation.${name}`;
 
@@ -50,6 +51,14 @@ const RULES = Object.freeze({
   // `title: { required: true }` (bookableSchema.js:109); a title of blanks
   // is no title to the Verwalter:in either (ECCdigital/tickets#341).
   title: [(value) => !!String(value ?? "").trim() || message("title")],
+  // `LocationGuard.storable` (location-guard.js): a new or changed location
+  // with an address, an addition or an old text needs a point; an unchanged
+  // one passes. The rule is the location logic's, measured against the
+  // location as stored (`stored`, none for a new bookable); its messages are
+  // `location.reason.*`.
+  location: [
+    (value, { stored = null } = {}) => locationRefusal(value, stored) ?? true,
+  ],
   // `priceEur: { type: Number, required: true }` per category
   // (bookableSchema.js:8): empty and what does not cast to a number fail.
   price: [(value) => isNumber(value) || message("price")],
@@ -127,6 +136,7 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
  */
 const PLACES = Object.freeze({
   title: { tab: "general", section: "general-catalog", step: "identity" },
+  location: { tab: "general", section: "general-catalog", step: "identity" },
   priceCategories: { tab: "pricing", section: "pricing-price", step: "price" },
   maxAmountPerBooking: {
     tab: "pricing",
@@ -226,13 +236,15 @@ export function blockPeriodTooShort(period) {
  *
  * @param {string} name - A rule name, e.g. `title` or `price`.
  * @param {function(string): string} [translate] - Turns a key into text.
+ * @param {{ stored?: * }} [context] - What a rule measures against beyond
+ *   the value: the stored location for `location`.
  * @returns {Array<function(*): (true|string)>} The rules.
  */
-export function bookableRules(name, translate = (key) => key) {
+export function bookableRules(name, translate = (key) => key, context = {}) {
   const rules = RULES[name];
   if (!rules) throw new Error(`Unknown bookable rule: ${name}`);
   return rules.map((rule) => (value) => {
-    const answer = rule(value);
+    const answer = rule(value, context);
     return answer === true ? true : bookableMessage(answer, translate);
   });
 }
@@ -249,9 +261,9 @@ export function bookableMessage(key, translate) {
 }
 
 /** The first message the rules `name` refuse `value` with, or `null`. */
-function refusal(name, value) {
+function refusal(name, value, context) {
   const answer = RULES[name]
-    .map((rule) => rule(value))
+    .map((rule) => rule(value, context))
     .find((result) => result !== true);
   return answer === undefined ? null : answer;
 }
@@ -263,10 +275,12 @@ function refusal(name, value) {
  * page's nav reads it - whether or not its component is mounted.
  *
  * @param {Object} bookable - The bookable as `BookableEdit` holds it.
- * @param {{ shown?: function(string): boolean, accessPoints?: Array<Object> }}
- *   [options] - `shown(option)` is the expert-mode rule as the caller asks
- *   it (`expertOptionShown`); without it every option shows. `accessPoints`
- *   are the tenant's, for what ParkraumService takes over.
+ * @param {{ shown?: function(string): boolean, accessPoints?: Array<Object>,
+ *   stored?: ?Object }} [options] - `shown(option)` is the expert-mode rule
+ *   as the caller asks it (`expertOptionShown`); without it every option
+ *   shows. `accessPoints` are the tenant's, for what ParkraumService takes
+ *   over. `stored` is the bookable as stored, `null` for a new one: an
+ *   unchanged location passes whatever it holds.
  * @returns {Array<{field: string, message: string, tab: string,
  *   section: ?string, step: ?string, area?: string}>} The issues, empty
  *   while it is fine. `area` names the area of the step „Weitere
@@ -274,17 +288,17 @@ function refusal(name, value) {
  */
 export function bookableIssues(
   bookable,
-  { shown = everyOption, accessPoints = [] } = {}
+  { shown = everyOption, accessPoints = [], stored = null } = {}
 ) {
   const found = [];
   const add = (field, keys) =>
     [...new Set(keys.filter(Boolean))].forEach((key) =>
       found.push({ field, message: key, ...PLACES[field] })
     );
-  const check = (field, name, values) =>
+  const check = (field, name, values, context) =>
     add(
       field,
-      values.map((value) => refusal(name, value))
+      values.map((value) => refusal(name, value, context))
     );
   // Each entry of a list against the rules of its fields, by field name.
   const checkEntries = (field, entries, rulesByKey) =>
@@ -301,6 +315,9 @@ export function bookableIssues(
   const times = { startTime: "startTime", endTime: "endTime" };
 
   check("title", "title", [bookable.title]);
+  check("location", "location", [bookable.location], {
+    stored: stored?.location,
+  });
   // Where ParkraumService handles the prices, the price shows only its note.
   if (!providerTakesOver(bookable, "pricing", accessPoints)) {
     checkEntries("priceCategories", bookable.priceCategories, {
