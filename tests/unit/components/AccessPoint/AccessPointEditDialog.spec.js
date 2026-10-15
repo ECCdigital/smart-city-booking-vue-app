@@ -901,6 +901,133 @@ describe("AccessPointEditDialog", () => {
   });
 
   /**
+   * An access point may be prepared before its provider is switched on
+   * (tickets#311). The listing of the provider then answers
+   * `404 <provider>_application_not_found`, and the dialog says that lock and
+   * mode are checked once the provider is active - and saves without it.
+   */
+  describe("when the provider is not active for the tenant", () => {
+    const SALTO_DOOR = {
+      ...DOOR,
+      id: "ap-salto",
+      provider: "salto-ks",
+      externalId: "lock-salto",
+    };
+
+    function notActive(provider) {
+      const code = `${provider.replace("-", "_")}_application_not_found`;
+      return lifecycleError(404, code, { tenant: "t1" });
+    }
+
+    it("asks the listing of the stored provider when a door is opened for editing", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+
+      await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "salto-ks"
+      );
+    });
+
+    it("says that lock and mode are checked once the provider is active", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Salto KS ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Nicht gefunden oder nicht zugänglich."
+      );
+    });
+
+    it("says it for an Anlage in the words of an Anlage", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("ifbs"));
+
+      const wrapper = await mountDialog({
+        accessPoint: LOCKER,
+        providers: [PROVIDERS[0]],
+      });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Parkraumservice ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+    });
+
+    it("saves the renamed door all the same", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, label: "Labortür" },
+      });
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+      await wrapper.find(".label-field input").setValue("Labortür");
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        id: "ap-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+      });
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("says nothing of the kind while the provider lists its locks", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
+    it("says nothing of the kind when the listing fails otherwise", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        lifecycleError(500, "internal_error")
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
+    it("does not ask an active provider that lists nothing", async () => {
+      await mountDialog({
+        accessPoint: { ...LOCKER, provider: "pareva", externalId: "p-1" },
+        providers: [PAREVA],
+      });
+
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    });
+
+    it("shows the hint instead of a load error in the picker", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("nuki"));
+
+      const wrapper = await mountDialog({ providers: [PROVIDERS[0]] });
+
+      expect(wrapper.find(".provider-inactive-hint").text()).toContain(
+        "Nuki ist für diesen Mandanten noch nicht aktiv."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Nicht gefunden oder nicht zugänglich."
+      );
+    });
+  });
+
+  /**
    * An Anlage shows the one id field its provider reads - iFBS a location,
    * Pareva a product - and no "Standort-ID beim Anbieter", which no provider
    * reads. Created, it goes out without one, whatever the listing offered

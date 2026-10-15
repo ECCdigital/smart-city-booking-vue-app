@@ -2477,6 +2477,10 @@
       "close": "Schließen",
       "required": "Pflichtfeld",
       "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "providerInactive": {
+        "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
+        "locker": "{provider} ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      },
       "table": {
         "assignment": "Zuordnung",
         "unassigned": "Keinem Buchungsobjekt zugeordnet",
