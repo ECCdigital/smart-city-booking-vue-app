@@ -8,7 +8,10 @@ import {
   isProviderNotActiveError,
   splitAccessPointFieldError,
 } from "@/utilities/access-point-errors";
-import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
+import {
+  createLockAndAccessAppDefaults,
+  SALTO_PROVIDER,
+} from "@/utilities/access-apps";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -38,7 +41,7 @@ const PREFILL_ORIGIN = "nuki";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
-const SALTO_PROVIDER = "salto-ks";
+const SALTO_MODES = ["remote"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -118,6 +121,9 @@ export default {
       // The provider whose listing answered that the tenant has not switched
       // it on: the access point is saved all the same and checked once it is.
       inactiveProvider: "",
+      // The mode a Salto door was stored on that Salto KS does not support;
+      // the form proposes `remote` instead.
+      unsupportedStoredMode: "",
       prefilling: false,
       prefillHint: "",
       // Counts the openings: the location input starts afresh on each.
@@ -214,16 +220,18 @@ export default {
       return this.showModeToggle && this.mode === PROVIDER_MODE;
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
-    // dialog shows what is coming - but they cannot be chosen. An access point
+    // dialog shows what is coming - but they cannot be chosen. A Nuki door
     // already stored on one keeps it; only picking it anew is barred.
     //
     // A Salto door opens remotely or not at all, for good: the backend
     // refuses `authorization` and `both` at every Salto lock (tickets#499), so
     // the dialog offers `remote` alone, without a „coming soon“ for the rest.
+    // A Salto door stored on one of them opens on `remote`, and the hint
+    // names the stored mode (`reset()`).
     modeOptions() {
       const modes =
         this.form.provider === SALTO_PROVIDER
-          ? ["remote"]
+          ? SALTO_MODES
           : ["authorization", "remote", "both"];
       return modes.map((value) => {
         const comingSoon = isComingSoonAccessPointMode(value);
@@ -330,6 +338,19 @@ export default {
         (lock) => lock.externalId === this.form.externalId
       );
     },
+    doorModeHint() {
+      if (this.unsupportedStoredMode) {
+        return this.$t("accessPoint.management.storedModeUnsupported", {
+          stored: this.$t(
+            `accessPoint.management.modes.${this.unsupportedStoredMode}`
+          ),
+          proposed: this.$t(`accessPoint.management.modes.${SALTO_MODES[0]}`),
+        });
+      }
+      return this.unsupportedMode
+        ? this.$t("accessPoint.management.modeUnsupported")
+        : "";
+    },
     unsupportedMode() {
       const supported = this.matchingLock?.supportedModes;
       if (!Array.isArray(supported) || supported.length === 0) return false;
@@ -355,7 +376,8 @@ export default {
     providerInactiveHint() {
       const provider = this.inactiveProvider;
       if (!provider) return "";
-      if (this.isEdit && this.form.provider !== provider) return "";
+      const picked = this.showPicker && this.pickerProvider === provider;
+      if (!picked && this.form.provider !== provider) return "";
 
       const title =
         this.providers.find((p) => p.id === provider)?.title ||
@@ -422,6 +444,22 @@ export default {
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
     },
+    // A provider typed in that is not active for the tenant has its listing
+    // asked all the same, so the dialog can say that lock and mode are
+    // checked once it is (tickets#311). The listing of an active provider is
+    // the picker's; this asks only whether the provider is on.
+    onProviderChange(provider) {
+      this.applyProviderDefaults(provider);
+      if (!provider || this.providers.some((p) => p.id === provider)) return;
+      this.checkProviderActive(provider);
+    },
+    async checkProviderActive(provider) {
+      try {
+        await ApiAccessAppsService.getAccessPoints(this.tenantId, provider);
+      } catch (error) {
+        if (isProviderNotActiveError(error)) this.inactiveProvider = provider;
+      }
+    },
     // True where the lock lists its Öffnungsarten and this one is not among
     // them - a listing that says nothing leaves every option alone.
     isUnsupportedOpenAction(openAction) {
@@ -432,6 +470,15 @@ export default {
       const source = this.accessPoint;
       this.form = source ? { ...emptyForm(), ...source } : emptyForm();
       this.form.providerLocationId = this.form.providerLocationId || "";
+      this.unsupportedStoredMode = "";
+      if (
+        this.form.provider === SALTO_PROVIDER &&
+        !isLockerAccessPoint(this.form) &&
+        !SALTO_MODES.includes(this.form.mode)
+      ) {
+        this.unsupportedStoredMode = this.form.mode;
+        this.form.mode = SALTO_MODES[0];
+      }
       const { openAction, ...config } = source?.config || {};
       // A stored value outside the five - written into the JSON text past an
       // older backend - is kept and saved back unchanged, rather than being
@@ -884,7 +931,7 @@ export default {
                 class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
-                @change="applyProviderDefaults"
+                @change="onProviderChange"
                 :label="$t('accessPoint.management.fields.provider')"
                 background-color="accent"
                 filled
@@ -925,11 +972,7 @@ export default {
                 filled
                 dense
                 :rules="requiredRule"
-                :hint="
-                  unsupportedMode
-                    ? $t('accessPoint.management.modeUnsupported')
-                    : ''
-                "
+                :hint="doorModeHint"
                 persistent-hint
               >
                 <template v-slot:item="{ item }">

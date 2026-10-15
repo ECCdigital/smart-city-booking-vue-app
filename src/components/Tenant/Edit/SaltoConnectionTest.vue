@@ -1,9 +1,14 @@
 <script>
-import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
+import { SALTO_PROVIDER, saltoSecretSources } from "@/utilities/access-apps";
+import { runConnectionTest } from "@/utilities/access-connection-test";
+import {
+  stateKey,
+  stateMeta,
+} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 
-const SECRET_FIELDS = ["clientSecret", "password"];
-
-const T = "accessPoint.tenant.salto.connectionTest";
+/** Where the texts of the connection test live in the catalogue. */
+const I18N_PREFIX = "accessPoint.tenant.salto.connectionTest";
 
 /** The checks in the order an admin works through them. */
 const CHECKS = [
@@ -25,21 +30,29 @@ const SIGNS = {
   todo: ["mdi-alert", "warning"],
 };
 
+/**
+ * The answers that stop the test before Salto is asked, each with what is
+ * missing: a secret that cannot be taken (with the reason), or a required
+ * field (field only).
+ */
+const MISSING_CODES = ["missing_secret", "missing_fields"];
+
 /** The statuses that ask the admin to look, counted in the headline. */
 const HINT_STATUSES = ["failed", "unknown", "not_verifiable", "todo"];
 
 /**
  * The IQs in numbers: all of them, those that need an activation (OTP on),
- * how many of those are activated, how many are open, how many offline.
+ * how many of those are done, how many are open, how many offline. Done is
+ * what the activation section counts as done (`stateMeta`).
  */
 function iqSummary(iqs) {
-  const needed = iqs.filter((iq) => iq.otpEnabled);
-  const ready = needed.filter((iq) => iq.state === "activated").length;
+  const needed = iqs.filter((iq) => stateKey(iq) !== "no_otp").length;
+  const open = iqs.filter((iq) => !stateMeta(iq).done).length;
   return {
     total: iqs.length,
-    needed: needed.length,
-    ready,
-    open: needed.length - ready,
+    needed,
+    ready: needed - open,
+    open,
     offline: iqs.filter((iq) => iq.online === false).length,
   };
 }
@@ -49,7 +62,7 @@ function iqSummary(iqs) {
  * answer. A secret field left empty is sent empty; the backend then takes the
  * stored secret, as long as it belongs to the client id, system user and
  * environment in the form, and answers `missing_secret` with the reason per
- * secret otherwise.
+ * secret otherwise. The text next to the button follows the same rule.
  *
  * A test that ran is a checklist under the button: a headline, one row per
  * check with sign, value and, where needed, what to do, and where each secret
@@ -58,10 +71,13 @@ function iqSummary(iqs) {
  */
 export default {
   name: "SaltoConnectionTest",
+  components: { ConnectionTestAlert },
   props: {
     tenantId: { type: String, required: true },
     /** The Salto KS application as the form holds it. */
     app: { type: Object, required: true },
+    /** The stored Salto KS application, whose identity the secrets are for. */
+    stored: { type: Object, default: null },
     secretConfigured: { type: Boolean, default: false },
     passwordConfigured: { type: Boolean, default: false },
     /** Whether the activation of the IQs is on the page to jump to. */
@@ -75,38 +91,34 @@ export default {
     };
   },
   computed: {
-    /** Per secret: `form`, `stored`, or `missing` when neither is there. */
+    /** Per secret: `form`, `stored`, or `missing` with the reason. */
     sources() {
-      const configured = {
+      return saltoSecretSources(this.app, this.stored, {
         clientSecret: this.secretConfigured,
         password: this.passwordConfigured,
-      };
-      return Object.fromEntries(
-        SECRET_FIELDS.map((field) => [
-          field,
-          this.app[field] ? "form" : configured[field] ? "stored" : "missing",
-        ])
-      );
+      });
     },
     basisText() {
-      const sources = Object.values(this.sources);
-      if (sources.includes("missing")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisMissing");
-      }
+      const missing = Object.entries(this.sources)
+        .filter(([, { source }]) => source === "missing")
+        .map(([field, { reason }]) => this.missingText({ field, reason }));
+      if (missing.length) return missing.join(" ");
+
+      const sources = Object.values(this.sources).map(({ source }) => source);
       if (sources.every((source) => source === "stored")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisStored");
+        return this.$t(`${I18N_PREFIX}.basisStored`);
       }
       if (sources.every((source) => source === "form")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisForm");
+        return this.$t(`${I18N_PREFIX}.basisForm`);
       }
-      return this.$t("accessPoint.tenant.salto.connectionTest.basisMixed");
+      return this.$t(`${I18N_PREFIX}.basisMixed`);
     },
-    missingSecret() {
-      return this.result?.code === "missing_secret";
+    stoppedForMissing() {
+      return MISSING_CODES.includes(this.result?.code);
     },
     /** A test that ran and answered per check. */
     checklist() {
-      return !this.missingSecret && !!this.result?.checks;
+      return !this.stoppedForMissing && !!this.result?.checks;
     },
     summary() {
       return iqSummary(this.result?.details?.iqs || []);
@@ -116,22 +128,25 @@ export default {
       return CHECKS.map((key) => this.row(key, this.result.checks[key]));
     },
     headline() {
-      if (!this.result.success) return this.$t(`${T}.headline.notConnected`);
+      if (!this.result.success)
+        return this.$t(`${I18N_PREFIX}.headline.notConnected`);
       const environment = this.result.environment;
       const count = this.rows.filter((row) =>
         HINT_STATUSES.includes(row.status)
       ).length;
       return count
-        ? this.$tc(`${T}.headline.connectedWithHints`, count, {
+        ? this.$tc(`${I18N_PREFIX}.headline.connectedWithHints`, count, {
             environment,
             count,
           })
-        : this.$t(`${T}.headline.connected`, { environment });
+        : this.$t(`${I18N_PREFIX}.headline.connected`, { environment });
     },
     testedWithText() {
       const source = (field) =>
-        this.$t(`${T}.sources.${this.result.testedWith?.[field] || "form"}`);
-      return this.$t(`${T}.testedWith`, {
+        this.$t(
+          `${I18N_PREFIX}.sources.${this.result.testedWith?.[field] || "form"}`
+        );
+      return this.$t(`${I18N_PREFIX}.testedWith`, {
         clientSecret: source("clientSecret"),
         password: source("password"),
       });
@@ -143,16 +158,29 @@ export default {
         minute: "2-digit",
       });
     },
+    toActivationText() {
+      return this.$t(`${I18N_PREFIX}.iqs.toActivation`);
+    },
     missingTexts() {
-      return (this.result?.missing || []).map(({ field, reason }) => {
-        const key = `accessPoint.tenant.salto.connectionTest.missing.${field}.${reason}`;
-        return this.$te(key)
-          ? this.$t(key)
-          : this.$t("accessPoint.tenant.salto.connectionTest.missing.fallback");
-      });
+      const missing = this.result?.missing || [];
+      return this.result.code === "missing_fields"
+        ? missing.map(this.missingFieldText)
+        : missing.map(this.missingText);
     },
   },
   methods: {
+    missingText({ field, reason }) {
+      const key = `${I18N_PREFIX}.missing.${field}.${reason}`;
+      return this.$te(key)
+        ? this.$t(key)
+        : this.$t(`${I18N_PREFIX}.missing.fallback`);
+    },
+    missingFieldText({ field }) {
+      const key = `${I18N_PREFIX}.missingFields.${field}`;
+      return this.$te(key)
+        ? this.$t(key)
+        : this.$t(`${I18N_PREFIX}.missingFields.fallback`);
+    },
     /** One row of the checklist: status, sign, value and hint. */
     row(key, check = { status: "skipped" }) {
       let status = check.status;
@@ -161,44 +189,48 @@ export default {
       let jump = false;
 
       if (status === "skipped") {
-        value = this.$t(`${T}.status.skipped`);
+        value = this.$t(`${I18N_PREFIX}.status.skipped`);
       } else if (status === "unknown") {
-        hint = this.$t(`${T}.status.unknown`);
+        hint = this.$t(`${I18N_PREFIX}.status.unknown`);
       } else if (status === "not_verifiable") {
-        value = this.$t(`${T}.status.notVerifiable`);
-        hint = this.$t(`${T}.status.notVerifiableHint`);
+        value = this.$t(`${I18N_PREFIX}.status.notVerifiable`);
+        hint = this.$t(`${I18N_PREFIX}.status.notVerifiableHint`);
       } else if (status === "failed") {
-        const failure = `${T}.failures.${check.code}`;
+        const failure = `${I18N_PREFIX}.failures.${check.code}`;
         hint =
           check.code && this.$te(failure)
             ? this.$t(failure)
-            : this.$t(`${T}.failures.other`, { message: this.result.message });
+            : this.$t(`${I18N_PREFIX}.failures.other`, {
+                message: this.result.message,
+              });
       }
 
       if (key === "credentials") {
         value = this.result.environment || value;
       }
       if (key === "site" && status === "ok") {
-        value = this.$tc(`${T}.site`, check.locks || 0, {
+        value = this.$tc(`${I18N_PREFIX}.site`, check.locks || 0, {
           count: check.locks || 0,
         });
       }
       if (key === "iqs" && status === "ok") {
         const summary = this.summary;
         value = summary.total
-          ? this.$t(`${T}.iqs.summary`, summary)
-          : this.$t(`${T}.iqs.none`);
+          ? this.$t(`${I18N_PREFIX}.iqs.summary`, summary)
+          : this.$t(`${I18N_PREFIX}.iqs.none`);
         const hints = [];
         if (summary.open) {
           status = "todo";
           jump = this.activationShown;
           hints.push(
-            this.$tc(`${T}.iqs.open`, summary.open, { count: summary.open })
+            this.$tc(`${I18N_PREFIX}.iqs.open`, summary.open, {
+              count: summary.open,
+            })
           );
         }
         if (summary.offline) {
           hints.push(
-            this.$tc(`${T}.iqs.offline`, summary.offline, {
+            this.$tc(`${I18N_PREFIX}.iqs.offline`, summary.offline, {
               count: summary.offline,
             })
           );
@@ -209,7 +241,7 @@ export default {
       const [icon, color] = SIGNS[status] || SIGNS.unknown;
       return {
         key,
-        label: this.$t(`${T}.checks.${key}`),
+        label: this.$t(`${I18N_PREFIX}.checks.${key}`),
         status,
         value,
         hint,
@@ -233,27 +265,12 @@ export default {
       this.testing = true;
       this.result = null;
 
-      try {
-        const response = await ApiAccessAppsService.testConnection(
-          this.tenantId,
-          this.credentials(),
-          "salto-ks"
-        );
-        this.result = {
-          ...response.data,
-          success: response.data.success === true,
-        };
-      } catch (error) {
-        this.result = {
-          success: false,
-          message:
-            error.response?.data?.message ||
-            error.message ||
-            this.$t("accessPoint.connection.error.message"),
-        };
-      } finally {
-        this.testing = false;
-      }
+      this.result = await runConnectionTest(
+        this.tenantId,
+        this.credentials(),
+        SALTO_PROVIDER
+      );
+      this.testing = false;
     },
   },
 };
@@ -261,10 +278,10 @@ export default {
 
 <template>
   <div>
-    <!-- Testergebnis -->
+    <!-- Result of the test -->
     <v-row v-if="result" dense>
       <v-col cols="12">
-        <v-alert v-if="missingSecret" type="warning" text dense>
+        <v-alert v-if="stoppedForMissing" type="warning" text dense>
           <div v-for="(text, index) in missingTexts" :key="index">
             {{ text }}
           </div>
@@ -317,11 +334,7 @@ export default {
                   data-test="salto-to-activation"
                   @click="$emit('to-activation')"
                 >
-                  {{
-                    $t(
-                      "accessPoint.tenant.salto.connectionTest.iqs.toActivation"
-                    )
-                  }}
+                  {{ toActivationText }}
                 </v-btn>
               </v-list-item-action>
             </v-list-item>
@@ -333,25 +346,11 @@ export default {
             {{ testedWithText }}
           </div>
         </v-sheet>
-        <v-alert
-          v-else
-          :color="result.success ? 'success' : 'error'"
-          dense
-          text
-        >
-          <div v-if="result.success">
-            <v-icon left>mdi-check-circle</v-icon>
-            {{ result.message || $t("accessPoint.tenant.connectionSuccess") }}
-          </div>
-          <div v-else>
-            <v-icon left>mdi-alert-circle</v-icon>
-            {{ result.message }}
-          </div>
-        </v-alert>
+        <ConnectionTestAlert v-else :result="result" />
       </v-col>
     </v-row>
 
-    <!-- Aktion -->
+    <!-- Action -->
     <v-row dense class="mt-2">
       <v-col class="d-flex align-center justify-end flex-wrap test-action">
         <span class="text-caption text--secondary">{{ basisText }}</span>
@@ -371,7 +370,7 @@ export default {
 
 <style scoped>
 .test-action {
-  gap: 12px;
+  gap: var(--scb-space-3);
 }
 .checklist-ok {
   border-left: 3px solid var(--v-success-base) !important;

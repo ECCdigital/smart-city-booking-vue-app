@@ -1018,6 +1018,39 @@ describe("AccessPointEditDialog", () => {
       expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
     });
 
+    it("asks the listing of a provider typed in for a new access point and says it", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        notActive("salto-ks")
+      );
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("salto-ks");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "salto-ks"
+      );
+      expect(wrapper.find(".provider-inactive-hint").text()).toBe(
+        "Salto KS ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      );
+    });
+
+    it("does not ask the listing of an active provider typed in", async () => {
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("pareva");
+      await providerInput.trigger("keydown.enter");
+      await flushPromises();
+
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(false);
+    });
+
     it("shows the hint instead of a load error in the picker", async () => {
       ApiAccessAppsService.getAccessPoints.mockRejectedValue(notActive("nuki"));
 
@@ -1143,6 +1176,40 @@ describe("AccessPointEditDialog", () => {
       expect(items.map((item) => item.value)).toEqual(["remote"]);
       expect(items[0].disabled).toBe(false);
       expect(items[0].description).not.toContain("Fertigstellung");
+    });
+
+    it("proposes remote for a Salto door stored on a PIN mode and names the stored one", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock(["remote"])],
+      });
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, mode: "remote" },
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: { ...SALTO_DOOR, mode: "both" },
+        providers: [SALTO],
+      });
+
+      expect(modeSelect(wrapper).text()).toContain("Öffnen per App");
+      expect(dialogText(wrapper)).toContain(
+        "Gespeichert ist „PIN-Code & App“, das Salto KS nicht unterstützt. Mit Speichern wird „Öffnen per App“ übernommen."
+      );
+
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload.mode).toBe("remote");
+    });
+
+    it("names no stored mode for a Salto door stored on remote", async () => {
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(dialogText(wrapper)).not.toContain("Gespeichert ist");
     });
 
     it("keeps the PIN modes in sight, not choosable, for a Nuki door", async () => {

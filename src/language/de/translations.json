@@ -2477,6 +2477,7 @@
       "close": "Schließen",
       "required": "Pflichtfeld",
       "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
       "iqNotActivated": "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „{tab}“ › Salto KS › „{section}“. Speichern können Sie schon jetzt.",
       "providerInactive": {
         "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
@@ -2747,14 +2748,13 @@
           "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",
           "remoteOpening": "Dazu „Remote Opening“ unter Lock Options, auch wenn die Rolle schon vergeben ist.",
           "mailbox": "Sein Postfach bleibt erreichbar: Beim Aktivieren eines IQ schickt Salto die PIN dorthin.",
-          "appBan": "Den System-User nie in der Salto-App aktivieren. Sonst scheitert die Aktivierung des IQ hier, oder das Fernöffnen danach.",
+          "appBan": "Aktivieren Sie den System-User nie in der Salto-App. Sonst scheitert hier die Aktivierung des IQ oder danach das Fernöffnen.",
           "note": "Rolle und „Remote Opening“ kann Biletado über die API nicht prüfen. Stellen Sie beides in Salto KS selbst sicher."
         },
         "connectionTest": {
           "basisStored": "Testet mit den gespeicherten Secrets.",
           "basisForm": "Testet mit den Secrets aus dem Formular.",
           "basisMixed": "Testet mit gespeicherten Secrets und Secrets aus dem Formular.",
-          "basisMissing": "Es ist noch nicht jedes Secret gespeichert. Geben Sie die fehlenden für den Test ein.",
           "missing": {
             "clientSecret": {
               "client_id_changed": "Die Client-ID ist neu. Geben Sie das passende Client Secret ein.",
@@ -2767,6 +2767,13 @@
               "not_stored": "Es ist kein Passwort des System-Users gespeichert. Geben Sie es ein."
             },
             "fallback": "Für den Test fehlt ein Secret. Geben Sie Client Secret und Passwort ein."
+          },
+          "missingFields": {
+            "clientId": "Die Client-ID fehlt. Tragen Sie sie ein.",
+            "clientSecret": "Das Client Secret fehlt. Tragen Sie es ein.",
+            "username": "Der System-User fehlt. Tragen Sie ihn ein.",
+            "password": "Das Passwort des System-Users fehlt. Tragen Sie es ein.",
+            "fallback": "Für den Test fehlt eine Angabe. Prüfen Sie die API-Zugangsdaten."
           },
           "headline": {
             "connected": "Verbunden mit Salto KS ({environment})",
@@ -2884,7 +2891,7 @@
           },
           "discardConfirm": {
             "title": "Aktivierung verwerfen?",
-            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: in Salto KS einen System-User anlegen, der nie aktiviert war, ihn unter API-Zugangsdaten eintragen und die IQs neu aktivieren.",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine neue Aktivierung an diesem IQ gelingt danach nur mit einem neuen System-User: Legen Sie in Salto KS einen System-User an, der nie aktiviert war, tragen Sie ihn unter API-Zugangsdaten ein und aktivieren Sie die IQs neu.",
             "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
             "cancel": "Abbrechen",
             "confirm": "Verwerfen"
@@ -3051,7 +3058,7 @@
     "connection": {
       "error": {
         "title": "Verbindung fehlgeschlagen",
-        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+        "message": "Die Verbindung konnte nicht hergestellt werden."
       }
     },
     "load": {
