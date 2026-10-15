@@ -5,7 +5,12 @@
         <template v-slot:default="{ open }">
           <v-row no-gutters align="center" class="w-100">
             <v-col cols="6" class="d-flex align-center">
-              <v-img v-if="logo" :src="logo" max-width="45" class="mr-2" />
+              <img
+                v-if="logo"
+                :src="logo"
+                alt=""
+                class="app-panel__logo mr-2"
+              />
               <v-icon v-else color="primary" class="mr-2">{{ icon }}</v-icon>
               <span class="text-subtitle-1">{{ title }}</span>
             </v-col>
@@ -49,3 +54,16 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* A light plate under .theme--dark, so a dark provider logo does not vanish
+   on the dark panel header (ECCdigital/tickets#307). */
+.app-panel__logo {
+  box-sizing: content-box;
+  width: 45px;
+  height: auto;
+  padding: var(--scb-logo-plate-padding);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-logo-plate);
+}
+</style>
