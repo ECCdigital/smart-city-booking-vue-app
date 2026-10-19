@@ -120,6 +120,30 @@
       </v-expansion-panel>
     </v-expansion-panels>
 
+    <v-row class="mt-4">
+      <v-col class="col-12 col-md-8">
+        <p class="text--secondary body-2 mb-0">
+          {{ $t("tenant.cancellationRefundTiers.withoutTimeSpanHint") }}
+        </p>
+      </v-col>
+      <v-col class="col-12 col-md-4">
+        <v-text-field
+          :value="withoutTimeSpanPercentage"
+          :label="$t('tenant.cancellationRefundTiers.withoutTimeSpanLabel')"
+          :rules="percentageRules"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          suffix="%"
+          background-color="accent"
+          filled
+          dense
+          @input="updateWithoutTimeSpanPercentage"
+        />
+      </v-col>
+    </v-row>
+
     <v-dialog v-model="dialogOpen" max-width="650" persistent>
       <v-card class="refund-tier-dialog">
         <v-card-title class="subtitle-1">
@@ -251,6 +275,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    withoutTimeSpanPercentage: {
+      type: Number,
+      default: 100,
+    },
   },
   data() {
     return {
@@ -286,7 +314,7 @@ export default {
           this.$t("tenant.cancellationRefundTiers.uniqueDays"),
       ];
     },
-    refundRules() {
+    percentageRules() {
       return [
         (value) => this.isPresent(value) || this.$t("validation.required"),
         (value) =>
@@ -295,6 +323,11 @@ export default {
         (value) =>
           (Number(value) >= 0 && Number(value) <= 100) ||
           this.$t("tenant.cancellationRefundTiers.percentageRange"),
+      ];
+    },
+    refundRules() {
+      return [
+        ...this.percentageRules,
         () =>
           this.isCandidateMonotonic ||
           this.$t("tenant.cancellationRefundTiers.monotonic"),
@@ -394,6 +427,10 @@ export default {
       }
       this.emitTiers();
       this.closeDialog();
+    },
+    updateWithoutTimeSpanPercentage(value) {
+      if (!this.percentageRules.every((rule) => rule(value) === true)) return;
+      this.$emit("update:withoutTimeSpanPercentage", Number(value));
     },
     askRemove(index) {
       this.confirmDelete = { open: true, index };
