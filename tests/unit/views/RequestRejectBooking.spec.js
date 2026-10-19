@@ -230,7 +230,7 @@ describe("RequestRejectBooking", () => {
       const wrapper = await previewWith({ daysBeforeStart: null });
 
       expect(wrapper.text()).toContain(
-        "Die Buchung hat keinen Zeitraum. Die Erstattung beträgt 50 %."
+        "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
       );
       expect(wrapper.text()).not.toContain("Kalendertagen");
     });

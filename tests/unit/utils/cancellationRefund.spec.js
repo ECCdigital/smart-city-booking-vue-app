@@ -129,9 +129,13 @@ describe("refundPolicyText", () => {
   it("says the booking has no time span where there are no days", () => {
     expect(
       refundPolicyText("userPolicySummary", { days: null, percentage: 50 })
-    ).toBe("Die Buchung hat keinen Zeitraum. Die Erstattung beträgt 50 %.");
+    ).toBe(
+      "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
+    );
     expect(
       refundPolicyText("userPolicySummary", { days: undefined, percentage: 0 })
-    ).toBe("Die Buchung hat keinen Zeitraum. Die Erstattung beträgt 0 %.");
+    ).toBe(
+      "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
+    );
   });
 });
