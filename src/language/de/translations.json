@@ -1575,7 +1575,7 @@
       "title": "Erstattungsvorschau",
       "expectedTitle": "Erwartete Erstattung",
       "auditTitle": "Erstattung bei Stornierung",
-      "originalAmount": "Ursprungsbetrag",
+      "originalAmount": "Ursprungs\u00adbetrag",
       "refundAmount": "Erstattung",
       "cancellationFee": "Einbehalt",
       "refundShare": "{percentage} % Erstattung",
