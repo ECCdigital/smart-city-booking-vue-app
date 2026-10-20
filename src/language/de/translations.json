@@ -1759,6 +1759,7 @@
       "confirmed": "Bestätigt",
       "rejected": "Abgelehnt",
       "cancelled": "Storniert",
+      "withdrawn": "Widerrufen",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
       "paidShort": "bezahlt"
@@ -1777,14 +1778,17 @@
       "reject": "Ablehnen",
       "cancel": "Stornieren",
       "reinstate": "Wiederherstellen",
+      "acceptWithdrawal": "Widerruf akzeptieren",
       "delete": "Löschen"
     },
     "payment": {
       "paid": "Ja",
       "unpaid": "Nein",
+      "lapsed": "Entfällt",
       "status": {
         "paid": "Bezahlt",
-        "unpaid": "Nicht bezahlt"
+        "unpaid": "Nicht bezahlt",
+        "lapsed": "Entfällt"
       }
     },
     "cancellationReceipt": {
@@ -1831,6 +1835,22 @@
         "title": "Buchung wiederherstellen",
         "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "acceptWithdrawal": {
+      "success": {
+        "title": "Widerruf akzeptiert",
+        "message": "Die Buchung ist widerrufen; die Kundin oder der Kunde erhält eine Bestätigung per E-Mail."
+      },
+      "error": {
+        "title": "Fehler beim Akzeptieren des Widerrufs",
+        "message": "Der Widerruf konnte nicht akzeptiert werden."
+      },
+      "dialog": {
+        "title": "Widerruf akzeptieren",
+        "hint": "Die Buchung {id} wird widerrufen. Das lässt sich nicht rückgängig machen. Die Kundin oder der Kunde erhält eine Bestätigung per E-Mail.",
+        "hint-refund": "Ein Widerruf kostet nichts: Der gezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
+        "hint-lapse": "Ein Widerruf kostet nichts: Die offene Zahlung entfällt."
       }
     },
     "transition": {

@@ -36,6 +36,16 @@ describe("ApiBookingService", () => {
     expect(data).toEqual({ success: true, data: null, errors: [] });
   });
 
+  it("posts an accepted withdrawal to the booking's accept-withdrawal route", async () => {
+    const data = await ApiBookingService.acceptWithdrawal("bk-1");
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith(
+      "api/t1/bookings/bk-1/accept-withdrawal",
+      {}
+    );
+    expect(data).toEqual({ success: true, data: null, errors: [] });
+  });
+
   it("posts a cancellation receipt reprint and answers with the booking", async () => {
     const reprinted = { id: "bk-1", status: "cancelled", attachments: [] };
     global.ApiClient.post.mockResolvedValue({

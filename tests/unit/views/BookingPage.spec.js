@@ -886,11 +886,16 @@ describe("BookingPage", () => {
    */
   describe("the transitions", () => {
     it.each([
-      ["requested", "Freigeben", ["Ablehnen"]],
-      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
-      ["confirmed", null, ["Stornieren"]],
+      ["requested", "Freigeben", ["Ablehnen", "Widerruf akzeptieren"]],
+      [
+        "payment_due",
+        "Als bezahlt markieren",
+        ["Stornieren", "Widerruf akzeptieren"],
+      ],
+      ["confirmed", null, ["Stornieren", "Widerruf akzeptieren"]],
       ["rejected", "Wiederherstellen", null],
       ["cancelled", "Wiederherstellen", null],
+      ["withdrawn", null, null],
     ])(
       "offers at %s the button %s and the menu %j",
       async (status, button, menu) => {

@@ -78,6 +78,14 @@ export default {
     );
     return response.data;
   },
+  /** Widerruf akzeptieren: a live booking to `withdrawn`, for good. */
+  async acceptWithdrawal(id) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/accept-withdrawal`,
+      {}
+    );
+    return response.data;
+  },
   /** Sets the refund state of a cancelled booking (glossary „Erstattungsstand“): `completed`, or back to `open`. */
   setRefundState(id, refundState) {
     return ApiClient.put(

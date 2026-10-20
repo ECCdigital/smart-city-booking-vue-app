@@ -556,7 +556,10 @@ export default {
         ? this.$t("group-booking.status.mixedHint")
         : null;
     },
-    /** The series-wide transitions: the shared state's, for whoever may edit every member. */
+    /**
+     * The series-wide transitions: the shared state's, for whoever may edit
+     * every member. Reinstate and the withdrawal are per member only.
+     */
     seriesActions() {
       if (!this.canEditEveryMember) {
         return [];
@@ -564,6 +567,7 @@ export default {
       return transitionActions(this.seriesStatus).filter(
         (action) =>
           action !== BOOKING_ACTION.REINSTATE &&
+          action !== BOOKING_ACTION.ACCEPT_WITHDRAWAL &&
           groupAllowsAction(this.members, action)
       );
     },

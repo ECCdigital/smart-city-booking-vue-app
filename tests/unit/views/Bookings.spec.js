@@ -301,6 +301,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -355,6 +356,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -401,7 +403,7 @@ describe("Bookings", () => {
       await clickCardButton(wrapper, "zurücksetzen");
       expect(selectedStatusLabels()).toEqual([]);
       expect(resetButtons()).toEqual([]);
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("resets type and status together with Alle zurücksetzen", async () => {
@@ -417,7 +419,7 @@ describe("Bookings", () => {
       expect(selectedType()).toBe("Alle");
       expect(selectedStatusLabels()).toEqual([]);
       expect(funnelBadge(wrapper)).toBeNull();
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("stays open while toggling", async () => {

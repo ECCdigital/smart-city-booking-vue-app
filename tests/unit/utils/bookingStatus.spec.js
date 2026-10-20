@@ -45,6 +45,7 @@ describe("presentation of a booking status", () => {
     [BOOKING_STATUS.CONFIRMED, "Bestätigt", "success", "mdi-check-circle"],
     [BOOKING_STATUS.REJECTED, "Abgelehnt", "error", "mdi-cancel"],
     [BOOKING_STATUS.CANCELLED, "Storniert", "error", "mdi-close-circle"],
+    [BOOKING_STATUS.WITHDRAWN, "Widerrufen", "error", "mdi-undo-variant"],
   ])("%s reads as %s", (status, label, color, icon) => {
     expect(statusLabel(status)).toBe(label);
     expect(statusColor(status)).toBe(color);
@@ -71,11 +72,16 @@ describe("presentation of a booking status", () => {
  */
 describe("allowedActions", () => {
   it.each([
-    [BOOKING_STATUS.REQUESTED, ["confirm", "cancel", "delete"]],
-    [BOOKING_STATUS.PAYMENT_DUE, ["pay", "cancel"]],
-    [BOOKING_STATUS.CONFIRMED, ["cancel"]],
+    [
+      BOOKING_STATUS.REQUESTED,
+      ["confirm", "cancel", "acceptWithdrawal", "delete"],
+    ],
+    [BOOKING_STATUS.PAYMENT_DUE, ["pay", "cancel", "acceptWithdrawal"]],
+    [BOOKING_STATUS.CONFIRMED, ["cancel", "acceptWithdrawal"]],
     [BOOKING_STATUS.REJECTED, ["reinstate", "delete"]],
     [BOOKING_STATUS.CANCELLED, ["reinstate"]],
+    // A withdrawal is final: nothing leaves Widerrufen.
+    [BOOKING_STATUS.WITHDRAWN, []],
   ])("at %s allows %j", (status, actions) => {
     expect(allowedActions(status)).toEqual(actions);
   });
@@ -98,6 +104,7 @@ describe("actionLabel", () => {
     expect(actionLabel("confirm")).toBe("Freigeben");
     expect(actionLabel("pay")).toBe("Als bezahlt markieren");
     expect(actionLabel("reinstate")).toBe("Wiederherstellen");
+    expect(actionLabel("acceptWithdrawal")).toBe("Widerruf akzeptieren");
     expect(actionLabel("delete")).toBe("Löschen");
   });
 
@@ -112,16 +119,24 @@ describe("actionLabel", () => {
 });
 
 describe("statusRank", () => {
-  it("orders the states requested < payment_due < confirmed < cancelled < rejected", () => {
+  it("orders the states requested < payment_due < confirmed < cancelled < withdrawn < rejected", () => {
     const shuffled = [
       "rejected",
+      "withdrawn",
       "confirmed",
       "requested",
       "cancelled",
       "payment_due",
     ];
     expect([...shuffled].sort((a, b) => statusRank(a) - statusRank(b))).toEqual(
-      ["requested", "payment_due", "confirmed", "cancelled", "rejected"]
+      [
+        "requested",
+        "payment_due",
+        "confirmed",
+        "cancelled",
+        "withdrawn",
+        "rejected",
+      ]
     );
   });
 
@@ -139,6 +154,7 @@ describe("filterBookingsByStatus", () => {
     { id: "b-confirmed", status: "confirmed" },
     { id: "b-rejected", status: "rejected" },
     { id: "b-cancelled", status: "cancelled" },
+    { id: "b-withdrawn", status: "withdrawn" },
   ];
 
   it("keeps the bookings whose state is selected, in their order", () => {
@@ -149,7 +165,7 @@ describe("filterBookingsByStatus", () => {
     ).toEqual(["b-requested", "b-cancelled"]);
   });
 
-  it("keeps every booking while all five states are selected", () => {
+  it("keeps every booking while all six states are selected", () => {
     expect(
       filterBookingsByStatus(bookings, Object.values(BOOKING_STATUS))
     ).toEqual(bookings);
@@ -220,6 +236,12 @@ describe("isPaid", () => {
       false,
     ],
     ["cancelled", {}, false],
+    ["withdrawn", { cancellationRefund: { cancelledFrom: "confirmed" } }, true],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "payment_due" } },
+      false,
+    ],
   ])("at %s with %j is %s", (status, extra, paid) => {
     expect(isPaid({ status, priceEur: 10, ...extra })).toBe(paid);
   });
@@ -252,6 +274,12 @@ describe("paymentLabel", () => {
       { cancellationRefund: { cancelledFrom: "payment_due" } },
       "Nein",
     ],
+    ["withdrawn", { cancellationRefund: { cancelledFrom: "confirmed" } }, "Ja"],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "payment_due" } },
+      "Entfällt",
+    ],
   ])("answers Ja/Nein for a priced booking at %s", (status, extra, label) => {
     expect(paymentLabel({ status, priceEur: 25, ...extra })).toBe(label);
   });
@@ -275,6 +303,16 @@ describe("paymentStatusLabel", () => {
       "Bezahlt",
     ],
     [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "confirmed" } },
+      "Bezahlt",
+    ],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "requested" } },
+      "Entfällt",
+    ],
+    [
       "cancelled",
       { cancellationRefund: { cancelledFrom: "payment_due" } },
       "Nicht bezahlt",
@@ -293,6 +331,7 @@ describe("isRejectedOrCancelled", () => {
   it("is true for the two ended states only", () => {
     expect(isRejectedOrCancelled({ status: "rejected" })).toBe(true);
     expect(isRejectedOrCancelled({ status: "cancelled" })).toBe(true);
+    expect(isRejectedOrCancelled({ status: "withdrawn" })).toBe(true);
     expect(isRejectedOrCancelled({ status: "requested" })).toBe(false);
     expect(isRejectedOrCancelled({ status: "confirmed" })).toBe(false);
     expect(isRejectedOrCancelled(undefined)).toBe(false);
@@ -529,6 +568,27 @@ describe("pathOf", () => {
       expect(stepStates(fromConfirmed)).toEqual(["done", "done", "done"]);
       expect(fromConfirmed.end.afterIndex).toBe(2);
       expect(fromConfirmed.end.label).toBe("Storniert");
+    });
+
+    it("cuts Widerrufen behind the step it was withdrawn from, Angefragt included", () => {
+      const withdrawn = (from) =>
+        priced({
+          status: BOOKING_STATUS.WITHDRAWN,
+          cancellationRefund: { cancelledFrom: from },
+        });
+
+      const fromRequested = pathOf(withdrawn(BOOKING_STATUS.REQUESTED));
+      expect(stepStates(fromRequested)).toEqual(["done", "void", "void"]);
+      expect(fromRequested.terminal).toBe(true);
+      expect(fromRequested.end).toMatchObject({
+        status: BOOKING_STATUS.WITHDRAWN,
+        label: "Widerrufen",
+        afterIndex: 0,
+      });
+
+      const fromConfirmed = pathOf(withdrawn(BOOKING_STATUS.CONFIRMED));
+      expect(stepStates(fromConfirmed)).toEqual(["done", "done", "done"]);
+      expect(fromConfirmed.end.afterIndex).toBe(2);
     });
 
     it("cuts Storniert behind Bestätigt where the origin is unknown", () => {
