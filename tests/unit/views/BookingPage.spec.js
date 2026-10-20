@@ -915,6 +915,18 @@ describe("BookingPage", () => {
       }
     );
 
+    it("offers no Widerruf akzeptieren for a business booking", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed", company: "ACME" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: ["Stornieren"],
+      });
+    });
+
     it("offers nothing to a reader without the update right", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);
       const { wrapper } = mountPage();

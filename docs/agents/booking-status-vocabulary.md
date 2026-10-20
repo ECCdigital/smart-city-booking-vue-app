@@ -32,17 +32,17 @@ Sort order of the "Status" column (`statusRank`): `requested < payment_due < con
 
 Each verb is an i18n key under `booking.action.*` and names one backend transition on its own route. There is no "Freigabe zurücknehmen" and no "Zahlung zurücknehmen" - the backend has no such transition and answers 400.
 
-| German                | `BOOKING_ACTION`   | Allowed at                              | Route                                   |
-| --------------------- | ------------------ | --------------------------------------- | --------------------------------------- |
-| Freigeben             | `confirm`          | `requested`                             | `GET …/bookings/:id/commit`             |
-| Als bezahlt markieren | `pay`              | `payment_due`                           | `POST …/bookings/:id/pay`               |
-| Ablehnen              | `cancel`           | `requested`                             | `POST …/bookings/:id/reject`            |
-| Stornieren            | `cancel`           | `payment_due`, `confirmed`              | `POST …/bookings/:id/reject`            |
-| Wiederherstellen      | `reinstate`        | `rejected`, `cancelled`                 | `POST …/bookings/:id/reinstate`         |
-| Widerruf akzeptieren  | `acceptWithdrawal` | `requested`, `payment_due`, `confirmed` | `POST …/bookings/:id/accept-withdrawal` |
-| Löschen               | `delete`           | `requested`, `rejected`                 | `DELETE …/bookings/:id` (hard delete)   |
+| German                | `BOOKING_ACTION`   | Allowed at                                                     | Route                                   |
+| --------------------- | ------------------ | -------------------------------------------------------------- | --------------------------------------- |
+| Freigeben             | `confirm`          | `requested`                                                    | `GET …/bookings/:id/commit`             |
+| Als bezahlt markieren | `pay`              | `payment_due`                                                  | `POST …/bookings/:id/pay`               |
+| Ablehnen              | `cancel`           | `requested`                                                    | `POST …/bookings/:id/reject`            |
+| Stornieren            | `cancel`           | `payment_due`, `confirmed`                                     | `POST …/bookings/:id/reject`            |
+| Wiederherstellen      | `reinstate`        | `rejected`, `cancelled`                                        | `POST …/bookings/:id/reinstate`         |
+| Widerruf akzeptieren  | `acceptWithdrawal` | `requested`, `payment_due`, `confirmed`, private bookings only | `POST …/bookings/:id/accept-withdrawal` |
+| Löschen               | `delete`           | `requested`, `rejected`                                        | `DELETE …/bookings/:id` (hard delete)   |
 
-`allowedActions(status)` answers the third column, `allowsAction(booking, action)` asks it for one booking, and `actionLabel(action, status)` picks Ablehnen or Stornieren for a cancel. "Freigeben" stays the tenants' established word for `confirm`; the kanban's workflow actions (`commit`, `paid`, `reject`) use the same verbs.
+`allowedActions(status)` answers the third column, `allowsAction(booking, action)` asks it for one booking (and refuses Widerruf akzeptieren for a business booking, `isBusinessBooking` in `src/utils/businessBooking.js`), `bookingTransitionActions(booking)` lists a booking's menu, and `actionLabel(action, status)` picks Ablehnen or Stornieren for a cancel. "Freigeben" stays the tenants' established word for `confirm`; the kanban's workflow actions (`commit`, `paid`, `reject`) use the same verbs.
 
 ## The headline over the path
 

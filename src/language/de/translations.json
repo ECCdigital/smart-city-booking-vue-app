@@ -112,6 +112,7 @@
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
+      "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
       "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
     },
     "conflict-codes": {

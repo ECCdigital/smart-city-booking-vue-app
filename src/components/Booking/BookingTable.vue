@@ -236,7 +236,7 @@
               </v-list-item>
 
               <v-list-item
-                v-for="action in transitionActions(item.status)"
+                v-for="action in bookingTransitionActions(item)"
                 :key="action"
                 link
                 @click="transition(action, item.id)"
@@ -300,7 +300,7 @@ import {
   statusIcon,
   statusLabel,
   statusRank,
-  transitionActions,
+  bookingTransitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
 import { BOOKED_VIA } from "@/utils/bookedVia";
@@ -389,7 +389,7 @@ export default {
     statusColor,
     statusIcon,
     statusLabel,
-    transitionActions,
+    bookingTransitionActions,
     /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
     refundMarker(booking) {
       return refundStateMarker(refundStateOf(booking));

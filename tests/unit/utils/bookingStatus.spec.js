@@ -16,6 +16,7 @@ import {
   isAwaitingPayment,
   isPaid,
   isRejectedOrCancelled,
+  bookingTransitionActions,
   mixedCounts,
   pathOf,
   paymentLabel,
@@ -89,6 +90,34 @@ describe("allowedActions", () => {
   it("allows nothing for a mixed group or an unknown status", () => {
     expect(allowedActions(MIXED)).toEqual([]);
     expect(allowedActions(undefined)).toEqual([]);
+  });
+
+  it("offers Widerruf akzeptieren for a private booking only", () => {
+    expect(
+      allowsAction({ status: "confirmed", company: "" }, "acceptWithdrawal")
+    ).toBe(true);
+    expect(
+      allowsAction(
+        { status: "confirmed", company: "ACME", isBusiness: false },
+        "acceptWithdrawal"
+      )
+    ).toBe(true);
+    expect(
+      allowsAction({ status: "confirmed", company: "ACME" }, "acceptWithdrawal")
+    ).toBe(false);
+    expect(
+      allowsAction(
+        { status: "confirmed", isBusiness: true },
+        "acceptWithdrawal"
+      )
+    ).toBe(false);
+    expect(
+      bookingTransitionActions({ status: "confirmed", isBusiness: true })
+    ).toEqual(["cancel"]);
+    expect(bookingTransitionActions({ status: "confirmed" })).toEqual([
+      "cancel",
+      "acceptWithdrawal",
+    ]);
   });
 
   it("answers for a booking through allowsAction", () => {

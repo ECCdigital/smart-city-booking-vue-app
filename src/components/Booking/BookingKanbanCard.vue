@@ -62,7 +62,7 @@
           <v-divider />
 
           <v-list-item
-            v-for="action in transitionActions(element.bookingItem?.status)"
+            v-for="action in bookingTransitionActions(element.bookingItem)"
             :key="action"
             :disabled="
               !BookingPermissionService.allowUpdate(element.bookingItem)
@@ -185,7 +185,7 @@ import {
   statusColor,
   statusIcon,
   statusLabel,
-  transitionActions,
+  bookingTransitionActions,
 } from "@/utils/bookingStatus";
 
 export default {
@@ -234,7 +234,7 @@ export default {
     statusColor,
     statusIcon,
     statusLabel,
-    transitionActions,
+    bookingTransitionActions,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },

@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import { isBusinessBooking } from "@/utils/businessBooking";
 
 /**
  * The booking state as the UI reads it: `booking.status`, the one stored
@@ -99,7 +100,18 @@ export function allowedActions(status) {
   return ACTIONS_BY_STATUS[status] || [];
 }
 
+/**
+ * Whether one booking offers `action`: its state allows it, and Widerruf
+ * akzeptieren only for a private booking - a business one has no
+ * withdrawal.
+ */
 export function allowsAction(booking, action) {
+  if (
+    action === BOOKING_ACTION.ACCEPT_WITHDRAWAL &&
+    isBusinessBooking(booking)
+  ) {
+    return false;
+  }
   return allowedActions(booking?.status).includes(action);
 }
 
@@ -139,6 +151,13 @@ export function seriesActionLabel(action, status) {
 export function transitionActions(status) {
   return allowedActions(status).filter(
     (action) => action !== BOOKING_ACTION.DELETE
+  );
+}
+
+/** The transitions one booking's menu offers: its state's, as `allowsAction` answers them. */
+export function bookingTransitionActions(booking) {
+  return transitionActions(booking?.status).filter((action) =>
+    allowsAction(booking, action)
   );
 }
 

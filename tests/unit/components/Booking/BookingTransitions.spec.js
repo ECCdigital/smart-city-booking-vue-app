@@ -995,6 +995,17 @@ describe("BookingTransitions", () => {
       expect(ApiGroupBookingService.rejectGroupBooking).not.toHaveBeenCalled();
     });
 
+    it("is refused for a business booking: it has no withdrawal", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "confirmed", isBusiness: true }),
+      });
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(ApiBookingService.acceptWithdrawal).not.toHaveBeenCalled();
+    });
+
     it("is refused for a withdrawn booking: Widerrufen is final", async () => {
       const { wrapper } = mountTransitions();
 

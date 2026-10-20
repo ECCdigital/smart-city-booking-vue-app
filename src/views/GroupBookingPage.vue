@@ -417,6 +417,7 @@ import {
   statusLabel,
   totalPriceOf,
   transitionActions,
+  bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 
@@ -591,7 +592,7 @@ export default {
       if (!BookingPermissionService.allowUpdate(member)) {
         return [];
       }
-      return transitionActions(member.status);
+      return bookingTransitionActions(member);
     },
     periodOf(member) {
       if (!member.timeBegin || !member.timeEnd) {

@@ -406,7 +406,7 @@ import {
 import {
   pathOf,
   paymentStatusLabel,
-  transitionActions,
+  bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
@@ -500,7 +500,7 @@ export default {
       if (!this.canUpdate) {
         return [];
       }
-      return transitionActions(this.booking.status);
+      return bookingTransitionActions(this.booking);
     },
     objects() {
       return Object.values(this.booking.bookableItems || {});
