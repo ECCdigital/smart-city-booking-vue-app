@@ -1837,6 +1837,10 @@
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
       }
     },
+    "kind": {
+      "private": "Privat",
+      "business": "Geschäftlich"
+    },
     "acceptWithdrawal": {
       "success": {
         "title": "Widerruf akzeptiert",
@@ -1905,7 +1909,8 @@
         "phone": "Telefon",
         "street": "Straße",
         "zip-code": "Postleitzahl",
-        "location": "Stadt"
+        "location": "Stadt",
+        "kind": "Buchungsart"
       },
       "custom-fields": {
         "title": "Benutzerdefinierte Felder",

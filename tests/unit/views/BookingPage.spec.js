@@ -554,6 +554,13 @@ describe("BookingPage", () => {
       expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
         "ACME"
       );
+      // Private or business is always stated, read off the company here.
+      expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
+        "Geschäftlich"
+      );
+      expect(bare.wrapper.find(".booking-page__customer").text()).toContain(
+        "Privat"
+      );
       const fields = filled.wrapper.find(".booking-page__custom-fields").text();
       expect(fields).toContain("Teilnehmer");
       expect(fields).toContain("12");
