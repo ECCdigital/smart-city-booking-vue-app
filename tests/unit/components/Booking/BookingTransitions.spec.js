@@ -960,28 +960,48 @@ describe("BookingTransitions", () => {
       expect(document.querySelector(".v-dialog--active")).toBeNull();
     });
 
-    it("says that an open payment lapses", async () => {
+    it.each([
+      ["unpaid", { status: "payment_due" }],
+      ["not yet confirmed", { status: "requested" }],
+    ])(
+      "says that it costs nothing and the invoiced amount lapses for a booking %s",
+      async (_name, overrides) => {
+        const { wrapper } = mountTransitions();
+
+        await start(wrapper, "acceptWithdrawal", {
+          booking: booking(overrides),
+        });
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain(
+          "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
+        );
+        expect(text).not.toContain("vollständig erstattet");
+      }
+    );
+
+    it("says only that it costs nothing for a free booking", async () => {
       const { wrapper } = mountTransitions();
 
       await start(wrapper, "acceptWithdrawal", {
-        booking: booking({ status: "payment_due" }),
+        booking: booking({ status: "requested", priceEur: 0 }),
       });
 
-      expect(document.querySelector(".v-dialog--active").textContent).toContain(
-        "Die offene Zahlung entfällt"
-      );
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain("Durch den Widerruf entstehen keine Kosten.");
+      expect(text).not.toContain("Rechnungsbetrag");
     });
 
-    it("says nothing about money for a free booking", async () => {
+    it("names the booking in bold italics", async () => {
       const { wrapper } = mountTransitions();
 
       await start(wrapper, "acceptWithdrawal", {
-        booking: booking({ status: "confirmed", priceEur: 0 }),
+        booking: booking({ status: "confirmed" }),
       });
 
       expect(
-        document.querySelector(".v-dialog--active").textContent
-      ).not.toContain("Ein Widerruf kostet nichts");
+        document.querySelector(".v-dialog--active strong > em").textContent
+      ).toBe("bk-1");
     });
 
     it("withdraws only the one member of a series", async () => {

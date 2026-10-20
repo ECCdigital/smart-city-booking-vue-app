@@ -1854,8 +1854,9 @@
       "dialog": {
         "title": "Widerruf akzeptieren",
         "hint": "Die Buchung {id} wird widerrufen. Das lässt sich nicht rückgängig machen. Die Kundin oder der Kunde erhält eine Bestätigung per E-Mail.",
-        "hint-refund": "Ein Widerruf kostet nichts: Der gezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
-        "hint-lapse": "Ein Widerruf kostet nichts: Die offene Zahlung entfällt."
+        "hint-refund": "Durch den Widerruf entstehen keine Kosten. Der bereits bezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
+        "hint-no-cost": "Durch den Widerruf entstehen keine Kosten.",
+        "hint-lapse": "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
       }
     },
     "transition": {

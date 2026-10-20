@@ -91,12 +91,18 @@
           }}</span>
         </v-card-title>
         <v-card-text>
-          <p class="text-body-2">
-            {{ $t("booking.acceptWithdrawal.dialog.hint", { id: booking.id }) }}
-          </p>
-          <p v-if="withdrawalPaymentHint" class="mb-0 text-body-2">
-            {{ withdrawalPaymentHint }}
-          </p>
+          <i18n
+            path="booking.acceptWithdrawal.dialog.hint"
+            tag="p"
+            class="text-body-2"
+          >
+            <template #id>
+              <strong
+                ><em>{{ booking.id }}</em></strong
+              >
+            </template>
+          </i18n>
+          <p class="mb-0 text-body-2">{{ withdrawalPaymentHint }}</p>
         </v-card-text>
         <v-card-text v-if="error" class="pt-0">
           <v-alert type="error" border="left" elevation="2" class="mb-0">
@@ -194,16 +200,16 @@ export default {
           : "booking.reinstate.dialog.hint-rejected";
       return this.$t(key, { id: this.booking?.id });
     },
-    /** What a withdrawal does to the money: a paid amount is refunded in full, an open payment lapses. */
+    /**
+     * A withdrawal costs nothing: a paid booking is refunded in full, the
+     * price of one not yet confirmed or paid lapses.
+     */
     withdrawalPaymentHint() {
-      if (isFree(this.booking)) return null;
-      if (this.booking?.status === BOOKING_STATUS.CONFIRMED) {
-        return this.$t("booking.acceptWithdrawal.dialog.hint-refund");
-      }
-      if (this.booking?.status === BOOKING_STATUS.PAYMENT_DUE) {
-        return this.$t("booking.acceptWithdrawal.dialog.hint-lapse");
-      }
-      return null;
+      const key = "booking.acceptWithdrawal.dialog";
+      if (isFree(this.booking)) return this.$t(`${key}.hint-no-cost`);
+      return this.booking?.status === BOOKING_STATUS.CONFIRMED
+        ? this.$t(`${key}.hint-refund`)
+        : this.$t(`${key}.hint-lapse`);
     },
   },
   methods: {
