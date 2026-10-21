@@ -193,6 +193,15 @@ export default {
     );
     return response.data;
   },
+  /** The withdrawal receipt („Widerrufbeleg“) of a withdrawn booking, by file name. */
+  getWithdrawalReceipt(id, withdrawalReceiptId) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/withdrawal-receipt/${withdrawalReceiptId}`,
+      {
+        responseType: "blob",
+      }
+    );
+  },
   getCancellationReceipt(id, cancellationReceiptId) {
     return ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt/${cancellationReceiptId}`,

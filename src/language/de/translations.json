@@ -1817,6 +1817,19 @@
         }
       }
     },
+    "withdrawalReceipt": {
+      "reprint": {
+        "hint": "Erzeugt eine Revision des Widerrufbelegs unter derselben Nummer.",
+        "success": {
+          "title": "Widerrufbeleg ausgestellt",
+          "message": "Der Widerrufbeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Widerrufbeleg konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
     "initialState": {
       "label": "Anfangszustand",
       "paymentMethod": "Zahlungsmethode auswählen",
@@ -1967,6 +1980,7 @@
         "receipts": "Belege",
         "invoices": "Rechnungen",
         "cancellations": "Stornobelege",
+        "withdrawals": "Widerrufbelege",
         "attachments": "Anhänge",
         "none": "keine",
         "issued-at": "Ausgestellt am {date}",
