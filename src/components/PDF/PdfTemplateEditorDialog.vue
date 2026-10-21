@@ -446,7 +446,8 @@ export default {
     templateType: {
       type: String,
       required: true,
-      validator: (v) => ["receipt", "invoice", "cancellation"].includes(v),
+      validator: (v) =>
+        ["receipt", "invoice", "cancellation", "withdrawal"].includes(v),
     },
     value: { type: String, default: "" },
     tenantId: { type: String, default: "" },
