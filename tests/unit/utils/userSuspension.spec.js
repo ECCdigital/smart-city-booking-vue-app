@@ -176,7 +176,7 @@ describe("suspensionBlacklistHint", () => {
   it.each([
     [
       true,
-      "Weg vom Häkchen, wenn die Sperre nur vorläufig ist, etwa bis eine Meldung geklärt ist.",
+      "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
     ],
     [
       false,

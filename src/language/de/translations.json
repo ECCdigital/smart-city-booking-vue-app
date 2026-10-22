@@ -2469,7 +2469,7 @@
         "error": "Die Sperre konnte nicht gesetzt werden.",
         "blacklist": "Adresse {address} auch auf die Blacklist setzen",
         "blacklist-hint": {
-          "on": "Weg vom Häkchen, wenn die Sperre nur vorläufig ist, etwa bis eine Meldung geklärt ist.",
+          "on": "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
           "off": "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden."
         },
         "on-blacklist": "Die Adresse {address} steht schon auf der Blacklist (Eintrag „{entry}“)."

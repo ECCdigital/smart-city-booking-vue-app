@@ -11,6 +11,10 @@
         </v-alert>
         <v-progress-linear v-if="!preview && !error" indeterminate />
         <v-simple-table v-if="consequences" dense class="consequences mb-3">
+          <colgroup>
+            <col class="consequences__what" />
+            <col class="consequences__effect" />
+          </colgroup>
           <tbody>
             <tr v-for="row in consequences" :key="row.label">
               <td>{{ row.label }}</td>
@@ -162,7 +166,19 @@ export default {
 </script>
 
 <style scoped>
-/* The table of consequences wraps in the dialog's width. */
+/*
+ * The table of consequences wraps in the dialog's width, with fixed
+ * columns: the checkbox swaps the texts, not the layout.
+ */
+.consequences ::v-deep table {
+  table-layout: fixed;
+}
+.consequences__what {
+  width: 55%;
+}
+.consequences__effect {
+  width: 45%;
+}
 .consequences td {
   white-space: normal;
 }
