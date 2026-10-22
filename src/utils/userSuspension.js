@@ -111,3 +111,28 @@ export function blacklistMatchText(user) {
   }
   return i18n.t("user.suspension.blacklist.address");
 }
+
+/**
+ * What the suspension settles, for its dialog (ECCdigital/tickets#630): per
+ * reporting tenant the open reports and the tenant owners who then get a
+ * mail, from `openReports` of the preview.
+ *
+ * @param {{tenantId: string, tenantName: string, reports: number, owners: string[]}[]} [openReports]
+ * @returns {{tenantId: string, text: string, owners: string}[]}
+ */
+export function suspensionReportNotes(openReports) {
+  return (openReports || []).map(
+    ({ tenantId, tenantName, reports, owners }) => ({
+      tenantId,
+      text: i18n.tc("user.suspension.suspend.reports", reports, {
+        count: reports,
+        tenant: tenantName,
+      }),
+      owners: owners?.length
+        ? i18n.t("user.suspension.suspend.reports-owners", {
+            owners: owners.join(", "),
+          })
+        : i18n.t("user.suspension.suspend.reports-no-owners"),
+    })
+  );
+}

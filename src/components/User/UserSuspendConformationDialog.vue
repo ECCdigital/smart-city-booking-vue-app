@@ -29,6 +29,17 @@
             </tr>
           </tbody>
         </v-simple-table>
+        <v-alert
+          v-for="note in reportNotes"
+          :key="note.tenantId"
+          type="info"
+          text
+          dense
+          class="mb-3"
+          data-test="suspend-report-note"
+        >
+          {{ note.text }} {{ note.owners }}
+        </v-alert>
         <v-textarea
           v-model="reason"
           :label="$t('user.suspension.suspend.reason')"
@@ -81,6 +92,7 @@
 import {
   suspensionBlacklistHint,
   suspensionConsequences,
+  suspensionReportNotes,
 } from "@/utils/userSuspension";
 
 /**
@@ -88,7 +100,9 @@ import {
  * of ECCdigital/tickets#620): the consequences and a required reason. The
  * checkbox „auch auf die Blacklist“, checked from the start, switches the
  * rows of guest and registration (ECCdigital/tickets#626); an entry that
- * already hits the address replaces it. Emits `confirm` with
+ * already hits the address replaces it. The open reports the suspension
+ * settles are named with the tenant owners who get a mail
+ * (ECCdigital/tickets#630). Emits `confirm` with
  * `{ reason, blacklist }` or `cancel`; the parent suspends.
  */
 export default {
@@ -141,6 +155,9 @@ export default {
     },
     blacklistHint() {
       return suspensionBlacklistHint(this.blacklist);
+    },
+    reportNotes() {
+      return suspensionReportNotes(this.preview?.openReports);
     },
   },
   watch: {

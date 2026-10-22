@@ -231,6 +231,22 @@
 
                       <v-divider />
 
+                      <v-list-item
+                        v-if="allowReport"
+                        link
+                        data-test="tenant-user-report"
+                        @click="openReport(item)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small color="warning"
+                            >mdi-flag-outline</v-icon
+                          >
+                        </v-list-item-icon>
+                        <v-list-item-title>
+                          {{ $t("user.report.open") }}
+                        </v-list-item-title>
+                      </v-list-item>
+
                       <v-list-item link @click="removeTenantUser(item.userId)">
                         <v-list-item-icon>
                           <v-icon small color="red">mdi-delete</v-icon>
@@ -319,6 +335,14 @@
       @add-direct="onAddDirect"
     ></TenantInviteUserDialog>
 
+    <UserReportDialog
+      :open="!!reporting"
+      :name="reporting ? getUserName(reporting) : ''"
+      :tenant-id="tenantId"
+      :user-id="reporting ? reporting.userId : null"
+      @close="reporting = null"
+    />
+
     <BlacklistWarningConformationDialog
       :open="!!blacklistWarning"
       :addresses="blacklistWarning ? blacklistWarning.addresses : []"
@@ -341,6 +365,8 @@ import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { blacklistedAmong } from "@/utils/blacklist";
 import { INVITE_QUERY } from "@/utils/tenantUsers";
 
@@ -351,9 +377,12 @@ export default {
     AdminLayout,
     SearchBar,
     BlacklistWarningConformationDialog,
+    UserReportDialog,
   },
   data() {
     return {
+      /** The member being reported to the instance (ECCdigital/tickets#630). */
+      reporting: null,
       valid: true,
       /**
        * The open warning before adding or inviting an address on the
@@ -412,6 +441,9 @@ export default {
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",
     }),
+    allowReport() {
+      return UserPermissionService.allowReport(this.tenantId);
+    },
     members() {
       return this.api.users.map((user) => {
         const details = this.api.userDetails.find(
@@ -785,6 +817,9 @@ export default {
       }
     },
 
+    openReport(member) {
+      this.reporting = member;
+    },
     getUserName(user) {
       if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;

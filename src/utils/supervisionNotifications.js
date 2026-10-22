@@ -33,6 +33,8 @@ export const NOTIFICATION_TYPES = [
   "review.queueEntered",
   "tenant.levelChanged",
   "review.decided",
+  "report.created",
+  "report.resolved",
 ];
 
 /**

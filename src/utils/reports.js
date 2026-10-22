@@ -1,0 +1,58 @@
+/**
+ * The reports to the instance (glossary „Meldung (eines Users oder einer
+ * Adresse)“, ECCdigital/tickets#630) as the review queue shows the open
+ * ones: one group per reported user, the reports of different tenants
+ * apart within it, the user waiting longest first.
+ */
+
+/** The status of a report as the backend names it. */
+export const REPORT_STATUS = Object.freeze({
+  OPEN: "open",
+  SUSPENDED: "suspended",
+  REJECTED: "rejected",
+});
+
+/**
+ * The reasons of a report in order: the first, then those added to it.
+ *
+ * @param {Object} report
+ * @returns {{reason: string, reportedBy: string, reportedAt: number, bookingId: string|null}[]}
+ */
+export function reportReasons(report) {
+  return [report, ...(report.additions || [])].map(
+    ({ reason, reportedBy, reportedAt, bookingId }) => ({
+      reason,
+      reportedBy,
+      reportedAt,
+      bookingId: bookingId ?? null,
+    })
+  );
+}
+
+/**
+ * Groups the open reports by the reported user.
+ *
+ * @param {Object[]} reports The answer of `GET /api/instances/reports`
+ * @returns {{userId: string, name: string, suspended: boolean, since: number, reports: Object[]}[]}
+ */
+export function groupOpenReports(reports) {
+  const groups = new Map();
+  const open = (reports || [])
+    .filter((report) => report.status === REPORT_STATUS.OPEN)
+    .sort((a, b) => a.reportedAt - b.reportedAt);
+  for (const report of open) {
+    let group = groups.get(report.targetUserId);
+    if (!group) {
+      group = {
+        userId: report.targetUserId,
+        name: report.targetName || report.targetUserId,
+        suspended: report.targetSuspended === true,
+        since: report.reportedAt,
+        reports: [],
+      };
+      groups.set(report.targetUserId, group);
+    }
+    group.reports.push(report);
+  }
+  return [...groups.values()];
+}

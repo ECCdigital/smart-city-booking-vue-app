@@ -5,6 +5,7 @@ import {
   suspensionConsequences,
   suspensionOriginLabel,
   suspensionReasonText,
+  suspensionReportNotes,
   suspensionStatusText,
 } from "@/utils/userSuspension";
 
@@ -216,4 +217,37 @@ describe("blacklistMatchText", () => {
       );
     }
   );
+});
+
+describe("suspensionReportNotes (ECCdigital/tickets#630)", () => {
+  it("names none without open reports", () => {
+    expect(suspensionReportNotes(undefined)).toEqual([]);
+    expect(suspensionReportNotes([])).toEqual([]);
+  });
+
+  it("names the reports of each tenant and the owners who get a mail", () => {
+    expect(
+      suspensionReportNotes([
+        {
+          tenantId: "stadt",
+          tenantName: "Stadt Musterhausen",
+          reports: 1,
+          owners: ["chef@stadt.de", "vize@stadt.de"],
+        },
+        { tenantId: "verein", tenantName: "Verein", reports: 2, owners: [] },
+      ])
+    ).toEqual([
+      {
+        tenantId: "stadt",
+        text: "Die Sperre erledigt die offene Meldung von Stadt Musterhausen.",
+        owners:
+          "Eine Mail mit dem Ergebnis geht an chef@stadt.de, vize@stadt.de.",
+      },
+      {
+        tenantId: "verein",
+        text: "Die Sperre erledigt 2 offene Meldungen von Verein.",
+        owners: "Der Mandant hat keinen Besitzer, den eine Mail erreicht.",
+      },
+    ]);
+  });
 });

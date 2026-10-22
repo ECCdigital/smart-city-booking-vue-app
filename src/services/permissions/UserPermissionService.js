@@ -1,3 +1,4 @@
+import store from "@/store";
 import user from "@/store/modules/user";
 
 class UserPermissionService {
@@ -15,6 +16,21 @@ class UserPermissionService {
 
   static allowDelete() {
     return true;
+  }
+
+  /**
+   * Reporting a member or a booker to the instance (glossary „Meldung“,
+   * ECCdigital/tickets#630): the backend's `tenantUser.report`,
+   * `manageUsers.updateAny` of the tenant, which its owner holds.
+   */
+  static allowReport(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (user.state.data.permissions.instanceOwner) return true;
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+    return !!permissions.manageUsers?.updateAny;
   }
 }
 

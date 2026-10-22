@@ -172,6 +172,8 @@ import ApiClientService from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
+import ApiReportService from "@/services/api/ApiReportService";
+import { REPORT_STATUS, groupOpenReports } from "@/utils/reports";
 import NotificationDisplay from "@/components/NotificationDisplay";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import keycloakService from "@/services/KeycloakService";
@@ -429,10 +431,11 @@ export default {
       });
     },
     /**
-     * What waits for the instance owner's decision - the offers and the
-     * tenants, the two registers of the Prüfliste: the entry's badge is the
-     * sum of their counters, each read as a page of one. A register that
-     * cannot be read adds nothing.
+     * What waits for the instance owner's decision - the offers, the
+     * tenants and the users with open reports, the three registers of the
+     * Prüfliste: the entry's badge is the sum of their counters, the queues
+     * each read as a page of one. A register that cannot be read adds
+     * nothing.
      *
      * The permissions are read off the store, as `isAuthorized` does. A
      * permission service would import the user module before the store, and
@@ -446,6 +449,11 @@ export default {
       const answers = await Promise.allSettled([
         ApiReviewQueueService.getReviewQueue(firstOfOne),
         ApiTenantApprovalQueueService.getTenantApprovalQueue(firstOfOne),
+        ApiReportService.getReports({ status: REPORT_STATUS.OPEN }).then(
+          (reports) => ({
+            total: groupOpenReports(reports).length,
+          })
+        ),
       ]);
       this.badges.waiting = answers.reduce((sum, answer) => {
         if (answer.status === "rejected") {

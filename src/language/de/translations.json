@@ -123,7 +123,10 @@
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
-      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr.",
+      "report_target_not_of_tenant": "Melden lassen sich nur Mitglieder des Mandanten und Bucher seiner Buchungen.",
+      "report_target_tenant_owner": "Einen Besitzer des Mandanten melden nur Besitzer.",
+      "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden."
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
@@ -136,13 +139,15 @@
       "diverging-bookings": "Betroffene Buchungen: {ids}",
       "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut.",
       "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren.",
-      "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag."
+      "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
+      "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
-      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist."
+      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist.",
+      "report_none_open": "Zu diesem User ist keine Meldung mehr offen."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
@@ -151,7 +156,10 @@
       "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
       "suspension_reason_required": "Für eine Sperre ist ein Grund nötig.",
       "blacklist_reason_required": "Für einen Blacklist-Eintrag ist ein Grund nötig.",
-      "blacklist_value_invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de."
+      "blacklist_value_invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
+      "report_reason_required": "Für eine Meldung ist ein Grund nötig.",
+      "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
+      "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -2500,7 +2508,17 @@
           "on": "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
           "off": "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden."
         },
-        "on-blacklist": "Die Adresse {address} steht schon auf der Blacklist (Eintrag „{entry}“)."
+        "on-blacklist": "Die Adresse {address} steht schon auf der Blacklist (Eintrag „{entry}“).",
+        "reports": "Die Sperre erledigt die offene Meldung von {tenant}. | Die Sperre erledigt {count} offene Meldungen von {tenant}.",
+        "reports-owners": "Eine Mail mit dem Ergebnis geht an {owners}.",
+        "reports-no-owners": "Der Mandant hat keinen Besitzer, den eine Mail erreicht."
+      },
+      "reports": {
+        "link": "Aus einer Meldung | Aus {count} Meldungen",
+        "title": "Meldungen zur Sperre von {name}",
+        "loading": "Meldungen werden geladen...",
+        "load-failed": "Die Meldungen konnten nicht geladen werden.",
+        "close": "Schließen"
       },
       "unsuspend": {
         "open": "Entsperren",
@@ -2513,6 +2531,19 @@
         "confirm": "Entsperren",
         "error": "Die Sperre konnte nicht aufgehoben werden."
       }
+    },
+    "report": {
+      "open": "Melden",
+      "open-booker": "Bucher melden",
+      "title": "{name} an die Instanz melden",
+      "text": "Die Betreiber der Plattform entscheiden über eine Sperre für die ganze Instanz. {name} erfährt von der Meldung nichts.",
+      "booking": "Die Buchung hängt als Beleg an der Meldung.",
+      "reason": "Grund (Pflicht)",
+      "cancel": "Abbrechen",
+      "confirm": "Melden",
+      "created": "Die Meldung ist bei der Instanz eingegangen.",
+      "supplemented": "Die offene Meldung zu diesem User wurde ergänzt.",
+      "error": "Die Meldung konnte nicht gesendet werden."
     }
   },
   "coupon": {
@@ -3463,6 +3494,25 @@
       },
       "page-text": "{0}–{1} von {2}"
     },
+    "reports": {
+      "hint": "Offene Meldungen der Mandanten, nach User gruppiert – der am längsten gemeldete zuerst. „Sperren …“ und „Ablehnen“ erledigen alle offenen Meldungen zum User, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "loading": "Meldungen werden geladen...",
+      "empty": "Keine Meldungen offen",
+      "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
+      "count": "eine Meldung | {count} Meldungen",
+      "already-suspended": "bereits gesperrt",
+      "reported": "{tenant} · gemeldet von {by} am {date}",
+      "added": "ergänzt von {by} am {date}",
+      "booking": "Buchung {id}",
+      "open-user": "User bearbeiten",
+      "suspend": "Sperren …",
+      "reject": "Ablehnen",
+      "reject-title": "Meldungen zu {name} ablehnen",
+      "reject-text": "Die Ablehnung erledigt alle offenen Meldungen zu {name}. Die Besitzer der meldenden Mandanten lesen die Begründung.",
+      "reject-reason": "Begründung (Pflicht)",
+      "cancel": "Abbrechen",
+      "failed": "Die Meldungen konnten nicht erledigt werden."
+    },
     "tenant-approval-queue": {
       "hint": "Mandanten mit der Stufe „Freigabe ausstehend“ – der am längsten wartende zuerst. „Freigeben“ macht einen Mandanten beaufsichtigt, der Pfeil daneben frei; eine Begründung nimmt der Stufendialog auf der Seite „Mandanten“ auf.",
       "loading": "Mandanten werden geladen...",
@@ -3471,7 +3521,8 @@
       "registers": {
         "label": "Register der Prüfliste",
         "offers": "Angebote",
-        "tenants": "Mandanten"
+        "tenants": "Mandanten",
+        "reports": "Meldungen"
       },
       "load-failed": "Die wartenden Mandanten konnten nicht geladen werden.",
       "no-owner": "kein Owner",
@@ -3501,7 +3552,9 @@
         "tenant-selfCreated": "Selbst-Anlage",
         "review-queueEntered": "Eintritt in die Prüfliste",
         "tenant-levelChanged": "Stufenwechsel",
-        "review-decided": "Prüfentscheidung"
+        "review-decided": "Prüfentscheidung",
+        "report-created": "Neue Meldung",
+        "report-resolved": "Meldung erledigt"
       },
       "statuses": {
         "pending": "ausstehend",

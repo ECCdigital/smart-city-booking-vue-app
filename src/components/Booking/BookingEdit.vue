@@ -575,6 +575,21 @@
                   v-model="selectedBooking.phone"
                 ></v-text-field>
               </v-col>
+              <!-- The booker with an account, as the stored booking names
+                   them (ECCdigital/tickets#630). -->
+              <v-col v-if="allowReportBooker" cols="12" class="py-0">
+                <v-btn
+                  text
+                  small
+                  color="warning"
+                  class="px-1"
+                  data-test="booking-report-booker"
+                  @click="reportBooker = true"
+                >
+                  <v-icon left small>mdi-flag-outline</v-icon>
+                  {{ $t("user.report.open-booker") }}
+                </v-btn>
+              </v-col>
               <v-col cols="12">
                 <v-text-field
                   background-color="accent"
@@ -857,6 +872,14 @@
       @cancel="resetChanges"
     />
 
+    <UserReportDialog
+      v-if="allowReportBooker"
+      :open="reportBooker"
+      :name="booking.name || booking.assignedUserId"
+      :tenant-id="booking.tenantId || tenantId"
+      :booking-id="booking.id"
+      @close="reportBooker = false"
+    />
     <BlacklistWarningConformationDialog
       :open="blacklistedAddresses.length > 0"
       :addresses="blacklistedAddresses"
@@ -869,6 +892,8 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { addressesToCheck, blacklistedAmong } from "@/utils/blacklist";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
@@ -920,6 +945,7 @@ export default {
     BookingEditSummary,
     CheckoutCalendar,
     BlacklistWarningConformationDialog,
+    UserReportDialog,
   },
   props: {
     booking: {
@@ -945,6 +971,8 @@ export default {
       inProgress: false,
       /** The addresses the blacklist warning names (ECCdigital/tickets#629). */
       blacklistedAddresses: [],
+      /** The dialog „Bucher melden“ (ECCdigital/tickets#630). */
+      reportBooker: false,
       test: null,
       addBookableValue: null,
 
@@ -1072,6 +1100,20 @@ export default {
     }),
     isCreateMode() {
       return !this.selectedBooking.id;
+    },
+    /**
+     * „Bucher melden“: a stored booking with a booker, for a role that may
+     * report (ECCdigital/tickets#630). Whether the booker has an account the
+     * backend says.
+     */
+    allowReportBooker() {
+      return (
+        !this.isCreateMode &&
+        !!this.booking.assignedUserId &&
+        UserPermissionService.allowReport(
+          this.booking.tenantId || this.tenantId
+        )
+      );
     },
     /** The paid date belongs to Bestätigt only; the payment itself is the `pay` transition. */
     paymentEditable() {

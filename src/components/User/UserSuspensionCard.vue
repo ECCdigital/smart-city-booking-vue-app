@@ -21,6 +21,15 @@
             <div v-if="reasonText" class="text-body-2">
               {{ reasonText }}
             </div>
+            <div v-if="reportIds.length" class="text-body-2">
+              <a
+                href="#"
+                data-test="suspension-reports-link"
+                @click.prevent="openReports"
+              >
+                {{ $tc("user.suspension.reports.link", reportIds.length) }}
+              </a>
+            </div>
             <div
               class="text-body-2 mt-1 d-flex align-center"
               :class="{ 'grey--text': !user.blacklistMatch }"
@@ -60,6 +69,33 @@
       @confirm="suspend"
       @cancel="suspendDialog = false"
     />
+    <v-dialog v-model="reportsDialog" max-width="560">
+      <v-card>
+        <v-card-title class="text-h6 text-break">
+          {{ $t("user.suspension.reports.title", { name }) }}
+        </v-card-title>
+        <v-card-text>
+          <v-progress-linear
+            v-if="reports === null && !reportsError"
+            indeterminate
+          />
+          <v-alert v-if="reportsError" type="warning" text dense>
+            {{ reportsError }}
+          </v-alert>
+          <ReportReasons
+            v-for="report in reports || []"
+            :key="report.id"
+            :report="report"
+            class="mb-3"
+          />
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn text @click="reportsDialog = false">
+            {{ $t("user.suspension.reports.close") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <UserUnsuspendConformationDialog
       :open="unsuspendDialog"
       :name="name"
@@ -74,6 +110,8 @@
 
 <script>
 import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiReportService from "@/services/api/ApiReportService";
+import ReportReasons from "@/components/Supervision/ReportReasons.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import UserSuspendConformationDialog from "@/components/User/UserSuspendConformationDialog.vue";
 import UserUnsuspendConformationDialog from "@/components/User/UserUnsuspendConformationDialog.vue";
@@ -87,7 +125,8 @@ import {
  * The card „Sperre“ in the user editing (ECCdigital/tickets#624): suspends
  * and lifts the suspension at once over its own dialogs, never with
  * „Speichern“ of the user dialog, both with the blacklist as their
- * counterpart (ECCdigital/tickets#626). Emits `changed` with the user as
+ * counterpart (ECCdigital/tickets#626). A suspension that settled reports
+ * links them (ECCdigital/tickets#630). Emits `changed` with the user as
  * the API answers it.
  */
 export default {
@@ -95,6 +134,7 @@ export default {
   components: {
     UserSuspendConformationDialog,
     UserUnsuspendConformationDialog,
+    ReportReasons,
   },
   props: {
     user: {
@@ -115,6 +155,10 @@ export default {
       unsuspendEntry: undefined,
       error: null,
       inProgress: false,
+      reportsDialog: false,
+      // The reports the suspension settled; `null` while they load.
+      reports: null,
+      reportsError: null,
     };
   },
   computed: {
@@ -127,8 +171,28 @@ export default {
     blacklistText() {
       return blacklistMatchText(this.user);
     },
+    reportIds() {
+      return (this.user.isSuspended && this.user.suspension?.reportIds) || [];
+    },
   },
   methods: {
+    /** The reports the suspension points to, with all their reasons. */
+    async openReports() {
+      this.reports = null;
+      this.reportsError = null;
+      this.reportsDialog = true;
+      try {
+        const reports = await ApiReportService.getReports({
+          userId: this.user.id,
+        });
+        this.reports = reports.filter((report) =>
+          this.reportIds.includes(report.id)
+        );
+      } catch (error) {
+        console.error(error);
+        this.reportsError = this.$t("user.suspension.reports.load-failed");
+      }
+    },
     async openSuspend() {
       this.preview = null;
       this.error = null;
