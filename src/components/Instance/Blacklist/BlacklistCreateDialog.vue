@@ -6,28 +6,29 @@
         <span>{{ $t("instance.blacklist.create.title") }}</span>
       </v-card-title>
       <v-card-text>
-        <div class="d-flex align-start">
-          <v-text-field
-            v-model="value"
-            :label="$t('instance.blacklist.create.value')"
-            :hint="$t('instance.blacklist.create.value-hint')"
-            :error-messages="valueError"
-            persistent-hint
-            outlined
-            dense
-            autofocus
-            @keydown.enter="loadPreview"
-          />
-          <v-btn
-            class="ml-2 mt-1"
-            outlined
-            :disabled="!parsed || inProgress"
-            :loading="previewLoading"
-            @click="loadPreview"
-          >
-            {{ $t("instance.blacklist.create.preview") }}
-          </v-btn>
-        </div>
+        <p class="text-body-2">
+          {{ $t("instance.blacklist.create.text") }}
+        </p>
+        <v-text-field
+          v-model="value"
+          :label="$t('instance.blacklist.create.value')"
+          :hint="$t('instance.blacklist.create.value-hint')"
+          :error-messages="valueError"
+          persistent-hint
+          outlined
+          dense
+          autofocus
+          @keydown.enter="loadPreview"
+        />
+        <v-btn
+          class="mt-3"
+          outlined
+          :disabled="!parsed || inProgress"
+          :loading="previewLoading"
+          @click="loadPreview"
+        >
+          {{ $t("instance.blacklist.create.preview") }}
+        </v-btn>
 
         <div v-if="preview" class="mt-4">
           <v-alert v-if="preview.exists" type="warning" text dense>

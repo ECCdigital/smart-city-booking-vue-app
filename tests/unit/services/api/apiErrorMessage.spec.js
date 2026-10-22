@@ -288,7 +288,7 @@ describe("getApiErrorMessage", () => {
       [
         400,
         "blacklist_value_invalid",
-        "Bitte eine Adresse oder eine Domain mit führendem @ angeben.",
+        "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
       ],
       [
         409,
