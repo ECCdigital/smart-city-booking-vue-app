@@ -81,6 +81,15 @@ describe("getApiErrorMessage", () => {
       );
     });
 
+    it("asks for the reason of a suspension (ECCdigital/tickets#624)", () => {
+      expect(
+        getApiErrorMessage(
+          lifecycleError(400, "suspension_reason_required"),
+          FALLBACK
+        )
+      ).toBe("Für eine Sperre ist ein Grund nötig.");
+    });
+
     it("says a booking cannot be born in the state the create PUT named", () => {
       const error = lifecycleError(400, "invalid_status", {
         status: "cancelled",
@@ -259,6 +268,15 @@ describe("getApiErrorMessage", () => {
       expect(getApiErrorMessage(error, FALLBACK)).toBe(
         "Die Buchung ist inzwischen in einem anderen Zustand. Betroffene Buchungen: b2, b3"
       );
+    });
+
+    it("says an instance owner cannot be suspended (ECCdigital/tickets#624)", () => {
+      expect(
+        getApiErrorMessage(
+          lifecycleError(409, "instance_owner_not_suspendable"),
+          FALLBACK
+        )
+      ).toBe("Ein Instanz-Owner lässt sich nicht sperren.");
     });
 
     it("reads `not_cancelled`", () => {

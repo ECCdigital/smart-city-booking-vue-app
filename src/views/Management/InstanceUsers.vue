@@ -22,7 +22,7 @@
             </v-chip>
             <v-chip class="mr-2" small color="orange" text-color="white">
               <v-icon left x-small>mdi-alert-circle</v-icon>
-              {{ getSuspendedCount() }} Suspendiert
+              {{ getSuspendedCount() }} {{ $t("user.suspension.chip") }}
             </v-chip>
           </v-col>
         </v-row>
@@ -71,7 +71,8 @@
                       class="ml-1"
                     >
                       <v-icon left x-small>mdi-alert</v-icon>
-                      Suspendiert
+                      {{ $t("user.suspension.chip") }}
+                      ({{ suspensionOriginLabel(item) }})
                     </v-chip>
                   </v-list-item-title>
 
@@ -246,6 +247,7 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import ApiMembershipService from "@/services/api/ApiMembershipService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import { suspensionOriginLabel } from "@/utils/userSuspension";
 
 /** The option "Ohne Mandantenzuordnung" among the tenants of the filter. */
 const NO_TENANT = "__no-tenant__";
@@ -304,7 +306,7 @@ export default {
             },
             {
               value: "suspended",
-              label: "Nur suspendiert",
+              label: "Nur gesperrt",
               icon: "mdi-alert-circle",
               color: "orange",
             },
@@ -465,6 +467,7 @@ export default {
       return this.filteredUsers.filter((user) => user.isVerified).length;
     },
 
+    suspensionOriginLabel,
     getSuspendedCount() {
       return this.filteredUsers.filter((user) => user.isSuspended).length;
     },

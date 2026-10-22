@@ -123,7 +123,8 @@
       "supervision_notification_already_sent": "Die Mitteilung wurde bereits gesendet.",
       "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
       "diverging-bookings": "Betroffene Buchungen: {ids}",
-      "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut."
+      "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut.",
+      "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
@@ -134,7 +135,8 @@
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
-      "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu."
+      "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
+      "suspension_reason_required": "Für eine Sperre ist ein Grund nötig."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -2349,6 +2351,64 @@
     },
     "list": {
       "search": "Name oder ID"
+    },
+    "suspension": {
+      "title": "Sperre",
+      "chip": "Gesperrt",
+      "origin": {
+        "manual": "von Hand"
+      },
+      "status": {
+        "active": "Der Account ist aktiv.",
+        "suspended": "Gesperrt {origin}",
+        "suspended-with-record": "Gesperrt {origin} am {date} von {by}. Grund: {reason}"
+      },
+      "consequences": {
+        "admin-sign-in": {
+          "label": "Im Admin anmelden"
+        },
+        "catalog-sign-in": {
+          "label": "Im Katalog anmelden (Passwort, SSO, Karte)"
+        },
+        "sessions": {
+          "label": "Laufende Sitzungen"
+        },
+        "guest-booking": {
+          "label": "Als Gast mit dieser Adresse buchen",
+          "stays": "weiter möglich"
+        },
+        "registration": {
+          "label": "Mit dieser Adresse neu registrieren",
+          "stays": "kein neues Konto (Adresse belegt)"
+        },
+        "bookings": {
+          "label": "{count} bestehende Buchung | {count} bestehende Buchungen",
+          "stays": "bleiben, Mandanten entscheiden"
+        },
+        "memberships": {
+          "label": "Mitgliedschaft in {count} Mandanten | Mitgliedschaften in {count} Mandanten",
+          "stays": "bleiben, ruhen"
+        },
+        "ends": "nicht mehr möglich"
+      },
+      "suspend": {
+        "open": "Sperren …",
+        "title": "{name} für die ganze Instanz sperren?",
+        "warning": "{name} kann sich danach nirgends mehr anmelden, weder im Admin noch im Katalog, und laufende Sitzungen enden sofort.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Sperren",
+        "preview-error": "Die Folgen konnten nicht geladen werden.",
+        "error": "Die Sperre konnte nicht gesetzt werden."
+      },
+      "unsuspend": {
+        "open": "Entsperren …",
+        "title": "{name} entsperren?",
+        "text": "{name} kann sich danach wieder anmelden, im Admin und im Katalog.",
+        "cancel": "Abbrechen",
+        "confirm": "Entsperren",
+        "error": "Die Sperre konnte nicht aufgehoben werden."
+      }
     }
   },
   "coupon": {
