@@ -18,8 +18,9 @@ export function suspensionOriginLabel(user) {
 }
 
 /**
- * The state of the card „Sperre“: who suspended when, or only „Gesperrt
- * von Hand“ for a suspension stored without those details.
+ * The state of the card „Sperre“: who suspended when, by hand or by which
+ * blacklist entry, or only „Gesperrt von Hand“ for a suspension stored
+ * without those details.
  */
 export function suspensionStatusText(user) {
   if (!user?.isSuspended) return i18n.t("user.suspension.status.active");
@@ -28,13 +29,23 @@ export function suspensionStatusText(user) {
   if (!suspendedAt || !suspendedBy) {
     return i18n.t("user.suspension.status.suspended", { origin });
   }
+  const date = new Date(suspendedAt).toLocaleDateString("de-DE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  // A blacklist entry names itself (ECCdigital/tickets#625).
+  const entry = user.suspension.blacklistEntry?.value;
+  if (entry) {
+    return i18n.t("user.suspension.status.suspended-by-blacklist", {
+      entry,
+      date,
+      by: suspendedBy,
+    });
+  }
   return i18n.t("user.suspension.status.suspended-with-record", {
     origin,
-    date: new Date(suspendedAt).toLocaleDateString("de-DE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }),
+    date,
     by: suspendedBy,
   });
 }

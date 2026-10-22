@@ -24,6 +24,23 @@ describe("suspensionStatusText", () => {
     ).toBe("Gesperrt von Hand am 21.10.2026 von admin@stadt.de.");
   });
 
+  it("names the entry, the time and the person of a suspension by the blacklist (ECCdigital/tickets#625)", () => {
+    expect(
+      suspensionStatusText({
+        isSuspended: true,
+        suspension: {
+          origin: "blacklist",
+          reason: "Wegwerfadressen",
+          suspendedAt: SUSPENDED_AT,
+          suspendedBy: "admin@stadt.de",
+          blacklistEntry: { id: "e1", value: "@wegwerf.de" },
+        },
+      })
+    ).toBe(
+      "Gesperrt durch Blacklist-Eintrag „@wegwerf.de“ am 21.10.2026 von admin@stadt.de."
+    );
+  });
+
   it("reads a suspension without a record as by hand without details", () => {
     const text = "Gesperrt von Hand";
     expect(suspensionStatusText({ isSuspended: true, suspension: null })).toBe(
@@ -73,6 +90,7 @@ describe("suspensionOriginLabel", () => {
   it.each([
     [{ isSuspended: true, suspension: { origin: "manual" } }, "von Hand"],
     [{ isSuspended: true, suspension: null }, "von Hand"],
+    [{ isSuspended: true, suspension: { origin: "blacklist" } }, "Blacklist"],
     [{ isSuspended: false, suspension: null }, ""],
   ])("reads %j as „%s“", (user, label) => {
     expect(suspensionOriginLabel(user)).toBe(label);

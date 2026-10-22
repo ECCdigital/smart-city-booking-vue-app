@@ -279,6 +279,36 @@ describe("getApiErrorMessage", () => {
       ).toBe("Ein Instanz-Owner lässt sich nicht sperren.");
     });
 
+    it.each([
+      [
+        400,
+        "blacklist_reason_required",
+        "Für einen Blacklist-Eintrag ist ein Grund nötig.",
+      ],
+      [
+        400,
+        "blacklist_value_invalid",
+        "Bitte eine Adresse oder eine Domain mit führendem @ angeben.",
+      ],
+      [
+        409,
+        "blacklist_entry_exists",
+        "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
+      ],
+      [
+        404,
+        "blacklist_entry_not_found",
+        "Der Eintrag steht nicht mehr auf der Blacklist.",
+      ],
+    ])(
+      "reads the blacklist's %i `%s` (ECCdigital/tickets#625)",
+      (status, code, text) => {
+        expect(getApiErrorMessage(lifecycleError(status, code), FALLBACK)).toBe(
+          text
+        );
+      }
+    );
+
     it("reads `not_cancelled`", () => {
       expect(
         getApiErrorMessage(lifecycleError(409, "not_cancelled"), FALLBACK)

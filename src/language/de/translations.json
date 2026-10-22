@@ -124,19 +124,23 @@
       "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
       "diverging-bookings": "Betroffene Buchungen: {ids}",
       "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut.",
-      "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren."
+      "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren.",
+      "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
-      "tenant_not_found": "Der Mandant existiert nicht mehr."
+      "tenant_not_found": "Der Mandant existiert nicht mehr.",
+      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
       "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
-      "suspension_reason_required": "Für eine Sperre ist ein Grund nötig."
+      "suspension_reason_required": "Für eine Sperre ist ein Grund nötig.",
+      "blacklist_reason_required": "Für einen Blacklist-Eintrag ist ein Grund nötig.",
+      "blacklist_value_invalid": "Bitte eine Adresse oder eine Domain mit führendem @ angeben."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -979,6 +983,68 @@
     }
   },
   "instance": {
+    "blacklist": {
+      "title": "Blacklist",
+      "lead": "Mailadressen und Domains, die für alle Mandanten der Instanz gelten. Ein neuer Eintrag sperrt die passenden Konten sofort.",
+      "empty": "Die Blacklist ist leer.",
+      "add": "Eintrag anlegen",
+      "reload": "Neu laden",
+      "load-error": "Die Blacklist konnte nicht geladen werden.",
+      "headers": {
+        "value": "Eintrag",
+        "kind": "Art",
+        "reason": "Grund",
+        "createdAt": "Eingetragen am",
+        "createdBy": "Von",
+        "origin": "Herkunft",
+        "suspended": "Gesperrte Konten",
+        "actions": "Aktionen"
+      },
+      "kind": {
+        "address": "Adresse",
+        "domain": "Domain"
+      },
+      "origin": {
+        "manual": "von Hand"
+      },
+      "edit-reason": "Grund ändern",
+      "remove": "Entfernen",
+      "create": {
+        "title": "Eintrag anlegen",
+        "value": "Adresse oder Domain",
+        "value-hint": "Exakte Adresse (max@firma.de) oder Domain mit führendem @ (@wegwerf.de). Eine Domain trifft keine Subdomains.",
+        "value-invalid": "Bitte eine Adresse oder eine Domain mit führendem @ angeben.",
+        "preview": "Konten prüfen",
+        "suspend": "Wird sofort gesperrt ({count})",
+        "instance-owners": "Nicht gesperrt: Instanz-Owner ({count})",
+        "already-suspended": "Schon gesperrt ({count})",
+        "none": "Kein Konto passt zu diesem Eintrag.",
+        "exists": "Für „{value}“ gibt es schon einen Eintrag.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Eintragen",
+        "preview-error": "Die betroffenen Konten konnten nicht geladen werden.",
+        "error": "Der Eintrag konnte nicht angelegt werden."
+      },
+      "reason-dialog": {
+        "title": "Grund für „{value}“ ändern",
+        "text": "Adresse oder Domain eines Eintrags lassen sich nicht ändern. Wer sie ändern will, entfernt den Eintrag und legt ihn neu an.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Speichern",
+        "error": "Der Grund konnte nicht geändert werden."
+      },
+      "remove-dialog": {
+        "title": "„{value}“ von der Blacklist entfernen?",
+        "suspended": "Der Eintrag hat beim Anlegen {count} Konto gesperrt: | Der Eintrag hat beim Anlegen {count} Konten gesperrt:",
+        "none": "Der Eintrag hat beim Anlegen kein Konto gesperrt.",
+        "unsuspend": "Mit entsperren",
+        "unsuspend-hint": "Entsperrt nur Konten, deren Sperre noch von diesem Eintrag stammt.",
+        "cancel": "Abbrechen",
+        "confirm": "Entfernen",
+        "error": "Der Eintrag konnte nicht entfernt werden."
+      }
+    },
     "edit": {
       "owners": {
         "missing": "Die Instanz braucht mindestens einen Admin. Fügen Sie einen Admin hinzu."
@@ -2356,12 +2422,14 @@
       "title": "Sperre",
       "chip": "Gesperrt",
       "origin": {
-        "manual": "von Hand"
+        "manual": "von Hand",
+        "blacklist": "Blacklist"
       },
       "status": {
         "active": "Der Account ist aktiv.",
         "suspended": "Gesperrt {origin}",
         "suspended-with-record": "Gesperrt {origin} am {date} von {by}.",
+        "suspended-by-blacklist": "Gesperrt durch Blacklist-Eintrag „{entry}“ am {date} von {by}.",
         "reason": "Grund: {reason}"
       },
       "consequences": {

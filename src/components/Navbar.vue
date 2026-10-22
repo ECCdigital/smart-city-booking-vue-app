@@ -332,6 +332,12 @@ export default {
             interfaceName: "instance",
           },
           {
+            title: "Blacklist",
+            link: "instance-blacklist",
+            icon: "mdi-email-off-outline",
+            interfaceName: "instance",
+          },
+          {
             title: "Automatisierungsregeln",
             link: "rules",
             icon: "mdi-cog-sync-outline",
