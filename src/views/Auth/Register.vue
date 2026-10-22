@@ -4,7 +4,7 @@
       <CheckoutAddressBlacklistedAlert
         v-if="blacklistedMailAddress !== null"
         :mail-address="blacklistedMailAddress"
-        title-key="checkout.address_blacklisted.registrationTitle"
+        registration
         class="mb-4"
       />
       <div class="scb-form__row">

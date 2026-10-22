@@ -35,7 +35,7 @@
     <CheckoutAddressBlacklistedAlert
       v-if="state === 'blacklisted'"
       :mail-address="blacklistedMailAddress"
-      title-key="checkout.address_blacklisted.registrationTitle"
+      registration
       class="mb-4"
     />
 

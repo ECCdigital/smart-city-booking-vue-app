@@ -77,6 +77,9 @@ describe("CardLoginCard — an address on the blacklist", () => {
     expect(api.cardSignup).toHaveBeenCalledTimes(1);
     const notice = wrapper.find("[data-test='address-blacklisted']");
     expect(notice.text()).toContain("Registrierung nicht möglich");
+    expect(notice.text()).toContain(
+      "Mit dieser E-Mail-Adresse ist keine Registrierung möglich."
+    );
     expect(notice.find("a").attributes("href")).toBe(
       "mailto:betrieb@example.test"
     );

@@ -400,7 +400,7 @@ export default {
     <CheckoutAddressBlacklistedAlert
       v-if="state === possibleStates.SIGNUP_BLACKLISTED"
       :mail-address="blacklistedMailAddress"
-      title-key="checkout.address_blacklisted.registrationTitle"
+      registration
       class="mb-0"
     />
 

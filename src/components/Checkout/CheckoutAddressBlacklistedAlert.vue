@@ -7,9 +7,13 @@
     data-test="address-blacklisted"
   >
     <div class="font-weight-bold">
-      {{ $t(titleKey) }}
+      {{ $t(`checkout.address_blacklisted.${keys.title}`) }}
     </div>
-    <i18n path="checkout.address_blacklisted.notice" tag="p" class="mb-0">
+    <i18n
+      :path="`checkout.address_blacklisted.${keys.notice}`"
+      tag="p"
+      class="mb-0"
+    >
       <template #contact>
         <span v-if="mailAddress">
           <!-- Wraps as a whole first, breaks only when longer than a line. -->
@@ -44,7 +48,7 @@ import { mapActions } from "vuex";
  * legacy checkout: it stays where the booking is sent, and the instance's
  * mail address in it opens a mail or is copied. Without one it names the
  * operator of the offer. The registration (ECCdigital/tickets#628) shows
- * the same notice under a title of its own.
+ * it with a title and a notice of its own.
  */
 export default {
   name: "CheckoutAddressBlacklistedAlert",
@@ -52,8 +56,16 @@ export default {
   props: {
     /** The instance's mail address from the refusal, trimmed; empty without one. */
     mailAddress: { type: String, default: "" },
-    /** The key of the title: the checkout's, or the registration's. */
-    titleKey: { type: String, default: "checkout.address_blacklisted.title" },
+    /** The refusal of a registration instead of a booking. */
+    registration: { type: Boolean, default: false },
+  },
+
+  computed: {
+    keys() {
+      return this.registration
+        ? { title: "registrationTitle", notice: "registrationNotice" }
+        : { title: "title", notice: "notice" };
+    },
   },
 
   methods: {
