@@ -71,8 +71,12 @@ export default {
     };
   },
   watch: {
-    open(isOpen) {
-      if (isOpen) this.reason = this.entry.reason;
+    // Immediate: the page creates the dialog with the entry, already open.
+    open: {
+      immediate: true,
+      handler(isOpen) {
+        if (isOpen) this.reason = this.entry.reason;
+      },
     },
   },
 };

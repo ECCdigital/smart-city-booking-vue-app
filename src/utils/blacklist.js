@@ -1,5 +1,3 @@
-import i18n from "@/language/index";
-
 /**
  * The blacklist of the instance (glossary „Blacklist“, „Blacklist-Eintrag“,
  * ECCdigital/tickets#625): what its page reads and checks before it asks
@@ -23,9 +21,4 @@ export function parseBlacklistValue(value) {
   if (DOMAIN.test(normalized)) return { value: normalized, kind: "domain" };
   if (ADDRESS.test(normalized)) return { value: normalized, kind: "address" };
   return null;
-}
-
-/** The kind of an entry in words. */
-export function blacklistKindLabel(kind) {
-  return i18n.t(`instance.blacklist.kind.${kind}`);
 }

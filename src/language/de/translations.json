@@ -992,17 +992,12 @@
       "load-error": "Die Blacklist konnte nicht geladen werden.",
       "headers": {
         "value": "Eintrag",
-        "kind": "Art",
         "reason": "Grund",
-        "createdAt": "Eingetragen am",
+        "createdAt": "Eingetragen",
         "createdBy": "Von",
         "origin": "Herkunft",
         "suspended": "Gesperrte Konten",
         "actions": "Aktionen"
-      },
-      "kind": {
-        "address": "Adresse",
-        "domain": "Domain"
       },
       "origin": {
         "manual": "von Hand"

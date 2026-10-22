@@ -34,9 +34,6 @@
           <template #cell.value="{ item }">
             <code>{{ item.value }}</code>
           </template>
-          <template #cell.kind="{ item }">
-            {{ kindLabel(item.kind) }}
-          </template>
           <template #cell.createdAt="{ item }">
             {{ dateText(item.createdAt) }}
           </template>
@@ -104,7 +101,6 @@ import AppList from "@/components/commons/AppList.vue";
 import FormatService from "@/services/FormatService";
 import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
-import { blacklistKindLabel } from "@/utils/blacklist";
 import BlacklistCreateDialog from "@/components/Instance/Blacklist/BlacklistCreateDialog.vue";
 import BlacklistReasonDialog from "@/components/Instance/Blacklist/BlacklistReasonDialog.vue";
 import BlacklistRemoveConformationDialog from "@/components/Instance/Blacklist/BlacklistRemoveConformationDialog.vue";
@@ -145,14 +141,13 @@ export default {
         align,
       });
       return [
-        column("value", "minmax(180px, 1.5fr)"),
-        column("kind", "90px"),
-        column("reason", "minmax(160px, 2fr)"),
-        column("createdAt", "110px"),
-        column("createdBy", "minmax(140px, 1fr)"),
-        column("origin", "100px"),
+        column("value", "minmax(160px, 1.5fr)"),
+        column("reason", "minmax(140px, 2fr)"),
+        column("createdAt", "100px"),
+        column("createdBy", "minmax(120px, 1fr)"),
+        column("origin", "90px"),
         column("suspended", "90px", "end"),
-        column("actions", "90px", "end"),
+        column("actions", "88px", "end"),
       ];
     },
   },
@@ -160,7 +155,6 @@ export default {
     this.load();
   },
   methods: {
-    kindLabel: blacklistKindLabel,
     dateText(time) {
       return FormatService.date(time, "medium");
     },

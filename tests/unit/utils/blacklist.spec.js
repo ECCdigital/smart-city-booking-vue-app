@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blacklistKindLabel, parseBlacklistValue } from "@/utils/blacklist";
+import { parseBlacklistValue } from "@/utils/blacklist";
 
 /** The blacklist of the instance (glossary „Blacklist“, ECCdigital/tickets#625). */
 describe("parseBlacklistValue", () => {
@@ -18,13 +18,4 @@ describe("parseBlacklistValue", () => {
       expect(parseBlacklistValue(input)).toBe(null);
     }
   );
-});
-
-describe("blacklistKindLabel", () => {
-  it.each([
-    ["address", "Adresse"],
-    ["domain", "Domain"],
-  ])("names the kind %s „%s“", (kind, label) => {
-    expect(blacklistKindLabel(kind)).toBe(label);
-  });
 });
