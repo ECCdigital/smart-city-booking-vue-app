@@ -2419,6 +2419,12 @@
     "suspension": {
       "title": "Sperre",
       "chip": "Gesperrt",
+      "blacklist": {
+        "chip": "Blacklist",
+        "address": "Die Adresse steht auf der Blacklist.",
+        "domain": "Die Adresse steht über die Domain „{entry}“ auf der Blacklist.",
+        "none": "Die Adresse steht nicht auf der Blacklist."
+      },
       "origin": {
         "manual": "von Hand",
         "blacklist": "Blacklist"

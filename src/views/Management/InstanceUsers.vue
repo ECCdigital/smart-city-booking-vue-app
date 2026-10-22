@@ -74,6 +74,17 @@
                       {{ $t("user.suspension.chip") }}
                       ({{ suspensionOriginLabel(item) }})
                     </v-chip>
+                    <v-chip
+                      v-if="item.blacklistMatch"
+                      color="error"
+                      text-color="white"
+                      x-small
+                      class="ml-1"
+                      :title="blacklistMatchText(item)"
+                    >
+                      <v-icon left x-small>mdi-email-off-outline</v-icon>
+                      {{ $t("user.suspension.blacklist.chip") }}
+                    </v-chip>
                   </v-list-item-title>
 
                   <v-list-item-subtitle class="d-flex align-center flex-wrap">
@@ -247,7 +258,10 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import ApiMembershipService from "@/services/api/ApiMembershipService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import SearchBar from "@/components/commons/SearchBar.vue";
-import { suspensionOriginLabel } from "@/utils/userSuspension";
+import {
+  blacklistMatchText,
+  suspensionOriginLabel,
+} from "@/utils/userSuspension";
 
 /** The option "Ohne Mandantenzuordnung" among the tenants of the filter. */
 const NO_TENANT = "__no-tenant__";
@@ -468,6 +482,7 @@ export default {
     },
 
     suspensionOriginLabel,
+    blacklistMatchText,
     getSuspendedCount() {
       return this.filteredUsers.filter((user) => user.isSuspended).length;
     },

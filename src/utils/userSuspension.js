@@ -97,3 +97,17 @@ export function suspensionBlacklistHint(blacklisted) {
     `user.suspension.suspend.blacklist-hint.${blacklisted ? "on" : "off"}`
   );
 }
+
+/**
+ * Whether the user's address is on the blacklist, from `blacklistMatch` of
+ * the user answers (ECCdigital/tickets#626): by an exact entry, by its
+ * domain or not at all.
+ */
+export function blacklistMatchText(user) {
+  const match = user?.blacklistMatch;
+  if (!match) return i18n.t("user.suspension.blacklist.none");
+  if (match.kind === "domain") {
+    return i18n.t("user.suspension.blacklist.domain", { entry: match.value });
+  }
+  return i18n.t("user.suspension.blacklist.address");
+}

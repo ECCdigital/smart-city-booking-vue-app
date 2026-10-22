@@ -21,6 +21,23 @@
             <div v-if="reasonText" class="text-body-2">
               {{ reasonText }}
             </div>
+            <div
+              class="text-body-2 mt-1 d-flex align-center"
+              :class="{ 'grey--text': !user.blacklistMatch }"
+            >
+              <v-icon
+                small
+                :color="user.blacklistMatch ? 'error' : 'grey'"
+                class="mr-1"
+              >
+                {{
+                  user.blacklistMatch
+                    ? "mdi-email-off-outline"
+                    : "mdi-email-check-outline"
+                }}
+              </v-icon>
+              {{ blacklistText }}
+            </div>
           </div>
           <v-btn v-if="!user.isSuspended" color="error" @click="openSuspend">
             <v-icon left small>mdi-cancel</v-icon>
@@ -61,6 +78,7 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import UserSuspendConformationDialog from "@/components/User/UserSuspendConformationDialog.vue";
 import UserUnsuspendConformationDialog from "@/components/User/UserUnsuspendConformationDialog.vue";
 import {
+  blacklistMatchText,
   suspensionReasonText,
   suspensionStatusText,
 } from "@/utils/userSuspension";
@@ -105,6 +123,9 @@ export default {
     },
     reasonText() {
       return suspensionReasonText(this.user);
+    },
+    blacklistText() {
+      return blacklistMatchText(this.user);
     },
   },
   methods: {

@@ -1100,6 +1100,7 @@ export default {
     onSuspensionChanged(user) {
       this.$set(this.selectedUser, "isSuspended", user.isSuspended);
       this.$set(this.selectedUser, "suspension", user.suspension);
+      this.$set(this.selectedUser, "blacklistMatch", user.blacklistMatch);
     },
     async submitChanges() {
       if (!this.isFormValid()) {

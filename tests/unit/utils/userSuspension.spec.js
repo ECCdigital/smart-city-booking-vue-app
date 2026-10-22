@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  blacklistMatchText,
   suspensionBlacklistHint,
   suspensionConsequences,
   suspensionOriginLabel,
@@ -185,4 +186,34 @@ describe("suspensionBlacklistHint", () => {
   ])("reads the checkbox %s", (blacklisted, hint) => {
     expect(suspensionBlacklistHint(blacklisted)).toBe(hint);
   });
+});
+
+/** Whether the address is on the blacklist, on the card „Sperre“ (ECCdigital/tickets#626). */
+describe("blacklistMatchText", () => {
+  it("names the exact entry", () => {
+    expect(
+      blacklistMatchText({
+        blacklistMatch: { id: "e1", value: "max@firma.de", kind: "address" },
+      })
+    ).toBe("Die Adresse steht auf der Blacklist.");
+  });
+
+  it("names the domain entry that hits the address", () => {
+    expect(
+      blacklistMatchText({
+        blacklistMatch: { id: "e2", value: "@wegwerf.de", kind: "domain" },
+      })
+    ).toBe(
+      "Die Adresse steht über die Domain „@wegwerf.de“ auf der Blacklist."
+    );
+  });
+
+  it.each([[{ blacklistMatch: null }], [{}]])(
+    "says the address is not on the blacklist: %j",
+    (user) => {
+      expect(blacklistMatchText(user)).toBe(
+        "Die Adresse steht nicht auf der Blacklist."
+      );
+    }
+  );
 });
