@@ -909,7 +909,7 @@
               <!-- Suspension Section -->
               <UserSuspensionCard
                 :user="selectedUser"
-                :name="getUserName()"
+                :name="getSuspensionName()"
                 @changed="onSuspensionChanged"
               />
             </v-tab-item>
@@ -1014,6 +1014,13 @@ export default {
         }`.trim();
       }
       return "Benutzer bearbeiten";
+    },
+    /** The name the suspension dialogs address, the id without one. */
+    getSuspensionName() {
+      const name = `${this.selectedUser.firstName || ""} ${
+        this.selectedUser.lastName || ""
+      }`.trim();
+      return name || this.selectedUser.id;
     },
     getAvatarColor() {
       if (this.selectedUser.isSuspended) return "red";

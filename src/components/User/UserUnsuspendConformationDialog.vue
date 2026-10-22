@@ -1,7 +1,7 @@
 <template>
   <v-dialog :value="open" max-width="480" persistent>
     <v-card>
-      <v-card-title class="text-h6">
+      <v-card-title class="text-h6 text-break">
         {{ $t("user.suspension.unsuspend.title", { name }) }}
       </v-card-title>
       <v-card-text>

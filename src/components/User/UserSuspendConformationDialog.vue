@@ -1,7 +1,7 @@
 <template>
   <v-dialog :value="open" max-width="560" persistent>
     <v-card>
-      <v-card-title class="text-h6">
+      <v-card-title class="text-h6 text-break">
         <v-icon color="error" class="mr-2">mdi-cancel</v-icon>
         {{ $t("user.suspension.suspend.title", { name }) }}
       </v-card-title>
@@ -10,14 +10,11 @@
           {{ $t("user.suspension.suspend.warning", { name }) }}
         </v-alert>
         <v-progress-linear v-if="!consequences && !error" indeterminate />
-        <v-simple-table v-if="consequences" dense class="mb-3">
+        <v-simple-table v-if="consequences" dense class="consequences mb-3">
           <tbody>
             <tr v-for="row in consequences" :key="row.label">
               <td>{{ row.label }}</td>
-              <td
-                class="text-no-wrap"
-                :class="row.ends ? 'error--text' : 'success--text'"
-              >
+              <td :class="row.ends ? 'error--text' : 'success--text'">
                 <v-icon small :color="row.ends ? 'error' : 'success'">
                   {{ row.ends ? "mdi-close-circle" : "mdi-check-circle" }}
                 </v-icon>
@@ -100,3 +97,10 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* The table of consequences wraps in the dialog's width. */
+.consequences td {
+  white-space: normal;
+}
+</style>
