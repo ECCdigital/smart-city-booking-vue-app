@@ -1,6 +1,12 @@
 <template>
   <AuthPage title="Registrieren" icon="mdi-account-plus-outline">
     <v-form ref="form" class="scb-form" @submit.prevent="register">
+      <CheckoutAddressBlacklistedAlert
+        v-if="blacklistedMailAddress !== null"
+        :mail-address="blacklistedMailAddress"
+        title-key="checkout.address_blacklisted.registrationTitle"
+        class="mb-4"
+      />
       <div class="scb-form__row">
         <v-text-field
           background-color="accent"
@@ -159,6 +165,8 @@ import AuthPage from "@/components/Auth/AuthPage.vue";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
+import { addressBlacklistedRefusal } from "@/utils/checkoutErrors";
+import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
 
 export default {
   computed: {
@@ -216,7 +224,7 @@ export default {
       return { token, tenantId };
     },
   },
-  components: { AuthPage },
+  components: { AuthPage, CheckoutAddressBlacklistedAlert },
   data() {
     return {
       id: "",
@@ -227,6 +235,11 @@ export default {
       password: "",
       passwordRepeat: "",
       showPassword: false,
+      /**
+       * The instance's mail address of a refusal on the blacklist
+       * (ECCdigital/tickets#628), empty without one; `null` without a refusal.
+       */
+      blacklistedMailAddress: null,
       acceptedDataProtection: false,
       acceptedTerms: false,
       dataProtectionAcceptRules: [
@@ -289,6 +302,7 @@ export default {
     },
     register() {
       if (this.$refs.form.validate()) {
+        this.blacklistedMailAddress = null;
         const { token: invitationToken, tenantId: invitationTenantId } =
           this.invitationParams;
         ApiAuthService.register(
@@ -316,6 +330,11 @@ export default {
             }
           })
           .catch((error) => {
+            const blacklisted = addressBlacklistedRefusal(error.response?.data);
+            if (blacklisted !== null) {
+              this.blacklistedMailAddress = blacklisted;
+              return;
+            }
             const limit = rateLimitOf(error);
             if (limit) {
               const { key, params } = rateLimitMessage(limit);

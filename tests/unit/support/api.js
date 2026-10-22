@@ -84,6 +84,20 @@ export function unauthorizedError(data = "checkout.login_required") {
   return error;
 }
 
+/**
+ * An axios error for a `409` refusing an address on the blacklist
+ * (ECCdigital/tickets#627, #628): the legacy checkout's and the
+ * registration's answer, with the instance's mail address to write to.
+ */
+export function addressBlacklistedError(mailAddress = "") {
+  const error = new Error("Request failed with status code 409");
+  error.response = {
+    status: 409,
+    data: { error: "checkout.address_blacklisted", params: { mailAddress } },
+  };
+  return error;
+}
+
 /** An axios error for a failure that is not a denial. */
 export function serverError(status = 500) {
   const error = new Error(`Request failed with status code ${status}`);

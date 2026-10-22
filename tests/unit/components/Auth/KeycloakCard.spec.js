@@ -1,13 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import {
+  addressBlacklistedError,
+  flushPromises,
+} from "@tests/unit/support/api";
 
 const api = vi.hoisted(() => ({
   getPendingSsoUser: vi.fn(async () => ({ email: "a@b.de", name: "A B" })),
   ssoLogin: vi.fn(async () => ({ user: {}, permissions: {} })),
   startSsoLogin: vi.fn(),
   changeSsoUser: vi.fn(),
+  ssoRegister: vi.fn(),
 }));
 const mode = vi.hoisted(() => ({ bff: true }));
 /** keycloak-js after the identity provider has answered (direct transport). */
@@ -312,5 +316,61 @@ describe("KeycloakCard — where the back button leads", () => {
     expect(push).toHaveBeenCalledWith({ name: "login" });
     expect(push).not.toHaveBeenCalledWith("//evil.example/");
     expect(setNextUrl).toHaveBeenLastCalledWith(null);
+  });
+});
+
+/**
+ * An address on the blacklist (ECCdigital/tickets#628): `sso/signup`
+ * answers `409` with the checkout's refusal and the instance's mail address.
+ * The card keeps the message instead of „Registrierung fehlgeschlagen“, and
+ * offers no second signup.
+ */
+describe("KeycloakCard — an address on the blacklist", () => {
+  const REGISTER_STEP = { flow: "register", ticket: "ticket-1" };
+
+  async function signUp(query) {
+    const wrapper = mountCard([], query);
+    await click(wrapper, "Registrieren");
+    return wrapper;
+  }
+
+  beforeEach(() => {
+    api.ssoRegister.mockReset();
+  });
+
+  it("keeps the message with the instance's mail address over the BFF", async () => {
+    api.ssoRegister.mockRejectedValue(
+      addressBlacklistedError("betrieb@example.test")
+    );
+
+    const wrapper = await signUp(REGISTER_STEP);
+
+    const notice = wrapper.find("[data-test='address-blacklisted']");
+    expect(notice.text()).toContain("Registrierung nicht möglich");
+    expect(notice.find("a").attributes("href")).toBe(
+      "mailto:betrieb@example.test"
+    );
+    expect(wrapper.text()).not.toContain("Registrierung fehlgeschlagen");
+    expect(
+      wrapper.findAll("button").filter((b) => b.text() === "Registrieren")
+        .length
+    ).toBe(0);
+  });
+
+  it("names the operator of the offer on the direct transport", async () => {
+    mode.bff = false;
+    const notFound = new Error("Request failed with status code 404");
+    notFound.response = { status: 404 };
+    api.ssoLogin.mockRejectedValueOnce(notFound);
+    api.ssoRegister.mockRejectedValue(addressBlacklistedError(""));
+    const wrapper = mountCard([], {});
+    await click(wrapper, "Anmelden");
+
+    await click(wrapper, "Registrieren");
+
+    const notice = wrapper.find("[data-test='address-blacklisted']");
+    expect(notice.text()).toContain("an den Betreiber dieses Angebots");
+    expect(notice.find("a").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Registrierung fehlgeschlagen");
   });
 });
