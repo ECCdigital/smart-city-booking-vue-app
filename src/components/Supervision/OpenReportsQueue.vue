@@ -165,7 +165,7 @@ import { REPORT_STATUS, groupOpenReports } from "@/utils/reports";
 /**
  * „Offene Meldungen“ (glossary „Meldung“, ECCdigital/tickets#630): the open
  * reports of every tenant for the instance owner, one row per reported user
- * with the reports of each tenant apart. „Sperren …“ suspends over the
+ * with the reports of each tenant apart. „Sperren“ suspends over the
  * suspension's own dialog, which settles every open report about the user;
  * „Ablehnen“ settles them with a reason the tenant owners read. Emits
  * `count` with the number of users waiting.

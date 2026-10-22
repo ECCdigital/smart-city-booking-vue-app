@@ -2541,8 +2541,14 @@
       "reason": "Grund (Pflicht)",
       "cancel": "Abbrechen",
       "confirm": "Melden",
-      "created": "Die Meldung ist bei der Instanz eingegangen.",
-      "supplemented": "Die offene Meldung zu diesem User wurde ergänzt.",
+      "created": {
+        "title": "Meldung gesendet",
+        "message": "Die Meldung ist bei der Instanz eingegangen."
+      },
+      "supplemented": {
+        "title": "Meldung ergänzt",
+        "message": "Die offene Meldung zu diesem User wurde ergänzt."
+      },
       "error": "Die Meldung konnte nicht gesendet werden."
     }
   },
@@ -3495,7 +3501,7 @@
       "page-text": "{0}–{1} von {2}"
     },
     "reports": {
-      "hint": "Offene Meldungen der Mandanten, nach User gruppiert – der am längsten gemeldete zuerst. „Sperren …“ und „Ablehnen“ erledigen alle offenen Meldungen zum User, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "hint": "Offene Meldungen der Mandanten, nach User gruppiert – der am längsten gemeldete zuerst. „Sperren“ und „Ablehnen“ erledigen alle offenen Meldungen zum User, die Besitzer der meldenden Mandanten bekommen eine Mail.",
       "loading": "Meldungen werden geladen...",
       "empty": "Keine Meldungen offen",
       "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
@@ -3505,7 +3511,7 @@
       "added": "ergänzt von {by} am {date}",
       "booking": "Buchung {id}",
       "open-user": "User bearbeiten",
-      "suspend": "Sperren …",
+      "suspend": "Sperren",
       "reject": "Ablehnen",
       "reject-title": "Meldungen zu {name} ablehnen",
       "reject-text": "Die Ablehnung erledigt alle offenen Meldungen zu {name}. Die Besitzer der meldenden Mandanten lesen die Begründung.",
