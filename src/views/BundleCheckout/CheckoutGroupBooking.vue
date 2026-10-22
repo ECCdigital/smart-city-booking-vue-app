@@ -73,6 +73,7 @@ import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
   formatCheckoutValidationError,
+  getCheckoutErrorToastKey,
   isLoginRefusal,
   LOGIN_REQUIRED_TOAST_KEY,
 } from "@/utils/checkoutErrors";
@@ -782,6 +783,15 @@ export default {
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
           this.backToSignIn();
+        } else if (!booked) {
+          // A refusal of the series, e.g. an address on the blacklist
+          // (ECCdigital/tickets#627).
+          this.addToast(
+            ToastService.createToast(
+              getCheckoutErrorToastKey(error.response?.data),
+              "error"
+            )
+          );
         }
       } finally {
         this.isSubmitting = false;

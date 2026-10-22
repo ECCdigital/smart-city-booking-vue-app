@@ -86,3 +86,21 @@ describe("checkoutErrors - a begin in the past", () => {
     expect(getCheckoutErrorToastKey(PAST)).toBe(PAST);
   });
 });
+
+/**
+ * An address on the blacklist (ECCdigital/tickets#627): the legacy checkout
+ * answers `409` with the reason as its body, without the instance's mail
+ * address, so the toast names the operator of the offer.
+ */
+describe("checkoutErrors - an address on the blacklist", () => {
+  const BLACKLISTED = "checkout.address_blacklisted";
+
+  it("toasts the reason with its own title and message", () => {
+    expect(getCheckoutErrorToastKey(BLACKLISTED)).toBe(BLACKLISTED);
+    expect(ToastService.createToast(BLACKLISTED, "error")).toMatchObject({
+      title: "Buchung nicht möglich",
+      message:
+        "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
+    });
+  });
+});
