@@ -131,6 +131,19 @@
           <v-card-title class="section-header">
             <v-icon>mdi-account-outline</v-icon>
             <span>{{ $t("booking.page.customer.title") }}</span>
+            <v-spacer />
+            <v-btn
+              v-if="allowReportBooker"
+              text
+              small
+              color="warning"
+              class="booking-page__report"
+              data-test="booking-report-user"
+              @click="reportingBooker = true"
+            >
+              <v-icon left small>mdi-flag-outline</v-icon>
+              {{ $t("user.report.open-user") }}
+            </v-btn>
           </v-card-title>
           <v-divider />
           <v-card-text>
@@ -374,6 +387,14 @@
       @transitioned="reload"
       @failed="onTransitionFailed"
     />
+    <UserReportDialog
+      v-if="allowReportBooker"
+      :open="reportingBooker"
+      :name="booking.name || booking.assignedUserId"
+      :tenant-id="booking.tenantId || tenantId"
+      :booking-id="booking.id"
+      @close="reportingBooker = false"
+    />
   </AdminLayout>
 </template>
 
@@ -412,6 +433,8 @@ import {
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
+import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
@@ -436,15 +459,29 @@ export default {
     BookingTransitions,
     CancellationRefundAudit,
     CancellationRefundState,
+    UserReportDialog,
   },
   mixins: [bookingPageShell],
   data() {
     return {
       booking: null,
       groupBooking: null,
+      /** The dialog „User melden“ (ECCdigital/tickets#630). */
+      reportingBooker: false,
     };
   },
   computed: {
+    /**
+     * „User melden“ in the card „Kunde“: a booking with a booker, for a role
+     * that may report (ECCdigital/tickets#630). Whether the booker has an
+     * account the backend says.
+     */
+    allowReportBooker() {
+      return (
+        !!this.booking?.assignedUserId &&
+        UserPermissionService.allowReport(this.tenantId)
+      );
+    },
     pageI18nPrefix() {
       return "booking.page";
     },

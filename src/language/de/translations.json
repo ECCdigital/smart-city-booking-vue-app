@@ -2534,7 +2534,7 @@
     },
     "report": {
       "open": "Melden",
-      "open-booker": "Bucher melden",
+      "open-user": "User melden",
       "title": "{name} an die Instanz melden",
       "text": "Die Betreiber der Plattform entscheiden über eine Sperre für die ganze Instanz. {name} erfährt von der Meldung nichts.",
       "booking": "Die Buchung hängt als Beleg an der Meldung.",
