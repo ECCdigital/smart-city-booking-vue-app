@@ -100,7 +100,7 @@ describe("checkoutErrors - an address on the blacklist", () => {
     expect(ToastService.createToast(BLACKLISTED, "error")).toMatchObject({
       title: "Buchung nicht möglich",
       message:
-        "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
+        "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
     });
   });
 });

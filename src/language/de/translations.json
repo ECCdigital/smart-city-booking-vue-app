@@ -2264,8 +2264,8 @@
     },
     "address_blacklisted": {
       "title": "Buchung nicht möglich",
-      "message": "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
-      "notice": "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
+      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
       "operator": "den Betreiber dieses Angebots",
       "copy": "Mailadresse kopieren",
       "copied": "Mailadresse kopiert",
