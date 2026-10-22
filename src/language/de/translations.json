@@ -2264,7 +2264,12 @@
     },
     "address_blacklisted": {
       "title": "Buchung nicht möglich",
-      "message": "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots."
+      "message": "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
+      "notice": "Mit dieser Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "operator": "den Betreiber dieses Angebots",
+      "copy": "Mailadresse kopieren",
+      "copied": "Mailadresse kopiert",
+      "copyFailed": "Die Mailadresse ließ sich nicht kopieren. Bitte markieren und kopieren Sie sie von Hand."
     },
     "max_amount_per_booking_exceeded": {
       "title": "Höchstmenge je Buchung überschritten",

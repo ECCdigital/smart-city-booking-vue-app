@@ -176,3 +176,56 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
     );
   });
 });
+
+/**
+ * An address on the blacklist (ECCdigital/tickets#627): the series hands
+ * the instance's mail address to its summary, which keeps the refusal on
+ * the page instead of a toast, and takes it back when the series is sent
+ * again.
+ */
+describe("CheckoutGroupBooking — an address on the blacklist", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: { ...BOOKABLE, requiresLogin: false },
+    });
+  });
+
+  const blacklisted = () => {
+    const error = serverError(409);
+    error.response.data = {
+      error: "checkout.address_blacklisted",
+      params: { mailAddress: "betrieb@example.test" },
+    };
+    return error;
+  };
+
+  const summaryOf = (wrapper) =>
+    wrapper.findComponent({ name: "CheckoutGroupBookingSummary" });
+
+  it("hands the mail address to the summary instead of a toast", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValue(blacklisted());
+    const { wrapper, addToast, push } = await mountGroupCheckout();
+
+    await performCheckout(wrapper);
+
+    expect(summaryOf(wrapper).vm.$attrs.blacklistRefusal).toBe(
+      "betrieb@example.test"
+    );
+    expect(addToast).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("takes it back when the series is sent again", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValueOnce(blacklisted());
+    const { wrapper } = await mountGroupCheckout();
+    await performCheckout(wrapper);
+
+    ApiCheckoutService.groupCheckout.mockReturnValueOnce(new Promise(() => {}));
+    await performCheckout(wrapper);
+
+    expect(summaryOf(wrapper).vm.$attrs.blacklistRefusal).toBeNull();
+  });
+});

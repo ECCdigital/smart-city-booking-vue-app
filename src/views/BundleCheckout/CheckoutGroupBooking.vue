@@ -72,6 +72,7 @@ import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
+  addressBlacklistedRefusal,
   formatCheckoutValidationError,
   getCheckoutErrorToastKey,
   isLoginRefusal,
@@ -92,6 +93,9 @@ export default {
     return {
       currentStep: 1,
       isSubmitting: false,
+      // The instance's mail address of a refusal of the address on the
+      // blacklist (ECCdigital/tickets#627), null while there is none.
+      blacklistRefusal: null,
       progress: {
         loading: false,
         percentage: 0,
@@ -247,6 +251,7 @@ export default {
           activePaymentApps: this.activePaymentApps,
           selectedPaymentApp: this.selectedPaymentApp,
           isSubmitting: this.isSubmitting,
+          blacklistRefusal: this.blacklistRefusal,
           coupon: this.coupon,
           couponError: this.couponError,
         },
@@ -757,6 +762,7 @@ export default {
 
     async performGroupCheckout() {
       this.isSubmitting = true;
+      this.blacklistRefusal = null;
       let booked = false;
 
       try {
@@ -783,9 +789,17 @@ export default {
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
           this.backToSignIn();
+        } else if (
+          !booked &&
+          addressBlacklistedRefusal(error.response?.data) !== null
+        ) {
+          // An address on the blacklist (ECCdigital/tickets#627): the
+          // summary keeps it on the page with the address to write to.
+          this.blacklistRefusal = addressBlacklistedRefusal(
+            error.response?.data
+          );
         } else if (!booked) {
-          // A refusal of the series, e.g. an address on the blacklist
-          // (ECCdigital/tickets#627).
+          // Any other refusal of the series.
           this.addToast(
             ToastService.createToast(
               getCheckoutErrorToastKey(error.response?.data),
