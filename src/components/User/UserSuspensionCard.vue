@@ -18,6 +18,9 @@
             >
               {{ statusText }}
             </div>
+            <div v-if="reasonText" class="text-body-2">
+              {{ reasonText }}
+            </div>
           </div>
           <v-btn v-if="!user.isSuspended" color="error" @click="openSuspend">
             <v-icon left small>mdi-cancel</v-icon>
@@ -57,6 +60,7 @@ import UserSuspendConformationDialog from "@/components/User/UserSuspendConforma
 import UserUnsuspendConformationDialog from "@/components/User/UserUnsuspendConformationDialog.vue";
 import {
   suspensionConsequences,
+  suspensionReasonText,
   suspensionStatusText,
 } from "@/utils/userSuspension";
 
@@ -94,6 +98,9 @@ export default {
   computed: {
     statusText() {
       return suspensionStatusText(this.user);
+    },
+    reasonText() {
+      return suspensionReasonText(this.user);
     },
   },
   methods: {

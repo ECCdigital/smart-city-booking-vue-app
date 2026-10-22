@@ -2361,7 +2361,8 @@
       "status": {
         "active": "Der Account ist aktiv.",
         "suspended": "Gesperrt {origin}",
-        "suspended-with-record": "Gesperrt {origin} am {date} von {by}. Grund: {reason}"
+        "suspended-with-record": "Gesperrt {origin} am {date} von {by}.",
+        "reason": "Grund: {reason}"
       },
       "consequences": {
         "admin-sign-in": {

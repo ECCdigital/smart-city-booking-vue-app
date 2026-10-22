@@ -18,12 +18,12 @@ export function suspensionOriginLabel(user) {
 }
 
 /**
- * The state of the card „Sperre“: who suspended when and why, or only
- * „Gesperrt von Hand“ for a suspension stored without those details.
+ * The state of the card „Sperre“: who suspended when, or only „Gesperrt
+ * von Hand“ for a suspension stored without those details.
  */
 export function suspensionStatusText(user) {
   if (!user?.isSuspended) return i18n.t("user.suspension.status.active");
-  const { reason, suspendedAt, suspendedBy } = user.suspension || {};
+  const { suspendedAt, suspendedBy } = user.suspension || {};
   const origin = suspensionOriginLabel(user);
   if (!suspendedAt || !suspendedBy) {
     return i18n.t("user.suspension.status.suspended", { origin });
@@ -36,8 +36,13 @@ export function suspensionStatusText(user) {
       day: "2-digit",
     }),
     by: suspendedBy,
-    reason,
   });
+}
+
+/** The reason of the suspension for its own line on the card, "" without one. */
+export function suspensionReasonText(user) {
+  const reason = user?.isSuspended && user.suspension?.reason;
+  return reason ? i18n.t("user.suspension.status.reason", { reason }) : "";
 }
 
 /**

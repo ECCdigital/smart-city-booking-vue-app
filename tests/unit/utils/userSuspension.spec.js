@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   suspensionConsequences,
   suspensionOriginLabel,
+  suspensionReasonText,
   suspensionStatusText,
 } from "@/utils/userSuspension";
 
@@ -9,7 +10,7 @@ import {
 const SUSPENDED_AT = new Date(2026, 9, 21, 14, 5).getTime();
 
 describe("suspensionStatusText", () => {
-  it("names the time, the person and the reason of a suspension by hand", () => {
+  it("names the time and the person of a suspension by hand", () => {
     expect(
       suspensionStatusText({
         isSuspended: true,
@@ -20,9 +21,7 @@ describe("suspensionStatusText", () => {
           suspendedBy: "admin@stadt.de",
         },
       })
-    ).toBe(
-      "Gesperrt von Hand am 21.10.2026 von admin@stadt.de. Grund: Beleidigt Personal"
-    );
+    ).toBe("Gesperrt von Hand am 21.10.2026 von admin@stadt.de.");
   });
 
   it("reads a suspension without a record as by hand without details", () => {
@@ -47,6 +46,26 @@ describe("suspensionStatusText", () => {
     expect(suspensionStatusText({ isSuspended: false })).toBe(
       "Der Account ist aktiv."
     );
+  });
+});
+
+/** The reason stands on a line of its own below the state of the card. */
+describe("suspensionReasonText", () => {
+  it("names the reason of a suspension", () => {
+    expect(
+      suspensionReasonText({
+        isSuspended: true,
+        suspension: { origin: "manual", reason: "Beleidigt Personal" },
+      })
+    ).toBe("Grund: Beleidigt Personal");
+  });
+
+  it.each([
+    [{ isSuspended: true, suspension: null }],
+    [{ isSuspended: true, suspension: { origin: "manual", reason: null } }],
+    [{ isSuspended: false, suspension: null }],
+  ])("is empty without a reason: %j", (user) => {
+    expect(suspensionReasonText(user)).toBe("");
   });
 });
 
