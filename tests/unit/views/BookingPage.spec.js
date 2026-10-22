@@ -27,6 +27,9 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowReprint: vi.fn(() => true),
   },
 }));
+vi.mock("@/services/permissions/UserPermissionService", () => ({
+  default: { allowReport: vi.fn(() => false) },
+}));
 vi.mock("@/services/api/ApiBookingService", () => ({
   default: {
     getBooking: vi.fn(),
@@ -85,6 +88,7 @@ import BookingPage from "@/views/BookingPage.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { isTenantMember } from "@/utils/tenantMembership";
 import { saveBlob } from "@/utils/fileDownload";
 
@@ -229,6 +233,7 @@ describe("BookingPage", () => {
     isTenantMember.mockReturnValue(true);
     BookingPermissionService.allowUpdate.mockReturnValue(true);
     BookingPermissionService.allowReadAny.mockReturnValue(true);
+    UserPermissionService.allowReport.mockReturnValue(false);
     ApiBookingService.getBooking.mockResolvedValue({ data: booking() });
     ApiGroupBookingService.getGroupBookingByBooking.mockRejectedValue(
       lifecycleError(404, "group_booking_not_found")
@@ -561,6 +566,23 @@ describe("BookingPage", () => {
       const comments = filled.wrapper.find(".booking-page__comments").text();
       expect(comments).toContain("Interne Bemerkung");
       expect(comments).toContain("Schlüssel liegt am Empfang");
+    });
+
+    it("offers „Adresse melden“ to a role that may report (ECCdigital/tickets#632)", async () => {
+      const hidden = mountPage();
+      await settle(hidden.wrapper);
+      expect(
+        hidden.wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(false);
+
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').text()
+      ).toContain("Adresse melden");
+      expect(wrapper.vm.reportableAddresses).toEqual(["erika@example.org"]);
     });
 
     it("leaves out the objects and the customer block when they are empty", async () => {

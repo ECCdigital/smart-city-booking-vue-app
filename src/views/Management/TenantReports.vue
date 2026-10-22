@@ -67,7 +67,10 @@
                 </v-chip>
               </div>
               <div class="booking-row__subtitle">
-                {{ row.report.targetUserId }}
+                {{
+                  row.report.targetUserId ||
+                  $t("supervision.reports.guest-address")
+                }}
               </div>
               <ReportReasons
                 :report="row.report"

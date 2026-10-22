@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  blacklistDraftOf,
   groupOpenReports,
+  reportableAddresses,
   reportReasons,
   tenantReportRows,
 } from "@/utils/reports";
@@ -81,6 +83,107 @@ describe("groupOpenReports", () => {
   });
 });
 
+describe("groupOpenReports by address (ECCdigital/tickets#632)", () => {
+  const aboutAddress = (fields) =>
+    report({
+      targetUserId: null,
+      targetAddress: "gast@example.de",
+      targetName: "",
+      ...fields,
+    });
+
+  it("groups the reports about an address apart from those about a user", () => {
+    const groups = groupOpenReports([
+      aboutAddress({ id: "a", reportedAt: 1 }),
+      report({ id: "b", reportedAt: 2 }),
+      aboutAddress({
+        id: "c",
+        tenantId: "verein",
+        tenantName: "Verein",
+        reportedAt: 3,
+      }),
+    ]);
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toMatchObject({
+      key: "address:gast@example.de",
+      userId: null,
+      address: "gast@example.de",
+      name: "gast@example.de",
+      since: 1,
+    });
+    expect(groups[0].reports.map((r) => r.id)).toEqual(["a", "c"]);
+    expect(groups[1]).toMatchObject({
+      key: "user:erika@example.de",
+      userId: "erika@example.de",
+      address: null,
+    });
+  });
+
+  it("keeps a user and an address of the same spelling apart", () => {
+    const groups = groupOpenReports([
+      report({ id: "a", reportedAt: 1, targetUserId: "gast@example.de" }),
+      aboutAddress({ id: "b", reportedAt: 2 }),
+    ]);
+
+    expect(groups.map((group) => group.key)).toEqual([
+      "user:gast@example.de",
+      "address:gast@example.de",
+    ]);
+  });
+});
+
+describe("reportableAddresses (ECCdigital/tickets#632)", () => {
+  it("is every address of a booking's mail once, trimmed and in lower case", () => {
+    expect(
+      reportableAddresses(" Gast@Example.de, zweit@example.de\ngast@example.de")
+    ).toEqual(["gast@example.de", "zweit@example.de"]);
+  });
+
+  it("leaves out what is no address, and is empty without a mail", () => {
+    expect(reportableAddresses("kein-name, @domain.de, x@y.de")).toEqual([
+      "x@y.de",
+    ]);
+    expect(reportableAddresses(null)).toEqual([]);
+    expect(reportableAddresses("")).toEqual([]);
+  });
+});
+
+describe("blacklistDraftOf (ECCdigital/tickets#632)", () => {
+  const group = (reports) => ({
+    address: "gast@wegwerf.de",
+    reports: reports.map((fields) =>
+      report({
+        targetUserId: null,
+        targetAddress: "gast@wegwerf.de",
+        ...fields,
+      })
+    ),
+  });
+
+  it("offers the exact address, its domain and the reason of the report", () => {
+    expect(blacklistDraftOf(group([{ reason: "No-Show" }]))).toEqual({
+      address: "gast@wegwerf.de",
+      domain: "@wegwerf.de",
+      reason: "No-Show",
+    });
+  });
+
+  it("takes the reasons of every report and addition once, in order", () => {
+    const draft = blacklistDraftOf(
+      group([
+        {
+          reason: "No-Show",
+          additions: [{ reason: "Wieder", reportedBy: "x", reportedAt: 2 }],
+        },
+        { tenantId: "verein", reason: "No-Show" },
+      ])
+    );
+
+    expect(draft.reason).toBe("No-Show\nWieder");
+  });
+});
+
 describe("reportReasons", () => {
   it("names a report's reasons in order, the added ones after the first", () => {
     expect(
@@ -112,6 +215,24 @@ describe("reportReasons", () => {
 });
 
 describe("tenantReportRows (ECCdigital/tickets#631)", () => {
+  it("names a report about an address by the address (ECCdigital/tickets#632)", () => {
+    const [row] = tenantReportRows([
+      report({
+        id: "a",
+        targetUserId: null,
+        targetAddress: "gast@example.de",
+        targetName: "",
+        status: "blacklisted",
+        reportedAt: 1,
+      }),
+    ]);
+
+    expect(row).toMatchObject({
+      name: "gast@example.de",
+      standing: "blacklisted",
+    });
+  });
+
   it("is empty without reports", () => {
     expect(tenantReportRows([])).toEqual([]);
     expect(tenantReportRows(null)).toEqual([]);

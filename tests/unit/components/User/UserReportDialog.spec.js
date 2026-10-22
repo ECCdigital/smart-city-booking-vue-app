@@ -105,3 +105,74 @@ describe("UserReportDialog: „Mitgliedschaft beenden“ (ECCdigital/tickets#631
     expect(wrapper.emitted("reported")).toEqual([[{ membershipEnded: false }]]);
   });
 });
+
+describe("UserReportDialog: guest addresses (ECCdigital/tickets#632)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mount = (addresses) =>
+    mountComponent(UserReportDialog, {
+      store: store(),
+      propsData: {
+        open: true,
+        name: "Gast",
+        tenantId: "stadt",
+        bookingId: "B-1",
+        addresses,
+      },
+    });
+
+  it("ticks the one address of the booking and reports it with the booking", async () => {
+    ApiReportService.report.mockResolvedValueOnce({
+      status: 201,
+      data: { reports: [{}], blacklisted: [] },
+    });
+    const wrapper = mount(["gast@example.de"]);
+    await wrapper.vm.$nextTick();
+    await wrapper.setData({ reason: "No-Show" });
+
+    await wrapper.vm.confirm();
+
+    expect(ApiReportService.report).toHaveBeenCalledWith("stadt", {
+      bookingId: "B-1",
+      addresses: ["gast@example.de"],
+      reason: "No-Show",
+    });
+  });
+
+  it("ticks none of several addresses and reports nothing until one is ticked", async () => {
+    const wrapper = mount(["a@example.de", "b@example.de"]);
+    await wrapper.vm.$nextTick();
+    await wrapper.setData({ reason: "No-Show" });
+
+    expect(wrapper.vm.picked).toEqual([]);
+    expect(wrapper.vm.canConfirm).toBe(false);
+
+    await wrapper.setData({ picked: ["a@example.de", "b@example.de"] });
+    expect(wrapper.vm.canConfirm).toBe(true);
+  });
+
+  it("says in words which address is already on the blacklist", async () => {
+    ApiReportService.report.mockResolvedValueOnce({
+      status: 201,
+      data: { reports: [{}], blacklisted: ["b@example.de"] },
+    });
+    const wrapper = mount(["a@example.de", "b@example.de"]);
+    await wrapper.setData({
+      reason: "No-Show",
+      picked: ["a@example.de", "b@example.de"],
+    });
+
+    await wrapper.vm.confirm();
+
+    const toasts = addToast.mock.calls.map((call) => call[1]);
+    expect(toasts.map((toast) => toast.title)).toEqual([
+      "Meldung gesendet",
+      "Steht bereits auf der Blacklist",
+    ]);
+    expect(toasts[1].message).toBe(
+      "b@example.de steht bereits auf der Blacklist. Dazu entstand keine Meldung."
+    );
+  });
+});

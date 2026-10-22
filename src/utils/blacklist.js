@@ -26,7 +26,7 @@ export function parseBlacklistValue(value) {
 }
 
 /** The addresses of a mail as the backend asks them: split, trimmed, lower case. */
-const addressesOf = (mail) =>
+export const addressesOf = (mail) =>
   String(mail ?? "")
     .split(/[,\n]+/)
     .map((address) => address.trim().toLowerCase())

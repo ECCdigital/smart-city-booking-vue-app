@@ -144,6 +144,18 @@
               <v-icon left small>mdi-flag-outline</v-icon>
               {{ $t("user.report.open-user") }}
             </v-btn>
+            <v-btn
+              v-if="allowReportAddresses"
+              text
+              small
+              color="warning"
+              class="booking-page__report"
+              data-test="booking-report-addresses"
+              @click="reportingAddresses = true"
+            >
+              <v-icon left small>mdi-email-alert-outline</v-icon>
+              {{ $t("user.report.open-addresses") }}
+            </v-btn>
           </v-card-title>
           <v-divider />
           <v-card-text>
@@ -395,6 +407,15 @@
       :booking-id="booking.id"
       @close="reportingBooker = false"
     />
+    <UserReportDialog
+      v-if="allowReportAddresses"
+      :open="reportingAddresses"
+      :name="booking.name || reportableAddresses[0]"
+      :tenant-id="booking.tenantId || tenantId"
+      :booking-id="booking.id"
+      :addresses="reportableAddresses"
+      @close="reportingAddresses = false"
+    />
   </AdminLayout>
 </template>
 
@@ -435,6 +456,7 @@ import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 import UserReportDialog from "@/components/User/UserReportDialog.vue";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
+import { reportableAddresses } from "@/utils/reports";
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
@@ -468,6 +490,8 @@ export default {
       groupBooking: null,
       /** The dialog „User melden“ (ECCdigital/tickets#630). */
       reportingBooker: false,
+      /** The dialog „Adresse melden“ (ECCdigital/tickets#632). */
+      reportingAddresses: false,
     };
   },
   computed: {
@@ -479,6 +503,21 @@ export default {
     allowReportBooker() {
       return (
         !!this.booking?.assignedUserId &&
+        UserPermissionService.allowReport(this.tenantId)
+      );
+    },
+    /** The addresses of the booking's `mail` (ECCdigital/tickets#632). */
+    reportableAddresses() {
+      return reportableAddresses(this.booking?.mail);
+    },
+    /**
+     * „Adresse melden“ in the card „Kunde“: the addresses of the booking's
+     * `mail`, for a role that may report (ECCdigital/tickets#632). The
+     * backend refuses the address of an account, a user to report as such.
+     */
+    allowReportAddresses() {
+      return (
+        this.reportableAddresses.length > 0 &&
         UserPermissionService.allowReport(this.tenantId)
       );
     },

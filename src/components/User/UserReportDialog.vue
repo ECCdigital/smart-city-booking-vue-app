@@ -10,6 +10,24 @@
         <p v-if="bookingId" class="text-body-2">
           {{ $t("user.report.booking") }}
         </p>
+        <div v-if="byAddress" class="mb-3" data-test="user-report-addresses">
+          <div class="text-subtitle-2">
+            {{ $tc("user.report.addresses", addresses.length) }}
+          </div>
+          <v-checkbox
+            v-for="address in addresses"
+            :key="address"
+            v-model="picked"
+            :value="address"
+            :label="address"
+            dense
+            hide-details
+            data-test="user-report-address"
+          />
+          <p class="text-caption mt-2 mb-0">
+            {{ $t("user.report.addresses-hint") }}
+          </p>
+        </div>
         <v-textarea
           v-model="reason"
           :label="$t('user.report.reason')"
@@ -40,7 +58,7 @@
         <v-btn
           color="warning"
           depressed
-          :disabled="!reason.trim()"
+          :disabled="!canConfirm"
           :loading="inProgress"
           data-test="user-report-confirm"
           @click="confirm"
@@ -65,7 +83,10 @@ import ToastService from "@/services/ToastService";
  * new or added to the open one, and refuses a user already suspended; the
  * dialog stays open with the backend's word for a refusal. For a member it
  * offers to end the membership with the report, open invitations included
- * (ECCdigital/tickets#631). Emits `reported` with `{ membershipEnded }`
+ * (ECCdigital/tickets#631). With `addresses`, those of `mail` of the
+ * booking, it reports the addresses ticked instead, each a report of its
+ * own (ECCdigital/tickets#632); one already on the blacklist gets none,
+ * which a second toast names. Emits `reported` with `{ membershipEnded }`
  * after a report, and `close`.
  */
 export default {
@@ -92,6 +113,14 @@ export default {
       type: String,
       default: null,
     },
+    /**
+     * The addresses of the booking's `mail` to report instead of a user,
+     * one ticked where there is only one (ECCdigital/tickets#632).
+     */
+    addresses: {
+      type: Array,
+      default: () => [],
+    },
     /** Whether to offer „Mitgliedschaft beenden“: for a member only. */
     offerEndMembership: {
       type: Boolean,
@@ -101,15 +130,30 @@ export default {
   data() {
     return {
       reason: "",
+      picked: this.initialPick(),
       endMembership: false,
       error: null,
       inProgress: false,
     };
   },
+  computed: {
+    byAddress() {
+      return this.addresses.length > 0;
+    },
+    canConfirm() {
+      return (
+        !!this.reason.trim() && (!this.byAddress || this.picked.length > 0)
+      );
+    },
+  },
   watch: {
+    addresses() {
+      this.picked = this.initialPick();
+    },
     open(isOpen) {
       if (isOpen) {
         this.reason = "";
+        this.picked = this.initialPick();
         this.endMembership = false;
         this.error = null;
       }
@@ -117,7 +161,11 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    initialPick() {
+      return this.addresses.length === 1 ? [...this.addresses] : [];
+    },
     async confirm() {
+      if (this.byAddress) return this.confirmAddresses();
       this.inProgress = true;
       this.error = null;
       const endMembership = this.offerEndMembership && this.endMembership;
@@ -137,6 +185,43 @@ export default {
           )
         );
         this.$emit("reported", { membershipEnded: endMembership });
+        this.$emit("close");
+      } catch (error) {
+        console.error(error);
+        this.error = getApiErrorMessage(error, this.$t("user.report.error"));
+      } finally {
+        this.inProgress = false;
+      }
+    },
+    async confirmAddresses() {
+      this.inProgress = true;
+      this.error = null;
+      try {
+        const response = await ApiReportService.report(this.tenantId, {
+          bookingId: this.bookingId,
+          addresses: this.picked,
+          reason: this.reason.trim(),
+        });
+        this.addToast(
+          ToastService.createToast(
+            response.status === 201
+              ? "user.report.created"
+              : "user.report.supplemented-addresses",
+            "success"
+          )
+        );
+        const blacklisted = response.data?.blacklisted ?? [];
+        if (blacklisted.length > 0) {
+          this.addToast(
+            ToastService.createToast(
+              "user.report.already-blacklisted",
+              "info",
+              8000,
+              { addresses: blacklisted.join(", ") }
+            )
+          );
+        }
+        this.$emit("reported", { membershipEnded: false });
         this.$emit("close");
       } catch (error) {
         console.error(error);

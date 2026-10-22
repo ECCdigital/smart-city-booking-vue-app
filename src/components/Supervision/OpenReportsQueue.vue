@@ -33,7 +33,7 @@
     <div v-else class="booking-rows">
       <div
         v-for="group in groups"
-        :key="group.userId"
+        :key="group.key"
         class="booking-row reports-queue__row"
         data-test="reports-queue-row"
       >
@@ -51,7 +51,11 @@
             </v-chip>
           </div>
           <div class="booking-row__subtitle">
-            {{ group.userId }} ·
+            <template v-if="group.address">
+              {{ $t("supervision.reports.guest-address") }}
+            </template>
+            <template v-else>{{ group.userId }}</template>
+            ·
             {{ $tc("supervision.reports.count", group.reports.length) }}
           </div>
           <!-- Every report of the user, one per tenant, with all its
@@ -63,6 +67,7 @@
             class="reports-queue__report"
           />
           <v-btn
+            v-if="!group.address"
             text
             x-small
             color="primary"
@@ -76,6 +81,20 @@
         </div>
         <div class="reports-queue__decision">
           <v-btn
+            v-if="group.address"
+            small
+            depressed
+            color="error"
+            :disabled="deciding"
+            class="reports-queue__decide"
+            data-test="reports-queue-blacklist"
+            @click="startBlacklist(group)"
+          >
+            <v-icon left small>mdi-email-off-outline</v-icon>
+            {{ $t("supervision.reports.blacklist.open") }}
+          </v-btn>
+          <v-btn
+            v-else
             small
             depressed
             color="error"
@@ -111,6 +130,15 @@
       :error="suspendError"
       @confirm="suspend"
       @cancel="suspending = null"
+    />
+
+    <ReportBlacklistConformationDialog
+      :open="!!blacklisting"
+      :draft="blacklisting"
+      :in-progress="deciding"
+      :error="blacklistError"
+      @confirm="blacklist"
+      @cancel="blacklisting = null"
     />
 
     <v-dialog :value="!!rejecting" max-width="480" persistent>
@@ -160,19 +188,30 @@ import ApiUsersService from "@/services/api/ApiUsersService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import UserSuspendConformationDialog from "@/components/User/UserSuspendConformationDialog.vue";
 import ReportReasons from "@/components/Supervision/ReportReasons.vue";
-import { REPORT_STATUS, groupOpenReports } from "@/utils/reports";
+import ReportBlacklistConformationDialog from "@/components/Supervision/ReportBlacklistConformationDialog.vue";
+import {
+  REPORT_STATUS,
+  blacklistDraftOf,
+  groupOpenReports,
+} from "@/utils/reports";
 
 /**
  * „Offene Meldungen“ (glossary „Meldung“, ECCdigital/tickets#630): the open
  * reports of every tenant for the instance owner, one row per reported user
- * with the reports of each tenant apart. „Sperren“ suspends over the
- * suspension's own dialog, which settles every open report about the user;
- * „Ablehnen“ settles them with a reason the tenant owners read. Emits
- * `count` with the number of users waiting.
+ * or address (ECCdigital/tickets#632) with the reports of each tenant
+ * apart. „Sperren“ suspends over the suspension's own dialog, which settles
+ * every open report about the user; „Auf Blacklist setzen …“ settles those
+ * about an address with an entry of the address or its domain; „Ablehnen“
+ * settles them with a reason the tenant owners read. Emits `count` with
+ * the number of users and addresses waiting.
  */
 export default {
   name: "OpenReportsQueue",
-  components: { UserSuspendConformationDialog, ReportReasons },
+  components: {
+    UserSuspendConformationDialog,
+    ReportReasons,
+    ReportBlacklistConformationDialog,
+  },
   data() {
     return {
       groups: [],
@@ -183,6 +222,9 @@ export default {
       suspending: null,
       preview: null,
       suspendError: null,
+      /** `blacklistDraftOf` the address group being settled. */
+      blacklisting: null,
+      blacklistError: null,
       rejecting: null,
       rejectReason: "",
     };
@@ -250,6 +292,31 @@ export default {
         this.deciding = false;
       }
     },
+    startBlacklist(group) {
+      this.blacklisting = blacklistDraftOf(group);
+      this.blacklistError = null;
+    },
+    async blacklist({ reason, domain }) {
+      this.deciding = true;
+      this.blacklistError = null;
+      try {
+        await ApiReportService.blacklist(
+          this.blacklisting.address,
+          reason,
+          domain
+        );
+        this.blacklisting = null;
+        await this.load();
+      } catch (error) {
+        console.error(error);
+        this.blacklistError = getApiErrorMessage(
+          error,
+          this.$t("supervision.reports.failed")
+        );
+      } finally {
+        this.deciding = false;
+      }
+    },
     startReject(group) {
       this.rejecting = group;
       this.rejectReason = "";
@@ -260,7 +327,9 @@ export default {
       this.decisionError = "";
       try {
         await ApiReportService.reject(
-          this.rejecting.userId,
+          this.rejecting.address
+            ? { address: this.rejecting.address }
+            : { userId: this.rejecting.userId },
           this.rejectReason.trim()
         );
       } catch (error) {

@@ -126,7 +126,8 @@
       "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr.",
       "report_target_not_of_tenant": "Melden lassen sich nur Mitglieder des Mandanten und Bucher seiner Buchungen.",
       "report_target_tenant_owner": "Einen Besitzer des Mandanten melden nur Besitzer.",
-      "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden."
+      "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden.",
+      "report_address_not_of_booking": "Melden lassen sich nur Adressen aus der Mailadresse einer Buchung des Mandanten."
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
@@ -141,14 +142,15 @@
       "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren.",
       "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
       "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
-      "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen."
+      "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
+      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Blacklist. Es entstand keine Meldung."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist.",
-      "report_none_open": "Zu diesem User ist keine Meldung mehr offen.",
+      "report_none_open": "Zu diesem User oder dieser Adresse ist keine Meldung mehr offen.",
       "report_not_found": "Die Meldung wurde nicht gefunden."
     },
     "bad-request-codes": {
@@ -161,7 +163,9 @@
       "blacklist_value_invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
       "report_reason_required": "Für eine Meldung ist ein Grund nötig.",
       "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
-      "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden."
+      "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden.",
+      "report_booking_required": "Eine Adresse lässt sich nur aus einer Buchung heraus melden.",
+      "report_address_of_account": "Zu dieser Adresse gibt es ein Konto. Bitte melden Sie den User mit „User melden“."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -1022,7 +1026,8 @@
       },
       "origin": {
         "manual": "von Hand",
-        "suspension": "aus einer Sperre"
+        "suspension": "aus einer Sperre",
+        "reports": "aus Meldungen"
       },
       "edit-reason": "Grund ändern",
       "remove": "Entfernen",
@@ -2577,7 +2582,18 @@
       },
       "error": "Die Meldung konnte nicht gesendet werden.",
       "end-membership": "Mitgliedschaft beenden",
-      "end-membership-hint": "{name} verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt."
+      "end-membership-hint": "{name} verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt.",
+      "open-addresses": "Adresse melden",
+      "addresses": "Diese Adresse melden: | Welche Adressen melden?",
+      "addresses-hint": "Jede angehakte Adresse wird eine eigene Meldung mit dieser Buchung und diesem Grund.",
+      "supplemented-addresses": {
+        "title": "Meldung ergänzt",
+        "message": "Die offene Meldung zu dieser Adresse wurde ergänzt."
+      },
+      "already-blacklisted": {
+        "title": "Steht bereits auf der Blacklist",
+        "message": "{addresses} steht bereits auf der Blacklist. Dazu entstand keine Meldung."
+      }
     }
   },
   "coupon": {
@@ -3529,7 +3545,7 @@
       "page-text": "{0}–{1} von {2}"
     },
     "reports": {
-      "hint": "Offene Meldungen der Mandanten, nach User gruppiert – der am längsten gemeldete zuerst. „Sperren“ und „Ablehnen“ erledigen alle offenen Meldungen zum User, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Blacklist setzen …“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
       "loading": "Meldungen werden geladen...",
       "empty": "Keine Meldungen offen",
       "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
@@ -3545,7 +3561,19 @@
       "reject-text": "Die Ablehnung erledigt alle offenen Meldungen zu {name}. Die Besitzer der meldenden Mandanten lesen die Begründung.",
       "reject-reason": "Begründung (Pflicht)",
       "cancel": "Abbrechen",
-      "failed": "Die Meldungen konnten nicht erledigt werden."
+      "failed": "Die Meldungen konnten nicht erledigt werden.",
+      "guest-address": "Adresse eines Gasts",
+      "blacklist": {
+        "open": "Auf Blacklist setzen …",
+        "title": "{value} auf die Blacklist setzen?",
+        "text": "Der Eintrag erledigt alle offenen Meldungen zu jeder Adresse, die er trifft. Die Besitzer der meldenden Mandanten bekommen eine Mail, der Gast erfährt nichts.",
+        "address": "Nur die Adresse {address}",
+        "domain": "Die ganze Domain {domain}",
+        "suspends": "Sperrt sofort ein Konto: | Sperrt sofort {count} Konten:",
+        "suspends-none": "Sperrt kein Konto.",
+        "reason": "Grund (Pflicht)",
+        "confirm": "Auf Blacklist setzen"
+      }
     },
     "tenant-approval-queue": {
       "hint": "Mandanten mit der Stufe „Freigabe ausstehend“ – der am längsten wartende zuerst. „Freigeben“ macht einen Mandanten beaufsichtigt, der Pfeil daneben frei; eine Begründung nimmt der Stufendialog auf der Seite „Mandanten“ auf.",

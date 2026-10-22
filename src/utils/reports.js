@@ -1,10 +1,12 @@
 /**
  * The reports to the instance (glossary „Meldung (eines Users oder einer
  * Adresse)“, ECCdigital/tickets#630) as the review queue shows the open
- * ones: one group per reported user, the reports of different tenants
- * apart within it, the user waiting longest first. And as the tenant
- * lists its own, with their standing (ECCdigital/tickets#631).
+ * ones: one group per reported user or address (ECCdigital/tickets#632),
+ * the reports of different tenants apart within it, the one waiting
+ * longest first. And as the tenant lists its own, with their standing
+ * (ECCdigital/tickets#631).
  */
+import { addressesOf, parseBlacklistValue } from "@/utils/blacklist";
 
 /** The status of a report as the backend names it. */
 export const REPORT_STATUS = Object.freeze({
@@ -35,10 +37,12 @@ export function reportReasons(report) {
 }
 
 /**
- * Groups the open reports by the reported user.
+ * Groups the open reports by the reported user or address: `userId` for
+ * a user, `address` for the address of a guest (ECCdigital/tickets#632),
+ * the other one `null`; `key` tells the groups apart.
  *
  * @param {Object[]} reports The answer of `GET /api/instances/reports`
- * @returns {{userId: string, name: string, suspended: boolean, since: number, reports: Object[]}[]}
+ * @returns {{key: string, userId: string|null, address: string|null, name: string, suspended: boolean, since: number, reports: Object[]}[]}
  */
 export function groupOpenReports(reports) {
   const groups = new Map();
@@ -46,20 +50,60 @@ export function groupOpenReports(reports) {
     .filter((report) => report.status === REPORT_STATUS.OPEN)
     .sort((a, b) => a.reportedAt - b.reportedAt);
   for (const report of open) {
-    let group = groups.get(report.targetUserId);
+    const address = report.targetUserId ? null : report.targetAddress ?? null;
+    const key = address ? `address:${address}` : `user:${report.targetUserId}`;
+    let group = groups.get(key);
     if (!group) {
       group = {
-        userId: report.targetUserId,
-        name: report.targetName || report.targetUserId,
+        key,
+        userId: address ? null : report.targetUserId,
+        address,
+        name: report.targetName || report.targetUserId || address,
         suspended: report.targetSuspended === true,
         since: report.reportedAt,
         reports: [],
       };
-      groups.set(report.targetUserId, group);
+      groups.set(key, group);
     }
     group.reports.push(report);
   }
   return [...groups.values()];
+}
+
+/**
+ * The addresses of a booking's `mail` a tenant may report
+ * (ECCdigital/tickets#632): each once, trimmed and in lower case as the
+ * backend compares them, without what is no address.
+ *
+ * @param {*} mail One address or a list, as `mail` of a booking
+ * @returns {string[]}
+ */
+export function reportableAddresses(mail) {
+  const addresses = addressesOf(mail)
+    .map(parseBlacklistValue)
+    .filter((parsed) => parsed?.kind === "address")
+    .map((parsed) => parsed.value);
+  return [...new Set(addresses)];
+}
+
+/**
+ * The blacklist entry that settles the reports about an address, as its
+ * dialog offers it (ECCdigital/tickets#632): the exact address or its
+ * domain, and the reasons of the reports, each once, as the reason.
+ *
+ * @param {{address: string, reports: Object[]}} group A group of
+ *   `groupOpenReports` about an address
+ * @returns {{address: string, domain: string, reason: string}}
+ */
+export function blacklistDraftOf(group) {
+  const reasons = group.reports.flatMap((report) =>
+    reportReasons(report).map((entry) => entry.reason)
+  );
+  return {
+    address: group.address,
+    domain: group.address.slice(group.address.indexOf("@")),
+    reason: [...new Set(reasons)].join("\n"),
+  };
 }
 
 /**
@@ -84,7 +128,7 @@ export function tenantReportRows(
     )
     .map((report) => ({
       report,
-      name: report.targetName || report.targetUserId,
+      name: report.targetName || report.targetUserId || report.targetAddress,
       standing: report.status,
       editable:
         isOpen(report) &&
