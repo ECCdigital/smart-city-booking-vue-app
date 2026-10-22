@@ -19,6 +19,16 @@
           hide-details="auto"
           data-test="user-report-reason"
         />
+        <v-checkbox
+          v-if="offerEndMembership"
+          v-model="endMembership"
+          :label="$t('user.report.end-membership')"
+          :hint="$t('user.report.end-membership-hint', { name })"
+          persistent-hint
+          dense
+          class="mt-3"
+          data-test="user-report-end-membership"
+        />
         <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
           {{ error }}
         </v-alert>
@@ -53,7 +63,10 @@ import ToastService from "@/services/ToastService";
  * (`userId`) or the booker of a booking (`bookingId`) of the tenant to the
  * instance, with a required reason. The backend says whether the report is
  * new or added to the open one, and refuses a user already suspended; the
- * dialog stays open with the backend's word for a refusal. Emits `close`.
+ * dialog stays open with the backend's word for a refusal. For a member it
+ * offers to end the membership with the report, open invitations included
+ * (ECCdigital/tickets#631). Emits `reported` with `{ membershipEnded }`
+ * after a report, and `close`.
  */
 export default {
   name: "UserReportDialog",
@@ -79,10 +92,16 @@ export default {
       type: String,
       default: null,
     },
+    /** Whether to offer „Mitgliedschaft beenden“: for a member only. */
+    offerEndMembership: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       reason: "",
+      endMembership: false,
       error: null,
       inProgress: false,
     };
@@ -91,6 +110,7 @@ export default {
     open(isOpen) {
       if (isOpen) {
         this.reason = "";
+        this.endMembership = false;
         this.error = null;
       }
     },
@@ -100,11 +120,13 @@ export default {
     async confirm() {
       this.inProgress = true;
       this.error = null;
+      const endMembership = this.offerEndMembership && this.endMembership;
       try {
         const response = await ApiReportService.report(this.tenantId, {
           userId: this.bookingId ? undefined : this.userId,
           bookingId: this.bookingId || undefined,
           reason: this.reason.trim(),
+          endMembership,
         });
         this.addToast(
           ToastService.createToast(
@@ -114,6 +136,7 @@ export default {
             "success"
           )
         );
+        this.$emit("reported", { membershipEnded: endMembership });
         this.$emit("close");
       } catch (error) {
         console.error(error);

@@ -284,6 +284,13 @@ export default {
             context: "tenant",
           },
           {
+            title: "Meldungen",
+            link: "tenant-reports",
+            icon: "mdi-flag-outline",
+            interfaceName: "users",
+            context: "tenant",
+          },
+          {
             title: "Rollen",
             link: "roles",
             icon: "mdi-shield-account-outline",

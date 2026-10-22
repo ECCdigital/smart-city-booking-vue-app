@@ -16,6 +16,7 @@ import Resources from "@/views/Bookables/Resources/Resources.vue";
 import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
+import TenantReports from "@/views/Management/TenantReports.vue";
 import Roles from "@/views/Management/Roles";
 import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
@@ -195,6 +196,17 @@ const routes = [
     component: Users,
     meta: {
       title: "Mitglieder",
+      requiresAuth: true,
+      interfaceName: "users",
+    },
+  },
+  {
+    // The tenant's own reports to the instance (ECCdigital/tickets#631).
+    path: "/tenant/reports",
+    name: "tenant-reports",
+    component: TenantReports,
+    meta: {
+      title: "Meldungen",
       requiresAuth: true,
       interfaceName: "users",
     },

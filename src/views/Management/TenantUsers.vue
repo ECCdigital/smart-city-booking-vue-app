@@ -340,6 +340,8 @@
       :name="reporting ? getUserName(reporting) : ''"
       :tenant-id="tenantId"
       :user-id="reporting ? reporting.userId : null"
+      offer-end-membership
+      @reported="onReported"
       @close="reporting = null"
     />
 
@@ -819,6 +821,10 @@ export default {
 
     openReport(member) {
       this.reporting = member;
+    },
+    /** A report that ended the membership takes the member off the list. */
+    async onReported({ membershipEnded }) {
+      if (membershipEnded) await this.fetchTenantUsers();
     },
     getUserName(user) {
       if (user.firstName && user.lastName) {

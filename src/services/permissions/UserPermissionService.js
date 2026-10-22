@@ -32,6 +32,18 @@ class UserPermissionService {
     if (permissions.isOwner) return true;
     return !!permissions.manageUsers?.updateAny;
   }
+
+  /**
+   * Changing a report about a tenant owner (ECCdigital/tickets#631): the
+   * backend's `tenantUser.owner`, the tenant owners' and the instance
+   * owner's alone, as reporting one is.
+   */
+  static allowReportOwner(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (user.state.data.permissions.instanceOwner) return true;
+    return !!user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    )?.isOwner;
+  }
 }
 
 export default UserPermissionService;

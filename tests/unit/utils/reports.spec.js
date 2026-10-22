@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { groupOpenReports, reportReasons } from "@/utils/reports";
+import {
+  groupOpenReports,
+  reportReasons,
+  tenantReportRows,
+} from "@/utils/reports";
 
 /** The open reports (glossary „Meldung“, ECCdigital/tickets#630). */
 const report = (fields) => ({
@@ -104,5 +108,82 @@ describe("reportReasons", () => {
         bookingId: null,
       },
     ]);
+  });
+});
+
+describe("tenantReportRows (ECCdigital/tickets#631)", () => {
+  it("is empty without reports", () => {
+    expect(tenantReportRows([])).toEqual([]);
+    expect(tenantReportRows(null)).toEqual([]);
+  });
+
+  it("puts the open reports first, then the newest", () => {
+    const rows = tenantReportRows([
+      report({ id: "old-open", reportedAt: 1 }),
+      report({ id: "rejected", reportedAt: 5, status: "rejected" }),
+      report({ id: "new-open", reportedAt: 3 }),
+      report({ id: "withdrawn", reportedAt: 4, status: "withdrawn" }),
+    ]);
+
+    expect(rows.map((row) => row.report.id)).toEqual([
+      "new-open",
+      "old-open",
+      "rejected",
+      "withdrawn",
+    ]);
+  });
+
+  it("names the standing of each status, and only an open report may change", () => {
+    const rows = tenantReportRows([
+      report({ id: "o", reportedAt: 5 }),
+      report({ id: "s", reportedAt: 4, status: "suspended" }),
+      report({ id: "b", reportedAt: 3, status: "blacklisted" }),
+      report({
+        id: "r",
+        reportedAt: 2,
+        status: "rejected",
+        rejectionReason: "Kein Verstoß",
+      }),
+      report({ id: "w", reportedAt: 1, status: "withdrawn" }),
+    ]);
+
+    expect(
+      rows.map(({ standing, editable, rejectionReason }) => ({
+        standing,
+        editable,
+        rejectionReason,
+      }))
+    ).toEqual([
+      { standing: "open", editable: true, rejectionReason: null },
+      { standing: "suspended", editable: false, rejectionReason: null },
+      { standing: "blacklisted", editable: false, rejectionReason: null },
+      {
+        standing: "rejected",
+        editable: false,
+        rejectionReason: "Kein Verstoß",
+      },
+      { standing: "withdrawn", editable: false, rejectionReason: null },
+    ]);
+  });
+
+  it("leaves an open report about a tenant owner to the tenant owners", () => {
+    const reports = [
+      report({ id: "owner", reportedAt: 2, targetTenantOwner: true }),
+      report({ id: "member", reportedAt: 1, targetTenantOwner: false }),
+    ];
+
+    const editable = (options) =>
+      tenantReportRows(reports, options).map((row) => row.editable);
+
+    expect(editable()).toEqual([false, true]);
+    expect(editable({ mayChangeOwnerReports: true })).toEqual([true, true]);
+  });
+
+  it("names the target by its name, else by its id", () => {
+    const [row] = tenantReportRows([
+      report({ id: "x", reportedAt: 1, targetName: "" }),
+    ]);
+
+    expect(row.name).toBe("erika@example.de");
   });
 });

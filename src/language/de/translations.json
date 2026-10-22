@@ -140,14 +140,16 @@
       "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut.",
       "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren.",
       "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
-      "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt."
+      "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
+      "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist.",
-      "report_none_open": "Zu diesem User ist keine Meldung mehr offen."
+      "report_none_open": "Zu diesem User ist keine Meldung mehr offen.",
+      "report_not_found": "Die Meldung wurde nicht gefunden."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
@@ -1298,6 +1300,30 @@
     }
   },
   "tenant": {
+    "reports": {
+      "title": "Meldungen",
+      "hint": "Die Meldungen dieses Mandanten an die Instanz, offene zuerst. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine neue zum selben User wieder möglich.",
+      "forbidden": "Meldungen sehen nur Rollen, die Mitglieder verwalten dürfen.",
+      "empty": "Dieser Mandant hat noch niemanden gemeldet.",
+      "load-failed": "Die Meldungen konnten nicht geladen werden.",
+      "standing": {
+        "open": "offen",
+        "suspended": "gesperrt",
+        "blacklisted": "auf Blacklist",
+        "rejected": "abgelehnt",
+        "withdrawn": "zurückgezogen"
+      },
+      "rejection": "Begründung der Ablehnung: {reason}",
+      "add": "Ergänzen",
+      "add-title": "Meldung zu {name} ergänzen",
+      "add-reason": "Weiterer Grund (Pflicht)",
+      "add-failed": "Die Meldung konnte nicht ergänzt werden.",
+      "withdraw": "Zurückziehen",
+      "withdraw-title": "Meldung zu {name} zurückziehen?",
+      "withdraw-text": "Die Instanz entscheidet dann nicht mehr über diese Meldung. Eine neue Meldung zu {name} bleibt möglich.",
+      "withdraw-failed": "Die Meldung konnte nicht zurückgezogen werden.",
+      "cancel": "Abbrechen"
+    },
     "description": {
       "label": "Kurzbeschreibung (optional)",
       "hint": "Beschreiben Sie den Mandanten für Buchende. Die Beschreibung bespielsweise erscheint im Katalog oder auf eingebundenen Webseiten.",
@@ -2549,7 +2575,9 @@
         "title": "Meldung ergänzt",
         "message": "Die offene Meldung zu diesem User wurde ergänzt."
       },
-      "error": "Die Meldung konnte nicht gesendet werden."
+      "error": "Die Meldung konnte nicht gesendet werden.",
+      "end-membership": "Mitgliedschaft beenden",
+      "end-membership-hint": "{name} verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt."
     }
   },
   "coupon": {

@@ -57,3 +57,51 @@ describe("UserReportDialog", () => {
     );
   });
 });
+
+describe("UserReportDialog: „Mitgliedschaft beenden“ (ECCdigital/tickets#631)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mount = (propsData = {}) =>
+    mountComponent(UserReportDialog, {
+      store: store(),
+      propsData: {
+        open: true,
+        name: "Erika Muster",
+        tenantId: "stadt",
+        userId: "erika@example.de",
+        ...propsData,
+      },
+    });
+
+  it("ends the membership with the report when ticked", async () => {
+    ApiReportService.report.mockResolvedValueOnce({ status: 201, data: {} });
+    const wrapper = mount({ offerEndMembership: true });
+    await wrapper.setData({ reason: "Beleidigt", endMembership: true });
+
+    await wrapper.vm.confirm();
+
+    expect(ApiReportService.report).toHaveBeenCalledWith("stadt", {
+      userId: "erika@example.de",
+      bookingId: undefined,
+      reason: "Beleidigt",
+      endMembership: true,
+    });
+    expect(wrapper.emitted("reported")).toEqual([[{ membershipEnded: true }]]);
+  });
+
+  it("offers no checkbox where it is not asked for, and ends nothing", async () => {
+    ApiReportService.report.mockResolvedValueOnce({ status: 201, data: {} });
+    const wrapper = mount();
+    await wrapper.setData({ reason: "Beleidigt", endMembership: true });
+
+    expect(
+      wrapper.find('[data-test="user-report-end-membership"]').exists()
+    ).toBe(false);
+    await wrapper.vm.confirm();
+
+    expect(ApiReportService.report.mock.calls[0][1].endMembership).toBe(false);
+    expect(wrapper.emitted("reported")).toEqual([[{ membershipEnded: false }]]);
+  });
+});
