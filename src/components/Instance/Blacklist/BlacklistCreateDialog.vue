@@ -55,6 +55,42 @@
             <ul class="text-body-2">
               <li v-for="account in group.accounts" :key="account.id">
                 {{ accountText(account) }}
+                <span v-if="!account.tenants.length" class="grey--text">
+                  ·
+                  {{ $tc("instance.blacklist.create.tenants", 0) }}
+                </span>
+                <template v-else>
+                  ·
+                  <button
+                    type="button"
+                    class="tenants-toggle"
+                    :aria-expanded="String(isExpanded(account))"
+                    @click="toggleTenants(account)"
+                  >
+                    {{
+                      $tc(
+                        "instance.blacklist.create.tenants",
+                        account.tenants.length,
+                        { count: account.tenants.length }
+                      )
+                    }}
+                    <v-icon x-small color="primary">
+                      {{
+                        isExpanded(account)
+                          ? "mdi-chevron-up"
+                          : "mdi-chevron-down"
+                      }}
+                    </v-icon>
+                  </button>
+                  <ul
+                    v-if="isExpanded(account)"
+                    class="grey--text text--darken-1"
+                  >
+                    <li v-for="tenant in account.tenants" :key="tenant.id">
+                      {{ tenant.name }}
+                    </li>
+                  </ul>
+                </template>
               </li>
             </ul>
           </div>
@@ -125,6 +161,8 @@ export default {
       value: "",
       reason: "",
       preview: null,
+      /** The accounts whose tenants are shown by name. */
+      expandedAccountIds: [],
       previewLoading: false,
       previewError: null,
     };
@@ -182,6 +220,14 @@ export default {
     },
   },
   methods: {
+    isExpanded(account) {
+      return this.expandedAccountIds.includes(account.id);
+    },
+    toggleTenants(account) {
+      this.expandedAccountIds = this.isExpanded(account)
+        ? this.expandedAccountIds.filter((id) => id !== account.id)
+        : [...this.expandedAccountIds, account.id];
+    },
     accountText(account) {
       const name = `${account.firstName} ${account.lastName}`.trim();
       return name ? `${name} (${account.id})` : account.id;
@@ -195,6 +241,7 @@ export default {
           this.parsed.value
         );
         this.preview = response.data;
+        this.expandedAccountIds = [];
       } catch (error) {
         console.error(error);
         this.previewError = getApiErrorMessage(
@@ -208,3 +255,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* The count of tenants opens their names, quiet as a link. */
+.tenants-toggle {
+  color: var(--scb-text-link);
+  cursor: pointer;
+}
+.tenants-toggle:hover,
+.tenants-toggle:focus-visible {
+  text-decoration: underline;
+}
+</style>

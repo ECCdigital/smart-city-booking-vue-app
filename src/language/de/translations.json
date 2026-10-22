@@ -1014,6 +1014,7 @@
         "suspend": "Diese Konten werden sofort gesperrt ({count}):",
         "instance-owners": "Diese Konten bleiben offen, weil sie die Plattform verwalten ({count}):",
         "already-suspended": "Diese Konten sind bereits gesperrt ({count}):",
+        "tenants": "in keinem Mandanten | in einem Mandanten | in {count} Mandanten",
         "none": "Mit dieser Adresse gibt es zurzeit kein Konto. Es wird also niemand gesperrt.",
         "exists": "„{value}“ steht bereits auf der Blacklist.",
         "reason": "Grund (Pflicht, nur für Admins sichtbar)",
