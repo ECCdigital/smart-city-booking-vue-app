@@ -856,11 +856,20 @@
       @submit="submitChanges"
       @cancel="resetChanges"
     />
+
+    <BlacklistWarningConformationDialog
+      :open="blacklistedAddresses.length > 0"
+      :addresses="blacklistedAddresses"
+      @confirm="saveDespiteBlacklist"
+      @cancel="blacklistedAddresses = []"
+    />
   </div>
 </template>
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import { addressesToCheck, blacklistedAmong } from "@/utils/blacklist";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -910,6 +919,7 @@ export default {
     BookingCustomFieldsSection,
     BookingEditSummary,
     CheckoutCalendar,
+    BlacklistWarningConformationDialog,
   },
   props: {
     booking: {
@@ -933,6 +943,8 @@ export default {
     return {
       valid: true,
       inProgress: false,
+      /** The addresses the blacklist warning names (ECCdigital/tickets#629). */
+      blacklistedAddresses: [],
       test: null,
       addBookableValue: null,
 
@@ -1829,7 +1841,29 @@ export default {
         section.contains(input.$el)
       );
     },
-    async submitChanges() {
+    /**
+     * The addresses of a new booking's mail, or those a changed mail adds,
+     * that the blacklist hits (ECCdigital/tickets#629).
+     */
+    blacklistHits() {
+      return blacklistedAmong(
+        this.isCreateMode ? "manualBooking" : "bookingMail",
+        addressesToCheck(
+          this.selectedBooking.mail,
+          this.isCreateMode ? null : this.booking.mail
+        ),
+        this.tenantId
+      );
+    },
+    saveDespiteBlacklist() {
+      this.blacklistedAddresses = [];
+      this.submitChanges(true);
+    },
+    /**
+     * Saves the booking. A mail on the blacklist is no refusal: the warning
+     * asks first, and `blacklistConfirmed` saves anyway.
+     */
+    async submitChanges(blacklistConfirmed) {
       this.createError = null;
       if (!(await this.validateForm())) return;
 
@@ -1841,6 +1875,13 @@ export default {
           )
         );
         return;
+      }
+
+      if (blacklistConfirmed !== true) {
+        this.inProgress = true;
+        this.blacklistedAddresses = await this.blacklistHits();
+        this.inProgress = false;
+        if (this.blacklistedAddresses.length) return;
       }
 
       if (!this.selectedBooking.id) {

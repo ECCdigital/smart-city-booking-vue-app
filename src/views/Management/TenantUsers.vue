@@ -312,12 +312,20 @@
       :invitation-links.sync="api.invitations"
       :tenantId="tenantId"
       @close="showInviteDialog = false"
-      @invite="inviteMultipleUsers"
+      @invite="onInvite"
       @toast="addToast"
       @createLink="createInvitationLink"
       @deleteLink="deleteLink"
-      @add-direct="addUserDirectly"
+      @add-direct="onAddDirect"
     ></TenantInviteUserDialog>
+
+    <BlacklistWarningConformationDialog
+      :open="!!blacklistWarning"
+      :addresses="blacklistWarning ? blacklistWarning.addresses : []"
+      :action="blacklistWarning ? blacklistWarning.action : 'save'"
+      @confirm="proceedDespiteBlacklist"
+      @cancel="blacklistWarning = null"
+    />
   </AdminLayout>
 </template>
 
@@ -332,6 +340,8 @@ import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.v
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import { blacklistedAmong } from "@/utils/blacklist";
 import { INVITE_QUERY } from "@/utils/tenantUsers";
 
 export default {
@@ -340,10 +350,16 @@ export default {
     TenantInviteUserDialog,
     AdminLayout,
     SearchBar,
+    BlacklistWarningConformationDialog,
   },
   data() {
     return {
       valid: true,
+      /**
+       * The open warning before adding or inviting an address on the
+       * blacklist (ECCdigital/tickets#629): `{ addresses, action, proceed }`.
+       */
+      blacklistWarning: null,
       search: "",
       statusFilter: [],
       roleFilter: [],
@@ -683,6 +699,40 @@ export default {
         );
       }
       return user.userId.substring(0, 2).toUpperCase();
+    },
+
+    /**
+     * Adding or inviting an address on the blacklist is no refusal
+     * (ECCdigital/tickets#629): the warning names the hit addresses first,
+     * and `proceed` runs once confirmed - at once without a hit.
+     */
+    async warnOfBlacklist(addresses, action, proceed) {
+      this.isLoading = true;
+      const blacklisted = await blacklistedAmong(
+        "tenantUser",
+        addresses,
+        this.tenantId
+      );
+      this.isLoading = false;
+      if (!blacklisted.length) return proceed();
+      this.blacklistWarning = { addresses: blacklisted, action, proceed };
+    },
+    proceedDespiteBlacklist() {
+      const { proceed } = this.blacklistWarning;
+      this.blacklistWarning = null;
+      return proceed();
+    },
+    onInvite(users) {
+      return this.warnOfBlacklist(
+        users.map((user) => user.email),
+        "invite",
+        () => this.inviteMultipleUsers(users)
+      );
+    },
+    onAddDirect(member) {
+      return this.warnOfBlacklist([member.email], "add", () =>
+        this.addUserDirectly(member)
+      );
     },
 
     async addUserDirectly({ email, roles, asOwner }) {

@@ -7,6 +7,7 @@ import { flushPromises } from "@tests/unit/support/api";
 import i18n from "@/language/index";
 import TenantUsers from "@/views/Management/TenantUsers.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 import { inviteMembersRoute } from "@/utils/tenantUsers";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
@@ -16,6 +17,9 @@ vi.mock("@/services/api/ApiTenantService", () => ({
     getTenantUsers: vi.fn(),
     getTenant: vi.fn(),
   },
+}));
+vi.mock("@/services/api/ApiBlacklistService", () => ({
+  default: { isBlacklisted: vi.fn() },
 }));
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn(async () => ({ data: [] })) },
@@ -82,6 +86,80 @@ describe("TenantUsers.addUserDirectly", () => {
     expect(addToast.mock.calls[0][0].title).toBe(
       i18n.t("tenant.addUser.error.something-wrong.title")
     );
+  });
+});
+
+/**
+ * Adding or inviting an address on the blacklist warns first
+ * (ECCdigital/tickets#629); through the methods with a stand-in context, as
+ * above.
+ */
+describe("TenantUsers: the blacklist warning", () => {
+  const BLOCKED = "max@firma.de";
+
+  function context() {
+    const ctx = { tenantId: "t1", isLoading: false, blacklistWarning: null };
+    ctx.warnOfBlacklist = TenantUsers.methods.warnOfBlacklist.bind(ctx);
+    ctx.inviteMultipleUsers = vi.fn();
+    ctx.addUserDirectly = vi.fn();
+    return ctx;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiBlacklistService.isBlacklisted.mockImplementation(
+      async (way, address) => address === BLOCKED
+    );
+  });
+
+  it("names only the invited addresses on the blacklist and invites once confirmed", async () => {
+    const ctx = context();
+    const users = [{ email: "anna@sauber.de" }, { email: BLOCKED }];
+
+    await TenantUsers.methods.onInvite.call(ctx, users);
+
+    expect(ApiBlacklistService.isBlacklisted).toHaveBeenCalledWith(
+      "tenantUser",
+      BLOCKED,
+      "t1"
+    );
+    expect(ctx.blacklistWarning).toMatchObject({
+      addresses: [BLOCKED],
+      action: "invite",
+    });
+    expect(ctx.inviteMultipleUsers).not.toHaveBeenCalled();
+
+    await TenantUsers.methods.proceedDespiteBlacklist.call(ctx);
+
+    expect(ctx.blacklistWarning).toBe(null);
+    expect(ctx.inviteMultipleUsers).toHaveBeenCalledWith(users);
+  });
+
+  it("invites at once when no address is on the blacklist", async () => {
+    const ctx = context();
+    const users = [{ email: "anna@sauber.de" }];
+
+    await TenantUsers.methods.onInvite.call(ctx, users);
+
+    expect(ctx.blacklistWarning).toBe(null);
+    expect(ctx.inviteMultipleUsers).toHaveBeenCalledWith(users);
+  });
+
+  it("warns before adding an address on the blacklist directly", async () => {
+    const ctx = context();
+    const member = { email: BLOCKED, roles: [], asOwner: false };
+
+    await TenantUsers.methods.onAddDirect.call(ctx, member);
+
+    expect(ctx.blacklistWarning).toMatchObject({
+      addresses: [BLOCKED],
+      action: "add",
+    });
+    expect(ctx.addUserDirectly).not.toHaveBeenCalled();
+
+    await TenantUsers.methods.proceedDespiteBlacklist.call(ctx);
+
+    expect(ctx.addUserDirectly).toHaveBeenCalledWith(member);
   });
 });
 

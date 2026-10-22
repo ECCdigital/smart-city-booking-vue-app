@@ -1,4 +1,15 @@
 {
+  "blacklist-warning": {
+    "title": "Adresse steht auf der Blacklist",
+    "text": "Diese Adresse steht auf der Blacklist: | Diese Adressen stehen auf der Blacklist:",
+    "hint": "Mit einer Adresse auf der Blacklist sind keine Buchung im Katalog und keine Registrierung möglich. Hier können Sie trotzdem fortfahren.",
+    "cancel": "Zurück",
+    "confirm": {
+      "save": "Trotzdem speichern",
+      "invite": "Trotzdem einladen",
+      "add": "Trotzdem hinzufügen"
+    }
+  },
   "unsavedChangesLeave": {
     "title": "Ungespeicherte Änderungen",
     "message": "Es gibt ungespeicherte Änderungen. Wenn Sie fortfahren, gehen diese verloren. Möchten Sie die Änderungen verwerfen?",
