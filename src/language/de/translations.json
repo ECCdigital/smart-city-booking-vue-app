@@ -2392,7 +2392,7 @@
         "ends": "nicht mehr möglich"
       },
       "suspend": {
-        "open": "Sperren …",
+        "open": "Sperren",
         "title": "{name} für die ganze Instanz sperren?",
         "warning": "{name} kann sich danach nirgends mehr anmelden, weder im Admin noch im Katalog, und laufende Sitzungen enden sofort.",
         "reason": "Grund (Pflicht)",
@@ -2402,7 +2402,7 @@
         "error": "Die Sperre konnte nicht gesetzt werden."
       },
       "unsuspend": {
-        "open": "Entsperren …",
+        "open": "Entsperren",
         "title": "{name} entsperren?",
         "text": "{name} kann sich danach wieder anmelden, im Admin und im Katalog.",
         "cancel": "Abbrechen",

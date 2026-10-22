@@ -1,9 +1,9 @@
 <template>
   <v-dialog :value="open" max-width="560" persistent>
     <v-card>
-      <v-card-title class="text-h6 text-break">
+      <v-card-title class="text-h6 text-break flex-nowrap align-start">
         <v-icon color="error" class="mr-2">mdi-cancel</v-icon>
-        {{ $t("user.suspension.suspend.title", { name }) }}
+        <span>{{ $t("user.suspension.suspend.title", { name }) }}</span>
       </v-card-title>
       <v-card-text>
         <v-alert type="error" text dense class="mb-3">
