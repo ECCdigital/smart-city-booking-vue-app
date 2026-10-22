@@ -20,15 +20,26 @@ export default {
       syncSelfBookingNames: false,
     });
   },
-  /** Suspends a user at once, with a reason (ECCdigital/tickets#624). */
-  suspendUser(userId, reason) {
-    return ApiClient.post(`api/users/${userId}/suspension`, { reason });
+  /**
+   * Suspends a user at once, with a reason (ECCdigital/tickets#624);
+   * `blacklist` puts the address on the blacklist too (ECCdigital/tickets#626).
+   */
+  suspendUser(userId, reason, blacklist = false) {
+    return ApiClient.post(`api/users/${userId}/suspension`, {
+      reason,
+      blacklist,
+    });
   },
-  /** Lifts the suspension of a user. */
-  unsuspendUser(userId) {
-    return ApiClient.delete(`api/users/${userId}/suspension`);
+  /** Lifts the suspension of a user; `removeBlacklistEntry` removes an exact entry. */
+  unsuspendUser(userId, removeBlacklistEntry = false) {
+    return ApiClient.delete(`api/users/${userId}/suspension`, {
+      params: { removeBlacklistEntry },
+    });
   },
-  /** The counts the suspension dialog names: bookings and memberships. */
+  /**
+   * The counts the suspension dialog names, bookings and memberships, and
+   * the blacklist entry that hits the address.
+   */
   getSuspensionPreview(userId) {
     return ApiClient.get(`api/users/${userId}/suspension-preview`);
   },

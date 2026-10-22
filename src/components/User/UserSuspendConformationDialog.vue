@@ -9,7 +9,7 @@
         <v-alert type="error" text dense class="mb-3">
           {{ $t("user.suspension.suspend.warning", { name }) }}
         </v-alert>
-        <v-progress-linear v-if="!consequences && !error" indeterminate />
+        <v-progress-linear v-if="!preview && !error" indeterminate />
         <v-simple-table v-if="consequences" dense class="consequences mb-3">
           <tbody>
             <tr v-for="row in consequences" :key="row.label">
@@ -33,6 +33,25 @@
           auto-grow
           hide-details="auto"
         />
+        <template v-if="preview">
+          <div v-if="preview.blacklistEntry" class="text-body-2 mt-3">
+            {{
+              $t("user.suspension.suspend.on-blacklist", {
+                address,
+                entry: preview.blacklistEntry.value,
+              })
+            }}
+          </div>
+          <template v-else>
+            <v-checkbox
+              v-model="blacklist"
+              :label="$t('user.suspension.suspend.blacklist', { address })"
+              hide-details
+              class="mt-2"
+            />
+            <div class="text-caption grey--text ml-8">{{ blacklistHint }}</div>
+          </template>
+        </template>
         <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
           {{ error }}
         </v-alert>
@@ -45,7 +64,7 @@
           color="error"
           :disabled="!reason.trim()"
           :loading="inProgress"
-          @click="$emit('confirm', reason.trim())"
+          @click="confirm"
         >
           {{ $t("user.suspension.suspend.confirm") }}
         </v-btn>
@@ -55,10 +74,18 @@
 </template>
 
 <script>
+import {
+  suspensionBlacklistHint,
+  suspensionConsequences,
+} from "@/utils/userSuspension";
+
 /**
  * „<Name> für die ganze Instanz sperren?“ (ECCdigital/tickets#624, variant B
- * of ECCdigital/tickets#620): the consequences and a required reason.
- * Emits `confirm` with the trimmed reason or `cancel`; the parent suspends.
+ * of ECCdigital/tickets#620): the consequences and a required reason. The
+ * checkbox „auch auf die Blacklist“, checked from the start, switches the
+ * rows of guest and registration (ECCdigital/tickets#626); an entry that
+ * already hits the address replaces it. Emits `confirm` with
+ * `{ reason, blacklist }` or `cancel`; the parent suspends.
  */
 export default {
   name: "UserSuspendConformationDialog",
@@ -71,9 +98,14 @@ export default {
       type: String,
       required: true,
     },
-    /** The rows of `suspensionConsequences`, `null` while they load. */
-    consequences: {
-      type: Array,
+    /** The user's address, as the checkbox names it. */
+    address: {
+      type: String,
+      required: true,
+    },
+    /** The answer of the suspension preview, `null` while it loads. */
+    preview: {
+      type: Object,
       default: null,
     },
     inProgress: {
@@ -88,11 +120,42 @@ export default {
   data() {
     return {
       reason: "",
+      blacklist: true,
     };
+  },
+  computed: {
+    /** On the blacklist after the suspension, by the checkbox or already. */
+    blacklisted() {
+      return !!this.preview?.blacklistEntry || this.blacklist;
+    },
+    consequences() {
+      return this.preview
+        ? suspensionConsequences(this.preview, {
+            blacklisted: this.blacklisted,
+          })
+        : null;
+    },
+    blacklistHint() {
+      return suspensionBlacklistHint(this.blacklist);
+    },
   },
   watch: {
     open(isOpen) {
-      if (isOpen) this.reason = "";
+      if (isOpen) {
+        this.reason = "";
+        this.blacklist = true;
+      }
+    },
+  },
+  methods: {
+    confirm() {
+      this.$emit("confirm", {
+        reason: this.reason.trim(),
+        // Only a checkbox shown counts; an entry that already hits the
+        // address needs no second one.
+        blacklist:
+          !!this.preview && !this.preview.blacklistEntry && this.blacklist,
+      });
     },
   },
 };

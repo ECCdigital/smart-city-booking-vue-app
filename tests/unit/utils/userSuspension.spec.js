@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  suspensionBlacklistHint,
   suspensionConsequences,
   suspensionOriginLabel,
   suspensionReasonText,
@@ -130,9 +131,58 @@ describe("suspensionConsequences", () => {
     ]);
   });
 
+  /** The checkbox „auch auf die Blacklist“ switches guest and registration (ECCdigital/tickets#626). */
+  it("ends guest bookings and registration with the address on the blacklist", () => {
+    const rows = suspensionConsequences(
+      { bookings: 3, memberships: 2 },
+      { blacklisted: true }
+    );
+    expect(rows.slice(3, 5)).toEqual([
+      {
+        label: "Als Gast mit dieser Adresse buchen",
+        ends: true,
+        stays: null,
+      },
+      {
+        label: "Mit dieser Adresse neu registrieren",
+        ends: true,
+        stays: null,
+      },
+    ]);
+    expect(rows.slice(0, 3).every((row) => row.ends)).toBe(true);
+    expect(rows.slice(5).some((row) => row.ends)).toBe(false);
+  });
+
+  it("leaves guest bookings and registration open without the blacklist", () => {
+    const rows = suspensionConsequences(
+      { bookings: 3, memberships: 2 },
+      { blacklisted: false }
+    );
+    expect(rows.slice(3, 5).map((row) => [row.ends, row.stays])).toEqual([
+      [false, "weiter möglich"],
+      [false, "kein neues Konto (Adresse belegt)"],
+    ]);
+  });
+
   it("reads one booking and one membership in the singular", () => {
     const rows = suspensionConsequences({ bookings: 1, memberships: 1 });
     expect(rows[5].label).toBe("1 bestehende Buchung");
     expect(rows[6].label).toBe("Mitgliedschaft in 1 Mandanten");
+  });
+});
+
+/** The hint below the checkbox follows it (ECCdigital/tickets#626). */
+describe("suspensionBlacklistHint", () => {
+  it.each([
+    [
+      true,
+      "Weg vom Häkchen, wenn die Sperre nur vorläufig ist, etwa bis eine Meldung geklärt ist.",
+    ],
+    [
+      false,
+      "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden.",
+    ],
+  ])("reads the checkbox %s", (blacklisted, hint) => {
+    expect(suspensionBlacklistHint(blacklisted)).toBe(hint);
   });
 });

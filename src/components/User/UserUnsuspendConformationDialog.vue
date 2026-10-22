@@ -6,6 +6,29 @@
       </v-card-title>
       <v-card-text>
         {{ $t("user.suspension.unsuspend.text", { name }) }}
+        <v-progress-linear
+          v-if="entry === undefined && !error"
+          indeterminate
+          class="mt-3"
+        />
+        <v-checkbox
+          v-else-if="isAddressEntry"
+          v-model="removeEntry"
+          :label="
+            $t('user.suspension.unsuspend.remove-entry', { entry: entry.value })
+          "
+          hide-details
+          class="mt-2"
+        />
+        <v-alert
+          v-else-if="isDomainEntry"
+          type="info"
+          text
+          dense
+          class="mt-3 mb-0"
+        >
+          {{ $t("user.suspension.unsuspend.domain-entry") }}
+        </v-alert>
         <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
           {{ error }}
         </v-alert>
@@ -14,7 +37,12 @@
         <v-btn text :disabled="inProgress" @click="$emit('cancel')">
           {{ $t("user.suspension.unsuspend.cancel") }}
         </v-btn>
-        <v-btn color="primary" :loading="inProgress" @click="$emit('confirm')">
+        <v-btn
+          color="primary"
+          :disabled="entry === undefined"
+          :loading="inProgress"
+          @click="$emit('confirm', isAddressEntry && removeEntry)"
+        >
           {{ $t("user.suspension.unsuspend.confirm") }}
         </v-btn>
       </v-card-actions>
@@ -24,8 +52,11 @@
 
 <script>
 /**
- * „<Name> entsperren?“ (ECCdigital/tickets#624). Emits `confirm` or
- * `cancel`; the parent lifts the suspension.
+ * „<Name> entsperren?“ (ECCdigital/tickets#624). An exact blacklist entry
+ * of the address is offered for removal, checked from the start; a domain
+ * entry stays and the dialog says the checkout keeps refusing the address
+ * (ECCdigital/tickets#626). Emits `confirm` with whether to remove the
+ * entry, or `cancel`; the parent lifts the suspension.
  */
 export default {
   name: "UserUnsuspendConformationDialog",
@@ -38,6 +69,14 @@ export default {
       type: String,
       required: true,
     },
+    /**
+     * The blacklist entry that hits the address, `null` without one,
+     * `undefined` while it loads.
+     */
+    entry: {
+      type: Object,
+      default: undefined,
+    },
     inProgress: {
       type: Boolean,
       default: false,
@@ -45,6 +84,24 @@ export default {
     error: {
       type: String,
       default: null,
+    },
+  },
+  data() {
+    return {
+      removeEntry: true,
+    };
+  },
+  computed: {
+    isAddressEntry() {
+      return this.entry?.kind === "address";
+    },
+    isDomainEntry() {
+      return this.entry?.kind === "domain";
+    },
+  },
+  watch: {
+    open(isOpen) {
+      if (isOpen) this.removeEntry = true;
     },
   },
 };

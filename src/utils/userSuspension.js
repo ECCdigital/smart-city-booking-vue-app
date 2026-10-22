@@ -58,12 +58,17 @@ export function suspensionReasonText(user) {
 
 /**
  * The table of consequences in the dialog: what ends with the suspension
- * and what stays, with the counts of the preview.
+ * and what stays, with the counts of the preview. With the address on the
+ * blacklist guest bookings and registration end too (ECCdigital/tickets#626).
  *
  * @param {{bookings: number, memberships: number}} preview
+ * @param {{blacklisted?: boolean}} [options]
  * @returns {{label: string, ends: boolean, stays: string|null}[]}
  */
-export function suspensionConsequences({ bookings, memberships }) {
+export function suspensionConsequences(
+  { bookings, memberships },
+  { blacklisted = false } = {}
+) {
   const row = (key, ends, values) => ({
     label: values
       ? i18n.tc(
@@ -79,9 +84,16 @@ export function suspensionConsequences({ bookings, memberships }) {
     row("admin-sign-in", true),
     row("catalog-sign-in", true),
     row("sessions", true),
-    row("guest-booking", false),
-    row("registration", false),
+    row("guest-booking", blacklisted),
+    row("registration", blacklisted),
     row("bookings", false, { count: bookings }),
     row("memberships", false, { count: memberships }),
   ];
+}
+
+/** The hint below the checkbox „auch auf die Blacklist“, following it. */
+export function suspensionBlacklistHint(blacklisted) {
+  return i18n.t(
+    `user.suspension.suspend.blacklist-hint.${blacklisted ? "on" : "off"}`
+  );
 }

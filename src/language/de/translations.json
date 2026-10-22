@@ -1000,7 +1000,8 @@
         "actions": "Aktionen"
       },
       "origin": {
-        "manual": "von Hand"
+        "manual": "von Hand",
+        "suspension": "aus einer Sperre"
       },
       "edit-reason": "Grund ändern",
       "remove": "Entfernen",
@@ -2465,12 +2466,21 @@
         "cancel": "Abbrechen",
         "confirm": "Sperren",
         "preview-error": "Die Folgen konnten nicht geladen werden.",
-        "error": "Die Sperre konnte nicht gesetzt werden."
+        "error": "Die Sperre konnte nicht gesetzt werden.",
+        "blacklist": "Adresse {address} auch auf die Blacklist setzen",
+        "blacklist-hint": {
+          "on": "Weg vom Häkchen, wenn die Sperre nur vorläufig ist, etwa bis eine Meldung geklärt ist.",
+          "off": "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden."
+        },
+        "on-blacklist": "Die Adresse {address} steht schon auf der Blacklist (Eintrag „{entry}“)."
       },
       "unsuspend": {
         "open": "Entsperren",
         "title": "{name} entsperren?",
         "text": "{name} kann sich danach wieder anmelden, im Admin und im Katalog.",
+        "remove-entry": "Blacklist-Eintrag „{entry}“ mit entfernen",
+        "domain-entry": "Anmelden geht wieder, aber Buchungen mit dieser Adresse weist der Checkout weiter ab.",
+        "preview-error": "Die Blacklist konnte nicht geprüft werden.",
         "cancel": "Abbrechen",
         "confirm": "Entsperren",
         "error": "Die Sperre konnte nicht aufgehoben werden."

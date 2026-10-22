@@ -36,7 +36,8 @@
     <UserSuspendConformationDialog
       :open="suspendDialog"
       :name="name"
-      :consequences="consequences"
+      :address="user.id"
+      :preview="preview"
       :in-progress="inProgress"
       :error="error"
       @confirm="suspend"
@@ -45,6 +46,7 @@
     <UserUnsuspendConformationDialog
       :open="unsuspendDialog"
       :name="name"
+      :entry="unsuspendEntry"
       :in-progress="inProgress"
       :error="error"
       @confirm="unsuspend"
@@ -59,7 +61,6 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import UserSuspendConformationDialog from "@/components/User/UserSuspendConformationDialog.vue";
 import UserUnsuspendConformationDialog from "@/components/User/UserUnsuspendConformationDialog.vue";
 import {
-  suspensionConsequences,
   suspensionReasonText,
   suspensionStatusText,
 } from "@/utils/userSuspension";
@@ -67,8 +68,9 @@ import {
 /**
  * The card „Sperre“ in the user editing (ECCdigital/tickets#624): suspends
  * and lifts the suspension at once over its own dialogs, never with
- * „Speichern“ of the user dialog. Emits `changed` with the user as the API
- * answers it.
+ * „Speichern“ of the user dialog, both with the blacklist as their
+ * counterpart (ECCdigital/tickets#626). Emits `changed` with the user as
+ * the API answers it.
  */
 export default {
   name: "UserSuspensionCard",
@@ -90,7 +92,9 @@ export default {
     return {
       suspendDialog: false,
       unsuspendDialog: false,
-      consequences: null,
+      preview: null,
+      // The blacklist entry that hits the address; `undefined` while it loads.
+      unsuspendEntry: undefined,
       error: null,
       inProgress: false,
     };
@@ -105,14 +109,14 @@ export default {
   },
   methods: {
     async openSuspend() {
-      this.consequences = null;
+      this.preview = null;
       this.error = null;
       this.suspendDialog = true;
       try {
         const response = await ApiUsersService.getSuspensionPreview(
           this.user.id
         );
-        this.consequences = suspensionConsequences(response.data);
+        this.preview = response.data;
       } catch (error) {
         console.error(error);
         this.error = getApiErrorMessage(
@@ -121,17 +125,34 @@ export default {
         );
       }
     },
-    openUnsuspend() {
+    /** Asks the preview for the blacklist entry that hits the address. */
+    async openUnsuspend() {
+      this.unsuspendEntry = undefined;
       this.error = null;
       this.unsuspendDialog = true;
+      try {
+        const response = await ApiUsersService.getSuspensionPreview(
+          this.user.id
+        );
+        this.unsuspendEntry = response.data.blacklistEntry ?? null;
+      } catch (error) {
+        console.error(error);
+        // Lifting the suspension still works, only without the entry.
+        this.unsuspendEntry = null;
+        this.error = getApiErrorMessage(
+          error,
+          this.$t("user.suspension.unsuspend.preview-error")
+        );
+      }
     },
-    async suspend(reason) {
+    async suspend({ reason, blacklist }) {
       this.inProgress = true;
       this.error = null;
       try {
         const response = await ApiUsersService.suspendUser(
           this.user.id,
-          reason
+          reason,
+          blacklist
         );
         this.$emit("changed", response.data);
         this.suspendDialog = false;
@@ -145,11 +166,14 @@ export default {
         this.inProgress = false;
       }
     },
-    async unsuspend() {
+    async unsuspend(removeBlacklistEntry) {
       this.inProgress = true;
       this.error = null;
       try {
-        const response = await ApiUsersService.unsuspendUser(this.user.id);
+        const response = await ApiUsersService.unsuspendUser(
+          this.user.id,
+          removeBlacklistEntry
+        );
         this.$emit("changed", response.data);
         this.unsuspendDialog = false;
       } catch (error) {
