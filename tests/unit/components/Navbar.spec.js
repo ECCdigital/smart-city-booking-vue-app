@@ -64,8 +64,6 @@ const pageOfOne = (total) => ({
 });
 
 let instanceOwner;
-let currentTenantId;
-let routes;
 
 async function mountNavbar() {
   const store = new Vuex.Store({
@@ -82,7 +80,7 @@ async function mountNavbar() {
       },
       tenants: {
         namespaced: true,
-        getters: { currentTenantId: () => currentTenantId },
+        getters: { currentTenantId: () => null },
         actions: { select: vi.fn() },
       },
       toasts: { namespaced: true, actions: { add: vi.fn() } },
@@ -91,7 +89,7 @@ async function mountNavbar() {
   const wrapper = mountComponent(Navbar, {
     localVue,
     store,
-    router: new VueRouter({ routes }),
+    router: new VueRouter({ routes: ROUTES }),
   });
   await flushPromises();
   return wrapper;
@@ -104,8 +102,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   ApiTenantService.getTenants.mockResolvedValue({ data: [] });
   instanceOwner = true;
-  currentTenantId = null;
-  routes = ROUTES;
   ApiReviewQueueService.getReviewQueue.mockResolvedValue(pageOfOne(3));
   ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
     pageOfOne(2)
@@ -124,41 +120,6 @@ describe("Navbar", () => {
 
       expect(logo.attributes("src")).toBe("/app-logo.png");
       expect(logo.classes()).toContain("navbar-logo");
-    });
-  });
-
-  describe("an entry whose route has a rule of its own (`meta.allow`)", () => {
-    // „Meldungen“ (ECCdigital/tickets#631) is for roles that may edit
-    // users, more than the reach `users` alone says.
-    const withReports = (allow) => [
-      ...ROUTES,
-      { path: "/user", name: "user" },
-      { path: "/tenant/reports", name: "tenant-reports", meta: { allow } },
-    ];
-    const entry = (wrapper, title) =>
-      wrapper
-        .findAll(".v-list-item__title")
-        .filter((node) => node.text() === title);
-
-    beforeEach(() => {
-      currentTenantId = "stadt";
-    });
-
-    it("is hidden where the rule refuses", async () => {
-      routes = withReports(() => false);
-
-      const wrapper = await mountNavbar();
-
-      expect(entry(wrapper, "Meldungen")).toHaveLength(0);
-      expect(entry(wrapper, "Mitglieder")).toHaveLength(1);
-    });
-
-    it("is shown where the rule admits", async () => {
-      routes = withReports(() => true);
-
-      const wrapper = await mountNavbar();
-
-      expect(entry(wrapper, "Meldungen")).toHaveLength(1);
     });
   });
 

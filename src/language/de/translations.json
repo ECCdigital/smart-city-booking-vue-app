@@ -1307,8 +1307,8 @@
   "tenant": {
     "reports": {
       "title": "Meldungen",
+      "open-count": "{count} offen",
       "hint": "Prüfen und verwalten Sie als auffällig gemeldete User und Mailadressen dieses Mandanten an die Instanz (z.B. nach missbräuchlicher Nutzung oder Spam). Auf Instanzebene kann entschieden werden, ob die gemeldeten User / Mailadressen von der Nutzung ausgeschlossen werden sollen. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine erneute Meldung zum selben User wieder möglich.",
-      "forbidden": "Meldungen sehen nur Rollen, die Mitglieder verwalten dürfen.",
       "empty": "Dieser Mandant hat noch niemanden gemeldet.",
       "load-failed": "Die Meldungen konnten nicht geladen werden.",
       "standing": {
@@ -1610,7 +1610,8 @@
       }
     },
     "users": {
-      "search": "Name oder ID"
+      "search": "Name oder ID",
+      "tab": "Mitglieder"
     }
   },
   "password": {

@@ -30,6 +30,12 @@ vi.mock("@/services/api/ApiInvitationService", () => ({
 vi.mock("@/services/api/ApiChallengeService", () => ({
   default: { getChallenges: vi.fn(async () => ({ data: [] })) },
 }));
+// Whether the role may edit users, which the tab „Meldungen“ needs
+// (ECCdigital/tickets#631); the signed-in user is no part of these tests.
+const permissions = vi.hoisted(() => ({ report: false }));
+vi.mock("@/services/permissions/UserPermissionService", () => ({
+  default: { allowReport: () => permissions.report },
+}));
 vi.mock("@/layouts/Admin.vue", () => ({
   default: {
     name: "AdminLayout",
@@ -228,6 +234,7 @@ async function openMembersPage(router) {
       TenantInviteUserDialog: InviteDialog,
       TenantUserDetailDialog: stub("TenantUserDetailDialog"),
       SearchBar: stub("SearchBar"),
+      TenantReportsList: ReportsList,
     },
   });
   await flushPromises();
@@ -235,6 +242,18 @@ async function openMembersPage(router) {
 }
 
 const inviteDialog = (wrapper) => wrapper.find("[data-test='invite-dialog']");
+
+// The list of reports is its own component; here it is there or not, and
+// says how many are open.
+const ReportsList = {
+  name: "TenantReportsList",
+  mounted() {
+    this.$emit("count", 2);
+  },
+  render(h) {
+    return h("div", { attrs: { "data-test": "reports-list" } });
+  },
+};
 
 describe("TenantUsers, invited in by link", () => {
   beforeEach(() => {
@@ -277,5 +296,72 @@ describe("TenantUsers, invited in by link", () => {
     const wrapper = await openMembersPage(router);
 
     expect(inviteDialog(wrapper).exists()).toBe(false);
+  });
+});
+
+describe("TenantUsers: the tab „Meldungen“ (ECCdigital/tickets#631)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    permissions.report = true;
+    ApiTenantService.getTenantUsers.mockResolvedValue({
+      users: [
+        {
+          userId: "erika@example.de",
+          status: "active",
+          roles: [],
+          owner: false,
+          invitations: [],
+        },
+      ],
+      userDetails: [
+        { id: "erika@example.de", firstName: "Erika", lastName: "Muster" },
+      ],
+    });
+    ApiTenantService.getTenant.mockResolvedValue({ data: {} });
+  });
+
+  const tabs = (wrapper) => wrapper.findAll(".v-tab").wrappers;
+  const label = (tab) => tab.text().replace(/\s+/g, " ");
+  const reportsList = (wrapper) => wrapper.find("[data-test='reports-list']");
+  const isShown = (node) =>
+    node.exists() && node.element.style.display !== "none";
+
+  it("shows the members first, beside a tab with the open reports", async () => {
+    const router = membersRouter();
+    await router.push({ name: "user" });
+
+    const wrapper = await openMembersPage(router);
+
+    expect(tabs(wrapper).map(label)).toEqual([
+      "Mitglieder",
+      "Meldungen 2 offen",
+    ]);
+    expect(wrapper.text()).toContain("1 Mitglieder");
+    expect(isShown(reportsList(wrapper))).toBe(false);
+  });
+
+  it("shows the reports alone in their tab, without the members", async () => {
+    const router = membersRouter();
+    await router.push({ name: "user" });
+    const wrapper = await openMembersPage(router);
+
+    await tabs(wrapper)[1].trigger("click");
+    await flushPromises();
+
+    expect(isShown(reportsList(wrapper))).toBe(true);
+    expect(wrapper.text()).not.toContain("1 Mitglieder");
+    expect(wrapper.text()).not.toContain("Mitglied einladen");
+  });
+
+  it("shows neither tabs nor reports to a role that may not edit users", async () => {
+    permissions.report = false;
+    const router = membersRouter();
+    await router.push({ name: "user" });
+
+    const wrapper = await openMembersPage(router);
+
+    expect(tabs(wrapper)).toHaveLength(0);
+    expect(reportsList(wrapper).exists()).toBe(false);
+    expect(wrapper.text()).toContain("1 Mitglieder");
   });
 });

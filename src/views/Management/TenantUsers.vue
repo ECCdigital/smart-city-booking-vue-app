@@ -1,6 +1,35 @@
 <template>
   <AdminLayout>
-    <v-row gutters align="stretch" class="mb-16">
+    <!-- „Meldungen“ beside the members, for roles that may edit users
+         (ECCdigital/tickets#631). -->
+    <v-tabs v-if="allowReport" v-model="tab" class="mb-4">
+      <v-tab href="#members">
+        <v-icon left small>mdi-account-multiple-outline</v-icon>
+        {{ $t("tenant.users.tab") }}
+      </v-tab>
+      <v-tab href="#reports">
+        <v-icon left small>mdi-flag-outline</v-icon>
+        {{ $t("tenant.reports.title") }}
+        <v-chip
+          v-if="openReportCount"
+          x-small
+          color="warning"
+          text-color="white"
+          class="ml-2"
+        >
+          {{ $t("tenant.reports.open-count", { count: openReportCount }) }}
+        </v-chip>
+      </v-tab>
+    </v-tabs>
+    <!-- Kept while the members show, so the tab can count the open ones. -->
+    <TenantReportsList
+      v-if="allowReport"
+      ref="reports"
+      v-show="tab === 'reports'"
+      @count="openReportCount = $event"
+    />
+
+    <v-row v-if="tab === 'members'" gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
         <SearchBar
           v-model="search"
@@ -288,6 +317,7 @@
     </v-row>
 
     <v-btn
+      v-if="tab === 'members'"
       fixed
       large
       bottom
@@ -368,6 +398,7 @@ import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.
 import SearchBar from "@/components/commons/SearchBar.vue";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
 import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import TenantReportsList from "@/components/Tenant/TenantReportsList.vue";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { blacklistedAmong } from "@/utils/blacklist";
 import { INVITE_QUERY } from "@/utils/tenantUsers";
@@ -380,9 +411,14 @@ export default {
     SearchBar,
     BlacklistWarningConformationDialog,
     UserReportDialog,
+    TenantReportsList,
   },
   data() {
     return {
+      /** `members` or `reports` (ECCdigital/tickets#631). */
+      tab: "members",
+      /** The open reports of the tenant, as the tab counts them. */
+      openReportCount: 0,
       /** The member being reported to the instance (ECCdigital/tickets#630). */
       reporting: null,
       valid: true,
@@ -824,6 +860,7 @@ export default {
     },
     /** A report that ended the membership takes the member off the list. */
     async onReported({ membershipEnded }) {
+      this.$refs.reports?.load();
       if (membershipEnded) await this.fetchTenantUsers();
     },
     getUserName(user) {

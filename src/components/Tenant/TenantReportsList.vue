@@ -1,121 +1,99 @@
 <template>
-  <AdminLayout>
-    <v-card outlined class="section-card tenant-reports">
-      <v-card-title class="section-header">
-        <v-icon>mdi-flag-outline</v-icon>
-        {{ $t("tenant.reports.title") }}
-      </v-card-title>
-      <v-card-text>
-        <p class="tenant-reports__lead">{{ $t("tenant.reports.hint") }}</p>
-        <v-alert
-          v-if="actionError"
-          type="warning"
-          text
-          dense
-          dismissible
-          data-test="tenant-reports-action-error"
-          @input="actionError = ''"
-        >
-          {{ actionError }}
-        </v-alert>
-        <v-alert
-          v-if="!allowed"
-          type="info"
-          text
-          dense
-          class="mb-0"
-          data-test="tenant-reports-forbidden"
-        >
-          {{ $t("tenant.reports.forbidden") }}
-        </v-alert>
-        <v-alert
-          v-else-if="errorMessage"
-          type="warning"
-          text
-          dense
-          class="mb-0"
-          data-test="tenant-reports-error"
-        >
-          {{ errorMessage }}
-        </v-alert>
-        <v-progress-linear v-else-if="loading" indeterminate />
-        <p
-          v-else-if="rows.length === 0"
-          class="tenant-reports__lead"
-          data-test="tenant-reports-empty"
-        >
-          {{ $t("tenant.reports.empty") }}
-        </p>
-        <div v-else class="booking-rows">
+  <div class="tenant-reports">
+    <p class="tenant-reports__lead">{{ $t("tenant.reports.hint") }}</p>
+    <v-alert
+      v-if="actionError"
+      type="warning"
+      text
+      dense
+      dismissible
+      data-test="tenant-reports-action-error"
+      @input="actionError = ''"
+    >
+      {{ actionError }}
+    </v-alert>
+    <v-alert
+      v-if="errorMessage"
+      type="warning"
+      text
+      dense
+      class="mb-0"
+      data-test="tenant-reports-error"
+    >
+      {{ errorMessage }}
+    </v-alert>
+    <v-progress-linear v-else-if="loading" indeterminate />
+    <p
+      v-else-if="rows.length === 0"
+      class="tenant-reports__lead"
+      data-test="tenant-reports-empty"
+    >
+      {{ $t("tenant.reports.empty") }}
+    </p>
+    <div v-else class="booking-rows">
+      <div
+        v-for="row in rows"
+        :key="row.report.id"
+        class="booking-row tenant-reports__row"
+        data-test="tenant-reports-row"
+      >
+        <div class="booking-row__main">
+          <div class="booking-row__title">
+            {{ row.name }}
+            <v-chip
+              x-small
+              outlined
+              :color="standingColors[row.standing]"
+              class="ml-1"
+              data-test="tenant-reports-standing"
+            >
+              {{ $t(`tenant.reports.standing.${row.standing}`) }}
+            </v-chip>
+          </div>
+          <div class="booking-row__subtitle">
+            {{
+              row.report.targetUserId || $t("supervision.reports.guest-address")
+            }}
+          </div>
+          <ReportReasons :report="row.report" class="tenant-reports__reasons" />
           <div
-            v-for="row in rows"
-            :key="row.report.id"
-            class="booking-row tenant-reports__row"
-            data-test="tenant-reports-row"
+            v-if="row.rejectionReason"
+            class="tenant-reports__rejection"
+            data-test="tenant-reports-rejection"
           >
-            <div class="booking-row__main">
-              <div class="booking-row__title">
-                {{ row.name }}
-                <v-chip
-                  x-small
-                  outlined
-                  :color="standingColors[row.standing]"
-                  class="ml-1"
-                  data-test="tenant-reports-standing"
-                >
-                  {{ $t(`tenant.reports.standing.${row.standing}`) }}
-                </v-chip>
-              </div>
-              <div class="booking-row__subtitle">
-                {{
-                  row.report.targetUserId ||
-                  $t("supervision.reports.guest-address")
-                }}
-              </div>
-              <ReportReasons
-                :report="row.report"
-                class="tenant-reports__reasons"
-              />
-              <div
-                v-if="row.rejectionReason"
-                class="tenant-reports__rejection"
-                data-test="tenant-reports-rejection"
-              >
-                {{
-                  $t("tenant.reports.rejection", {
-                    reason: row.rejectionReason,
-                  })
-                }}
-              </div>
-            </div>
-            <div v-if="row.editable" class="tenant-reports__actions">
-              <v-btn
-                small
-                outlined
-                :disabled="working"
-                class="tenant-reports__action"
-                data-test="tenant-reports-add"
-                @click="startAdd(row)"
-              >
-                <v-icon left small>mdi-text-box-plus-outline</v-icon>
-                {{ $t("tenant.reports.add") }}
-              </v-btn>
-              <v-btn
-                small
-                text
-                :disabled="working"
-                class="tenant-reports__action"
-                data-test="tenant-reports-withdraw"
-                @click="withdrawing = row"
-              >
-                <v-icon left small>mdi-undo</v-icon>
-                {{ $t("tenant.reports.withdraw") }}
-              </v-btn>
-            </div>
+            {{
+              $t("tenant.reports.rejection", {
+                reason: row.rejectionReason,
+              })
+            }}
           </div>
         </div>
-      </v-card-text>
-    </v-card>
+        <div v-if="row.editable" class="tenant-reports__actions">
+          <v-btn
+            small
+            outlined
+            :disabled="working"
+            class="tenant-reports__action"
+            data-test="tenant-reports-add"
+            @click="startAdd(row)"
+          >
+            <v-icon left small>mdi-text-box-plus-outline</v-icon>
+            {{ $t("tenant.reports.add") }}
+          </v-btn>
+          <v-btn
+            small
+            text
+            :disabled="working"
+            class="tenant-reports__action"
+            data-test="tenant-reports-withdraw"
+            @click="withdrawing = row"
+          >
+            <v-icon left small>mdi-undo</v-icon>
+            {{ $t("tenant.reports.withdraw") }}
+          </v-btn>
+        </div>
+      </div>
+    </div>
 
     <v-dialog :value="!!adding" max-width="480" persistent>
       <v-card v-if="adding">
@@ -175,12 +153,11 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </AdminLayout>
+  </div>
 </template>
 
 <script>
 import { mapGetters } from "vuex";
-import AdminLayout from "@/layouts/Admin.vue";
 import ReportReasons from "@/components/Supervision/ReportReasons.vue";
 import ApiReportService from "@/services/api/ApiReportService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
@@ -188,16 +165,18 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import { REPORT_STATUS, tenantReportRows } from "@/utils/reports";
 
 /**
- * „Meldungen“ of the tenant (glossary „Meldung“, ECCdigital/tickets#631):
- * the reports the current tenant made, each with its standing. An open one
- * the tenant may add a reason to or withdraw; a settled one stays as it was
- * settled, and a new report about the same user is possible again. For
- * roles with `manageUsers.updateAny`, as reporting is; one about a tenant
- * owner only a tenant owner changes.
+ * „Meldungen“ of the tenant (glossary „Meldung“, ECCdigital/tickets#631),
+ * the second tab of „Mitglieder“: the reports the current tenant made, each
+ * with its standing. An open one the tenant may add a reason to or
+ * withdraw; a settled one stays as it was settled, and a new report about
+ * the same user is possible again. Only for roles with
+ * `manageUsers.updateAny`, which the page checks; one about a tenant owner
+ * only a tenant owner changes. Emits `count` with the open reports after
+ * every load.
  */
 export default {
-  name: "TenantReports",
-  components: { AdminLayout, ReportReasons },
+  name: "TenantReportsList",
+  components: { ReportReasons },
   data() {
     return {
       reports: [],
@@ -219,9 +198,6 @@ export default {
   },
   computed: {
     ...mapGetters({ tenantId: "tenants/currentTenantId" }),
-    allowed() {
-      return UserPermissionService.allowReport(this.tenantId);
-    },
     rows() {
       return tenantReportRows(this.reports, {
         mayChangeOwnerReports: UserPermissionService.allowReportOwner(
@@ -240,11 +216,16 @@ export default {
   },
   methods: {
     async load() {
-      if (!this.tenantId || !this.allowed) return;
+      if (!this.tenantId) return;
       this.loading = true;
       this.errorMessage = "";
       try {
         this.reports = await ApiReportService.getTenantReports(this.tenantId);
+        this.$emit(
+          "count",
+          this.reports.filter((report) => report.status === REPORT_STATUS.OPEN)
+            .length
+        );
       } catch (error) {
         console.error(error);
         this.errorMessage = this.$t("tenant.reports.load-failed");
