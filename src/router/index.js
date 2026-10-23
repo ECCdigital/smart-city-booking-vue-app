@@ -17,6 +17,7 @@ import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
 import TenantReports from "@/views/Management/TenantReports.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 import Roles from "@/views/Management/Roles";
 import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
@@ -209,6 +210,8 @@ const routes = [
       title: "Meldungen",
       requiresAuth: true,
       interfaceName: "users",
+      // Only for roles that may edit users, as reporting is.
+      allow: () => UserPermissionService.allowReport(),
     },
   },
   {

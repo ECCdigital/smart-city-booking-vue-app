@@ -10,6 +10,20 @@ function isDenied(ifce) {
   return store.getters["user/isDenied"](ifce);
 }
 
+/**
+ * A route's rule of its own beside the reach, `meta.allow`: a function over
+ * the loaded permissions, such as „Meldungen“ for roles that may edit users
+ * (ECCdigital/tickets#631). The navbar hides the route's entry by the same
+ * rule. Asked only once the permissions are loaded.
+ */
+function isRefused(route) {
+  return (
+    typeof route.meta.allow === "function" &&
+    store.getters["user/permissionsLoaded"] &&
+    !route.meta.allow()
+  );
+}
+
 export function checkInterface({ to, next }) {
   if (
     to.meta.interfaceName &&
@@ -46,7 +60,7 @@ export async function requireInterfaceAccess({ to, next }) {
     return next();
   }
 
-  if (!isDenied(to.meta.interfaceName)) {
+  if (!isDenied(to.meta.interfaceName) && !isRefused(to)) {
     return next();
   }
 

@@ -201,6 +201,48 @@ describe("requireInterfaceAccess", () => {
     });
   });
 
+  describe("a route with a rule of its own (`meta.allow`)", () => {
+    /** The page „Meldungen“ (ECCdigital/tickets#631): the reach plus a right. */
+    const ruledRoute = (allow) => ({
+      meta: { requiresAuth: true, interfaceName: "users", allow },
+    });
+
+    beforeEach(() => {
+      storeDouble.authorizedInterfaces = ["users"];
+    });
+
+    it("turns a user away whom the rule refuses, and says why", async () => {
+      const next = vi.fn();
+
+      await requireInterfaceAccess({ to: ruledRoute(() => false), next });
+
+      expect(next).toHaveBeenCalledWith({ name: "dashboard" });
+      expect(storeDouble.dispatch).toHaveBeenCalledWith(
+        "toasts/add",
+        expect.objectContaining({ type: "error" })
+      );
+    });
+
+    it("lets a user through whom the rule admits", async () => {
+      const next = vi.fn();
+
+      await requireInterfaceAccess({ to: ruledRoute(() => true), next });
+
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it("asks no rule while the permissions are not loaded", async () => {
+      storeDouble.permissionsLoaded = false;
+      const allow = vi.fn(() => false);
+      const next = vi.fn();
+
+      await requireInterfaceAccess({ to: ruledRoute(allow), next });
+
+      expect(next).toHaveBeenCalledWith();
+      expect(allow).not.toHaveBeenCalled();
+    });
+  });
+
   describe("after a tenant switch", () => {
     it("closes a route the new membership does not carry", async () => {
       storeDouble.authorizedInterfaces = ["coupons"];

@@ -377,6 +377,15 @@ export default {
     SupervisionLevelChip,
   },
   methods: {
+    /**
+     * The route's rule of its own beside the reach (`meta.allow`), as the
+     * router's gate asks it: an entry the gate would turn away is not shown
+     * (ECCdigital/tickets#631).
+     */
+    isAllowedByRoute(name) {
+      const allow = this.$router.resolve({ name }).route.meta?.allow;
+      return typeof allow !== "function" || allow();
+    },
     ...mapActions({
       addToast: "toasts/add",
       deleteUser: "user/delete",
@@ -517,7 +526,8 @@ export default {
               }
               return (
                 this.isAuthorized(page.interfaceName) &&
-                (page.context !== "tenant" || this.getCurrentTenant)
+                (page.context !== "tenant" || this.getCurrentTenant) &&
+                this.isAllowedByRoute(page.link)
               );
             }),
           };
