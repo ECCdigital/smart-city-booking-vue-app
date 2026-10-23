@@ -1390,16 +1390,6 @@
         }
       }
     },
-    "updateStatus": {
-      "success": {
-        "title": "Status aktualisiert",
-        "message": "Der Mandantenstatus wurde erfolgreich aktualisiert."
-      },
-      "error": {
-        "title": "Fehler beim Aktualisieren",
-        "message": "Der Mandantenstatus konnte nicht aktualisiert werden."
-      }
-    },
     "cancellationRefundTiers": {
       "title": "Erstattungsstaffel bei Stornierungen",
       "description": "Legen Sie fest, welcher Anteil des Buchungspreises abhängig von den verbleibenden Kalendertagen bis zum Buchungsbeginn erstattet wird. Die Regelung gilt für alle Buchungsobjekte dieses Mandanten.",
@@ -1611,7 +1601,24 @@
     },
     "users": {
       "search": "Name oder ID",
-      "tab": "Mitglieder"
+      "tab": "Mitglieder",
+      "end-membership": {
+        "action": "Mitgliedschaft beenden",
+        "hint": "Das Mitglied verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt, ein Wiedereintritt per Einladung ist möglich.",
+        "confirm-title": "Mitgliedschaft beenden?",
+        "confirm-question": "Möchten Sie die Mitgliedschaft von {address} in diesem Mandanten beenden?",
+        "confirm-consequences": "{address} verliert alle Rechte im Mandanten und noch offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
+        "confirm-report": "Soll {address} dauerhaft von allen Mandanten ausgeschlossen werden (z.B. wegen missbräuchlicher Nutzung oder Spam), melden Sie {address} an die Instanz.",
+        "cancel": "Abbrechen",
+        "report": "An Instanz melden"
+      },
+      "report-hint": "Melden Sie das Mitglied an die Instanz, damit über eine Sperre für die ganze Plattform entschieden wird.",
+      "status": {
+        "title": "Status",
+        "membership": "Status der Mitgliedschaft",
+        "suspended": "Instanzweit gesperrt",
+        "suspended-hint": "Das Konto kann sich auf der ganzen Plattform nicht anmelden. Über die Sperre entscheidet die Instanz."
+      }
     }
   },
   "password": {
@@ -2425,7 +2432,6 @@
       "forbidden": "Es scheint, dass Sie mit dem falschen Konto angemeldet sind. Bitte melden Sie sich mit dem Konto an, das zur Annahme dieser Einladung berechtigt ist.",
       "not_found": "Es scheint, dass die Einladung nicht mehr existiert. Bitte fordern Sie eine neue Einladung an.",
       "expired": "Es scheint, dass die Einladung abgelaufen ist. Bitte fordern Sie eine neue Einladung an.",
-      "membership_suspended": "Es scheint, dass Ihre Mitgliedschaft in diesem Mandanten ausgesetzt wurde. Bitte wenden Sie sich an den Mandantenadministrator.",
       "acceptance_failed": {
         "title": "Fehler",
         "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
@@ -2583,7 +2589,7 @@
       },
       "error": "Die Meldung konnte nicht gesendet werden.",
       "end-membership": "Mitgliedschaft beenden",
-      "end-membership-hint": "{name} verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt.",
+      "end-membership-hint": "{name} verliert alle Rechte im Mandanten und offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
       "open-addresses": "Adresse melden",
       "addresses": "Diese Adresse melden: | Welche Adressen melden?",
       "addresses-hint": "Jede angehakte Adresse wird eine eigene Meldung mit dieser Buchung und diesem Grund.",
@@ -3617,7 +3623,8 @@
         "tenant-levelChanged": "Stufenwechsel",
         "review-decided": "Prüfentscheidung",
         "report-created": "Neue Meldung",
-        "report-resolved": "Meldung erledigt"
+        "report-resolved": "Meldung erledigt",
+        "memberships-ended": "Mitgliedschaften beendet"
       },
       "statuses": {
         "pending": "ausstehend",

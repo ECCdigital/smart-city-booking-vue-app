@@ -44,6 +44,19 @@ class UserPermissionService {
       (p) => p.tenantId === tenantId
     )?.isOwner;
   }
+
+  /**
+   * „Mitgliedschaft beenden“ (ECCdigital/tickets#633): the tenant's
+   * `remove-user`, the user manager's as reporting is; a tenant owner's
+   * membership only a tenant owner ends.
+   */
+  static allowEndMembership(
+    member,
+    tenantId = store.getters["tenants/currentTenantId"]
+  ) {
+    if (!this.allowReport(tenantId)) return false;
+    return !member?.owner || this.allowReportOwner(tenantId);
+  }
 }
 
 export default UserPermissionService;

@@ -112,12 +112,12 @@
                   </v-list-item-subtitle>
                   <v-list-item-subtitle class="d-flex align-center flex-wrap">
                     <v-chip
-                      :color="getStatusColor(item.status)"
+                      :color="getStatusColor(item)"
                       text-color="white"
                       x-small
                       class="mr-2"
                     >
-                      {{ getStatusText(item.status) }}
+                      {{ getStatusText(item) }}
                     </v-chip>
                     <span
                       v-if="item.roles && item.roles?.length > 0"
@@ -146,10 +146,7 @@
                   </v-list-item-subtitle>
 
                   <v-list-item-subtitle
-                    v-if="
-                      hasPendingApprovalInvitation(item) &&
-                      item.status !== 'suspended'
-                    "
+                    v-if="hasPendingApprovalInvitation(item)"
                     class="d-flex align-center flex-wrap mt-1"
                   >
                     <v-chip
@@ -191,30 +188,6 @@
                         <v-list-item-title
                           >Einladung erneut senden</v-list-item-title
                         >
-                      </v-list-item>
-
-                      <v-list-item
-                        v-if="item.status === 'suspended'"
-                        link
-                        @click="activateUser(item.userId)"
-                      >
-                        <v-list-item-icon>
-                          <v-icon small color="green">mdi-account-check</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>Aktivieren</v-list-item-title>
-                      </v-list-item>
-
-                      <v-list-item
-                        v-if="item.status !== 'suspended'"
-                        link
-                        @click="suspendUser(item.userId)"
-                      >
-                        <v-list-item-icon>
-                          <v-icon small color="orange"
-                            >mdi-account-cancel</v-icon
-                          >
-                        </v-list-item-icon>
-                        <v-list-item-title>Sperren</v-list-item-title>
                       </v-list-item>
 
                       <v-list-item
@@ -276,11 +249,18 @@
                         </v-list-item-title>
                       </v-list-item>
 
-                      <v-list-item link @click="removeTenantUser(item.userId)">
+                      <v-list-item
+                        v-if="allowEndMembership(item)"
+                        link
+                        data-test="tenant-user-end-membership"
+                        @click="askEndMembership(item)"
+                      >
                         <v-list-item-icon>
-                          <v-icon small color="red">mdi-delete</v-icon>
+                          <v-icon small color="red">mdi-account-remove</v-icon>
                         </v-list-item-icon>
-                        <v-list-item-title>Entfernen</v-list-item-title>
+                        <v-list-item-title>
+                          {{ $t("tenant.users.end-membership.action") }}
+                        </v-list-item-title>
                       </v-list-item>
                     </v-list>
                   </v-menu>
@@ -337,9 +317,10 @@
       :challenges="api.challenges"
       :members="members"
       :notify-supervisors-on-booking="notifySupervisorsOnBooking"
+      :allow-report="allowReport"
+      :allow-end-membership="!!selectedUser && allowEndMembership(selectedUser)"
       @close="closeUserDetail"
       @save-roles="updateUserRoles"
-      @update-status="updateUserStatus"
       @update-notification-recipients="updateUserNotificationRecipients"
       @resend-invite="resendInvite(selectedUser?.userId)"
       @approve-challenge="approveChallenge"
@@ -347,6 +328,7 @@
       @add-owner="addTenantOwner(selectedUser?.userId)"
       @remove-owner="removeTenantOwner(selectedUser?.userId)"
       @delete-user="removeTenantUser(selectedUser?.userId)"
+      @report="openReport(selectedUser)"
       @delete-invitation="handleDeleteInvitation"
     />
 
@@ -364,6 +346,15 @@
       @deleteLink="deleteLink"
       @add-direct="onAddDirect"
     ></TenantInviteUserDialog>
+
+    <TenantEndMembershipDialog
+      :open="!!endingMembership"
+      :address="endingMembership ? endingMembership.userId : ''"
+      :allow-report="allowReport"
+      @confirm="confirmEndMembership"
+      @report="reportInsteadOfEnding"
+      @cancel="endingMembership = null"
+    />
 
     <UserReportDialog
       :open="!!reporting"
@@ -399,9 +390,19 @@ import SearchBar from "@/components/commons/SearchBar.vue";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
 import UserReportDialog from "@/components/User/UserReportDialog.vue";
 import TenantReportsList from "@/components/Tenant/TenantReportsList.vue";
+import TenantEndMembershipDialog from "@/components/Tenant/TenantEndMembershipDialog.vue";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { blacklistedAmong } from "@/utils/blacklist";
 import { INVITE_QUERY } from "@/utils/tenantUsers";
+
+/**
+ * The status the list shows for a member: „suspended“ for an account
+ * suspended at the instance, whatever its membership, else the membership's
+ * (ECCdigital/tickets#633).
+ */
+function shownStatus(member) {
+  return member.isSuspended ? "suspended" : member.status;
+}
 
 export default {
   components: {
@@ -412,6 +413,7 @@ export default {
     BlacklistWarningConformationDialog,
     UserReportDialog,
     TenantReportsList,
+    TenantEndMembershipDialog,
   },
   data() {
     return {
@@ -421,6 +423,8 @@ export default {
       openReportCount: 0,
       /** The member being reported to the instance (ECCdigital/tickets#630). */
       reporting: null,
+      /** The member whose membership ending waits for a confirmation. */
+      endingMembership: null,
       valid: true,
       /**
        * The open warning before adding or inviting an address on the
@@ -495,6 +499,8 @@ export default {
           lastName,
           fullName: `${firstName} ${lastName}`.trim(),
           isVerified: details?.isVerified || false,
+          isSuspended: details?.isSuspended || false,
+          suspension: details?.suspension || null,
         };
       });
     },
@@ -514,7 +520,7 @@ export default {
 
       if (this.statusFilter.length > 0) {
         filtered = filtered.filter((user) =>
-          this.statusFilter.includes(user.status)
+          this.statusFilter.includes(shownStatus(user))
         );
       }
 
@@ -647,36 +653,6 @@ export default {
       }
     },
 
-    async updateUserStatus(status) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          this.selectedUser.userId,
-          status
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-
-        this.selectedUser = this.members.find(
-          (u) => u.userId === this.selectedUser.userId
-        );
-
-        await this.addToast({
-          type: "success",
-          message: "Status wurde erfolgreich aktualisiert",
-        });
-      } catch (e) {
-        console.error(e);
-        await this.addToast({
-          type: "error",
-          message: "Fehler beim Aktualisieren des Status",
-        });
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
     async updateUserNotificationRecipients(recipients) {
       try {
         this.isLoading = true;
@@ -740,7 +716,7 @@ export default {
     },
 
     getStatusCount(status) {
-      return this.filteredMembers.filter((user) => user.status === status)
+      return this.filteredMembers.filter((user) => shownStatus(user) === status)
         .length;
     },
 
@@ -756,8 +732,7 @@ export default {
       return {
         "owner-item": user.owner,
         "pending-item": user.status === "pending",
-        "suspended-item":
-          user.status === "suspended" || user.status === "rejected",
+        "rejected-item": user.status === "rejected",
       };
     },
 
@@ -858,10 +833,28 @@ export default {
     openReport(member) {
       this.reporting = member;
     },
+    askEndMembership(member) {
+      this.endingMembership = member;
+    },
+    async confirmEndMembership() {
+      const { userId } = this.endingMembership;
+      this.endingMembership = null;
+      await this.removeTenantUser(userId);
+    },
+    reportInsteadOfEnding() {
+      const member = this.endingMembership;
+      this.endingMembership = null;
+      this.openReport(member);
+    },
+    allowEndMembership(member) {
+      return UserPermissionService.allowEndMembership(member, this.tenantId);
+    },
     /** A report that ended the membership takes the member off the list. */
     async onReported({ membershipEnded }) {
       this.$refs.reports?.load();
-      if (membershipEnded) await this.fetchTenantUsers();
+      if (!membershipEnded) return;
+      this.closeUserDetail();
+      await this.fetchTenantUsers();
     },
     getUserName(user) {
       if (user.firstName && user.lastName) {
@@ -877,23 +870,23 @@ export default {
       return "grey";
     },
 
-    getStatusColor(status) {
+    getStatusColor(member) {
       const colors = {
         active: "green",
         pending: "orange",
         suspended: "red",
       };
-      return colors[status] || "grey";
+      return colors[shownStatus(member)] || "grey";
     },
 
-    getStatusText(status) {
+    getStatusText(member) {
       const texts = {
         active: "Aktiv",
         pending: "Ausstehend",
-        suspended: "Gesperrt",
         rejected: "Abgelehnt",
+        suspended: "Gesperrt",
       };
-      return texts[status] || status;
+      return texts[shownStatus(member)] || member.status;
     },
 
     // The projection `{ id, name, tenantId }` of `?public=true` is all the
@@ -979,46 +972,6 @@ export default {
         );
         await this.fetchTenantUsers();
         await this.fetchInvitations();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async activateUser(userId) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          userId,
-          "active"
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-        await this.addToast(
-          ToastService.createToast("tenant.updateStatus.success", "success")
-        );
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async suspendUser(userId) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          userId,
-          "suspended"
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-        await this.addToast(
-          ToastService.createToast("tenant.updateStatus.success", "success")
-        );
       } catch (e) {
         console.error(e);
       } finally {
@@ -1300,7 +1253,7 @@ export default {
   border-left-color: #ff9800;
 }
 
-.suspended-item {
+.rejected-item {
   border-left-color: #f44336;
   opacity: 0.8;
 }

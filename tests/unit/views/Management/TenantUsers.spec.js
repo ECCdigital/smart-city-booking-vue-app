@@ -34,7 +34,10 @@ vi.mock("@/services/api/ApiChallengeService", () => ({
 // (ECCdigital/tickets#631); the signed-in user is no part of these tests.
 const permissions = vi.hoisted(() => ({ report: false }));
 vi.mock("@/services/permissions/UserPermissionService", () => ({
-  default: { allowReport: () => permissions.report },
+  default: {
+    allowReport: () => permissions.report,
+    allowEndMembership: () => permissions.report,
+  },
 }));
 vi.mock("@/layouts/Admin.vue", () => ({
   default: {
@@ -363,5 +366,106 @@ describe("TenantUsers: the tab „Meldungen“ (ECCdigital/tickets#631)", () => 
     expect(tabs(wrapper)).toHaveLength(0);
     expect(reportsList(wrapper).exists()).toBe(false);
     expect(wrapper.text()).toContain("1 Mitglieder");
+  });
+});
+
+/**
+ * The status card of the member dialog shows a suspension of the whole
+ * instance (ECCdigital/tickets#633); the member carries it from its user.
+ */
+describe("TenantUsers: a member suspended at the instance", () => {
+  it("carries the suspension of its user", () => {
+    const members = TenantUsers.computed.members.call({
+      api: {
+        users: [{ userId: "erika@example.de", status: "active" }],
+        userDetails: [
+          {
+            id: "erika@example.de",
+            isSuspended: true,
+            suspension: { origin: "manual" },
+          },
+        ],
+      },
+    });
+
+    expect(members[0]).toMatchObject({
+      isSuspended: true,
+      suspension: { origin: "manual" },
+    });
+  });
+
+  it("says „Gesperrt“ in the list's status chip, whatever the membership", () => {
+    const member = { status: "active", isSuspended: true };
+
+    expect(TenantUsers.methods.getStatusText(member)).toBe("Gesperrt");
+    expect(TenantUsers.methods.getStatusColor(member)).toBe("red");
+  });
+
+  it("counts a suspended account as „Gesperrt“, not with its membership", () => {
+    const ctx = {
+      filteredMembers: [
+        { status: "active", isSuspended: true },
+        { status: "active", isSuspended: false },
+        { status: "pending", isSuspended: false },
+      ],
+    };
+    const count = (status) =>
+      TenantUsers.methods.getStatusCount.call(ctx, status);
+
+    expect([count("active"), count("pending"), count("suspended")]).toEqual([
+      1, 1, 1,
+    ]);
+  });
+
+  it("keeps the membership's status for an account not suspended", () => {
+    const member = { status: "active", isSuspended: false };
+
+    expect(TenantUsers.methods.getStatusText(member)).toBe("Aktiv");
+    expect(TenantUsers.methods.getStatusColor(member)).toBe("green");
+  });
+});
+
+/**
+ * „Mitgliedschaft beenden“ from the list asks first (ECCdigital/tickets#633);
+ * through the methods with a stand-in context, as above.
+ */
+describe("TenantUsers: ending a membership", () => {
+  const member = { userId: "erika@example.de", firstName: "Erika" };
+
+  function context() {
+    const ctx = { endingMembership: null, reporting: null };
+    ctx.removeTenantUser = vi.fn();
+    ctx.openReport = TenantUsers.methods.openReport.bind(ctx);
+    return ctx;
+  }
+
+  it("asks before it ends anything", () => {
+    const ctx = context();
+
+    TenantUsers.methods.askEndMembership.call(ctx, member);
+
+    expect(ctx.endingMembership).toBe(member);
+    expect(ctx.removeTenantUser).not.toHaveBeenCalled();
+  });
+
+  it("ends the membership once confirmed and closes the question", async () => {
+    const ctx = context();
+    TenantUsers.methods.askEndMembership.call(ctx, member);
+
+    await TenantUsers.methods.confirmEndMembership.call(ctx);
+
+    expect(ctx.removeTenantUser).toHaveBeenCalledWith("erika@example.de");
+    expect(ctx.endingMembership).toBe(null);
+  });
+
+  it("turns to the report instead, ending nothing", () => {
+    const ctx = context();
+    TenantUsers.methods.askEndMembership.call(ctx, member);
+
+    TenantUsers.methods.reportInsteadOfEnding.call(ctx);
+
+    expect(ctx.reporting).toBe(member);
+    expect(ctx.endingMembership).toBe(null);
+    expect(ctx.removeTenantUser).not.toHaveBeenCalled();
   });
 });

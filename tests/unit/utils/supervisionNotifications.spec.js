@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/language/index";
 import {
   notificationOfferTitles,
   notificationTenantName,
+  notificationTypeLabelKey,
 } from "@/utils/supervisionNotifications";
 
 describe("notificationOfferTitles", () => {
@@ -56,5 +58,17 @@ describe("notificationTenantName", () => {
     expect(notificationTenantName({ tenantId: "t-1", payload: {} })).toBe(
       "t-1"
     );
+  });
+});
+
+describe("notificationTypeLabelKey", () => {
+  it("labels the one-time notice „Mitgliedschaften beendet“ (ECCdigital/tickets#633)", () => {
+    const key = notificationTypeLabelKey("memberships.ended");
+
+    expect(i18n.t(key)).toBe("Mitgliedschaften beendet");
+  });
+
+  it("has no label for an occasion this UI does not know", () => {
+    expect(notificationTypeLabelKey("something.new")).toBe(null);
   });
 });

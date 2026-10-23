@@ -35,6 +35,7 @@ export const NOTIFICATION_TYPES = [
   "review.decided",
   "report.created",
   "report.resolved",
+  "memberships.ended",
 ];
 
 /**

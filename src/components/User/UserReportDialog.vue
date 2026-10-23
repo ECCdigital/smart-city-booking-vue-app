@@ -40,13 +40,20 @@
         <v-checkbox
           v-if="offerEndMembership"
           v-model="endMembership"
-          :label="$t('user.report.end-membership')"
-          :hint="$t('user.report.end-membership-hint', { name })"
-          persistent-hint
+          hide-details
           dense
           class="mt-3"
           data-test="user-report-end-membership"
-        />
+        >
+          <template #label>
+            <div>
+              <div>{{ $t("user.report.end-membership") }}</div>
+              <div class="text-caption grey--text text--darken-1">
+                {{ $t("user.report.end-membership-hint", { name }) }}
+              </div>
+            </div>
+          </template>
+        </v-checkbox>
         <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
           {{ error }}
         </v-alert>
