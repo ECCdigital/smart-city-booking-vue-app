@@ -102,7 +102,7 @@ import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 
 /**
- * „Auf Blacklist setzen …“ for the open reports about an address
+ * „Auf Blacklist setzen“ for the open reports about an address
  * (ECCdigital/tickets#632): the entry is the exact address or, if chosen,
  * its domain, with the reasons of the reports as its reason, which the
  * instance owner may change. Shows the accounts the entry suspends at

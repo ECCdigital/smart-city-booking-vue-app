@@ -200,7 +200,7 @@ import {
  * reports of every tenant for the instance owner, one row per reported user
  * or address (ECCdigital/tickets#632) with the reports of each tenant
  * apart. „Sperren“ suspends over the suspension's own dialog, which settles
- * every open report about the user; „Auf Blacklist setzen …“ settles those
+ * every open report about the user; „Auf Blacklist setzen“ settles those
  * about an address with an entry of the address or its domain; „Ablehnen“
  * settles them with a reason the tenant owners read. Emits `count` with
  * the number of users and addresses waiting.

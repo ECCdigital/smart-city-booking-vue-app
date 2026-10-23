@@ -3545,7 +3545,7 @@
       "page-text": "{0}–{1} von {2}"
     },
     "reports": {
-      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Blacklist setzen …“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Blacklist setzen“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
       "loading": "Meldungen werden geladen...",
       "empty": "Keine Meldungen offen",
       "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
@@ -3564,7 +3564,7 @@
       "failed": "Die Meldungen konnten nicht erledigt werden.",
       "guest-address": "Adresse eines Gasts",
       "blacklist": {
-        "open": "Auf Blacklist setzen …",
+        "open": "Auf Blacklist setzen",
         "title": "{value} auf die Blacklist setzen?",
         "text": "Der Eintrag erledigt alle offenen Meldungen zu jeder Adresse, die er trifft. Die Besitzer der meldenden Mandanten bekommen eine Mail, der Gast erfährt nichts.",
         "address": "Nur die Adresse {address}",
