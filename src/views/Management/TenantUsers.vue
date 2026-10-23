@@ -203,7 +203,7 @@
                         <v-list-item-title>Freigeben</v-list-item-title>
                       </v-list-item>
 
-                      <v-divider />
+                      <v-divider v-if="hasPendingApprovalInvitation(item)" />
 
                       <v-list-item
                         link
