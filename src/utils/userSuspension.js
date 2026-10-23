@@ -1,8 +1,8 @@
 import i18n from "@/language/index";
 
 /**
- * The suspension of a user (glossary „Sperre (eines Users)“,
- * ECCdigital/tickets#624): what the card „Sperre“, its dialog and the list
+ * The suspension of a user (glossary „Sperre (eines Users)“):
+ * what the card „Sperre“, its dialog and the list
  * of users read from `user.isSuspended` and `user.suspension`.
  */
 
@@ -34,7 +34,7 @@ export function suspensionStatusText(user) {
     month: "2-digit",
     day: "2-digit",
   });
-  // A blacklist entry names itself (ECCdigital/tickets#625).
+  // A blacklist entry names itself.
   const entry = user.suspension.blacklistEntry?.value;
   if (entry) {
     return i18n.t("user.suspension.status.suspended-by-blacklist", {
@@ -59,7 +59,7 @@ export function suspensionReasonText(user) {
 /**
  * The table of consequences in the dialog: what ends with the suspension
  * and what stays, with the counts of the preview. With the address on the
- * blacklist guest bookings and registration end too (ECCdigital/tickets#626).
+ * blacklist guest bookings and registration end too.
  *
  * @param {{bookings: number, memberships: number}} preview
  * @param {{blacklisted?: boolean}} [options]
@@ -100,7 +100,7 @@ export function suspensionBlacklistHint(blacklisted) {
 
 /**
  * Whether the user's address is on the blacklist, from `blacklistMatch` of
- * the user answers (ECCdigital/tickets#626): by an exact entry, by its
+ * the user answers: by an exact entry, by its
  * domain or not at all.
  */
 export function blacklistMatchText(user) {
@@ -113,7 +113,7 @@ export function blacklistMatchText(user) {
 }
 
 /**
- * What the suspension settles, for its dialog (ECCdigital/tickets#630): per
+ * What the suspension settles, for its dialog: per
  * reporting tenant the open reports and the tenant owners who then get a
  * mail, from `openReports` of the preview.
  *

@@ -943,7 +943,7 @@ export default {
     return {
       valid: true,
       inProgress: false,
-      /** The addresses the blacklist warning names (ECCdigital/tickets#629). */
+      /** The addresses the blacklist warning names. */
       blacklistedAddresses: [],
       test: null,
       addBookableValue: null,
@@ -1843,7 +1843,7 @@ export default {
     },
     /**
      * The addresses of a new booking's mail, or those a changed mail adds,
-     * that the blacklist hits (ECCdigital/tickets#629).
+     * that the blacklist hits.
      */
     blacklistHits() {
       return blacklistedAmong(

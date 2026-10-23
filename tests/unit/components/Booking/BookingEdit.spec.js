@@ -566,7 +566,7 @@ describe("BookingEdit", () => {
       expect(wrapper.text()).toContain("bereits belegt");
     });
   });
-  /** The warning of a mail on the blacklist (ECCdigital/tickets#629). */
+  /** The warning of a mail on the blacklist. */
   describe("Blacklist", () => {
     function warning(wrapper) {
       return wrapper.findComponent({

@@ -62,7 +62,7 @@ describe("notificationTenantName", () => {
 });
 
 describe("notificationTypeLabelKey", () => {
-  it("labels the one-time notice „Mitgliedschaften beendet“ (ECCdigital/tickets#633)", () => {
+  it("labels the one-time notice „Mitgliedschaften beendet“", () => {
     const key = notificationTypeLabelKey("memberships.ended");
 
     expect(i18n.t(key)).toBe("Mitgliedschaften beendet");

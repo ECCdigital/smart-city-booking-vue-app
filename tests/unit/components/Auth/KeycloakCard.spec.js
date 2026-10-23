@@ -320,7 +320,7 @@ describe("KeycloakCard — where the back button leads", () => {
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#628): `sso/signup`
+ * An address on the blacklist: `sso/signup`
  * answers `409` with the checkout's refusal and the instance's mail address.
  * The card keeps the message instead of „Registrierung fehlgeschlagen“, and
  * offers no second signup.

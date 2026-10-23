@@ -84,15 +84,15 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 
 /**
- * „Melden“ (glossary „Meldung“, ECCdigital/tickets#630): reports a member
+ * „Melden“ (glossary „Meldung“): reports a member
  * (`userId`) or the booker of a booking (`bookingId`) of the tenant to the
  * instance, with a required reason. The backend says whether the report is
  * new or added to the open one, and refuses a user already suspended; the
  * dialog stays open with the backend's word for a refusal. For a member it
- * offers to end the membership with the report, open invitations included
- * (ECCdigital/tickets#631). With `addresses`, those of `mail` of the
+ * offers to end the membership with the report, open invitations included.
+ * With `addresses`, those of `mail` of the
  * booking, it reports the addresses ticked instead, each a report of its
- * own (ECCdigital/tickets#632); one already on the blacklist gets none,
+ * own; one already on the blacklist gets none,
  * which a second toast names. Emits `reported` with `{ membershipEnded }`
  * after a report, and `close`.
  */
@@ -122,7 +122,7 @@ export default {
     },
     /**
      * The addresses of the booking's `mail` to report instead of a user,
-     * one ticked where there is only one (ECCdigital/tickets#632).
+     * one ticked where there is only one.
      */
     addresses: {
       type: Array,

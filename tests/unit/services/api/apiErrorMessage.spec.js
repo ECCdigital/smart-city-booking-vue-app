@@ -81,7 +81,7 @@ describe("getApiErrorMessage", () => {
       );
     });
 
-    it("asks for the reason of a suspension (ECCdigital/tickets#624)", () => {
+    it("asks for the reason of a suspension", () => {
       expect(
         getApiErrorMessage(
           lifecycleError(400, "suspension_reason_required"),
@@ -270,7 +270,7 @@ describe("getApiErrorMessage", () => {
       );
     });
 
-    it("says an instance owner cannot be suspended (ECCdigital/tickets#624)", () => {
+    it("says an instance owner cannot be suspended", () => {
       expect(
         getApiErrorMessage(
           lifecycleError(409, "instance_owner_not_suspendable"),
@@ -300,14 +300,11 @@ describe("getApiErrorMessage", () => {
         "blacklist_entry_not_found",
         "Der Eintrag steht nicht mehr auf der Blacklist.",
       ],
-    ])(
-      "reads the blacklist's %i `%s` (ECCdigital/tickets#625)",
-      (status, code, text) => {
-        expect(getApiErrorMessage(lifecycleError(status, code), FALLBACK)).toBe(
-          text
-        );
-      }
-    );
+    ])("reads the blacklist's %i `%s`", (status, code, text) => {
+      expect(getApiErrorMessage(lifecycleError(status, code), FALLBACK)).toBe(
+        text
+      );
+    });
 
     it("reads `not_cancelled`", () => {
       expect(

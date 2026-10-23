@@ -397,7 +397,7 @@ export default {
       validating: false,
       isSubmitting: false,
       // The instance's mail address of a refusal of the address on the
-      // blacklist (ECCdigital/tickets#627), null while there is none.
+      // blacklist, null while there is none.
       blacklistRefusal: null,
       couponCode: null,
       bookWithoutDiscount: this.initialBookWithoutDiscount,

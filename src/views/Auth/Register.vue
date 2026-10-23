@@ -236,8 +236,8 @@ export default {
       passwordRepeat: "",
       showPassword: false,
       /**
-       * The instance's mail address of a refusal on the blacklist
-       * (ECCdigital/tickets#628), empty without one; `null` without a refusal.
+       * The instance's mail address of a refusal on the blacklist,
+       * empty without one; `null` without a refusal.
        */
       blacklistedMailAddress: null,
       acceptedDataProtection: false,

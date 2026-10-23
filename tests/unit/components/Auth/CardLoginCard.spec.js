@@ -62,7 +62,7 @@ beforeEach(() => {
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#628): `card/signup`
+ * An address on the blacklist: `card/signup`
  * answers `409` with the checkout's refusal and the instance's mail address.
  * The card keeps the message instead of „bereits einem Account zugeordnet“.
  */

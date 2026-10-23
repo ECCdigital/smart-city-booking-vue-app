@@ -165,7 +165,7 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import { REPORT_STATUS, tenantReportRows } from "@/utils/reports";
 
 /**
- * „Meldungen“ of the tenant (glossary „Meldung“, ECCdigital/tickets#631),
+ * „Meldungen“ of the tenant (glossary „Meldung“),
  * the second tab of „Mitglieder“: the reports the current tenant made, each
  * with its standing. An open one the tenant may add a reason to or
  * withdraw; a settled one stays as it was settled, and a new report about

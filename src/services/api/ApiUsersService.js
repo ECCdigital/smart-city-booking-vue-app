@@ -21,8 +21,8 @@ export default {
     });
   },
   /**
-   * Suspends a user at once, with a reason (ECCdigital/tickets#624);
-   * `blacklist` puts the address on the blacklist too (ECCdigital/tickets#626).
+   * Suspends a user at once, with a reason;
+   * `blacklist` puts the address on the blacklist too.
    */
   suspendUser(userId, reason, blacklist = false) {
     return ApiClient.post(`api/users/${userId}/suspension`, {

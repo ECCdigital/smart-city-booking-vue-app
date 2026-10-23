@@ -488,16 +488,16 @@ export default {
     return {
       booking: null,
       groupBooking: null,
-      /** The dialog „User melden“ (ECCdigital/tickets#630). */
+      /** The dialog „User melden“. */
       reportingBooker: false,
-      /** The dialog „Adresse melden“ (ECCdigital/tickets#632). */
+      /** The dialog „Adresse melden“. */
       reportingAddresses: false,
     };
   },
   computed: {
     /**
      * „User melden“ in the card „Kunde“: a booking with a booker, for a role
-     * that may report (ECCdigital/tickets#630). Whether the booker has an
+     * that may report. Whether the booker has an
      * account the backend says.
      */
     allowReportBooker() {
@@ -506,13 +506,13 @@ export default {
         UserPermissionService.allowReport(this.tenantId)
       );
     },
-    /** The addresses of the booking's `mail` (ECCdigital/tickets#632). */
+    /** The addresses of the booking's `mail`. */
     reportableAddresses() {
       return reportableAddresses(this.booking?.mail);
     },
     /**
      * „Adresse melden“ in the card „Kunde“: the addresses of the booking's
-     * `mail`, for a role that may report (ECCdigital/tickets#632). The
+     * `mail`, for a role that may report. The
      * backend refuses the address of an account, a user to report as such.
      */
     allowReportAddresses() {

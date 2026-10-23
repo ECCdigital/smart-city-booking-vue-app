@@ -134,7 +134,7 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import { parseBlacklistValue } from "@/utils/blacklist";
 
 /**
- * „Eintrag anlegen“ on the blacklist (ECCdigital/tickets#625): an address
+ * „Eintrag anlegen“ on the blacklist: an address
  * or a domain, the preview of the accounts it hits and a required reason.
  * Saving waits for the preview of the value as it stands. Emits `confirm`
  * with the value and the trimmed reason, or `cancel`; the parent adds.

@@ -568,7 +568,7 @@ describe("BookingPage", () => {
       expect(comments).toContain("Schlüssel liegt am Empfang");
     });
 
-    it("offers „Adresse melden“ to a role that may report (ECCdigital/tickets#632)", async () => {
+    it("offers „Adresse melden“ to a role that may report", async () => {
       const hidden = mountPage();
       await settle(hidden.wrapper);
       expect(

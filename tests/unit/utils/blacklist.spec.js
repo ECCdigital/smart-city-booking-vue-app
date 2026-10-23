@@ -10,7 +10,7 @@ vi.mock("@/services/api/ApiBlacklistService", () => ({
   default: { isBlacklisted: vi.fn() },
 }));
 
-/** The blacklist of the instance (glossary „Blacklist“, ECCdigital/tickets#625). */
+/** The blacklist of the instance (glossary „Blacklist“). */
 describe("parseBlacklistValue", () => {
   it.each([
     ["max@firma.de", { value: "max@firma.de", kind: "address" }],
@@ -29,7 +29,7 @@ describe("parseBlacklistValue", () => {
   );
 });
 
-/** The warning of the administration's ways (ECCdigital/tickets#629). */
+/** The warning of the administration's ways. */
 describe("addressesToCheck", () => {
   it("checks the mail of a new booking", () => {
     expect(addressesToCheck(" Max@firma.de ")).toEqual(["max@firma.de"]);

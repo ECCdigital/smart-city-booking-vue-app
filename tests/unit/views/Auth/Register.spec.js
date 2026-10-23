@@ -212,9 +212,9 @@ describe("Register — the signup limit", () => {
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#628): the signup answers
+ * An address on the blacklist: the signup answers
  * `409` with the checkout's refusal and the instance's mail address. Unlike
- * the neutral answers (#259) the page keeps the message, and no account
+ * the neutral answers the page keeps the message, and no account
  * follows.
  */
 describe("Register — an address on the blacklist", () => {

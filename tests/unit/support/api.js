@@ -85,8 +85,8 @@ export function unauthorizedError(data = "checkout.login_required") {
 }
 
 /**
- * An axios error for a `409` refusing an address on the blacklist
- * (ECCdigital/tickets#627, #628): the legacy checkout's and the
+ * An axios error for a `409` refusing an address on the blacklist:
+ * the legacy checkout's and the
  * registration's answer, with the instance's mail address to write to.
  */
 export function addressBlacklistedError(mailAddress = "") {

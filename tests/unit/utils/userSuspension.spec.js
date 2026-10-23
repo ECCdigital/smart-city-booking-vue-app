@@ -9,7 +9,7 @@ import {
   suspensionStatusText,
 } from "@/utils/userSuspension";
 
-/** The suspension of a user (glossary „Sperre (eines Users)“, ECCdigital/tickets#624). */
+/** The suspension of a user (glossary „Sperre (eines Users)“). */
 const SUSPENDED_AT = new Date(2026, 9, 21, 14, 5).getTime();
 
 describe("suspensionStatusText", () => {
@@ -27,7 +27,7 @@ describe("suspensionStatusText", () => {
     ).toBe("Gesperrt von Hand am 21.10.2026 von admin@stadt.de.");
   });
 
-  it("names the entry, the time and the person of a suspension by the blacklist (ECCdigital/tickets#625)", () => {
+  it("names the entry, the time and the person of a suspension by the blacklist", () => {
     expect(
       suspensionStatusText({
         isSuspended: true,
@@ -133,7 +133,7 @@ describe("suspensionConsequences", () => {
     ]);
   });
 
-  /** The checkbox „auch auf die Blacklist“ switches guest and registration (ECCdigital/tickets#626). */
+  /** The checkbox „auch auf die Blacklist“ switches guest and registration. */
   it("ends guest bookings and registration with the address on the blacklist", () => {
     const rows = suspensionConsequences(
       { bookings: 3, memberships: 2 },
@@ -173,7 +173,7 @@ describe("suspensionConsequences", () => {
   });
 });
 
-/** The hint below the checkbox follows it (ECCdigital/tickets#626). */
+/** The hint below the checkbox follows it. */
 describe("suspensionBlacklistHint", () => {
   it.each([
     [
@@ -189,7 +189,7 @@ describe("suspensionBlacklistHint", () => {
   });
 });
 
-/** Whether the address is on the blacklist, on the card „Sperre“ (ECCdigital/tickets#626). */
+/** Whether the address is on the blacklist, on the card „Sperre“. */
 describe("blacklistMatchText", () => {
   it("names the exact entry", () => {
     expect(
@@ -219,7 +219,7 @@ describe("blacklistMatchText", () => {
   );
 });
 
-describe("suspensionReportNotes (ECCdigital/tickets#630)", () => {
+describe("suspensionReportNotes", () => {
   it("names none without open reports", () => {
     expect(suspensionReportNotes(undefined)).toEqual([]);
     expect(suspensionReportNotes([])).toEqual([]);

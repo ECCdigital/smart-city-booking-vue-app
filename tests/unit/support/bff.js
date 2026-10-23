@@ -40,7 +40,7 @@ export const RESET_TOKEN = "hook-aus-der-mail";
 
 /**
  * The pending SSO token of an address on the blacklist: the stub backend's
- * `POST /auth/sso/signup` refuses it (ECCdigital/tickets#628).
+ * `POST /auth/sso/signup` refuses it.
  */
 export const BLACKLISTED_SSO_TOKEN = "blacklisted-sso-token";
 
@@ -149,7 +149,7 @@ async function startBackendStub() {
     return res.status(200).send("Password reset successfully");
   });
 
-  // The SSO signup (ECCdigital/tickets#628): an address on the blacklist
+  // The SSO signup: an address on the blacklist
   // is refused with the instance's mail address to write to.
   app.post("/auth/sso/signup", express.json(), (req, res) => {
     if (req.body?.token === BLACKLISTED_SSO_TOKEN) {

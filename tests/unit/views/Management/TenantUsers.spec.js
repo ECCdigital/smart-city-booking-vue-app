@@ -30,8 +30,8 @@ vi.mock("@/services/api/ApiInvitationService", () => ({
 vi.mock("@/services/api/ApiChallengeService", () => ({
   default: { getChallenges: vi.fn(async () => ({ data: [] })) },
 }));
-// Whether the role may edit users, which the tab „Meldungen“ needs
-// (ECCdigital/tickets#631); the signed-in user is no part of these tests.
+// Whether the role may edit users, which the tab „Meldungen“ needs;
+// the signed-in user is no part of these tests.
 const permissions = vi.hoisted(() => ({ report: false }));
 vi.mock("@/services/permissions/UserPermissionService", () => ({
   default: {
@@ -99,8 +99,8 @@ describe("TenantUsers.addUserDirectly", () => {
 });
 
 /**
- * Adding or inviting an address on the blacklist warns first
- * (ECCdigital/tickets#629); through the methods with a stand-in context, as
+ * Adding or inviting an address on the blacklist warns first;
+ * through the methods with a stand-in context, as
  * above.
  */
 describe("TenantUsers: the blacklist warning", () => {
@@ -302,7 +302,7 @@ describe("TenantUsers, invited in by link", () => {
   });
 });
 
-describe("TenantUsers: the tab „Meldungen“ (ECCdigital/tickets#631)", () => {
+describe("TenantUsers: the tab „Meldungen“", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     permissions.report = true;
@@ -371,7 +371,7 @@ describe("TenantUsers: the tab „Meldungen“ (ECCdigital/tickets#631)", () => 
 
 /**
  * The status card of the member dialog shows a suspension of the whole
- * instance (ECCdigital/tickets#633); the member carries it from its user.
+ * instance; the member carries it from its user.
  */
 describe("TenantUsers: a member suspended at the instance", () => {
   it("carries the suspension of its user", () => {
@@ -426,7 +426,7 @@ describe("TenantUsers: a member suspended at the instance", () => {
 });
 
 /**
- * „Mitgliedschaft beenden“ from the list asks first (ECCdigital/tickets#633);
+ * „Mitgliedschaft beenden“ from the list asks first;
  * through the methods with a stand-in context, as above.
  */
 describe("TenantUsers: ending a membership", () => {

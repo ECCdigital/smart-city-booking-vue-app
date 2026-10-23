@@ -30,7 +30,7 @@
 <script>
 /**
  * The warning of the administration's ways before an address on the
- * blacklist is saved (ECCdigital/tickets#629): names the addresses, never
+ * blacklist is saved: names the addresses, never
  * the entry or its reason. Emits `confirm` to save anyway, or `cancel`;
  * the parent saves.
  */

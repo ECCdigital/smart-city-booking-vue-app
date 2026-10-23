@@ -49,7 +49,7 @@
 
 <script>
 /**
- * The question before „Mitgliedschaft beenden“ (ECCdigital/tickets#633),
+ * The question before „Mitgliedschaft beenden“,
  * shared by the list of members and the member dialog.
  */
 export default {
@@ -64,7 +64,7 @@ export default {
       type: String,
       default: "",
     },
-    /** Whether to offer „An Instanz melden“ (ECCdigital/tickets#630). */
+    /** Whether to offer „An Instanz melden“. */
     allowReport: {
       type: Boolean,
       default: false,

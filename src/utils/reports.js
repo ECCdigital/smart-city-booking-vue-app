@@ -1,10 +1,9 @@
 /**
  * The reports to the instance (glossary „Meldung (eines Users oder einer
- * Adresse)“, ECCdigital/tickets#630) as the review queue shows the open
- * ones: one group per reported user or address (ECCdigital/tickets#632),
+ * Adresse)“) as the review queue shows the open
+ * ones: one group per reported user or address,
  * the reports of different tenants apart within it, the one waiting
- * longest first. And as the tenant lists its own, with their standing
- * (ECCdigital/tickets#631).
+ * longest first. And as the tenant lists its own, with their standing.
  */
 import { addressesOf, parseBlacklistValue } from "@/utils/blacklist";
 
@@ -13,8 +12,7 @@ export const REPORT_STATUS = Object.freeze({
   OPEN: "open",
   SUSPENDED: "suspended",
   REJECTED: "rejected",
-  // A report about an address settled with a blacklist entry
-  // (ECCdigital/tickets#632).
+  // A report about an address settled with a blacklist entry.
   BLACKLISTED: "blacklisted",
   WITHDRAWN: "withdrawn",
 });
@@ -38,7 +36,7 @@ export function reportReasons(report) {
 
 /**
  * Groups the open reports by the reported user or address: `userId` for
- * a user, `address` for the address of a guest (ECCdigital/tickets#632),
+ * a user, `address` for the address of a guest,
  * the other one `null`; `key` tells the groups apart.
  *
  * @param {Object[]} reports The answer of `GET /api/instances/reports`
@@ -71,8 +69,8 @@ export function groupOpenReports(reports) {
 }
 
 /**
- * The addresses of a booking's `mail` a tenant may report
- * (ECCdigital/tickets#632): each once, trimmed and in lower case as the
+ * The addresses of a booking's `mail` a tenant may report:
+ * each once, trimmed and in lower case as the
  * backend compares them, without what is no address.
  *
  * @param {*} mail One address or a list, as `mail` of a booking
@@ -88,7 +86,7 @@ export function reportableAddresses(mail) {
 
 /**
  * The blacklist entry that settles the reports about an address, as its
- * dialog offers it (ECCdigital/tickets#632): the exact address or its
+ * dialog offers it: the exact address or its
  * domain, and the reasons of the reports, each once, as the reason.
  *
  * @param {{address: string, reports: Object[]}} group A group of

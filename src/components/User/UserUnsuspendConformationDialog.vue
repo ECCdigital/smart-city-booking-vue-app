@@ -52,10 +52,10 @@
 
 <script>
 /**
- * „<Name> entsperren?“ (ECCdigital/tickets#624). An exact blacklist entry
+ * „<Name> entsperren?“. An exact blacklist entry
  * of the address is offered for removal, checked from the start; a domain
- * entry stays and the dialog says the checkout keeps refusing the address
- * (ECCdigital/tickets#626). Emits `confirm` with whether to remove the
+ * entry stays and the dialog says the checkout keeps refusing the address.
+ * Emits `confirm` with whether to remove the
  * entry, or `cancel`; the parent lifts the suspension.
  */
 export default {

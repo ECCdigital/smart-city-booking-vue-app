@@ -122,11 +122,11 @@ import {
 } from "@/utils/userSuspension";
 
 /**
- * The card „Sperre“ in the user editing (ECCdigital/tickets#624): suspends
+ * The card „Sperre“ in the user editing: suspends
  * and lifts the suspension at once over its own dialogs, never with
  * „Speichern“ of the user dialog, both with the blacklist as their
- * counterpart (ECCdigital/tickets#626). A suspension that settled reports
- * links them (ECCdigital/tickets#630). Emits `changed` with the user as
+ * counterpart. A suspension that settled reports
+ * links them. Emits `changed` with the user as
  * the API answers it.
  */
 export default {

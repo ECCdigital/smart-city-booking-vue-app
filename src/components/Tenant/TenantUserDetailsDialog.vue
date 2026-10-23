@@ -883,12 +883,12 @@ export default {
       type: Boolean,
       default: true,
     },
-    /** Whether the role may report the member (ECCdigital/tickets#630). */
+    /** Whether the role may report the member. */
     allowReport: {
       type: Boolean,
       default: false,
     },
-    /** Whether the role may end this membership (ECCdigital/tickets#633). */
+    /** Whether the role may end this membership. */
     allowEndMembership: {
       type: Boolean,
       default: false,

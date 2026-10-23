@@ -66,7 +66,7 @@ export function isTimeInPastRefusal(data) {
 export const ADDRESS_BLACKLISTED = "checkout.address_blacklisted";
 
 /**
- * The refusal of an address on the blacklist (ECCdigital/tickets#627): the
+ * The refusal of an address on the blacklist: the
  * instance's mail address to write to, trimmed, empty where the instance
  * has none; `null` for any other answer. The legacy checkout answers it as
  * `{ error, params: { mailAddress } }`.

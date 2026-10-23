@@ -196,9 +196,9 @@ import {
 } from "@/utils/reports";
 
 /**
- * „Offene Meldungen“ (glossary „Meldung“, ECCdigital/tickets#630): the open
+ * „Offene Meldungen“ (glossary „Meldung“): the open
  * reports of every tenant for the instance owner, one row per reported user
- * or address (ECCdigital/tickets#632) with the reports of each tenant
+ * or address with the reports of each tenant
  * apart. „Sperren“ suspends over the suspension's own dialog, which settles
  * every open report about the user; „Auf Blacklist setzen“ settles those
  * about an address with an entry of the address or its domain; „Ablehnen“

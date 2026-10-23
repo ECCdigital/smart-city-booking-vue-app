@@ -44,10 +44,10 @@
 import { mapActions } from "vuex";
 
 /**
- * The refusal of an address on the blacklist (ECCdigital/tickets#627) in the
+ * The refusal of an address on the blacklist in the
  * legacy checkout: it stays where the booking is sent, and the instance's
  * mail address in it opens a mail or is copied. Without one it names the
- * operator of the offer. The registration (ECCdigital/tickets#628) shows
+ * operator of the offer. The registration shows
  * it with a title and a notice of its own.
  */
 export default {

@@ -106,8 +106,8 @@ import BlacklistReasonDialog from "@/components/Instance/Blacklist/BlacklistReas
 import BlacklistRemoveConformationDialog from "@/components/Instance/Blacklist/BlacklistRemoveConformationDialog.vue";
 
 /**
- * The blacklist of the instance (glossary „Blacklist“,
- * ECCdigital/tickets#625): the entries with time, person, origin and the
+ * The blacklist of the instance (glossary „Blacklist“):
+ * the entries with time, person, origin and the
  * number of accounts they suspended; add with a preview, change the
  * reason, remove with „Mit entsperren“.
  */

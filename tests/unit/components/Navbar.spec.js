@@ -124,7 +124,7 @@ describe("Navbar", () => {
   });
 
   describe("the badge of the Prüfliste", () => {
-    it("counts every user with open reports once (ECCdigital/tickets#630)", async () => {
+    it("counts every user with open reports once", async () => {
       const open = (id, targetUserId) => ({
         id,
         targetUserId,

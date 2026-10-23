@@ -1,8 +1,8 @@
 import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 
 /**
- * The blacklist of the instance (glossary „Blacklist“, „Blacklist-Eintrag“,
- * ECCdigital/tickets#625): what its page reads and checks before it asks
+ * The blacklist of the instance (glossary „Blacklist“, „Blacklist-Eintrag“):
+ * what its page reads and checks before it asks
  * the API.
  */
 
@@ -34,7 +34,7 @@ export const addressesOf = (mail) =>
 
 /**
  * The addresses a way of the administration asks the blacklist about
- * before it saves (ECCdigital/tickets#629): each address of the mail of a
+ * before it saves: each address of the mail of a
  * new booking, or those a changed mail adds - so an address already stored
  * warns no second time.
  *
@@ -50,8 +50,8 @@ export function addressesToCheck(mail, before) {
 }
 
 /**
- * The addresses the blacklist hits, each asked by the route of `way`
- * (ECCdigital/tickets#629). A failed question is no hit: a warning never
+ * The addresses the blacklist hits, each asked by the route of `way`.
+ * A failed question is no hit: a warning never
  * stops a save.
  *
  * @param {"manualBooking"|"bookingMail"|"tenantUser"} way

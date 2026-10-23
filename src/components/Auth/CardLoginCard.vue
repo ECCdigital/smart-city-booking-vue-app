@@ -241,7 +241,7 @@ export default {
       loading: false,
       state: "", // '' | 'error' | 'blacklisted' | 'success' | 'awaiting_verification' | 'awaiting_link_confirmation'
       errorMessage: "",
-      /** The instance's mail address of a refusal on the blacklist (ECCdigital/tickets#628), empty without one. */
+      /** The instance's mail address of a refusal on the blacklist, empty without one. */
       blacklistedMailAddress: "",
       rules: {
         required: (v) => !!v || "Erforderlich.",

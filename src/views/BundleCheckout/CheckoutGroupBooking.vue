@@ -94,7 +94,7 @@ export default {
       currentStep: 1,
       isSubmitting: false,
       // The instance's mail address of a refusal of the address on the
-      // blacklist (ECCdigital/tickets#627), null while there is none.
+      // blacklist, null while there is none.
       blacklistRefusal: null,
       progress: {
         loading: false,
@@ -793,7 +793,7 @@ export default {
           !booked &&
           addressBlacklistedRefusal(error.response?.data) !== null
         ) {
-          // An address on the blacklist (ECCdigital/tickets#627): the
+          // An address on the blacklist: the
           // summary keeps it on the page with the address to write to.
           this.blacklistRefusal = addressBlacklistedRefusal(
             error.response?.data

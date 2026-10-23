@@ -17,7 +17,7 @@ function store() {
 }
 
 /**
- * The toast after „Melden“ (ECCdigital/tickets#630) reads in plain words,
+ * The toast after „Melden“ reads in plain words,
  * never the translation keys it is built from.
  */
 async function reportAnswering(status) {
@@ -58,7 +58,7 @@ describe("UserReportDialog", () => {
   });
 });
 
-describe("UserReportDialog: „Mitgliedschaft beenden“ (ECCdigital/tickets#631)", () => {
+describe("UserReportDialog: „Mitgliedschaft beenden“", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -106,7 +106,7 @@ describe("UserReportDialog: „Mitgliedschaft beenden“ (ECCdigital/tickets#631
   });
 });
 
-describe("UserReportDialog: guest addresses (ECCdigital/tickets#632)", () => {
+describe("UserReportDialog: guest addresses", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

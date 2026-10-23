@@ -10,7 +10,7 @@ afterEach(async () => {
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#628): the BFF hands the
+ * An address on the blacklist: the BFF hands the
  * backend's refusal of the SSO signup on whole, so the card can show the
  * message with the instance's mail address.
  */

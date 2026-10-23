@@ -178,7 +178,7 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#627): the series hands
+ * An address on the blacklist: the series hands
  * the instance's mail address to its summary, which keeps the refusal on
  * the page instead of a toast, and takes it back when the series is sent
  * again.

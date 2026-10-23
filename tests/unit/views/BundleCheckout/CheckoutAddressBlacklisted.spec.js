@@ -14,7 +14,7 @@ vi.mock("@/services/api/ApiPaymentService", () => ({
 }));
 
 /**
- * An address on the blacklist (ECCdigital/tickets#627): the legacy checkout
+ * An address on the blacklist: the legacy checkout
  * answers `409` with `{ error, params: { mailAddress } }`. Single and series
  * checkout keep the refusal on the page instead of a toast that is gone
  * before anyone can use the address: the instance's mail address opens a

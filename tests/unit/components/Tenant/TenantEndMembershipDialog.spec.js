@@ -13,7 +13,7 @@ const dialog = () =>
   document.querySelector("[data-test='end-membership-dialog']");
 
 /**
- * The question before „Mitgliedschaft beenden“ (ECCdigital/tickets#633), in
+ * The question before „Mitgliedschaft beenden“, in
  * the list of members and in the member dialog alike.
  */
 describe("TenantEndMembershipDialog", () => {

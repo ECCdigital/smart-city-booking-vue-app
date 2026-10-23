@@ -55,7 +55,7 @@
 
 <script>
 /**
- * Removing a blacklist entry (ECCdigital/tickets#625): names the accounts
+ * Removing a blacklist entry: names the accounts
  * the entry suspended and offers „Mit entsperren“, ticked. Emits `confirm`
  * with whether to lift those suspensions, or `cancel`; the parent removes.
  */

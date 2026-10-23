@@ -96,13 +96,13 @@ import {
 } from "@/utils/userSuspension";
 
 /**
- * „<Name> für die ganze Instanz sperren?“ (ECCdigital/tickets#624, variant B
- * of ECCdigital/tickets#620): the consequences and a required reason. The
+ * „<Name> für die ganze Instanz sperren?“: the consequences and a required
+ * reason. The
  * checkbox „auch auf die Blacklist“, checked from the start, switches the
- * rows of guest and registration (ECCdigital/tickets#626); an entry that
+ * rows of guest and registration; an entry that
  * already hits the address replaces it. The open reports the suspension
- * settles are named with the tenant owners who get a mail
- * (ECCdigital/tickets#630). Emits `confirm` with
+ * settles are named with the tenant owners who get a mail.
+ * Emits `confirm` with
  * `{ reason, blacklist }` or `cancel`; the parent suspends.
  */
 export default {

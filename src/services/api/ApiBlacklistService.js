@@ -1,8 +1,8 @@
 import ApiClient from "@/services/api/ApiClientService";
 
 /**
- * The route each way of the administration asks before it saves
- * (ECCdigital/tickets#629), under the right of that way.
+ * The route each way of the administration asks before it saves,
+ * under the right of that way.
  */
 const MATCH_PATHS = {
   manualBooking: (tenantId) => `api/${tenantId}/bookings/blacklist-match`,
@@ -11,8 +11,8 @@ const MATCH_PATHS = {
 };
 
 /**
- * The blacklist of the instance (glossary „Blacklist“,
- * ECCdigital/tickets#625), the instance owner's alone.
+ * The blacklist of the instance (glossary „Blacklist“),
+ * the instance owner's alone.
  */
 export default {
   getEntries() {
@@ -38,7 +38,7 @@ export default {
     });
   },
   /**
-   * Whether an entry hits `address` (ECCdigital/tickets#629): the warning
+   * Whether an entry hits `address`: the warning
    * of a way of the administration, which names neither the entry nor its
    * reason.
    *

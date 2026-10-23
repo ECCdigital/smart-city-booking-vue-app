@@ -41,7 +41,7 @@
 
 <script>
 /**
- * „Grund ändern“ of a blacklist entry (ECCdigital/tickets#625): the reason
+ * „Grund ändern“ of a blacklist entry: the reason
  * alone, value and kind stay. Emits `confirm` with the trimmed reason or
  * `cancel`; the parent saves.
  */

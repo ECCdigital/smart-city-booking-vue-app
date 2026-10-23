@@ -291,8 +291,7 @@ const DECISIONS = [REVIEW_ACTIONS.APPROVE, REVIEW_ACTIONS.REJECT];
 /**
  * The registers of the page, as `?tab=` names them: the offers waiting for a
  * review - where the page opens, so their name is left out of the address -
- * the tenants waiting for their approval and the open reports about users
- * (ECCdigital/tickets#630).
+ * the tenants waiting for their approval and the open reports about users.
  */
 const REGISTERS = Object.freeze({
   OFFERS: "offers",

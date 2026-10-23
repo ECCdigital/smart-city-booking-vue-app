@@ -33,7 +33,7 @@ import FormatService from "@/services/FormatService";
 import { reportReasons } from "@/utils/reports";
 
 /**
- * One report of a tenant (glossary „Meldung“, ECCdigital/tickets#630) with
+ * One report of a tenant (glossary „Meldung“) with
  * all its reasons: who reported it when, then who added to it, each with
  * the booking it came from. Shared by the open reports of the review queue
  * and the reports a suspension links.

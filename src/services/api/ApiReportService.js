@@ -2,11 +2,11 @@ import ApiClient from "@/services/api/ApiClientService";
 
 /**
  * The reports to the instance (glossary „Meldung (eines Users oder einer
- * Adresse)“, ECCdigital/tickets#630): a tenant reports a member or the
- * booker of a booking, or addresses of a booking's `mail`
- * (ECCdigital/tickets#632); the instance owner reads them and settles every
+ * Adresse)“): a tenant reports a member or the
+ * booker of a booking, or addresses of a booking's `mail`;
+ * the instance owner reads them and settles every
  * open one about a user or an address at once. The tenant reads its own,
- * adds to and withdraws an open one (ECCdigital/tickets#631).
+ * adds to and withdraws an open one.
  */
 class ApiReportService {
   /**
@@ -15,7 +15,7 @@ class ApiReportService {
    * added to. `endMembership` ends the member's membership with it. With
    * `addresses` it reports those of the booking's `mail` instead and
    * answers `{ reports, blacklisted }`, the latter the addresses already
-   * on the blacklist (ECCdigital/tickets#632).
+   * on the blacklist.
    *
    * @param {string} tenantId
    * @param {{userId?: string, bookingId?: string, addresses?: string[], reason: string, endMembership?: boolean}} report
@@ -90,7 +90,7 @@ class ApiReportService {
 
   /**
    * Settles every open report about an address with a blacklist entry of
-   * origin `reports` (ECCdigital/tickets#632): the exact address, or with
+   * origin `reports`: the exact address, or with
    * `domain` its domain. The entry suspends the accounts it hits, as every
    * entry does.
    *

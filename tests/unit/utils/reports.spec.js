@@ -7,7 +7,7 @@ import {
   tenantReportRows,
 } from "@/utils/reports";
 
-/** The open reports (glossary „Meldung“, ECCdigital/tickets#630). */
+/** The open reports (glossary „Meldung“). */
 const report = (fields) => ({
   tenantId: "stadt",
   tenantName: "Stadt Musterhausen",
@@ -83,7 +83,7 @@ describe("groupOpenReports", () => {
   });
 });
 
-describe("groupOpenReports by address (ECCdigital/tickets#632)", () => {
+describe("groupOpenReports by address", () => {
   const aboutAddress = (fields) =>
     report({
       targetUserId: null,
@@ -133,7 +133,7 @@ describe("groupOpenReports by address (ECCdigital/tickets#632)", () => {
   });
 });
 
-describe("reportableAddresses (ECCdigital/tickets#632)", () => {
+describe("reportableAddresses", () => {
   it("is every address of a booking's mail once, trimmed and in lower case", () => {
     expect(
       reportableAddresses(" Gast@Example.de, zweit@example.de\ngast@example.de")
@@ -149,7 +149,7 @@ describe("reportableAddresses (ECCdigital/tickets#632)", () => {
   });
 });
 
-describe("blacklistDraftOf (ECCdigital/tickets#632)", () => {
+describe("blacklistDraftOf", () => {
   const group = (reports) => ({
     address: "gast@wegwerf.de",
     reports: reports.map((fields) =>
@@ -214,8 +214,8 @@ describe("reportReasons", () => {
   });
 });
 
-describe("tenantReportRows (ECCdigital/tickets#631)", () => {
-  it("names a report about an address by the address (ECCdigital/tickets#632)", () => {
+describe("tenantReportRows", () => {
+  it("names a report about an address by the address", () => {
     const [row] = tenantReportRows([
       report({
         id: "a",

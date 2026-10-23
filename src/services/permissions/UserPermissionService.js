@@ -19,8 +19,8 @@ class UserPermissionService {
   }
 
   /**
-   * Reporting a member or a booker to the instance (glossary „Meldung“,
-   * ECCdigital/tickets#630): the backend's `tenantUser.report`,
+   * Reporting a member or a booker to the instance (glossary „Meldung“):
+   * the backend's `tenantUser.report`,
    * `manageUsers.updateAny` of the tenant, which its owner holds.
    */
   static allowReport(tenantId = store.getters["tenants/currentTenantId"]) {
@@ -34,7 +34,7 @@ class UserPermissionService {
   }
 
   /**
-   * Changing a report about a tenant owner (ECCdigital/tickets#631): the
+   * Changing a report about a tenant owner: the
    * backend's `tenantUser.owner`, the tenant owners' and the instance
    * owner's alone, as reporting one is.
    */
@@ -46,7 +46,7 @@ class UserPermissionService {
   }
 
   /**
-   * „Mitgliedschaft beenden“ (ECCdigital/tickets#633): the tenant's
+   * „Mitgliedschaft beenden“: the tenant's
    * `remove-user`, the user manager's as reporting is; a tenant owner's
    * membership only a tenant owner ends.
    */

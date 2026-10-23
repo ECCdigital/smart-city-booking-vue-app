@@ -88,7 +88,7 @@ describe("checkoutErrors - a begin in the past", () => {
 });
 
 /**
- * An address on the blacklist (ECCdigital/tickets#627): the legacy checkout
+ * An address on the blacklist: the legacy checkout
  * answers `409` with the reason as its body, without the instance's mail
  * address, so the toast names the operator of the offer.
  */

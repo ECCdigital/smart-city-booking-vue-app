@@ -24,7 +24,7 @@ function signIn({ instanceOwner = false, tenants = [] } = {}) {
 }
 
 /**
- * „Mitgliedschaft beenden“ (ECCdigital/tickets#633): the tenant's
+ * „Mitgliedschaft beenden“: the tenant's
  * `remove-user`, whose rights stay the user manager's; only a tenant owner
  * ends a tenant owner's membership.
  */

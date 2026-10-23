@@ -564,7 +564,7 @@ export default {
     await this.fetchMemberships();
     await this.fetchTenants();
     // `?user=` opens the user's editing at once: the jump from the open
-    // reports of the review queue (ECCdigital/tickets#630).
+    // reports of the review queue.
     const userId = this.$route.query.user;
     if (userId && this.api.users.some((user) => user.id === userId)) {
       this.onOpenEditUser(userId);

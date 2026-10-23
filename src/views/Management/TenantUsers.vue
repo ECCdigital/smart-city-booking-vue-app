@@ -1,7 +1,6 @@
 <template>
   <AdminLayout>
-    <!-- „Meldungen“ beside the members, for roles that may edit users
-         (ECCdigital/tickets#631). -->
+    <!-- „Meldungen“ beside the members, for roles that may edit users. -->
     <v-tabs v-if="allowReport" v-model="tab" class="mb-4">
       <v-tab href="#members">
         <v-icon left small>mdi-account-multiple-outline</v-icon>
@@ -397,8 +396,7 @@ import { INVITE_QUERY } from "@/utils/tenantUsers";
 
 /**
  * The status the list shows for a member: „suspended“ for an account
- * suspended at the instance, whatever its membership, else the membership's
- * (ECCdigital/tickets#633).
+ * suspended at the instance, whatever its membership, else the membership's.
  */
 function shownStatus(member) {
   return member.isSuspended ? "suspended" : member.status;
@@ -417,18 +415,18 @@ export default {
   },
   data() {
     return {
-      /** `members` or `reports` (ECCdigital/tickets#631). */
+      /** `members` or `reports`. */
       tab: "members",
       /** The open reports of the tenant, as the tab counts them. */
       openReportCount: 0,
-      /** The member being reported to the instance (ECCdigital/tickets#630). */
+      /** The member being reported to the instance. */
       reporting: null,
       /** The member whose membership ending waits for a confirmation. */
       endingMembership: null,
       valid: true,
       /**
        * The open warning before adding or inviting an address on the
-       * blacklist (ECCdigital/tickets#629): `{ addresses, action, proceed }`.
+       * blacklist: `{ addresses, action, proceed }`.
        */
       blacklistWarning: null,
       search: "",
@@ -747,8 +745,8 @@ export default {
     },
 
     /**
-     * Adding or inviting an address on the blacklist is no refusal
-     * (ECCdigital/tickets#629): the warning names the hit addresses first,
+     * Adding or inviting an address on the blacklist is no refusal:
+     * the warning names the hit addresses first,
      * and `proceed` runs once confirmed - at once without a hit.
      */
     async warnOfBlacklist(addresses, action, proceed) {
