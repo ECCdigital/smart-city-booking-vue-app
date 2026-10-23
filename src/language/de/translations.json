@@ -1010,7 +1010,7 @@
   "instance": {
     "blacklist": {
       "title": "Blacklist",
-      "lead": "Mit der Blacklist schließen Sie Mailadressen von der ganzen Plattform aus, zum Beispiel nach wiederholtem Missbrauch oder bei Wegwerf-Adressen. Sie gilt für alle Mandanten. Sobald Sie eine Adresse eintragen, werden die Konten mit dieser Adresse gesperrt.",
+      "lead": "Mit der Blacklist schließen Sie Mailadressen von der ganzen Plattform aus, zum Beispiel nach wiederholter missbräuchlicher Nutzung oder bei Wegwerf- / Spam-Adressen. Sie gilt für alle Mandanten. Sobald Sie eine Adresse eintragen, werden die Konten mit dieser Adresse gesperrt. Mit dieser Mailadresse können keine neuen Konten angelegt und auch keine Gast-Buchungen getätigt werden.",
       "empty": "Es steht noch keine Adresse auf der Blacklist.",
       "add": "Adresse eintragen",
       "reload": "Neu laden",
@@ -1307,7 +1307,7 @@
   "tenant": {
     "reports": {
       "title": "Meldungen",
-      "hint": "Die Meldungen dieses Mandanten an die Instanz, offene zuerst. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine neue zum selben User wieder möglich.",
+      "hint": "Prüfen und verwalten Sie als auffällig gemeldete User und Mailadressen dieses Mandanten an die Instanz (z.B. nach missbräuchlicher Nutzung oder Spam). Auf Instanzebene kann entschieden werden, ob die gemeldeten User / Mailadressen von der Nutzung ausgeschlossen werden sollen. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine erneute Meldung zum selben User wieder möglich.",
       "forbidden": "Meldungen sehen nur Rollen, die Mitglieder verwalten dürfen.",
       "empty": "Dieser Mandant hat noch niemanden gemeldet.",
       "load-failed": "Die Meldungen konnten nicht geladen werden.",
