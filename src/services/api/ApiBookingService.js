@@ -70,11 +70,15 @@ export default {
     );
     return response.data;
   },
-  /** Wiederherstellen: `rejected` back to `requested`, `cancelled` back to where it was cancelled from. */
-  async reinstateBooking(id) {
+  /**
+   * Wiederherstellen: `rejected` back to `requested`, `cancelled` back to where it was cancelled from.
+   * A period other bookings took meanwhile is a 409 `booking_reinstatement_conflict`
+   * unless `ignoreConflicts` is set.
+   */
+  async reinstateBooking(id, { ignoreConflicts = false } = {}) {
     const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/reinstate`,
-      {}
+      ignoreConflicts ? { ignoreConflicts: true } : {}
     );
     return response.data;
   },

@@ -1831,6 +1831,12 @@
         "title": "Buchung wiederherstellen",
         "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      },
+      "conflict": {
+        "intro": "In diesem Zeitraum gibt es inzwischen bereits eine andere Buchung:",
+        "for": "für",
+        "question": "Wenn Sie die aktuelle Buchung trotzdem wiederherstellen, ist das Objekt doppelt belegt.",
+        "proceed": "Trotzdem wiederherstellen"
       }
     },
     "transition": {

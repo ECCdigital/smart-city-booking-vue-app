@@ -63,6 +63,33 @@
         <v-card-text>
           <p class="mb-0 text-body-2">{{ reinstateHint }}</p>
         </v-card-text>
+        <v-card-text v-if="conflicts.length > 0" class="pt-0">
+          <v-alert
+            type="warning"
+            border="left"
+            text
+            class="mb-0 reinstate-conflicts"
+          >
+            <p class="mb-2">{{ $t("booking.reinstate.conflict.intro") }}</p>
+            <ul class="mb-2">
+              <li
+                v-for="{ conflict, other } in conflictRows"
+                :key="`${conflict.bookableId}-${other.id}`"
+              >
+                <a
+                  :href="bookingHref(other.id)"
+                  target="_blank"
+                  rel="noopener"
+                  >{{ other.id }}</a
+                >
+                {{ $t("booking.reinstate.conflict.for") }} „{{
+                  conflict.title
+                }}“ ({{ formatPeriod(other) }})
+              </li>
+            </ul>
+            <p class="mb-0">{{ $t("booking.reinstate.conflict.question") }}</p>
+          </v-alert>
+        </v-card-text>
         <v-card-text v-if="error" class="pt-0">
           <v-alert type="error" border="left" elevation="2" class="mb-0">
             {{ error }}
@@ -72,7 +99,11 @@
           <v-spacer />
           <v-btn text @click="closeDialog">Abbrechen</v-btn>
           <v-btn color="primary" :loading="inProgress" @click="reinstate">
-            {{ $t("booking.action.reinstate") }}
+            {{
+              conflicts.length > 0
+                ? $t("booking.reinstate.conflict.proceed")
+                : $t("booking.action.reinstate")
+            }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -105,8 +136,11 @@ import {
 import {
   getApiErrorMessage,
   getBookingValidationReasons,
+  getReinstatementConflicts,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 
 /**
  * The one place the admin's four transitions run (spec E2, E3): Freigeben,
@@ -131,6 +165,8 @@ export default {
       dialog: null,
       inProgress: false,
       error: null,
+      /** What a reinstatement would book twice; once named, the next click reinstates anyway. */
+      conflicts: [],
     };
   },
   computed: {
@@ -146,6 +182,12 @@ export default {
     /** The host acts on the series as a whole; the dialogs offer no "Nur diese Buchung". */
     seriesOnly() {
       return this.target?.seriesOnly === true;
+    },
+    /** One row per booking in the way, with the position it collides on. */
+    conflictRows() {
+      return this.conflicts.flatMap((conflict) =>
+        (conflict.bookings || []).map((other) => ({ conflict, other }))
+      );
     },
     reinstateHint() {
       const key =
@@ -172,6 +214,7 @@ export default {
     start(action, target) {
       this.target = target;
       this.error = null;
+      this.conflicts = [];
       if (this.seriesOnly) {
         // There is no series-wide reinstate (spec E9).
         if (action === BOOKING_ACTION.REINSTATE) {
@@ -224,6 +267,7 @@ export default {
     closeDialog() {
       this.dialog = null;
       this.error = null;
+      this.conflicts = [];
     },
 
     async confirmSingle() {
@@ -334,15 +378,39 @@ export default {
       });
     },
 
+    /**
+     * The first click asks the route as it is; a period other bookings took
+     * meanwhile comes back as conflicts, shown in the dialog without a toast
+     * or reload. The next click reinstates anyway.
+     */
     async reinstate() {
       const booking = this.booking;
+      const ignoreConflicts = this.conflicts.length > 0;
       return this.run(BOOKING_ACTION.REINSTATE, {
         overlay: "Buchung wird wiederhergestellt...",
-        call: () => ApiBookingService.reinstateBooking(booking.id),
+        call: () =>
+          ApiBookingService.reinstateBooking(booking.id, { ignoreConflicts }),
         successKey: "booking.reinstate.success",
         errorKey: "booking.reinstate.error",
         result: { bookingId: booking.id },
+        handleError: (error) => {
+          const conflicts = getReinstatementConflicts(error);
+          if (conflicts) {
+            this.conflicts = conflicts;
+          }
+          return conflicts !== null;
+        },
       });
+    },
+    bookingHref(bookingId) {
+      return this.$router?.resolve(
+        bookingPageRoute(bookingId, this.booking?.tenantId)
+      ).href;
+    },
+    formatPeriod({ timeBegin, timeEnd }) {
+      return `${FormatService.dateTime(timeBegin)} – ${FormatService.dateTime(
+        timeEnd
+      )}`;
     },
 
     /**
@@ -370,7 +438,15 @@ export default {
      */
     async run(
       action,
-      { overlay, call, successKey, errorKey, result, group = false }
+      {
+        overlay,
+        call,
+        successKey,
+        errorKey,
+        result,
+        group = false,
+        handleError = () => false,
+      }
     ) {
       const operationId = ProcessingService.showOverlay(overlay);
       this.inProgress = true;
@@ -385,6 +461,8 @@ export default {
         this.$emit("transitioned", { action, ...result });
         return true;
       } catch (error) {
+        // An error the action answers itself keeps the dialog open as it is.
+        if (handleError(error)) return false;
         return this.failTransition(action, error, errorKey);
       } finally {
         this.inProgress = false;

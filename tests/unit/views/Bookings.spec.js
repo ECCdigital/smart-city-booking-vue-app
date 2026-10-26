@@ -694,7 +694,9 @@ describe("Bookings", () => {
       expect(ApiBookingService.reinstateBooking).not.toHaveBeenCalled();
       await clickDialogButton(wrapper, "Wiederherstellen");
 
-      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1", {
+        ignoreConflicts: false,
+      });
       expect(reloads()).toEqual({ list: 1, groups: 1 });
     });
   });

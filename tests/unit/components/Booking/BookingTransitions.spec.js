@@ -863,7 +863,9 @@ describe("BookingTransitions", () => {
 
       await clickDialogButton(wrapper, "Wiederherstellen");
 
-      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1", {
+        ignoreConflicts: false,
+      });
       expect(wrapper.emitted("transitioned")).toEqual([
         [{ action: "reinstate", bookingId: "bk-1" }],
       ]);
@@ -896,7 +898,9 @@ describe("BookingTransitions", () => {
       );
       await clickDialogButton(wrapper, "Wiederherstellen");
 
-      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1", {
+        ignoreConflicts: false,
+      });
       expect(wrapper.emitted("transitioned")).toEqual([
         [{ action: "reinstate", bookingId: "bk-1" }],
       ]);
@@ -925,6 +929,98 @@ describe("BookingTransitions", () => {
         action: "reinstate",
         message: CONFLICT_IN_CONFIRMED,
         refetch: true,
+      });
+    });
+    describe("when other bookings took the period meanwhile", () => {
+      const TAKEN = lifecycleError(409, "booking_reinstatement_conflict", {
+        bookingId: "bk-1",
+        conflicts: [
+          {
+            bookableId: "room-a",
+            title: "Raum A",
+            bookings: [
+              {
+                id: "bk-new",
+                timeBegin: Date.UTC(2026, 10, 2, 9),
+                timeEnd: Date.UTC(2026, 10, 2, 11),
+              },
+            ],
+          },
+        ],
+      });
+
+      function mountWithRouter() {
+        const store = new Vuex.Store({ modules: { toasts } });
+        const resolve = vi.fn((route) => ({
+          href: `/bookings/${route.params.bookingId}?tenant=${route.query.tenant}`,
+        }));
+        const wrapper = mountComponent(BookingTransitions, {
+          store,
+          mocks: { $router: { resolve } },
+        });
+        return { wrapper, store };
+      }
+
+      async function reinstateIntoConflict() {
+        const mounted = mountWithRouter();
+        ApiBookingService.reinstateBooking.mockRejectedValueOnce(TAKEN);
+        await start(mounted.wrapper, "reinstate", {
+          booking: booking({ status: "cancelled", tenantId: "tenant-1" }),
+        });
+        // The toasts module keeps its state across mounts.
+        const toastsBefore = toastMessages(mounted.store).length;
+        await clickDialogButton(mounted.wrapper, "Wiederherstellen");
+        return { ...mounted, toastsBefore };
+      }
+
+      it("names the object and links the booking in the way, without a toast or reload", async () => {
+        const { wrapper, store, toastsBefore } = await reinstateIntoConflict();
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain(
+          "In diesem Zeitraum gibt es inzwischen bereits eine andere Buchung:"
+        );
+        expect(text).toContain("Raum A");
+        const link = document.querySelector(
+          ".v-dialog--active .reinstate-conflicts a"
+        );
+        expect(link.textContent).toBe("bk-new");
+        expect(link.closest("li").textContent).toMatch(
+          /bk-new\s+für „Raum A“ \(.+\)/
+        );
+        expect(link.getAttribute("href")).toBe(
+          "/bookings/bk-new?tenant=tenant-1"
+        );
+        expect(link.getAttribute("target")).toBe("_blank");
+        expect(toastMessages(store)).toHaveLength(toastsBefore);
+        expect(wrapper.emitted("failed")).toBeUndefined();
+        expect(wrapper.emitted("transitioned")).toBeUndefined();
+      });
+
+      it("reinstates anyway on „Trotzdem wiederherstellen“", async () => {
+        const { wrapper } = await reinstateIntoConflict();
+        ApiBookingService.reinstateBooking.mockResolvedValue(OK);
+
+        await clickDialogButton(wrapper, "Trotzdem wiederherstellen");
+
+        expect(ApiBookingService.reinstateBooking).toHaveBeenLastCalledWith(
+          "bk-1",
+          { ignoreConflicts: true }
+        );
+        expect(wrapper.emitted("transitioned")).toEqual([
+          [{ action: "reinstate", bookingId: "bk-1" }],
+        ]);
+        expect(document.querySelector(".v-dialog--active")).toBeNull();
+      });
+
+      it("leaves the booking as it is on „Abbrechen“", async () => {
+        const { wrapper } = await reinstateIntoConflict();
+
+        await clickDialogButton(wrapper, "Abbrechen");
+
+        expect(ApiBookingService.reinstateBooking).toHaveBeenCalledTimes(1);
+        expect(wrapper.emitted("transitioned")).toBeUndefined();
+        expect(document.querySelector(".v-dialog--active")).toBeNull();
       });
     });
   });

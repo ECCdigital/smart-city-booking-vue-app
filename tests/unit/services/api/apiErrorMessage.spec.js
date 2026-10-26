@@ -8,6 +8,7 @@ import {
 import {
   getApiErrorMessage,
   getBookingValidationReasons,
+  getReinstatementConflicts,
   isForbiddenError,
   isLockBusyError,
   isOutOfReach,
@@ -689,5 +690,26 @@ describe("getBookingValidationReasons", () => {
     expect(getBookingValidationReasons(serverError(400))).toEqual([]);
     expect(getBookingValidationReasons(serverError(500))).toEqual([]);
     expect(getBookingValidationReasons(new Error("Network Error"))).toEqual([]);
+  });
+});
+
+/** The conflicts of a reinstatement that would book twice. */
+describe("getReinstatementConflicts", () => {
+  it("reads the conflicts of a 409 booking_reinstatement_conflict", () => {
+    const conflicts = [{ bookableId: "room-a", title: "Raum A", bookings: [] }];
+
+    expect(
+      getReinstatementConflicts(
+        lifecycleError(409, "booking_reinstatement_conflict", { conflicts })
+      )
+    ).toEqual(conflicts);
+  });
+
+  it("is null for any other error", () => {
+    expect(
+      getReinstatementConflicts(lifecycleError(409, "invalid_transition"))
+    ).toBeNull();
+    expect(getReinstatementConflicts(serverError())).toBeNull();
+    expect(getReinstatementConflicts(undefined)).toBeNull();
   });
 });
