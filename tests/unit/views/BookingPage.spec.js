@@ -568,7 +568,7 @@ describe("BookingPage", () => {
       expect(comments).toContain("Schlüssel liegt am Empfang");
     });
 
-    it("offers „Adresse melden“ to a role that may report", async () => {
+    it("offers „E-Mailadresse melden“ to a role that may report", async () => {
       const hidden = mountPage();
       await settle(hidden.wrapper);
       expect(
@@ -581,8 +581,50 @@ describe("BookingPage", () => {
 
       expect(
         wrapper.find('[data-test="booking-report-addresses"]').text()
-      ).toContain("Adresse melden");
+      ).toContain("E-Mailadresse melden");
       expect(wrapper.vm.reportableAddresses).toEqual(["erika@example.org"]);
+      expect(wrapper.find('[data-test="booking-report-user"]').exists()).toBe(
+        false
+      );
+    });
+
+    it("offers only „Benutzer melden“ when the mail is the booker's", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          assignedUserId: "Erika@example.org",
+          mail: "erika@example.org",
+        }),
+      });
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(
+        wrapper.find('[data-test="booking-report-user"]').text()
+      ).toContain("Benutzer melden");
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(false);
+    });
+
+    it("offers only „E-Mailadresse melden“ when the mail is not the booker's", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          assignedUserId: "erika@example.org",
+          mail: ["erika@example.org", "max@example.org"],
+        }),
+      });
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(wrapper.find('[data-test="booking-report-user"]').exists()).toBe(
+        false
+      );
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(true);
+      expect(wrapper.vm.reportableAddresses).toEqual(["max@example.org"]);
     });
 
     it("leaves out the objects and the customer block when they are empty", async () => {

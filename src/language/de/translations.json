@@ -165,7 +165,7 @@
       "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
       "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden.",
       "report_booking_required": "Eine Adresse lässt sich nur aus einer Buchung heraus melden.",
-      "report_address_of_account": "Zu dieser Adresse gibt es ein Konto. Bitte melden Sie den User mit „User melden“."
+      "report_address_of_account": "Zu dieser Adresse gibt es ein Konto. Bitte melden Sie den User mit „Benutzer melden“."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -2572,7 +2572,7 @@
     },
     "report": {
       "open": "Melden",
-      "open-user": "User melden",
+      "open-user": "Benutzer melden",
       "title": "{name} an die Instanz melden",
       "text": "Die Betreiber der Plattform entscheiden über eine Sperre für die ganze Instanz. {name} erfährt von der Meldung nichts.",
       "booking": "Die Buchung hängt als Beleg an der Meldung.",
@@ -2590,7 +2590,7 @@
       "error": "Die Meldung konnte nicht gesendet werden.",
       "end-membership": "Mitgliedschaft beenden",
       "end-membership-hint": "{name} verliert alle Rechte im Mandanten und offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
-      "open-addresses": "Adresse melden",
+      "open-addresses": "E-Mailadresse melden",
       "addresses": "Diese Adresse melden: | Welche Adressen melden?",
       "addresses-hint": "Jede angehakte Adresse wird eine eigene Meldung mit dieser Buchung und diesem Grund.",
       "supplemented-addresses": {

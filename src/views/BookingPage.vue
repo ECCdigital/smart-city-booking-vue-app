@@ -488,32 +488,39 @@ export default {
     return {
       booking: null,
       groupBooking: null,
-      /** The dialog „User melden“. */
+      /** The dialog „Benutzer melden“. */
       reportingBooker: false,
-      /** The dialog „Adresse melden“. */
+      /** The dialog „E-Mailadresse melden“. */
       reportingAddresses: false,
     };
   },
   computed: {
     /**
-     * „User melden“ in the card „Kunde“: a booking with a booker, for a role
-     * that may report. Whether the booker has an
-     * account the backend says.
+     * „Benutzer melden“ in the card „Kunde“: a booking with a booker whose
+     * address is the only one in `mail`, for a role that may report. Whether
+     * the booker has an account the backend says.
      */
     allowReportBooker() {
       return (
         !!this.booking?.assignedUserId &&
+        this.reportableAddresses.length === 0 &&
         UserPermissionService.allowReport(this.tenantId)
       );
     },
-    /** The addresses of the booking's `mail`. */
+    /**
+     * The addresses of the booking's `mail` but the booker's: a user's id is
+     * their address, reported as the user.
+     */
     reportableAddresses() {
-      return reportableAddresses(this.booking?.mail);
+      const bookerAddress = this.booking?.assignedUserId?.trim().toLowerCase();
+      return reportableAddresses(this.booking?.mail).filter(
+        (address) => address !== bookerAddress
+      );
     },
     /**
-     * „Adresse melden“ in the card „Kunde“: the addresses of the booking's
-     * `mail`, for a role that may report. The
-     * backend refuses the address of an account, a user to report as such.
+     * „E-Mailadresse melden“ in the card „Kunde“: a guest booking, or one whose
+     * `mail` differs from the booker's address, for a role that may report.
+     * Only one of the two report buttons shows.
      */
     allowReportAddresses() {
       return (
