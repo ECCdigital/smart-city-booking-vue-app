@@ -700,7 +700,6 @@
                     v-if="user?.isSuspended"
                     class="text-body-2 grey--text mt-3"
                   >
-                    {{ suspensionStatus }}
                     {{ $t("tenant.users.status.suspended-hint") }}
                   </div>
                 </v-card-text>
@@ -852,7 +851,6 @@
 </template>
 
 <script>
-import { suspensionStatusText } from "@/utils/userSuspension";
 import TenantEndMembershipDialog from "@/components/Tenant/TenantEndMembershipDialog.vue";
 
 export default {
@@ -919,10 +917,6 @@ export default {
     };
   },
   computed: {
-    /** Who suspended the account when, if the instance suspended it. */
-    suspensionStatus() {
-      return suspensionStatusText(this.user);
-    },
     selectedRolesCount() {
       return this.userRoles ? this.userRoles.length : 0;
     },
