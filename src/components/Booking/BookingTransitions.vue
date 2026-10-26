@@ -70,7 +70,9 @@
             text
             class="mb-0 reinstate-conflicts"
           >
-            <p class="mb-2">{{ $t("booking.reinstate.conflict.intro") }}</p>
+            <p class="mb-2">
+              {{ $tc("booking.reinstate.conflict.intro", conflictRows.length) }}
+            </p>
             <ul class="mb-2">
               <li
                 v-for="{ conflict, other } in conflictRows"

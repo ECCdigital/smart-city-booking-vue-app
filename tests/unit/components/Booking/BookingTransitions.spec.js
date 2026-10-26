@@ -997,6 +997,40 @@ describe("BookingTransitions", () => {
         expect(wrapper.emitted("transitioned")).toBeUndefined();
       });
 
+      it("speaks of several bookings when more than one is in the way", async () => {
+        const { wrapper } = mountWithRouter();
+        const other = (id) => ({
+          id,
+          timeBegin: Date.UTC(2026, 10, 2, 9),
+          timeEnd: Date.UTC(2026, 10, 2, 11),
+        });
+        ApiBookingService.reinstateBooking.mockRejectedValueOnce(
+          lifecycleError(409, "booking_reinstatement_conflict", {
+            bookingId: "bk-1",
+            conflicts: [
+              {
+                bookableId: "room-a",
+                title: "Raum A",
+                bookings: [other("bk-new"), other("bk-newer")],
+              },
+            ],
+          })
+        );
+        await start(wrapper, "reinstate", {
+          booking: booking({ status: "cancelled", tenantId: "tenant-1" }),
+        });
+        await clickDialogButton(wrapper, "Wiederherstellen");
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain(
+          "In diesem Zeitraum gibt es inzwischen bereits andere Buchungen:"
+        );
+        expect(text).not.toContain("eine andere Buchung");
+        expect(
+          document.querySelectorAll(".v-dialog--active .reinstate-conflicts li")
+        ).toHaveLength(2);
+      });
+
       it("reinstates anyway on „Trotzdem wiederherstellen“", async () => {
         const { wrapper } = await reinstateIntoConflict();
         ApiBookingService.reinstateBooking.mockResolvedValue(OK);
