@@ -1,25 +1,38 @@
 <template>
   <AdminLayout>
     <!-- „Meldungen“ beside the members, for roles that may edit users. -->
-    <v-tabs v-if="allowReport" v-model="tab" class="mb-4">
-      <v-tab href="#members">
-        <v-icon left small>mdi-account-multiple-outline</v-icon>
-        {{ $t("tenant.users.tab") }}
-      </v-tab>
-      <v-tab href="#reports">
-        <v-icon left small>mdi-flag-outline</v-icon>
-        {{ $t("tenant.reports.title") }}
-        <v-chip
-          v-if="openReportCount"
-          x-small
-          color="warning"
-          text-color="white"
-          class="ml-2"
-        >
-          {{ $t("tenant.reports.open-count", { count: openReportCount }) }}
-        </v-chip>
-      </v-tab>
-    </v-tabs>
+    <div v-if="allowReport" class="d-flex align-center mb-4">
+      <v-tabs v-model="tab">
+        <v-tab href="#members">
+          <v-icon left small>mdi-account-multiple-outline</v-icon>
+          {{ $t("tenant.users.tab") }}
+        </v-tab>
+        <v-tab href="#reports">
+          <v-icon left small>mdi-flag-outline</v-icon>
+          {{ $t("tenant.reports.title") }}
+          <v-chip
+            v-if="openReportCount"
+            x-small
+            color="warning"
+            text-color="white"
+            class="ml-2"
+          >
+            {{ $t("tenant.reports.open-count", { count: openReportCount }) }}
+          </v-chip>
+        </v-tab>
+      </v-tabs>
+      <v-btn
+        v-if="tab === 'reports'"
+        text
+        color="warning"
+        class="flex-shrink-0"
+        data-test="tenant-report-address"
+        @click="reportingAddress = true"
+      >
+        <v-icon left small>mdi-email-alert-outline</v-icon>
+        {{ $t("tenant.reports.address.open") }}
+      </v-btn>
+    </div>
     <!-- Kept while the members show, so the tab can count the open ones. -->
     <TenantReportsList
       v-if="allowReport"
@@ -355,6 +368,15 @@
       @cancel="endingMembership = null"
     />
 
+    <TenantAddressReportDialog
+      v-if="allowReport"
+      :open="reportingAddress"
+      :tenant-id="tenantId"
+      :member-ids="members.map((member) => member.userId)"
+      @reported="$refs.reports?.load()"
+      @close="reportingAddress = false"
+    />
+
     <UserReportDialog
       :open="!!reporting"
       :name="reporting ? getUserName(reporting) : ''"
@@ -389,6 +411,7 @@ import SearchBar from "@/components/commons/SearchBar.vue";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
 import UserReportDialog from "@/components/User/UserReportDialog.vue";
 import TenantReportsList from "@/components/Tenant/TenantReportsList.vue";
+import TenantAddressReportDialog from "@/components/Tenant/TenantAddressReportDialog.vue";
 import TenantEndMembershipDialog from "@/components/Tenant/TenantEndMembershipDialog.vue";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { blacklistedAmong } from "@/utils/blacklist";
@@ -411,6 +434,7 @@ export default {
     BlacklistWarningConformationDialog,
     UserReportDialog,
     TenantReportsList,
+    TenantAddressReportDialog,
     TenantEndMembershipDialog,
   },
   data() {
@@ -421,6 +445,8 @@ export default {
       openReportCount: 0,
       /** The member being reported to the instance. */
       reporting: null,
+      /** The dialog „E-Mailadresse melden“. */
+      reportingAddress: false,
       /** The member whose membership ending waits for a confirmation. */
       endingMembership: null,
       valid: true,

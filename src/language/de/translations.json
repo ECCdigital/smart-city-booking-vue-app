@@ -164,7 +164,7 @@
       "report_reason_required": "Für eine Meldung ist ein Grund nötig.",
       "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
       "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden.",
-      "report_booking_required": "Eine Adresse lässt sich nur aus einer Buchung heraus melden.",
+      "report_address_invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
       "report_address_of_account": "Zu dieser Adresse gibt es ein Konto. Bitte melden Sie den User mit „Benutzer melden“."
     },
     "bad-gateway-codes": {
@@ -1042,7 +1042,7 @@
         "instance-owners": "Diese Konten bleiben offen, weil sie die Plattform verwalten ({count}):",
         "already-suspended": "Diese Konten sind bereits gesperrt ({count}):",
         "tenants": "in keinem Mandanten | in einem Mandanten | in {count} Mandanten",
-        "none": "Mit dieser Adresse gibt es zurzeit kein Konto. Es wird also niemand gesperrt.",
+        "none": "Mit dieser Adresse gibt es zurzeit kein Konto. Es wird aktuell also niemand gesperrt. Zukünftig können unter dieser Adresse keine Buchungen oder Registrierungen erfolgen.",
         "exists": "„{value}“ steht bereits auf der Blacklist.",
         "reason": "Grund (Pflicht, nur für Admins sichtbar)",
         "cancel": "Abbrechen",
@@ -1327,7 +1327,19 @@
       "withdraw-title": "Meldung zu {name} zurückziehen?",
       "withdraw-text": "Die Instanz entscheidet dann nicht mehr über diese Meldung. Eine neue Meldung zu {name} bleibt möglich.",
       "withdraw-failed": "Die Meldung konnte nicht zurückgezogen werden.",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "address": {
+        "open": "E-Mailadresse melden",
+        "title": "Adresse auf die Blacklist setzen",
+        "text": "Geben Sie eine Mailadresse ein. Die Instanz entscheidet, ob die Adresse auf die Blacklist kommt.",
+        "value": "Mailadresse",
+        "value-hint": "Eine einzelne Adresse wie max@firma.de.",
+        "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
+        "member": "Die Adresse gehört zu einem Mitglied dieses Mandanten. Sie können den Benutzer auch direkt in der Mitgliederliste an die Instanz melden oder dessen Mitgliedschaft beenden.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Melden"
+      }
     },
     "description": {
       "label": "Kurzbeschreibung (optional)",

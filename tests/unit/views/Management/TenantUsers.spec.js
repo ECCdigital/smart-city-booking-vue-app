@@ -356,6 +356,22 @@ describe("TenantUsers: the tab „Meldungen“", () => {
     expect(wrapper.text()).not.toContain("Mitglied einladen");
   });
 
+  it("offers „E-Mailadresse melden“ beside the tabs, in „Meldungen“ alone", async () => {
+    const router = membersRouter();
+    await router.push({ name: "user" });
+    const wrapper = await openMembersPage(router);
+    const button = () => wrapper.find("[data-test='tenant-report-address']");
+
+    expect(button().exists()).toBe(false);
+
+    await tabs(wrapper)[1].trigger("click");
+    await flushPromises();
+
+    expect(button().text()).toBe("E-Mailadresse melden");
+    await button().trigger("click");
+    expect(wrapper.vm.reportingAddress).toBe(true);
+  });
+
   it("shows neither tabs nor reports to a role that may not edit users", async () => {
     permissions.report = false;
     const router = membersRouter();

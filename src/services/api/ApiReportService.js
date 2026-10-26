@@ -3,7 +3,7 @@ import ApiClient from "@/services/api/ApiClientService";
 /**
  * The reports to the instance (glossary „Meldung (eines Users oder einer
  * Adresse)“): a tenant reports a member or the
- * booker of a booking, or addresses of a booking's `mail`;
+ * booker of a booking, or addresses of a booking's `mail` or entered by hand;
  * the instance owner reads them and settles every
  * open one about a user or an address at once. The tenant reads its own,
  * adds to and withdraws an open one.
