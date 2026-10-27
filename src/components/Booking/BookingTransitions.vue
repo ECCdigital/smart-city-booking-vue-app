@@ -84,9 +84,23 @@
                   rel="noopener"
                   >{{ other.id }}</a
                 >
-                {{ $t("booking.reinstate.conflict.for") }} „{{
-                  conflict.title
-                }}“ ({{ formatPeriod(other) }})
+                {{ $t("booking.reinstate.conflict.for") }} „<span
+                  :class="{
+                    'reinstate-conflicts__taken': !takenThrough(other),
+                  }"
+                  >{{ String(conflict.title || "").trim() }}</span
+                >“<template v-if="other.parent">
+                  {{ $t("booking.reinstate.conflict.via-parent") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.parent.title || "").trim() }}</span
+                  >“</template
+                ><template v-else-if="other.child">
+                  {{ $t("booking.reinstate.conflict.via-child") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.child.title || "").trim() }}</span
+                  >“</template
+                >
+                ({{ formatPeriod(other) }})
               </li>
             </ul>
             <p class="mb-0">{{ $t("booking.reinstate.conflict.question") }}</p>
@@ -404,6 +418,10 @@ export default {
         },
       });
     },
+    /** The parent or dependent a booking holds the position through, if any. */
+    takenThrough(other) {
+      return other.parent || other.child || null;
+    },
     bookingHref(bookingId) {
       return this.$router?.resolve(
         bookingPageRoute(bookingId, this.booking?.tenantId)
@@ -525,4 +543,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* The object booked twice, as the warning names it. */
+.reinstate-conflicts__taken {
+  font-weight: 600;
+}
+</style>

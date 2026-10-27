@@ -1835,6 +1835,8 @@
       "conflict": {
         "intro": "In diesem Zeitraum gibt es inzwischen bereits eine andere Buchung: | In diesem Zeitraum gibt es inzwischen bereits andere Buchungen:",
         "for": "für",
+        "via-parent": "mit dem übergeordneten Objekt",
+        "via-child": "über das untergeordnete Objekt",
         "question": "Wenn Sie die aktuelle Buchung trotzdem wiederherstellen, ist das Objekt doppelt belegt.",
         "proceed": "Trotzdem wiederherstellen"
       }

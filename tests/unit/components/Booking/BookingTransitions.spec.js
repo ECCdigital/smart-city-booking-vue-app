@@ -997,6 +997,77 @@ describe("BookingTransitions", () => {
         expect(wrapper.emitted("transitioned")).toBeUndefined();
       });
 
+      it("names the parent a booking takes", async () => {
+        const { wrapper } = mountWithRouter();
+        ApiBookingService.reinstateBooking.mockRejectedValueOnce(
+          lifecycleError(409, "booking_reinstatement_conflict", {
+            bookingId: "bk-1",
+            conflicts: [
+              {
+                bookableId: "forum-quarter",
+                title: "Forum 1/4 Tag",
+                bookings: [
+                  {
+                    id: "bk-day",
+                    timeBegin: Date.UTC(2026, 10, 2, 9),
+                    timeEnd: Date.UTC(2026, 10, 2, 11),
+                    parent: { bookableId: "forum", title: "Forum " },
+                  },
+                ],
+              },
+            ],
+          })
+        );
+        await start(wrapper, "reinstate", {
+          booking: booking({ status: "cancelled", tenantId: "tenant-1" }),
+        });
+        await clickDialogButton(wrapper, "Wiederherstellen");
+
+        const row = document.querySelector(
+          ".v-dialog--active .reinstate-conflicts li"
+        );
+        expect(
+          row.querySelector(".reinstate-conflicts__taken").textContent
+        ).toBe("Forum");
+        expect(row.textContent.replace(/\s+/g, " ")).toMatch(
+          /bk-day für „Forum 1\/4 Tag“ mit dem übergeordneten Objekt „Forum“ \(.+\)/
+        );
+      });
+
+      it("names the dependent a booking takes", async () => {
+        const { wrapper } = mountWithRouter();
+        ApiBookingService.reinstateBooking.mockRejectedValueOnce(
+          lifecycleError(409, "booking_reinstatement_conflict", {
+            bookingId: "bk-1",
+            conflicts: [
+              {
+                bookableId: "workshop",
+                title: "Werkstatt",
+                bookings: [
+                  {
+                    id: "bk-table",
+                    timeBegin: Date.UTC(2026, 10, 2, 9),
+                    timeEnd: Date.UTC(2026, 10, 2, 11),
+                    child: { bookableId: "table", title: "Tisch" },
+                  },
+                ],
+              },
+            ],
+          })
+        );
+        await start(wrapper, "reinstate", {
+          booking: booking({ status: "cancelled", tenantId: "tenant-1" }),
+        });
+        await clickDialogButton(wrapper, "Wiederherstellen");
+
+        const row = document.querySelector(
+          ".v-dialog--active .reinstate-conflicts li"
+        );
+        expect(row.textContent.replace(/\s+/g, " ")).toMatch(
+          /bk-table für „Werkstatt“ über das untergeordnete Objekt „Tisch“ \(.+\)/
+        );
+      });
+
       it("speaks of several bookings when more than one is in the way", async () => {
         const { wrapper } = mountWithRouter();
         const other = (id) => ({

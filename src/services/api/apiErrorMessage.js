@@ -209,7 +209,8 @@ export function isLockBusyError(error) {
 /**
  * The positions a reinstatement would book twice: the `conflicts` of a 409
  * `booking_reinstatement_conflict`, each
- * `{ bookableId, title, bookings: [{ id, timeBegin, timeEnd }] }`, or `null`
+ * `{ bookableId, title, bookings: [{ id, timeBegin, timeEnd, parent?, child? }] }`
+ * - `parent` or `child` the `{ bookableId, title }` a booking takes - or `null`
  * for any other error. Not a moved state: nothing on screen is stale.
  */
 export function getReinstatementConflicts(error) {
