@@ -1,96 +1,107 @@
 <template>
-  <v-dialog :value="open" max-width="560" persistent>
-    <v-card>
-      <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="error" class="mr-2 mt-1">mdi-cancel</v-icon>
-        <span>{{ $t("user.suspension.suspend.title", { name }) }}</span>
-      </v-card-title>
-      <v-card-text>
-        <v-alert type="error" text dense class="mb-3">
-          {{ $t("user.suspension.suspend.warning", { name }) }}
-        </v-alert>
-        <v-progress-linear v-if="!preview && !error" indeterminate />
-        <v-simple-table v-if="consequences" dense class="consequences mb-3">
-          <colgroup>
-            <col class="consequences__what" />
-            <col class="consequences__effect" />
-          </colgroup>
-          <tbody>
-            <tr v-for="row in consequences" :key="row.label">
-              <td>{{ row.label }}</td>
-              <td :class="row.ends ? 'error--text' : 'success--text'">
-                <v-icon small :color="row.ends ? 'error' : 'success'">
-                  {{ row.ends ? "mdi-close-circle" : "mdi-check-circle" }}
-                </v-icon>
-                {{
-                  row.ends ? $t("user.suspension.consequences.ends") : row.stays
-                }}
-              </td>
-            </tr>
-          </tbody>
-        </v-simple-table>
-        <v-alert
-          v-for="note in reportNotes"
-          :key="note.tenantId"
-          type="info"
-          text
-          dense
-          class="mb-3"
-          data-test="suspend-report-note"
-        >
-          {{ note.text }} {{ note.owners }}
-        </v-alert>
-        <v-textarea
-          v-model="reason"
-          :label="$t('user.suspension.suspend.reason')"
-          outlined
-          rows="2"
-          auto-grow
-          hide-details="auto"
+  <AppDialog
+    :open="open"
+    icon="mdi-cancel"
+    color="error"
+    max-width="720"
+    :title="$t('user.suspension.suspend.title', { name })"
+    :subtitle="address"
+    :busy="inProgress"
+    @close="$emit('cancel')"
+  >
+    <v-alert type="error" text dense class="mb-4">
+      {{ $t("user.suspension.suspend.warning", { name }) }}
+    </v-alert>
+    <v-progress-linear v-if="!preview && !error" indeterminate class="mb-4" />
+    <AppDialogSection
+      v-if="consequences"
+      :title="$t('user.suspension.consequences.title')"
+    >
+      <v-simple-table dense class="consequences">
+        <colgroup>
+          <col class="consequences__what" />
+          <col class="consequences__effect" />
+        </colgroup>
+        <tbody>
+          <tr v-for="row in consequences" :key="row.label">
+            <td>{{ row.label }}</td>
+            <td :class="row.ends ? 'error--text' : 'success--text'">
+              <v-icon small :color="row.ends ? 'error' : 'success'">
+                {{ row.ends ? "mdi-close-circle" : "mdi-check-circle" }}
+              </v-icon>
+              {{
+                row.ends ? $t("user.suspension.consequences.ends") : row.stays
+              }}
+            </td>
+          </tr>
+        </tbody>
+      </v-simple-table>
+    </AppDialogSection>
+    <v-alert
+      v-for="note in reportNotes"
+      :key="note.tenantId"
+      type="info"
+      text
+      dense
+      class="mb-4"
+      data-test="suspend-report-note"
+    >
+      {{ note.text }} {{ note.owners }}
+    </v-alert>
+    <v-textarea
+      v-model="reason"
+      :label="$t('user.suspension.suspend.reason')"
+      outlined
+      rows="2"
+      auto-grow
+      hide-details="auto"
+    />
+    <template v-if="preview">
+      <div v-if="preview.blacklistEntry" class="text-body-2 mt-3">
+        {{
+          $t("user.suspension.suspend.on-blacklist", {
+            address,
+            entry: preview.blacklistEntry.value,
+          })
+        }}
+      </div>
+      <template v-else>
+        <v-checkbox
+          v-model="blacklist"
+          :label="$t('user.suspension.suspend.blacklist', { address })"
+          hide-details
+          class="mt-2"
         />
-        <template v-if="preview">
-          <div v-if="preview.blacklistEntry" class="text-body-2 mt-3">
-            {{
-              $t("user.suspension.suspend.on-blacklist", {
-                address,
-                entry: preview.blacklistEntry.value,
-              })
-            }}
-          </div>
-          <template v-else>
-            <v-checkbox
-              v-model="blacklist"
-              :label="$t('user.suspension.suspend.blacklist', { address })"
-              hide-details
-              class="mt-2"
-            />
-            <div class="text-caption grey--text ml-8">{{ blacklistHint }}</div>
-          </template>
-        </template>
-        <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
-          {{ error }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn text :disabled="inProgress" @click="$emit('cancel')">
-          {{ $t("user.suspension.suspend.cancel") }}
-        </v-btn>
-        <v-btn
-          color="error"
-          :disabled="!reason.trim()"
-          :loading="inProgress"
-          @click="confirm"
-        >
-          {{ $t("user.suspension.suspend.confirm") }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <div class="text-caption grey--text ml-8">
+          {{ $t("user.suspension.suspend.blacklist-hint") }}
+        </div>
+      </template>
+    </template>
+    <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
+      {{ error }}
+    </v-alert>
+
+    <template #actions>
+      <v-btn outlined :disabled="inProgress" @click="$emit('cancel')">
+        {{ $t("user.suspension.suspend.cancel") }}
+      </v-btn>
+      <v-btn
+        color="error"
+        depressed
+        :disabled="!reason.trim()"
+        :loading="inProgress"
+        @click="confirm"
+      >
+        {{ $t("user.suspension.suspend.confirm") }}
+      </v-btn>
+    </template>
+  </AppDialog>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
+import AppDialogSection from "@/components/commons/AppDialogSection.vue";
 import {
-  suspensionBlacklistHint,
   suspensionConsequences,
   suspensionReportNotes,
 } from "@/utils/userSuspension";
@@ -107,6 +118,7 @@ import {
  */
 export default {
   name: "UserSuspendConformationDialog",
+  components: { AppDialog, AppDialogSection },
   props: {
     open: {
       type: Boolean,
@@ -152,9 +164,6 @@ export default {
             blacklisted: this.blacklisted,
           })
         : null;
-    },
-    blacklistHint() {
-      return suspensionBlacklistHint(this.blacklist);
     },
     reportNotes() {
       return suspensionReportNotes(this.preview?.openReports);

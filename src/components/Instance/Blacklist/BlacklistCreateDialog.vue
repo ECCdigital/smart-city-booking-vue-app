@@ -1,134 +1,133 @@
 <template>
-  <v-dialog :value="open" max-width="560" persistent>
-    <v-card>
-      <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="error" class="mr-2 mt-1">mdi-email-off-outline</v-icon>
-        <span>{{ $t("instance.blacklist.create.title") }}</span>
-      </v-card-title>
-      <v-card-text>
-        <p class="text-body-2">
-          {{ $t("instance.blacklist.create.text") }}
-        </p>
-        <v-text-field
-          v-model="value"
-          :label="$t('instance.blacklist.create.value')"
-          :hint="$t('instance.blacklist.create.value-hint')"
-          :error-messages="valueError"
-          persistent-hint
-          outlined
-          dense
-          autofocus
-          @keydown.enter="loadPreview"
-        />
-        <v-btn
-          class="mt-3"
-          outlined
-          :disabled="!parsed || inProgress"
-          :loading="previewLoading"
-          @click="loadPreview"
-        >
-          {{ $t("instance.blacklist.create.preview") }}
-        </v-btn>
+  <AppDialog
+    :open="open"
+    icon="mdi-email-off-outline"
+    color="error"
+    :title="$t('instance.blacklist.create.title')"
+    :busy="inProgress"
+    @close="$emit('cancel')"
+  >
+    <p class="text-body-2">
+      {{ $t("instance.blacklist.create.text") }}
+    </p>
+    <v-text-field
+      v-model="value"
+      :label="$t('instance.blacklist.create.value')"
+      :hint="$t('instance.blacklist.create.value-hint')"
+      :error-messages="valueError"
+      persistent-hint
+      outlined
+      dense
+      autofocus
+      @keydown.enter="loadPreview"
+    />
+    <v-btn
+      class="mt-3"
+      outlined
+      :disabled="!parsed || inProgress"
+      :loading="previewLoading"
+      @click="loadPreview"
+    >
+      {{ $t("instance.blacklist.create.preview") }}
+    </v-btn>
 
-        <div v-if="preview" class="mt-4">
-          <v-alert v-if="preview.exists" type="warning" text dense>
-            {{
-              $t("instance.blacklist.create.exists", { value: preview.value })
-            }}
-          </v-alert>
-          <div v-if="!accountCount" class="text-body-2 mb-3">
-            {{ $t("instance.blacklist.create.none") }}
-          </div>
-          <div
-            v-for="group in accountGroups"
-            :key="group.key"
-            class="mb-3"
-            :data-test="`blacklist-preview-${group.key}`"
-          >
-            <div class="text-subtitle-2" :class="group.color">
-              {{
-                $t(`instance.blacklist.create.${group.key}`, {
-                  count: group.accounts.length,
-                })
-              }}
-            </div>
-            <ul class="text-body-2">
-              <li v-for="account in group.accounts" :key="account.id">
-                {{ accountText(account) }}
-                <span v-if="!account.tenants.length" class="grey--text">
-                  ·
-                  {{ $tc("instance.blacklist.create.tenants", 0) }}
-                </span>
-                <template v-else>
-                  ·
-                  <button
-                    type="button"
-                    class="tenants-toggle"
-                    :aria-expanded="String(isExpanded(account))"
-                    @click="toggleTenants(account)"
-                  >
-                    {{
-                      $tc(
-                        "instance.blacklist.create.tenants",
-                        account.tenants.length,
-                        { count: account.tenants.length }
-                      )
-                    }}
-                    <v-icon x-small color="primary">
-                      {{
-                        isExpanded(account)
-                          ? "mdi-chevron-up"
-                          : "mdi-chevron-down"
-                      }}
-                    </v-icon>
-                  </button>
-                  <ul
-                    v-if="isExpanded(account)"
-                    class="grey--text text--darken-1"
-                  >
-                    <li v-for="tenant in account.tenants" :key="tenant.id">
-                      {{ tenant.name }}
-                    </li>
-                  </ul>
-                </template>
-              </li>
-            </ul>
-          </div>
+    <AppDialogSection
+      v-if="preview"
+      class="mt-4"
+      :title="$t('instance.blacklist.create.affected')"
+    >
+      <v-alert v-if="preview.exists" type="warning" text dense>
+        {{ $t("instance.blacklist.create.exists", { value: preview.value }) }}
+      </v-alert>
+      <div v-if="!accountCount" class="text-body-2 mb-3">
+        {{ $t("instance.blacklist.create.none") }}
+      </div>
+      <div
+        v-for="group in accountGroups"
+        :key="group.key"
+        class="mb-3"
+        :data-test="`blacklist-preview-${group.key}`"
+      >
+        <div class="text-subtitle-2" :class="group.color">
+          {{
+            $t(`instance.blacklist.create.${group.key}`, {
+              count: group.accounts.length,
+            })
+          }}
         </div>
+        <ul class="text-body-2">
+          <li v-for="account in group.accounts" :key="account.id">
+            {{ accountText(account) }}
+            <span v-if="!account.tenants.length" class="grey--text">
+              ·
+              {{ $tc("instance.blacklist.create.tenants", 0) }}
+            </span>
+            <template v-else>
+              ·
+              <button
+                type="button"
+                class="tenants-toggle"
+                :aria-expanded="String(isExpanded(account))"
+                @click="toggleTenants(account)"
+              >
+                {{
+                  $tc(
+                    "instance.blacklist.create.tenants",
+                    account.tenants.length,
+                    { count: account.tenants.length }
+                  )
+                }}
+                <v-icon x-small color="primary">
+                  {{
+                    isExpanded(account) ? "mdi-chevron-up" : "mdi-chevron-down"
+                  }}
+                </v-icon>
+              </button>
+              <ul v-if="isExpanded(account)" class="grey--text text--darken-1">
+                <li v-for="tenant in account.tenants" :key="tenant.id">
+                  {{ tenant.name }}
+                </li>
+              </ul>
+            </template>
+          </li>
+        </ul>
+      </div>
+    </AppDialogSection>
 
-        <v-textarea
-          v-model="reason"
-          :label="$t('instance.blacklist.create.reason')"
-          outlined
-          rows="2"
-          auto-grow
-          hide-details="auto"
-          class="mt-3"
-        />
-        <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
-          {{ error }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn text :disabled="inProgress" @click="$emit('cancel')">
-          {{ $t("instance.blacklist.create.cancel") }}
-        </v-btn>
-        <v-btn
-          color="error"
-          :disabled="!canConfirm"
-          :loading="inProgress"
-          @click="
-            $emit('confirm', { value: preview.value, reason: reason.trim() })
-          "
-        >
-          {{ $t("instance.blacklist.create.confirm") }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <v-textarea
+      v-model="reason"
+      :label="$t('instance.blacklist.create.reason')"
+      outlined
+      rows="2"
+      auto-grow
+      hide-details="auto"
+      class="mt-3"
+    />
+    <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
+      {{ error }}
+    </v-alert>
+    <template #actions>
+      <v-btn outlined :disabled="inProgress" @click="$emit('cancel')">
+        {{ $t("instance.blacklist.create.cancel") }}
+      </v-btn>
+      <v-btn
+        depressed
+        color="error"
+        :disabled="!canConfirm"
+        :loading="inProgress"
+        @click="
+          $emit('confirm', { value: preview.value, reason: reason.trim() })
+        "
+      >
+        {{ $t("instance.blacklist.create.confirm") }}
+      </v-btn>
+    </template>
+  </AppDialog>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
+import AppDialogSection from "@/components/commons/AppDialogSection.vue";
 import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import { parseBlacklistValue } from "@/utils/blacklist";
@@ -141,6 +140,7 @@ import { parseBlacklistValue } from "@/utils/blacklist";
  */
 export default {
   name: "BlacklistCreateDialog",
+  components: { AppDialog, AppDialogSection },
   props: {
     open: {
       type: Boolean,

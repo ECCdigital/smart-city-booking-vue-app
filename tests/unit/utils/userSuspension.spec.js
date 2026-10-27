@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   blacklistMatchText,
-  suspensionBlacklistHint,
   suspensionConsequences,
   suspensionOriginLabel,
   suspensionReasonText,
@@ -170,22 +169,6 @@ describe("suspensionConsequences", () => {
     const rows = suspensionConsequences({ bookings: 1, memberships: 1 });
     expect(rows[5].label).toBe("1 bestehende Buchung");
     expect(rows[6].label).toBe("Mitgliedschaft in 1 Mandanten");
-  });
-});
-
-/** The hint below the checkbox follows it. */
-describe("suspensionBlacklistHint", () => {
-  it.each([
-    [
-      true,
-      "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
-    ],
-    [
-      false,
-      "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden.",
-    ],
-  ])("reads the checkbox %s", (blacklisted, hint) => {
-    expect(suspensionBlacklistHint(blacklisted)).toBe(hint);
   });
 });
 

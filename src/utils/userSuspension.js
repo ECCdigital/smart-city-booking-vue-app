@@ -91,13 +91,6 @@ export function suspensionConsequences(
   ];
 }
 
-/** The hint below the checkbox „auch auf die Blacklist“, following it. */
-export function suspensionBlacklistHint(blacklisted) {
-  return i18n.t(
-    `user.suspension.suspend.blacklist-hint.${blacklisted ? "on" : "off"}`
-  );
-}
-
 /**
  * Whether the user's address is on the blacklist, from `blacklistMatch` of
  * the user answers: by an exact entry, by its

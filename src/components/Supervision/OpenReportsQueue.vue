@@ -141,48 +141,53 @@
       @cancel="blacklisting = null"
     />
 
-    <v-dialog :value="!!rejecting" max-width="480" persistent>
-      <v-card v-if="rejecting">
-        <v-card-title class="text-h6 text-break">
-          {{ $t("supervision.reports.reject-title", { name: rejecting.name }) }}
-        </v-card-title>
-        <v-card-text>
-          <p class="text-body-2">
-            {{
-              $t("supervision.reports.reject-text", { name: rejecting.name })
-            }}
-          </p>
-          <v-textarea
-            v-model="rejectReason"
-            :label="$t('supervision.reports.reject-reason')"
-            outlined
-            rows="3"
-            auto-grow
-            hide-details
-            data-test="reports-queue-reject-reason"
-          />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn text :disabled="deciding" @click="rejecting = null">
-            {{ $t("supervision.reports.cancel") }}
-          </v-btn>
-          <v-btn
-            color="error"
-            depressed
-            :disabled="!rejectReason.trim()"
-            :loading="deciding"
-            data-test="reports-queue-reject-confirm"
-            @click="reject"
-          >
-            {{ $t("supervision.reports.reject") }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AppDialog
+      :open="!!rejecting"
+      icon="mdi-close-circle-outline"
+      max-width="480"
+      :title="
+        rejecting
+          ? $t('supervision.reports.reject-title', { name: rejecting.name })
+          : ''
+      "
+      :busy="deciding"
+      @close="rejecting = null"
+    >
+      <template v-if="rejecting">
+        <p class="text-body-2">
+          {{ $t("supervision.reports.reject-text", { name: rejecting.name }) }}
+        </p>
+        <v-textarea
+          v-model="rejectReason"
+          :label="$t('supervision.reports.reject-reason')"
+          outlined
+          rows="3"
+          auto-grow
+          hide-details
+          data-test="reports-queue-reject-reason"
+        />
+      </template>
+      <template #actions>
+        <v-btn outlined :disabled="deciding" @click="rejecting = null">
+          {{ $t("supervision.reports.cancel") }}
+        </v-btn>
+        <v-btn
+          color="error"
+          depressed
+          :disabled="!rejectReason.trim()"
+          :loading="deciding"
+          data-test="reports-queue-reject-confirm"
+          @click="reject"
+        >
+          {{ $t("supervision.reports.reject") }}
+        </v-btn>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
 import ApiReportService from "@/services/api/ApiReportService";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
@@ -208,6 +213,7 @@ import {
 export default {
   name: "OpenReportsQueue",
   components: {
+    AppDialog,
     UserSuspendConformationDialog,
     ReportReasons,
     ReportBlacklistConformationDialog,

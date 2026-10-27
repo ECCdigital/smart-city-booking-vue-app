@@ -1,129 +1,122 @@
 <template>
-  <v-dialog :value="open" max-width="520" persistent>
-    <v-card>
-      <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="warning" class="mr-2 mt-1">{{
-          byAddress ? "mdi-email-alert-outline" : "mdi-flag-outline"
-        }}</v-icon>
-        <span>{{
-          byAddress
-            ? $t("user.report.title-addresses")
-            : $t("user.report.title", { name })
-        }}</span>
-      </v-card-title>
-      <v-card-text>
-        <v-alert
-          v-if="accountGone"
-          type="info"
-          text
-          dense
-          class="text-body-2"
-          data-test="user-report-account-gone"
-        >
-          {{ $t("user.report.account-gone", { name }) }}
-        </v-alert>
-        <!-- A user's account may be suspended, an address put on the
+  <AppDialog
+    :open="open"
+    :icon="byAddress ? 'mdi-email-alert-outline' : 'mdi-flag-outline'"
+    color="warning"
+    max-width="520"
+    :title="
+      byAddress
+        ? $t('user.report.title-addresses')
+        : $t('user.report.title', { name })
+    "
+    :busy="inProgress"
+    @close="$emit('close')"
+  >
+    <v-alert
+      v-if="accountGone"
+      type="info"
+      text
+      dense
+      class="text-body-2"
+      data-test="user-report-account-gone"
+    >
+      {{ $t("user.report.account-gone", { name }) }}
+    </v-alert>
+    <!-- A user's account may be suspended, an address put on the
              Sperrliste: the text says which of the two the report asks for. -->
-        <p class="text-body-2" data-test="user-report-text">
-          {{
-            byAddress
-              ? $t("user.report.text-addresses")
-              : $t("user.report.text", { name })
-          }}
-        </p>
-        <p
-          v-if="!byAddress"
-          class="text-body-2"
-          data-test="user-report-unaware"
-        >
-          <template v-if="bookingId">{{ $t("user.report.booking") }}</template>
-          {{ $t("user.report.text-unaware", { name }) }}
-        </p>
-        <p v-else-if="bookingId" class="text-body-2">
-          {{ $t("user.report.booking") }}
-        </p>
-        <div v-if="byAddress" class="mb-3" data-test="user-report-addresses">
-          <div class="text-subtitle-2">
-            {{ $tc("user.report.addresses", reportedAddresses.length) }}
+    <p class="text-body-2" data-test="user-report-text">
+      {{
+        byAddress
+          ? $t("user.report.text-addresses")
+          : $t("user.report.text", { name })
+      }}
+    </p>
+    <p v-if="!byAddress" class="text-body-2" data-test="user-report-unaware">
+      <template v-if="bookingId">{{ $t("user.report.booking") }}</template>
+      {{ $t("user.report.text-unaware", { name }) }}
+    </p>
+    <p v-else-if="bookingId" class="text-body-2">
+      {{ $t("user.report.booking") }}
+    </p>
+    <div v-if="byAddress" class="mb-3" data-test="user-report-addresses">
+      <div class="text-subtitle-2">
+        {{ $tc("user.report.addresses", reportedAddresses.length) }}
+      </div>
+      <v-checkbox
+        v-for="address in reportedAddresses"
+        :key="address"
+        v-model="picked"
+        :value="address"
+        :label="address"
+        dense
+        hide-details
+        data-test="user-report-address"
+      />
+    </div>
+    <v-textarea
+      v-model="reason"
+      :label="$t('user.report.reason')"
+      outlined
+      rows="3"
+      auto-grow
+      hide-details="auto"
+      data-test="user-report-reason"
+    />
+    <v-checkbox
+      v-if="offerEndMembership"
+      v-model="endMembership"
+      hide-details
+      dense
+      class="mt-3"
+      data-test="user-report-end-membership"
+    >
+      <template #label>
+        <div>
+          <div>{{ $t("user.report.end-membership") }}</div>
+          <div class="text-caption grey--text text--darken-1">
+            {{ $t("user.report.end-membership-hint", { name }) }}
           </div>
-          <v-checkbox
-            v-for="address in reportedAddresses"
-            :key="address"
-            v-model="picked"
-            :value="address"
-            :label="address"
-            dense
-            hide-details
-            data-test="user-report-address"
-          />
         </div>
-        <v-textarea
-          v-model="reason"
-          :label="$t('user.report.reason')"
-          outlined
-          rows="3"
-          auto-grow
-          hide-details="auto"
-          data-test="user-report-reason"
-        />
-        <v-checkbox
-          v-if="offerEndMembership"
-          v-model="endMembership"
-          hide-details
-          dense
-          class="mt-3"
-          data-test="user-report-end-membership"
-        >
-          <template #label>
-            <div>
-              <div>{{ $t("user.report.end-membership") }}</div>
-              <div class="text-caption grey--text text--darken-1">
-                {{ $t("user.report.end-membership-hint", { name }) }}
-              </div>
-            </div>
-          </template>
-        </v-checkbox>
-        <template v-if="offersAddress">
-          <v-checkbox
-            v-model="alsoAddress"
-            :label="
-              $t('user.report.report-address', { address: reportAddress })
-            "
-            hide-details
-            class="mt-2"
-            data-test="user-report-also-address"
-          />
-          <div
-            class="text-caption grey--text ml-8"
-            data-test="user-report-also-address-hint"
-          >
-            {{ $t("user.report.report-address-hint") }}
-          </div>
-        </template>
-        <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
-          {{ error }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn text :disabled="inProgress" @click="$emit('close')">
-          {{ $t("user.report.cancel") }}
-        </v-btn>
-        <v-btn
-          color="warning"
-          depressed
-          :disabled="!canConfirm"
-          :loading="inProgress"
-          data-test="user-report-confirm"
-          @click="confirm"
-        >
-          {{ $t("user.report.confirm") }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </template>
+    </v-checkbox>
+    <template v-if="offersAddress">
+      <v-checkbox
+        v-model="alsoAddress"
+        :label="$t('user.report.report-address', { address: reportAddress })"
+        hide-details
+        class="mt-2"
+        data-test="user-report-also-address"
+      />
+      <div
+        class="text-caption grey--text ml-8"
+        data-test="user-report-also-address-hint"
+      >
+        {{ $t("user.report.report-address-hint") }}
+      </div>
+    </template>
+    <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
+      {{ error }}
+    </v-alert>
+    <template #actions>
+      <v-btn outlined :disabled="inProgress" @click="$emit('close')">
+        {{ $t("user.report.cancel") }}
+      </v-btn>
+      <v-btn
+        color="warning"
+        depressed
+        :disabled="!canConfirm"
+        :loading="inProgress"
+        data-test="user-report-confirm"
+        @click="confirm"
+      >
+        {{ $t("user.report.confirm") }}
+      </v-btn>
+    </template>
+  </AppDialog>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
 import { mapActions } from "vuex";
 import ApiReportService from "@/services/api/ApiReportService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
@@ -150,6 +143,7 @@ import ToastService from "@/services/ToastService";
  */
 export default {
   name: "UserReportDialog",
+  components: { AppDialog },
   props: {
     open: {
       type: Boolean,

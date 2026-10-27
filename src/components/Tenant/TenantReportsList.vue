@@ -95,68 +95,77 @@
       </div>
     </div>
 
-    <v-dialog :value="!!adding" max-width="480" persistent>
-      <v-card v-if="adding">
-        <v-card-title class="text-h6 text-break">
-          {{ $t("tenant.reports.add-title", { name: adding.name }) }}
-        </v-card-title>
-        <v-card-text>
-          <v-textarea
-            v-model="addReason"
-            :label="$t('tenant.reports.add-reason')"
-            outlined
-            rows="3"
-            auto-grow
-            hide-details
-            data-test="tenant-reports-add-reason"
-          />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn text :disabled="working" @click="adding = null">
-            {{ $t("tenant.reports.cancel") }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            depressed
-            :disabled="!addReason.trim()"
-            :loading="working"
-            data-test="tenant-reports-add-confirm"
-            @click="add"
-          >
-            {{ $t("tenant.reports.add") }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AppDialog
+      :open="!!adding"
+      icon="mdi-comment-plus-outline"
+      max-width="480"
+      :title="
+        adding ? $t('tenant.reports.add-title', { name: adding.name }) : ''
+      "
+      :busy="working"
+      @close="adding = null"
+    >
+      <v-textarea
+        v-model="addReason"
+        :label="$t('tenant.reports.add-reason')"
+        outlined
+        rows="3"
+        auto-grow
+        hide-details
+        data-test="tenant-reports-add-reason"
+      />
+      <template #actions>
+        <v-btn outlined :disabled="working" @click="adding = null">
+          {{ $t("tenant.reports.cancel") }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          depressed
+          :disabled="!addReason.trim()"
+          :loading="working"
+          data-test="tenant-reports-add-confirm"
+          @click="add"
+        >
+          {{ $t("tenant.reports.add") }}
+        </v-btn>
+      </template>
+    </AppDialog>
 
-    <v-dialog :value="!!withdrawing" max-width="480" persistent>
-      <v-card v-if="withdrawing">
-        <v-card-title class="text-h6 text-break">
-          {{ $t("tenant.reports.withdraw-title", { name: withdrawing.name }) }}
-        </v-card-title>
-        <v-card-text class="text-body-2">
-          {{ $t("tenant.reports.withdraw-text", { name: withdrawing.name }) }}
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn text :disabled="working" @click="withdrawing = null">
-            {{ $t("tenant.reports.cancel") }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            depressed
-            :loading="working"
-            data-test="tenant-reports-withdraw-confirm"
-            @click="withdraw"
-          >
-            {{ $t("tenant.reports.withdraw") }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AppDialog
+      :open="!!withdrawing"
+      icon="mdi-undo-variant"
+      max-width="480"
+      :title="
+        withdrawing
+          ? $t('tenant.reports.withdraw-title', { name: withdrawing.name })
+          : ''
+      "
+      :busy="working"
+      @close="withdrawing = null"
+    >
+      <p v-if="withdrawing" class="text-body-2 mb-0">
+        {{ $t("tenant.reports.withdraw-text", { name: withdrawing.name }) }}
+      </p>
+      <template #actions>
+        <v-btn outlined :disabled="working" @click="withdrawing = null">
+          {{ $t("tenant.reports.cancel") }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          depressed
+          :loading="working"
+          data-test="tenant-reports-withdraw-confirm"
+          @click="withdraw"
+        >
+          {{ $t("tenant.reports.withdraw") }}
+        </v-btn>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
 import { mapGetters } from "vuex";
 import ReportReasons from "@/components/Supervision/ReportReasons.vue";
 import ApiReportService from "@/services/api/ApiReportService";
@@ -176,7 +185,7 @@ import { REPORT_STATUS, tenantReportRows } from "@/utils/reports";
  */
 export default {
   name: "TenantReportsList",
-  components: { ReportReasons },
+  components: { AppDialog, ReportReasons },
   data() {
     return {
       reports: [],

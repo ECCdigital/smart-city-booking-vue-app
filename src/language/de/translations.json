@@ -8,7 +8,8 @@
       "save": "Trotzdem speichern",
       "invite": "Trotzdem einladen",
       "add": "Trotzdem hinzufügen"
-    }
+    },
+    "affected": "Betroffene Adressen"
   },
   "unsavedChangesLeave": {
     "title": "Ungespeicherte Änderungen",
@@ -1007,6 +1008,9 @@
       "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
     }
   },
+  "dialog": {
+    "close": "Schließen"
+  },
   "instance": {
     "blacklist": {
       "title": "Sperrliste",
@@ -1040,7 +1044,8 @@
         "cancel": "Abbrechen",
         "confirm": "Auf die Sperrliste setzen",
         "preview-error": "Die betroffenen Konten konnten nicht geladen werden.",
-        "error": "Die Adresse konnte nicht eingetragen werden."
+        "error": "Die Adresse konnte nicht eingetragen werden.",
+        "affected": "Betroffene Konten"
       },
       "reason-dialog": {
         "title": "Grund für „{value}“ ändern",
@@ -1058,7 +1063,8 @@
         "unsuspend-hint": "Konten, die inzwischen aus einem anderen Grund gesperrt sind, bleiben gesperrt.",
         "cancel": "Abbrechen",
         "confirm": "Entfernen",
-        "error": "Der Eintrag konnte nicht entfernt werden."
+        "error": "Der Eintrag konnte nicht entfernt werden.",
+        "affected": "Gesperrte Konten"
       }
     },
     "edit": {
@@ -2534,7 +2540,8 @@
           "label": "Mitgliedschaft in {count} Mandanten | Mitgliedschaften in {count} Mandanten",
           "stays": "bleiben, ruhen"
         },
-        "ends": "nicht mehr möglich"
+        "ends": "nicht mehr möglich",
+        "title": "Folgen der Sperre"
       },
       "suspend": {
         "open": "Sperren",
@@ -2546,10 +2553,7 @@
         "preview-error": "Die Folgen konnten nicht geladen werden.",
         "error": "Die Sperre konnte nicht gesetzt werden.",
         "blacklist": "Adresse {address} auch auf die Sperrliste setzen",
-        "blacklist-hint": {
-          "on": "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
-          "off": "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden."
-        },
+        "blacklist-hint": "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden. Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
         "on-blacklist": "Die Adresse {address} steht schon auf der Sperrliste (Eintrag „{entry}“).",
         "reports": "Die Sperre erledigt die offene Meldung von {tenant}. | Die Sperre erledigt {count} offene Meldungen von {tenant}.",
         "reports-owners": "Eine Mail mit dem Ergebnis geht an {owners}.",
@@ -3594,7 +3598,8 @@
         "suspends": "Sperrt sofort ein Konto: | Sperrt sofort {count} Konten:",
         "suspends-none": "Sperrt kein Konto.",
         "reason": "Grund (Pflicht)",
-        "confirm": "Auf Sperrliste setzen"
+        "confirm": "Auf Sperrliste setzen",
+        "affected": "Betroffene Konten"
       }
     },
     "tenant-approval-queue": {

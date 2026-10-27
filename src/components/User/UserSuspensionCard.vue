@@ -69,33 +69,33 @@
       @confirm="suspend"
       @cancel="suspendDialog = false"
     />
-    <v-dialog v-model="reportsDialog" max-width="560">
-      <v-card>
-        <v-card-title class="text-h6 text-break">
-          {{ $t("user.suspension.reports.title", { name }) }}
-        </v-card-title>
-        <v-card-text>
-          <v-progress-linear
-            v-if="reports === null && !reportsError"
-            indeterminate
-          />
-          <v-alert v-if="reportsError" type="warning" text dense>
-            {{ reportsError }}
-          </v-alert>
-          <ReportReasons
-            v-for="report in reports || []"
-            :key="report.id"
-            :report="report"
-            class="mb-3"
-          />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn text @click="reportsDialog = false">
-            {{ $t("user.suspension.reports.close") }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AppDialog
+      :open="reportsDialog"
+      icon="mdi-flag-outline"
+      color="warning"
+      :persistent="false"
+      :title="$t('user.suspension.reports.title', { name })"
+      @close="reportsDialog = false"
+    >
+      <v-progress-linear
+        v-if="reports === null && !reportsError"
+        indeterminate
+      />
+      <v-alert v-if="reportsError" type="warning" text dense>
+        {{ reportsError }}
+      </v-alert>
+      <ReportReasons
+        v-for="report in reports || []"
+        :key="report.id"
+        :report="report"
+        class="mb-3"
+      />
+      <template #actions>
+        <v-btn outlined @click="reportsDialog = false">
+          {{ $t("user.suspension.reports.close") }}
+        </v-btn>
+      </template>
+    </AppDialog>
     <UserUnsuspendConformationDialog
       :open="unsuspendDialog"
       :name="name"
@@ -109,6 +109,7 @@
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import ApiReportService from "@/services/api/ApiReportService";
 import ReportReasons from "@/components/Supervision/ReportReasons.vue";
@@ -132,6 +133,7 @@ import {
 export default {
   name: "UserSuspensionCard",
   components: {
+    AppDialog,
     UserSuspendConformationDialog,
     UserUnsuspendConformationDialog,
     ReportReasons,

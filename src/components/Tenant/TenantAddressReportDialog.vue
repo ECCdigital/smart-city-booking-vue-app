@@ -1,72 +1,70 @@
 <template>
-  <v-dialog :value="open" max-width="560" persistent>
-    <v-card>
-      <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="warning" class="mr-2 mt-1"
-          >mdi-email-alert-outline</v-icon
-        >
-        <span>{{ $t("tenant.reports.address.title") }}</span>
-      </v-card-title>
-      <v-card-text>
-        <p class="text-body-2">
-          {{ $t("tenant.reports.address.text") }}
-        </p>
-        <v-text-field
-          v-model="value"
-          :label="$t('tenant.reports.address.value')"
-          :hint="$t('tenant.reports.address.value-hint')"
-          :error-messages="valueError"
-          persistent-hint
-          outlined
-          dense
-          autofocus
-          data-test="address-report-value"
-        />
-        <v-alert
-          v-if="isMember"
-          type="info"
-          text
-          dense
-          class="text-body-2 mt-3 mb-0"
-          data-test="address-report-member"
-        >
-          {{ $t("tenant.reports.address.member") }}
-        </v-alert>
+  <AppDialog
+    :open="open"
+    icon="mdi-email-alert-outline"
+    color="warning"
+    :title="$t('tenant.reports.address.title')"
+    :busy="inProgress"
+    @close="$emit('close')"
+  >
+    <p class="text-body-2">
+      {{ $t("tenant.reports.address.text") }}
+    </p>
+    <v-text-field
+      v-model="value"
+      :label="$t('tenant.reports.address.value')"
+      :hint="$t('tenant.reports.address.value-hint')"
+      :error-messages="valueError"
+      persistent-hint
+      outlined
+      dense
+      autofocus
+      data-test="address-report-value"
+    />
+    <v-alert
+      v-if="isMember"
+      type="info"
+      text
+      dense
+      class="text-body-2 mt-3 mb-0"
+      data-test="address-report-member"
+    >
+      {{ $t("tenant.reports.address.member") }}
+    </v-alert>
 
-        <v-textarea
-          v-model="reason"
-          :label="$t('tenant.reports.address.reason')"
-          outlined
-          rows="2"
-          auto-grow
-          hide-details="auto"
-          class="mt-3"
-          data-test="address-report-reason"
-        />
-        <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
-          {{ error }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn text :disabled="inProgress" @click="$emit('close')">
-          {{ $t("tenant.reports.address.cancel") }}
-        </v-btn>
-        <v-btn
-          color="warning"
-          depressed
-          :disabled="!canConfirm"
-          :loading="inProgress"
-          data-test="address-report-confirm"
-          @click="confirm"
-        >
-          {{ $t("tenant.reports.address.confirm") }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <v-textarea
+      v-model="reason"
+      :label="$t('tenant.reports.address.reason')"
+      outlined
+      rows="2"
+      auto-grow
+      hide-details="auto"
+      class="mt-3"
+      data-test="address-report-reason"
+    />
+    <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
+      {{ error }}
+    </v-alert>
+    <template #actions>
+      <v-btn outlined :disabled="inProgress" @click="$emit('close')">
+        {{ $t("tenant.reports.address.cancel") }}
+      </v-btn>
+      <v-btn
+        color="warning"
+        depressed
+        :disabled="!canConfirm"
+        :loading="inProgress"
+        data-test="address-report-confirm"
+        @click="confirm"
+      >
+        {{ $t("tenant.reports.address.confirm") }}
+      </v-btn>
+    </template>
+  </AppDialog>
 </template>
 
 <script>
+import AppDialog from "@/components/commons/AppDialog.vue";
 import { mapActions } from "vuex";
 import ApiReportService from "@/services/api/ApiReportService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
@@ -82,6 +80,7 @@ import { parseBlacklistValue } from "@/utils/blacklist";
  */
 export default {
   name: "TenantAddressReportDialog",
+  components: { AppDialog },
   props: {
     open: {
       type: Boolean,
