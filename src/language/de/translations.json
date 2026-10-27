@@ -1300,12 +1300,12 @@
     "reports": {
       "title": "Meldungen",
       "open-count": "{count} offen",
-      "hint": "Prüfen und verwalten Sie als auffällig gemeldete User und Mailadressen dieses Mandanten an die Instanz (z.B. nach missbräuchlicher Nutzung oder Spam). Auf Instanzebene kann entschieden werden, ob die gemeldeten User / Mailadressen von der Nutzung ausgeschlossen werden sollen. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine erneute Meldung zum selben User wieder möglich.",
+      "hint": "Prüfen und verwalten Sie als auffällig gemeldete User und Mailadressen dieses Mandanten an die Instanz (z.B. nach missbräuchlicher Nutzung oder Spam). Die Instanz entscheidet: Ein gemeldeter User kann gesperrt werden, sein Konto kann sich dann nicht mehr anmelden. Eine gemeldete Mailadresse kann auf die Sperrliste kommen, dann sind mit ihr auch keine Gast-Buchung und keine Registrierung mehr möglich. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine erneute Meldung zum selben User wieder möglich.",
       "empty": "Dieser Mandant hat noch niemanden gemeldet.",
       "load-failed": "Die Meldungen konnten nicht geladen werden.",
       "standing": {
         "open": "offen",
-        "suspended": "gesperrt",
+        "suspended": "Konto gesperrt",
         "blacklisted": "auf Sperrliste",
         "rejected": "abgelehnt",
         "withdrawn": "zurückgezogen"
@@ -1323,7 +1323,7 @@
       "address": {
         "open": "E-Mailadresse melden",
         "title": "E-Mailadresse an die Instanz melden",
-        "text": "Geben Sie eine Mailadresse ein. Die Instanz entscheidet, ob die Adresse auf die Sperrliste kommt.",
+        "text": "Sie melden eine Mailadresse, kein Konto. Die Instanz entscheidet, ob die Adresse auf die Sperrliste kommt: Mit ihr sind dann keine Gast-Buchung und keine Registrierung mehr möglich, und Konten mit dieser Adresse werden gesperrt.",
         "value": "Mailadresse",
         "value-hint": "Eine einzelne Adresse wie max@firma.de.",
         "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
@@ -2578,7 +2578,19 @@
       "open": "Melden",
       "open-user": "Benutzer melden",
       "title": "{name} an die Instanz melden",
-      "text": "Die Betreiber der Plattform entscheiden über eine Sperre für die ganze Instanz. {name} erfährt von der Meldung nichts.",
+      "text": "Sie melden das Konto von {name}. Die Betreiber der Plattform entscheiden, ob es gesperrt wird. Ein gesperrtes Konto kann sich nirgends mehr anmelden. Als Gast kann mit der Mailadresse weiter gebucht werden. Soll auch das enden, melden Sie zusätzlich die E-Mailadresse.",
+      "text-unaware": "{name} erfährt von der Meldung nichts.",
+      "report-address": "Adresse {address} zusätzlich melden",
+      "report-address-hint": "Die Instanz kann die Adresse auf die Sperrliste setzen. Dann sind mit ihr keine Gast-Buchung und keine Registrierung mehr möglich.",
+      "account-gone": "Das Konto von {name} gibt es nicht mehr. Sie können noch die Mailadresse melden.",
+      "address-failed": {
+        "title": "Adresse nicht gemeldet",
+        "message": "Das Konto wurde gemeldet, die Adresse nicht: {message}"
+      },
+      "title-addresses": "E-Mailadresse an die Instanz melden",
+      "text-addresses": "Sie melden eine Mailadresse, kein Konto. Die Betreiber der Plattform entscheiden, ob die Adresse auf die Sperrliste kommt: Mit ihr sind dann keine Gast-Buchung und keine Registrierung mehr möglich, und Konten mit dieser Adresse werden gesperrt. Der Gast erfährt von der Meldung nichts.",
+      "open-user-hint": "Das Konto des Buchenden melden: Die Instanz kann es sperren.",
+      "open-addresses-hint": "Die Mailadresse melden: Die Instanz kann sie auf die Sperrliste setzen, dann ist auch keine Gast-Buchung mehr möglich.",
       "booking": "Die Buchung hängt als Beleg an der Meldung.",
       "reason": "Grund (Pflicht)",
       "cancel": "Abbrechen",
@@ -2596,7 +2608,6 @@
       "end-membership-hint": "{name} verliert alle Rechte im Mandanten und offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
       "open-addresses": "E-Mailadresse melden",
       "addresses": "Diese Adresse melden: | Welche Adressen melden?",
-      "addresses-hint": "Jede angehakte Adresse wird eine eigene Meldung mit dieser Buchung und diesem Grund.",
       "supplemented-addresses": {
         "title": "Meldung ergänzt",
         "message": "Die offene Meldung zu dieser Adresse wurde ergänzt."
@@ -3556,7 +3567,7 @@
       "page-text": "{0}–{1} von {2}"
     },
     "reports": {
-      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Sperrliste setzen“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Konto sperren“ sperrt das Konto eines gemeldeten Users: Er kann sich nicht mehr anmelden, als Gast kann mit seiner Adresse weiter gebucht werden. „Auf Sperrliste setzen“ schließt eine gemeldete Adresse aus: keine Gast-Buchung, keine Registrierung, Konten mit ihr werden gesperrt. Beides und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
       "loading": "Meldungen werden geladen...",
       "empty": "Keine Meldungen offen",
       "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
@@ -3566,7 +3577,7 @@
       "added": "ergänzt von {by} am {date}",
       "booking": "Buchung {id}",
       "open-user": "User bearbeiten",
-      "suspend": "Sperren",
+      "suspend": "Konto sperren",
       "reject": "Ablehnen",
       "reject-title": "Meldungen zu {name} ablehnen",
       "reject-text": "Die Ablehnung erledigt alle offenen Meldungen zu {name}. Die Besitzer der meldenden Mandanten lesen die Begründung.",

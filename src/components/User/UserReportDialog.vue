@@ -2,20 +2,52 @@
   <v-dialog :value="open" max-width="520" persistent>
     <v-card>
       <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="warning" class="mr-2 mt-1">mdi-flag-outline</v-icon>
-        <span>{{ $t("user.report.title", { name }) }}</span>
+        <v-icon color="warning" class="mr-2 mt-1">{{
+          byAddress ? "mdi-email-alert-outline" : "mdi-flag-outline"
+        }}</v-icon>
+        <span>{{
+          byAddress
+            ? $t("user.report.title-addresses")
+            : $t("user.report.title", { name })
+        }}</span>
       </v-card-title>
       <v-card-text>
-        <p class="text-body-2">{{ $t("user.report.text", { name }) }}</p>
-        <p v-if="bookingId" class="text-body-2">
+        <v-alert
+          v-if="accountGone"
+          type="info"
+          text
+          dense
+          class="text-body-2"
+          data-test="user-report-account-gone"
+        >
+          {{ $t("user.report.account-gone", { name }) }}
+        </v-alert>
+        <!-- A user's account may be suspended, an address put on the
+             Sperrliste: the text says which of the two the report asks for. -->
+        <p class="text-body-2" data-test="user-report-text">
+          {{
+            byAddress
+              ? $t("user.report.text-addresses")
+              : $t("user.report.text", { name })
+          }}
+        </p>
+        <p
+          v-if="!byAddress"
+          class="text-body-2"
+          data-test="user-report-unaware"
+        >
+          <template v-if="bookingId">{{ $t("user.report.booking") }}</template>
+          {{ $t("user.report.text-unaware", { name }) }}
+        </p>
+        <p v-else-if="bookingId" class="text-body-2">
           {{ $t("user.report.booking") }}
         </p>
         <div v-if="byAddress" class="mb-3" data-test="user-report-addresses">
           <div class="text-subtitle-2">
-            {{ $tc("user.report.addresses", addresses.length) }}
+            {{ $tc("user.report.addresses", reportedAddresses.length) }}
           </div>
           <v-checkbox
-            v-for="address in addresses"
+            v-for="address in reportedAddresses"
             :key="address"
             v-model="picked"
             :value="address"
@@ -24,9 +56,6 @@
             hide-details
             data-test="user-report-address"
           />
-          <p class="text-caption mt-2 mb-0">
-            {{ $t("user.report.addresses-hint") }}
-          </p>
         </div>
         <v-textarea
           v-model="reason"
@@ -54,6 +83,23 @@
             </div>
           </template>
         </v-checkbox>
+        <template v-if="offersAddress">
+          <v-checkbox
+            v-model="alsoAddress"
+            :label="
+              $t('user.report.report-address', { address: reportAddress })
+            "
+            hide-details
+            class="mt-2"
+            data-test="user-report-also-address"
+          />
+          <div
+            class="text-caption grey--text ml-8"
+            data-test="user-report-also-address-hint"
+          >
+            {{ $t("user.report.report-address-hint") }}
+          </div>
+        </template>
         <v-alert v-if="error" type="error" dense text class="mt-3 mb-0">
           {{ error }}
         </v-alert>
@@ -93,7 +139,13 @@ import ToastService from "@/services/ToastService";
  * With `addresses`, those of `mail` of the
  * booking, it reports the addresses ticked instead, each a report of its
  * own; one already on the blacklist gets none,
- * which a second toast names. Emits `reported` with `{ membershipEnded }`
+ * which a second toast names. With `reportAddress`, the booker's address,
+ * the report of the account offers „Adresse … zusätzlich melden“: the
+ * address is then reported too, by hand, as the backend takes no address
+ * of an account from a booking. Where the backend answers that the booker
+ * has no account (anymore), the dialog turns to reporting `reportAddress`
+ * with the reason entered, from the booking where it is of its `mail`
+ * (`reportAddressOfBooking`). Emits `reported` with `{ membershipEnded }`
  * after a report, and `close`.
  */
 export default {
@@ -128,6 +180,19 @@ export default {
       type: Array,
       default: () => [],
     },
+    /**
+     * The address of the reported account, to offer reporting it too: the
+     * booker's, from a booking.
+     */
+    reportAddress: {
+      type: String,
+      default: null,
+    },
+    /** Whether `reportAddress` is of the booking's `mail`. */
+    reportAddressOfBooking: {
+      type: Boolean,
+      default: false,
+    },
     /** Whether to offer „Mitgliedschaft beenden“: for a member only. */
     offerEndMembership: {
       type: Boolean,
@@ -139,13 +204,22 @@ export default {
       reason: "",
       picked: this.initialPick(),
       endMembership: false,
+      alsoAddress: false,
+      /** The backend said the reported user has no account. */
+      accountGone: false,
       error: null,
       inProgress: false,
     };
   },
   computed: {
     byAddress() {
-      return this.addresses.length > 0;
+      return this.addresses.length > 0 || this.accountGone;
+    },
+    reportedAddresses() {
+      return this.accountGone ? [this.reportAddress] : this.addresses;
+    },
+    offersAddress() {
+      return !this.byAddress && !!this.reportAddress;
     },
     canConfirm() {
       return (
@@ -162,6 +236,8 @@ export default {
         this.reason = "";
         this.picked = this.initialPick();
         this.endMembership = false;
+        this.alsoAddress = false;
+        this.accountGone = false;
         this.error = null;
       }
     },
@@ -191,21 +267,61 @@ export default {
             "success"
           )
         );
+        if (this.offersAddress && this.alsoAddress) await this.reportAlso();
         this.$emit("reported", { membershipEnded: endMembership });
         this.$emit("close");
       } catch (error) {
         console.error(error);
-        this.error = getApiErrorMessage(error, this.$t("user.report.error"));
+        if (this.isAccountGone(error)) {
+          this.accountGone = true;
+          this.picked = [this.reportAddress];
+        } else {
+          this.error = getApiErrorMessage(error, this.$t("user.report.error"));
+        }
       } finally {
         this.inProgress = false;
+      }
+    },
+    isAccountGone(error) {
+      return (
+        !!this.reportAddress &&
+        error?.response?.data?.code === "report_target_without_account"
+      );
+    },
+    /**
+     * The account's address after its report. The account is reported by
+     * then, so a refusal of the address - already on the Sperrliste, say -
+     * is a toast and the dialog closes all the same.
+     */
+    async reportAlso() {
+      try {
+        await ApiReportService.report(this.tenantId, {
+          addresses: [this.reportAddress],
+          reason: this.reason.trim(),
+        });
+      } catch (error) {
+        console.error(error);
+        this.addToast(
+          ToastService.createToast(
+            "user.report.address-failed",
+            "warning",
+            8000,
+            {
+              message: getApiErrorMessage(error, this.$t("user.report.error")),
+            }
+          )
+        );
       }
     },
     async confirmAddresses() {
       this.inProgress = true;
       this.error = null;
       try {
+        // The address of a gone account is the booking's only where it is
+        // of its `mail`; otherwise it is reported by hand.
+        const ofBooking = !this.accountGone || this.reportAddressOfBooking;
         const response = await ApiReportService.report(this.tenantId, {
-          bookingId: this.bookingId,
+          bookingId: ofBooking ? this.bookingId : undefined,
           addresses: this.picked,
           reason: this.reason.trim(),
         });

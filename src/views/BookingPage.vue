@@ -139,6 +139,7 @@
               color="warning"
               class="booking-page__report"
               data-test="booking-report-user"
+              :title="$t('user.report.open-user-hint')"
               @click="reportingBooker = true"
             >
               <v-icon left small>mdi-flag-outline</v-icon>
@@ -151,6 +152,7 @@
               color="warning"
               class="booking-page__report"
               data-test="booking-report-addresses"
+              :title="$t('user.report.open-addresses-hint')"
               @click="reportingAddresses = true"
             >
               <v-icon left small>mdi-email-alert-outline</v-icon>
@@ -405,6 +407,8 @@
       :name="booking.name || booking.assignedUserId"
       :tenant-id="booking.tenantId || tenantId"
       :booking-id="booking.id"
+      :report-address="booking.assignedUserId"
+      :report-address-of-booking="bookerAddressInMail"
       @close="reportingBooker = false"
     />
     <UserReportDialog
@@ -506,6 +510,11 @@ export default {
         this.reportableAddresses.length === 0 &&
         UserPermissionService.allowReport(this.tenantId)
       );
+    },
+    /** Whether the booker's address is of the booking's `mail`. */
+    bookerAddressInMail() {
+      const bookerAddress = this.booking?.assignedUserId?.trim().toLowerCase();
+      return reportableAddresses(this.booking?.mail).includes(bookerAddress);
     },
     /**
      * The addresses of the booking's `mail` but the booker's: a user's id is
