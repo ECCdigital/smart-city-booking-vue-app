@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Fixed
+
+-   „Benutzer bearbeiten“ saves a person without first or last name (ECCdigital/tickets#654): „Speichern“ was locked while either was empty, without saying why, so such a person could be ticked „Verifiziert“ but not saved. The name is no condition any more, as in the backend. A failed save shows „Fehler beim Speichern“ and keeps the dialog open instead of only logging to the console
+
 ## [4.3.1] — 2026-10-14
 
 ### Security
