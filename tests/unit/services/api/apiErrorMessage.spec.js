@@ -283,7 +283,7 @@ describe("getApiErrorMessage", () => {
       [
         400,
         "blacklist_reason_required",
-        "Für einen Blacklist-Eintrag ist ein Grund nötig.",
+        "Für einen Sperrlisten-Eintrag ist ein Grund nötig.",
       ],
       [
         400,
@@ -298,7 +298,7 @@ describe("getApiErrorMessage", () => {
       [
         404,
         "blacklist_entry_not_found",
-        "Der Eintrag steht nicht mehr auf der Blacklist.",
+        "Der Eintrag steht nicht mehr auf der Sperrliste.",
       ],
     ])("reads the blacklist's %i `%s`", (status, code, text) => {
       expect(getApiErrorMessage(lifecycleError(status, code), FALLBACK)).toBe(

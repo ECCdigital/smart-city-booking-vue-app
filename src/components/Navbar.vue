@@ -334,7 +334,7 @@ export default {
             interfaceName: "instance",
           },
           {
-            title: "Blacklist",
+            title: "Sperrliste",
             link: "instance-blacklist",
             icon: "mdi-email-off-outline",
             interfaceName: "instance",

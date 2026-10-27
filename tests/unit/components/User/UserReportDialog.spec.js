@@ -169,10 +169,10 @@ describe("UserReportDialog: guest addresses", () => {
     const toasts = addToast.mock.calls.map((call) => call[1]);
     expect(toasts.map((toast) => toast.title)).toEqual([
       "Meldung gesendet",
-      "Steht bereits auf der Blacklist",
+      "Steht bereits auf der Sperrliste",
     ]);
     expect(toasts[1].message).toBe(
-      "b@example.de steht bereits auf der Blacklist. Dazu entstand keine Meldung."
+      "b@example.de steht bereits auf der Sperrliste. Dazu entstand keine Meldung."
     );
   });
 });

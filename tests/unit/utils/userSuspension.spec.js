@@ -40,7 +40,7 @@ describe("suspensionStatusText", () => {
         },
       })
     ).toBe(
-      "Gesperrt durch Blacklist-Eintrag „@wegwerf.de“ am 21.10.2026 von admin@stadt.de."
+      "Gesperrt durch Sperrlisten-Eintrag „@wegwerf.de“ am 21.10.2026 von admin@stadt.de."
     );
   });
 
@@ -93,7 +93,7 @@ describe("suspensionOriginLabel", () => {
   it.each([
     [{ isSuspended: true, suspension: { origin: "manual" } }, "von Hand"],
     [{ isSuspended: true, suspension: null }, "von Hand"],
-    [{ isSuspended: true, suspension: { origin: "blacklist" } }, "Blacklist"],
+    [{ isSuspended: true, suspension: { origin: "blacklist" } }, "Sperrliste"],
     [{ isSuspended: false, suspension: null }, ""],
   ])("reads %j as „%s“", (user, label) => {
     expect(suspensionOriginLabel(user)).toBe(label);
@@ -182,7 +182,7 @@ describe("suspensionBlacklistHint", () => {
     ],
     [
       false,
-      "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden.",
+      "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden.",
     ],
   ])("reads the checkbox %s", (blacklisted, hint) => {
     expect(suspensionBlacklistHint(blacklisted)).toBe(hint);
@@ -196,7 +196,7 @@ describe("blacklistMatchText", () => {
       blacklistMatchText({
         blacklistMatch: { id: "e1", value: "max@firma.de", kind: "address" },
       })
-    ).toBe("Die Adresse steht auf der Blacklist.");
+    ).toBe("Die Adresse steht auf der Sperrliste.");
   });
 
   it("names the domain entry that hits the address", () => {
@@ -205,7 +205,7 @@ describe("blacklistMatchText", () => {
         blacklistMatch: { id: "e2", value: "@wegwerf.de", kind: "domain" },
       })
     ).toBe(
-      "Die Adresse steht über die Domain „@wegwerf.de“ auf der Blacklist."
+      "Die Adresse steht über die Domain „@wegwerf.de“ auf der Sperrliste."
     );
   });
 
@@ -213,7 +213,7 @@ describe("blacklistMatchText", () => {
     "says the address is not on the blacklist: %j",
     (user) => {
       expect(blacklistMatchText(user)).toBe(
-        "Die Adresse steht nicht auf der Blacklist."
+        "Die Adresse steht nicht auf der Sperrliste."
       );
     }
   );

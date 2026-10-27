@@ -1,8 +1,8 @@
 {
   "blacklist-warning": {
-    "title": "Adresse steht auf der Blacklist",
-    "text": "Diese Adresse steht auf der Blacklist: | Diese Adressen stehen auf der Blacklist:",
-    "hint": "Mit einer Adresse auf der Blacklist sind keine Buchung im Katalog und keine Registrierung möglich. Hier können Sie trotzdem fortfahren.",
+    "title": "Adresse steht auf der Sperrliste",
+    "text": "Diese Adresse steht auf der Sperrliste: | Diese Adressen stehen auf der Sperrliste:",
+    "hint": "Mit einer Adresse auf der Sperrliste sind keine Buchung im Katalog und keine Registrierung möglich. Hier können Sie trotzdem fortfahren.",
     "cancel": "Zurück",
     "confirm": {
       "save": "Trotzdem speichern",
@@ -143,13 +143,13 @@
       "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
       "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
       "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
-      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Blacklist. Es entstand keine Meldung."
+      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
-      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Blacklist.",
+      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
       "report_none_open": "Zu diesem User oder dieser Adresse ist keine Meldung mehr offen.",
       "report_not_found": "Die Meldung wurde nicht gefunden."
     },
@@ -159,7 +159,7 @@
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
       "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
       "suspension_reason_required": "Für eine Sperre ist ein Grund nötig.",
-      "blacklist_reason_required": "Für einen Blacklist-Eintrag ist ein Grund nötig.",
+      "blacklist_reason_required": "Für einen Sperrlisten-Eintrag ist ein Grund nötig.",
       "blacklist_value_invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
       "report_reason_required": "Für eine Meldung ist ein Grund nötig.",
       "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
@@ -1009,21 +1009,13 @@
   },
   "instance": {
     "blacklist": {
-      "title": "Blacklist",
-      "lead": "Mit der Blacklist schließen Sie Mailadressen von der ganzen Plattform aus, zum Beispiel nach wiederholter missbräuchlicher Nutzung oder bei Wegwerf- / Spam-Adressen. Sie gilt für alle Mandanten. Sobald Sie eine Adresse eintragen, werden die Konten mit dieser Adresse gesperrt. Mit dieser Mailadresse können keine neuen Konten angelegt und auch keine Gast-Buchungen getätigt werden.",
-      "empty": "Es steht noch keine Adresse auf der Blacklist.",
+      "title": "Sperrliste",
+      "lead": "Mit der Sperrliste schließen Sie Mailadressen von der ganzen Plattform aus, zum Beispiel nach wiederholter missbräuchlicher Nutzung oder bei Wegwerf- / Spam-Adressen. Sie gilt für alle Mandanten. Sobald Sie eine Adresse eintragen, werden die Konten mit dieser Adresse gesperrt. Mit dieser Mailadresse können keine neuen Konten angelegt und auch keine Gast-Buchungen getätigt werden.",
+      "empty": "Es steht noch keine Adresse auf der Sperrliste.",
       "add": "Adresse eintragen",
       "reload": "Neu laden",
-      "load-error": "Die Blacklist konnte nicht geladen werden.",
-      "headers": {
-        "value": "Adresse",
-        "reason": "Grund",
-        "createdAt": "Eingetragen am",
-        "createdBy": "Eingetragen von",
-        "origin": "Herkunft",
-        "suspended": "Gesperrte Konten",
-        "actions": "Aktionen"
-      },
+      "load-error": "Die Sperrliste konnte nicht geladen werden.",
+      "suspended": "kein Konto gesperrt | {count} Konto gesperrt | {count} Konten gesperrt",
       "origin": {
         "manual": "von Hand",
         "suspension": "aus einer Sperre",
@@ -1032,8 +1024,8 @@
       "edit-reason": "Grund ändern",
       "remove": "Entfernen",
       "create": {
-        "title": "Adresse auf die Blacklist setzen",
-        "text": "Geben Sie eine Mailadresse ein und prüfen Sie, welche Konten betroffen sind. Gesperrt wird erst, wenn Sie auf „Auf die Blacklist setzen“ klicken.",
+        "title": "Adresse auf die Sperrliste setzen",
+        "text": "Geben Sie eine Mailadresse ein und prüfen Sie, welche Konten betroffen sind. Gesperrt wird erst, wenn Sie auf „Auf die Sperrliste setzen“ klicken.",
         "value": "Mailadresse",
         "value-hint": "Eine einzelne Adresse wie max@firma.de. Für alle Adressen eines Anbieters geben Sie nur den Teil ab dem @ ein, etwa @wegwerf.de. Adressen wie max@post.wegwerf.de gehören dann nicht dazu.",
         "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
@@ -1043,10 +1035,10 @@
         "already-suspended": "Diese Konten sind bereits gesperrt ({count}):",
         "tenants": "in keinem Mandanten | in einem Mandanten | in {count} Mandanten",
         "none": "Mit dieser Adresse gibt es zurzeit kein Konto. Es wird aktuell also niemand gesperrt. Zukünftig können unter dieser Adresse keine Buchungen oder Registrierungen erfolgen.",
-        "exists": "„{value}“ steht bereits auf der Blacklist.",
+        "exists": "„{value}“ steht bereits auf der Sperrliste.",
         "reason": "Grund (Pflicht, nur für Admins sichtbar)",
         "cancel": "Abbrechen",
-        "confirm": "Auf die Blacklist setzen",
+        "confirm": "Auf die Sperrliste setzen",
         "preview-error": "Die betroffenen Konten konnten nicht geladen werden.",
         "error": "Die Adresse konnte nicht eingetragen werden."
       },
@@ -1059,7 +1051,7 @@
         "error": "Der Grund konnte nicht geändert werden."
       },
       "remove-dialog": {
-        "title": "„{value}“ von der Blacklist entfernen?",
+        "title": "„{value}“ von der Sperrliste entfernen?",
         "suspended": "Beim Eintragen wurde {count} Konto gesperrt: | Beim Eintragen wurden {count} Konten gesperrt:",
         "none": "Beim Eintragen wurde kein Konto gesperrt.",
         "unsuspend": "Diese Konten wieder freigeben",
@@ -1314,7 +1306,7 @@
       "standing": {
         "open": "offen",
         "suspended": "gesperrt",
-        "blacklisted": "auf Blacklist",
+        "blacklisted": "auf Sperrliste",
         "rejected": "abgelehnt",
         "withdrawn": "zurückgezogen"
       },
@@ -1331,7 +1323,7 @@
       "address": {
         "open": "E-Mailadresse melden",
         "title": "E-Mailadresse an die Instanz melden",
-        "text": "Geben Sie eine Mailadresse ein. Die Instanz entscheidet, ob die Adresse auf die Blacklist kommt.",
+        "text": "Geben Sie eine Mailadresse ein. Die Instanz entscheidet, ob die Adresse auf die Sperrliste kommt.",
         "value": "Mailadresse",
         "value-hint": "Eine einzelne Adresse wie max@firma.de.",
         "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
@@ -2500,20 +2492,20 @@
       "title": "Sperre",
       "chip": "Gesperrt",
       "blacklist": {
-        "chip": "Blacklist",
-        "address": "Die Adresse steht auf der Blacklist.",
-        "domain": "Die Adresse steht über die Domain „{entry}“ auf der Blacklist.",
-        "none": "Die Adresse steht nicht auf der Blacklist."
+        "chip": "Sperrliste",
+        "address": "Die Adresse steht auf der Sperrliste.",
+        "domain": "Die Adresse steht über die Domain „{entry}“ auf der Sperrliste.",
+        "none": "Die Adresse steht nicht auf der Sperrliste."
       },
       "origin": {
         "manual": "von Hand",
-        "blacklist": "Blacklist"
+        "blacklist": "Sperrliste"
       },
       "status": {
         "active": "Der Account ist aktiv.",
         "suspended": "Gesperrt {origin}",
         "suspended-with-record": "Gesperrt {origin} am {date} von {by}.",
-        "suspended-by-blacklist": "Gesperrt durch Blacklist-Eintrag „{entry}“ am {date} von {by}.",
+        "suspended-by-blacklist": "Gesperrt durch Sperrlisten-Eintrag „{entry}“ am {date} von {by}.",
         "reason": "Grund: {reason}"
       },
       "consequences": {
@@ -2553,12 +2545,12 @@
         "confirm": "Sperren",
         "preview-error": "Die Folgen konnten nicht geladen werden.",
         "error": "Die Sperre konnte nicht gesetzt werden.",
-        "blacklist": "Adresse {address} auch auf die Blacklist setzen",
+        "blacklist": "Adresse {address} auch auf die Sperrliste setzen",
         "blacklist-hint": {
           "on": "Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
-          "off": "Ohne Blacklist kann mit dieser Adresse weiter als Gast gebucht werden."
+          "off": "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden."
         },
-        "on-blacklist": "Die Adresse {address} steht schon auf der Blacklist (Eintrag „{entry}“).",
+        "on-blacklist": "Die Adresse {address} steht schon auf der Sperrliste (Eintrag „{entry}“).",
         "reports": "Die Sperre erledigt die offene Meldung von {tenant}. | Die Sperre erledigt {count} offene Meldungen von {tenant}.",
         "reports-owners": "Eine Mail mit dem Ergebnis geht an {owners}.",
         "reports-no-owners": "Der Mandant hat keinen Besitzer, den eine Mail erreicht."
@@ -2574,9 +2566,9 @@
         "open": "Entsperren",
         "title": "{name} entsperren?",
         "text": "{name} kann sich danach wieder anmelden, im Admin und im Katalog.",
-        "remove-entry": "Blacklist-Eintrag „{entry}“ mit entfernen",
+        "remove-entry": "Sperrlisten-Eintrag „{entry}“ mit entfernen",
         "domain-entry": "Anmelden geht wieder, aber Buchungen mit dieser Adresse weist der Checkout weiter ab.",
-        "preview-error": "Die Blacklist konnte nicht geprüft werden.",
+        "preview-error": "Die Sperrliste konnte nicht geprüft werden.",
         "cancel": "Abbrechen",
         "confirm": "Entsperren",
         "error": "Die Sperre konnte nicht aufgehoben werden."
@@ -2610,8 +2602,8 @@
         "message": "Die offene Meldung zu dieser Adresse wurde ergänzt."
       },
       "already-blacklisted": {
-        "title": "Steht bereits auf der Blacklist",
-        "message": "{addresses} steht bereits auf der Blacklist. Dazu entstand keine Meldung."
+        "title": "Steht bereits auf der Sperrliste",
+        "message": "{addresses} steht bereits auf der Sperrliste. Dazu entstand keine Meldung."
       }
     }
   },
@@ -3564,7 +3556,7 @@
       "page-text": "{0}–{1} von {2}"
     },
     "reports": {
-      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Blacklist setzen“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Sperren“, „Auf Sperrliste setzen“ und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
       "loading": "Meldungen werden geladen...",
       "empty": "Keine Meldungen offen",
       "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
@@ -3583,15 +3575,15 @@
       "failed": "Die Meldungen konnten nicht erledigt werden.",
       "guest-address": "Adresse eines Gasts",
       "blacklist": {
-        "open": "Auf Blacklist setzen",
-        "title": "{value} auf die Blacklist setzen?",
+        "open": "Auf Sperrliste setzen",
+        "title": "{value} auf die Sperrliste setzen?",
         "text": "Der Eintrag erledigt alle offenen Meldungen zu jeder Adresse, die er trifft. Die Besitzer der meldenden Mandanten bekommen eine Mail, der Gast erfährt nichts.",
         "address": "Nur die Adresse {address}",
         "domain": "Die ganze Domain {domain}",
         "suspends": "Sperrt sofort ein Konto: | Sperrt sofort {count} Konten:",
         "suspends-none": "Sperrt kein Konto.",
         "reason": "Grund (Pflicht)",
-        "confirm": "Auf Blacklist setzen"
+        "confirm": "Auf Sperrliste setzen"
       }
     },
     "tenant-approval-queue": {

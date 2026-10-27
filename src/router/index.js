@@ -134,7 +134,7 @@ const routes = [
     name: "instance-blacklist",
     component: InstanceBlacklist,
     meta: {
-      title: "Blacklist",
+      title: "Sperrliste",
       requiresAuth: true,
       interfaceName: "instance",
     },
