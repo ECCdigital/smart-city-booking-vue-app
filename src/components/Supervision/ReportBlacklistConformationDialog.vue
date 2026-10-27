@@ -2,7 +2,7 @@
   <v-dialog :value="open" max-width="560" persistent>
     <v-card v-if="draft">
       <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="error" class="mr-2">mdi-email-off-outline</v-icon>
+        <v-icon color="error" class="mr-2 mt-1">mdi-email-off-outline</v-icon>
         <span>
           {{ $t("supervision.reports.blacklist.title", { value }) }}
         </span>

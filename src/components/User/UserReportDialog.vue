@@ -2,7 +2,7 @@
   <v-dialog :value="open" max-width="520" persistent>
     <v-card>
       <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="warning" class="mr-2">mdi-flag-outline</v-icon>
+        <v-icon color="warning" class="mr-2 mt-1">mdi-flag-outline</v-icon>
         <span>{{ $t("user.report.title", { name }) }}</span>
       </v-card-title>
       <v-card-text>

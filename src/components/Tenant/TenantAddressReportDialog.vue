@@ -2,7 +2,9 @@
   <v-dialog :value="open" max-width="560" persistent>
     <v-card>
       <v-card-title class="text-h6 text-break flex-nowrap align-start">
-        <v-icon color="warning" class="mr-2">mdi-email-alert-outline</v-icon>
+        <v-icon color="warning" class="mr-2 mt-1"
+          >mdi-email-alert-outline</v-icon
+        >
         <span>{{ $t("tenant.reports.address.title") }}</span>
       </v-card-title>
       <v-card-text>
