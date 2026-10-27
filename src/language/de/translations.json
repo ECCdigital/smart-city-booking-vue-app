@@ -1330,7 +1330,7 @@
       "cancel": "Abbrechen",
       "address": {
         "open": "E-Mailadresse melden",
-        "title": "Adresse auf die Blacklist setzen",
+        "title": "E-Mailadresse an die Instanz melden",
         "text": "Geben Sie eine Mailadresse ein. Die Instanz entscheidet, ob die Adresse auf die Blacklist kommt.",
         "value": "Mailadresse",
         "value-hint": "Eine einzelne Adresse wie max@firma.de.",
