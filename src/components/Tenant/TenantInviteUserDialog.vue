@@ -185,6 +185,12 @@
               </div>
             </div>
 
+            <TenantInvitationNoticeCheckbox
+              v-if="canChangeInvitationNotice"
+              :value="notifyOwnersOnInvitationAccepted"
+              @change="$emit('change-invitation-notice', $event)"
+            />
+
             <div class="d-flex align-end justify-end mt-4">
               <v-btn class="mr-4" outlined @click="closeDialog">
                 schließen
@@ -313,6 +319,11 @@
                   </v-list-item-action>
                 </v-list-item>
               </v-list>
+              <TenantInvitationNoticeCheckbox
+                v-if="canChangeInvitationNotice"
+                :value="notifyOwnersOnInvitationAccepted"
+                @change="$emit('change-invitation-notice', $event)"
+              />
               <div class="d-flex align-end justify-end mt-4">
                 <v-btn class="mt-4" outlined @click="closeDialog">
                   schließen
@@ -474,6 +485,12 @@
                   </v-col>
                 </v-row>
 
+                <TenantInvitationNoticeCheckbox
+                  v-if="canChangeInvitationNotice"
+                  :value="notifyOwnersOnInvitationAccepted"
+                  @change="$emit('change-invitation-notice', $event)"
+                />
+
                 <div class="d-flex justify-end mt-4">
                   <v-btn class="mr-2" outlined @click="cancelCreateLink">
                     Abbrechen
@@ -591,8 +608,11 @@
 </template>
 
 <script>
+import TenantInvitationNoticeCheckbox from "@/components/Tenant/TenantInvitationNoticeCheckbox.vue";
+
 export default {
   name: "TenantInviteUserDialog",
+  components: { TenantInvitationNoticeCheckbox },
   props: {
     open: {
       type: Boolean,
@@ -617,6 +637,16 @@ export default {
     tenantId: {
       type: String,
       default: null,
+    },
+    // A setting of the tenant, for every invitation; only its Besitzer
+    // change it.
+    notifyOwnersOnInvitationAccepted: {
+      type: Boolean,
+      default: true,
+    },
+    canChangeInvitationNotice: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
