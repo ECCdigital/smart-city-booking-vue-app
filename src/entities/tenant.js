@@ -50,6 +50,7 @@ class Tenant {
     mailSubjects,
     mailShowSupportFooter,
     mailBookingPeriodFormat,
+    notifyOwnersOnInvitationAccepted,
   }) {
     this.id = id;
     this.name = name;
@@ -93,6 +94,10 @@ class Tenant {
     this.mailSubjects = mailSubjects || {};
     this.mailShowSupportFooter =
       mailShowSupportFooter === undefined ? true : !!mailShowSupportFooter;
+    this.notifyOwnersOnInvitationAccepted =
+      notifyOwnersOnInvitationAccepted === undefined
+        ? true
+        : !!notifyOwnersOnInvitationAccepted;
     this.mailBookingPeriodFormat = mailBookingPeriodFormat || "default";
   }
 }

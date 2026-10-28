@@ -185,6 +185,11 @@
                 ></v-select>
               </div>
             </div>
+            <TenantInvitationNoticeCheckbox
+              v-if="canChangeInvitationNotice"
+              :value="notifyOwnersOnInvitationAccepted"
+              @change="$emit('change-invitation-notice', $event)"
+            />
           </v-tab-item>
           <v-tab-item class="mx-2">
             <div class="d-flex align-center justify-space-between mt-4">
@@ -299,6 +304,11 @@
                   </v-list-item-action>
                 </v-list-item>
               </v-list>
+              <TenantInvitationNoticeCheckbox
+                v-if="canChangeInvitationNotice"
+                :value="notifyOwnersOnInvitationAccepted"
+                @change="$emit('change-invitation-notice', $event)"
+              />
             </div>
 
             <div v-else>
@@ -454,6 +464,11 @@
                     </div>
                   </v-col>
                 </v-row>
+                <TenantInvitationNoticeCheckbox
+                  v-if="canChangeInvitationNotice"
+                  :value="notifyOwnersOnInvitationAccepted"
+                  @change="$emit('change-invitation-notice', $event)"
+                />
               </v-form>
             </div>
           </v-tab-item>
@@ -595,8 +610,11 @@
 </template>
 
 <script>
+import TenantInvitationNoticeCheckbox from "@/components/Tenant/TenantInvitationNoticeCheckbox.vue";
+
 export default {
   name: "TenantInviteUserDialog",
+  components: { TenantInvitationNoticeCheckbox },
   props: {
     open: {
       type: Boolean,
@@ -621,6 +639,16 @@ export default {
     tenantId: {
       type: String,
       default: null,
+    },
+    // A setting of the tenant, for every invitation; only its Besitzer
+    // change it.
+    notifyOwnersOnInvitationAccepted: {
+      type: Boolean,
+      default: true,
+    },
+    canChangeInvitationNotice: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
