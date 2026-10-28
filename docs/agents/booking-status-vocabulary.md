@@ -17,6 +17,8 @@ Since 4.3.x a booking's state is **one stored value**, `booking.status`, moved b
 
 Sort order of the "Status" column (`statusRank`): `requested < payment_due < confirmed < cancelled < withdrawn < rejected`.
 
+**Withdrawn by the user.** A request the user withdrew before it was confirmed is stored as `rejected` but reads Storniert, as in the storefront: `displayStatus(booking)` answers `cancelled` where `cancellationRefund.origin === "user"`. Chips, the headline (cut behind Angefragt, reason under „Stornierungsgrund“), the status filter, the series counts (`groupDisplayStatus`, `mixedCounts`) and the export read it; actions, sort order and `groupBookingStatus` keep the stored `status`. A rejection by the administration or the system, and an old one without the audit, stays Abgelehnt.
+
 ## Two derived words that are not states
 
 | German     | Code                                    | What it is                                                                                                                    |

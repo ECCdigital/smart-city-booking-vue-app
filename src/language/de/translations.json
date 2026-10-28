@@ -1309,7 +1309,9 @@
       "nonNegativeDays": "Der Wert darf nicht negativ sein",
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
-      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden.",
+      "withoutTimeSpanHint": "Buchungen ohne festen Zeitraum fallen unter keine Stufe der Staffel. Sie werden standardmäßig zu 100 % erstattet. Legen Sie bei Bedarf einen anderen Wert fest. Dieser Wert gilt für diesen Mandanten für alle Buchungen ohne Zeitraum.",
+      "withoutTimeSpanLabel": "Erstattung ohne Zeitraum"
     },
     "legalDocuments": {
       "title": "Rechtsdokumente",
@@ -1576,7 +1578,7 @@
       "title": "Erstattungsvorschau",
       "expectedTitle": "Erwartete Erstattung",
       "auditTitle": "Erstattung bei Stornierung",
-      "originalAmount": "Ursprungsbetrag",
+      "originalAmount": "Ursprungs\u00adbetrag",
       "refundAmount": "Erstattung",
       "cancellationFee": "Einbehalt",
       "refundShare": "{percentage} % Erstattung",
@@ -1593,6 +1595,7 @@
       "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
       "singlePolicyWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
+      "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",

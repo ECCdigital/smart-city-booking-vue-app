@@ -56,7 +56,7 @@
           :hint="mixedHint"
           @action="transitionSeries"
         >
-          <template v-if="mixed" #default>
+          <template v-if="mixedDisplay" #default>
             <div class="series-status-counts text-body-2">
               <template v-for="(entry, index) in counts">
                 <span
@@ -104,11 +104,13 @@
                 class="booking-row group-booking-page__member"
               >
                 <v-avatar
-                  :color="statusColor(item.status)"
+                  :color="statusColor(displayStatus(item))"
                   size="28"
                   class="group-booking-page__member-avatar"
                 >
-                  <v-icon dark size="15">{{ statusIcon(item.status) }}</v-icon>
+                  <v-icon dark size="15">{{
+                    statusIcon(displayStatus(item))
+                  }}</v-icon>
                 </v-avatar>
                 <div class="booking-row__main">
                   <div class="booking-row__title d-flex align-center">
@@ -121,9 +123,9 @@
                     </a>
                     <span
                       class="group-booking-page__member-state ml-2"
-                      :class="`${statusColor(item.status)}--text`"
+                      :class="`${statusColor(displayStatus(item))}--text`"
                     >
-                      {{ statusLabel(item.status) }}
+                      {{ statusLabel(displayStatus(item)) }}
                     </span>
                     <v-chip
                       v-if="isFree(item)"
@@ -404,9 +406,11 @@ import {
   actionColor,
   actionIcon,
   actionLabel,
+  displayStatus,
   freeMarker,
   groupAllowsAction,
   groupBookingStatus,
+  groupDisplayStatus,
   isFree,
   mixedCounts,
   paymentStatusLabel,
@@ -533,6 +537,10 @@ export default {
     mixed() {
       return this.seriesStatus === MIXED;
     },
+    /** Whether the members disagree in the state shown, so the headline counts them instead of a path. */
+    mixedDisplay() {
+      return groupDisplayStatus(this.members) === MIXED;
+    },
     /** The series' path; `null` while the series is mixed, so the headline shows the count instead. */
     seriesPath() {
       return seriesPathOf(this.groupBooking, this.members);
@@ -583,6 +591,7 @@ export default {
     actionColor,
     actionIcon,
     actionLabel,
+    displayStatus,
     isFree,
     statusColor,
     statusIcon,

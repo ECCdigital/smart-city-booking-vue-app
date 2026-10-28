@@ -7,11 +7,13 @@ import {
   actionLabel,
   allowedActions,
   allowsAction,
+  displayStatus,
   filterBookingsByStatus,
   freeMarker,
   groupAllowsAction,
   transitionTarget,
   groupBookingStatus,
+  groupDisplayStatus,
   isFree,
   isAwaitingPayment,
   isPaid,
@@ -1040,5 +1042,106 @@ describe("seriesActionLabel", () => {
     expect(seriesActionLabel("cancel", BOOKING_STATUS.CONFIRMED)).toBe(
       "Serie stornieren"
     );
+  });
+});
+
+/**
+ * A request the user withdrew before it was confirmed is stored as
+ * `rejected` but reads Storniert, as in the storefront (ticket #642).
+ */
+describe("displayStatus", () => {
+  function rejectedBy(origin) {
+    return {
+      status: BOOKING_STATUS.REJECTED,
+      cancellationRefund: { origin, cancelledFrom: "requested" },
+      rejectionReason: "Termin passt nicht mehr",
+    };
+  }
+
+  it("reads Storniert for a request the user withdrew", () => {
+    expect(displayStatus(rejectedBy("user"))).toBe(BOOKING_STATUS.CANCELLED);
+  });
+
+  it("stays Abgelehnt for a rejection by the administration or the system", () => {
+    expect(displayStatus(rejectedBy("admin"))).toBe(BOOKING_STATUS.REJECTED);
+    expect(displayStatus(rejectedBy("system"))).toBe(BOOKING_STATUS.REJECTED);
+  });
+
+  it("stays Abgelehnt for an old rejection without the audit", () => {
+    expect(displayStatus({ status: BOOKING_STATUS.REJECTED })).toBe(
+      BOOKING_STATUS.REJECTED
+    );
+  });
+
+  it("is the stored status otherwise, and null without a booking", () => {
+    expect(displayStatus({ status: BOOKING_STATUS.CANCELLED })).toBe(
+      BOOKING_STATUS.CANCELLED
+    );
+    expect(displayStatus({ status: BOOKING_STATUS.REQUESTED })).toBe(
+      BOOKING_STATUS.REQUESTED
+    );
+    expect(displayStatus(null)).toBeNull();
+  });
+
+  it("files the withdrawn request under Storniert in the filter and the export", () => {
+    const bookings = [
+      { id: "b-user", ...rejectedBy("user") },
+      { id: "b-admin", ...rejectedBy("admin") },
+    ];
+    expect(
+      filterBookingsByStatus(bookings, ["cancelled"]).map((b) => b.id)
+    ).toEqual(["b-user"]);
+    expect(
+      filterBookingsByStatus(bookings, ["rejected"]).map((b) => b.id)
+    ).toEqual(["b-admin"]);
+    expect(statusExportValue(rejectedBy("user"))).toBe("Storniert");
+    expect(statusExportValue(rejectedBy("admin"))).toBe("Abgelehnt");
+  });
+
+  it("cuts the path behind Angefragt with a Storniert end and the reason", () => {
+    const path = pathOf({ priceEur: 25, ...rejectedBy("user") });
+    expect(path.reachedIndex).toBe(0);
+    expect(path.end).toMatchObject({
+      status: BOOKING_STATUS.CANCELLED,
+      label: "Storniert",
+      afterIndex: 0,
+      reason: "Termin passt nicht mehr",
+    });
+    expect(path.steps.map((step) => step.state)).toEqual([
+      STEP_STATE.DONE,
+      STEP_STATE.VOID,
+      STEP_STATE.VOID,
+    ]);
+  });
+
+  it("keeps the Abgelehnt end for a rejection by the administration", () => {
+    expect(pathOf(rejectedBy("admin")).end).toMatchObject({
+      status: BOOKING_STATUS.REJECTED,
+      label: "Abgelehnt",
+    });
+  });
+
+  it("reads a series the user withdrew as Storniert behind Angefragt", () => {
+    const members = [rejectedBy("user"), rejectedBy("user")];
+    expect(groupDisplayStatus(members)).toBe(BOOKING_STATUS.CANCELLED);
+    expect(groupBookingStatus(members)).toBe(BOOKING_STATUS.REJECTED);
+    const path = seriesPathOf({ timeCreated: 1 }, members);
+    expect(path.end).toMatchObject({
+      status: BOOKING_STATUS.CANCELLED,
+      afterIndex: 0,
+      reason: "Termin passt nicht mehr",
+    });
+  });
+
+  it("counts withdrawn and rejected members apart in a series", () => {
+    const members = [rejectedBy("user"), rejectedBy("admin")];
+    expect(groupDisplayStatus(members)).toBe(MIXED);
+    expect(seriesPathOf({ timeCreated: 1 }, members)).toBeNull();
+    expect(
+      mixedCounts(members).map((entry) => [entry.status, entry.count])
+    ).toEqual([
+      [BOOKING_STATUS.REJECTED, 1],
+      [BOOKING_STATUS.CANCELLED, 1],
+    ]);
   });
 });
