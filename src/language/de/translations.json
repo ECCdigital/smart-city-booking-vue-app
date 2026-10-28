@@ -2393,6 +2393,10 @@
       "success": {
         "title": "Erfolgreich bearbeitet",
         "message": "Der Benutzer wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Speichern",
+        "message": "Der Benutzer konnte nicht gespeichert werden."
       }
     },
     "edit-profile": {

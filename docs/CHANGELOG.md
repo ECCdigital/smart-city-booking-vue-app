@@ -55,6 +55,12 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
 -   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
 
+## [4.3.2] — 2026-10-27
+
+### Fixed
+
+-   „Benutzer bearbeiten“ saves a person without first or last name (ECCdigital/tickets#654): „Speichern“ was locked while either was empty, without saying why, so such a person could be ticked „Verifiziert“ but not saved. The name is no condition any more, as in the backend. A failed save shows „Fehler beim Speichern“ and keeps the dialog open instead of only logging to the console
+
 ## [4.3.1] — 2026-10-14
 
 ### Security
