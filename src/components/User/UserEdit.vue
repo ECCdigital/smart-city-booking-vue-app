@@ -1,5 +1,5 @@
 <template>
-  <v-row justify="center" class="yellow">
+  <v-row justify="center">
     <v-dialog v-model="openDialog" persistent max-width="900px" scrollable>
       <v-card>
         <v-card-title class="d-flex align-center py-4 px-6">
@@ -8,7 +8,7 @@
             size="48"
             class="white--text font-weight-bold mr-4"
           >
-            {{ getUserInitials() }}+
+            {{ getUserInitials() }}
           </v-avatar>
           <div class="flex-grow-1">
             <div class="text-h5 font-weight-medium">
