@@ -532,7 +532,7 @@ describe("Bookings", () => {
   });
 
   /**
-   * The Buchungsweg filter: Angemeldet, Gast, Admin and Unbekannt as a
+   * The Buchungsweg filter: Benutzer, Gast, Admin and Unbekannt as a
    * checkbox list, narrowing every view; Unbekannt keeps the bookings
    * without one. Every reach reads `bookedVia`, so it is always offered.
    */
@@ -561,7 +561,7 @@ describe("Bookings", () => {
       const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
 
       await openFilterCard(wrapper);
-      await toggleStatus(wrapper, "Angemeldet");
+      await toggleStatus(wrapper, "Benutzer");
       await toggleStatus(wrapper, "Unbekannt");
 
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([

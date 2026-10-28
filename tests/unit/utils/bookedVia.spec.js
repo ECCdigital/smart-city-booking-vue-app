@@ -4,6 +4,7 @@ import {
   bookedViaLabel,
   bookedViaOf,
   bookedViaTitle,
+  bookingUserOf,
   filterBookingsByBookedVia,
   ownerMovedTo,
 } from "@/utils/bookedVia";
@@ -17,7 +18,7 @@ describe("bookedViaTitle", () => {
 
 describe("bookedViaLabel", () => {
   it.each([
-    ["user", "Angemeldet"],
+    ["user", "Benutzer"],
     ["guest", "Gast"],
     ["admin", "Admin"],
   ])("reads %s as %s", (code, label) => {
@@ -98,4 +99,37 @@ describe("ownerMovedTo", () => {
       ).toBeNull();
     }
   );
+});
+
+/**
+ * A user who booked for someone else: the booking's mail is not the one of
+ * the account (`assignedUserId`), so the account is named as the booker.
+ */
+describe("bookingUserOf", () => {
+  const booking = {
+    bookedVia: "user",
+    mail: "erika@example.org",
+    assignedUserId: "max@example.org",
+  };
+
+  it("names the account when the booking's first mail is another", () => {
+    expect(bookingUserOf(booking)).toBe("max@example.org");
+  });
+
+  it.each([
+    ["the first mail is the account's", "Max@Example.org, erika@example.org"],
+  ])("names nobody when %s", (_, mail) => {
+    expect(bookingUserOf({ ...booking, mail })).toBeNull();
+  });
+
+  it.each([["admin"], ["guest"], [undefined]])(
+    "names nobody for a booking made via %s",
+    (bookedVia) => {
+      expect(bookingUserOf({ ...booking, bookedVia })).toBeNull();
+    }
+  );
+
+  it("names nobody without an account", () => {
+    expect(bookingUserOf({ ...booking, assignedUserId: "" })).toBeNull();
+  });
 });

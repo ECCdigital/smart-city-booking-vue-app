@@ -1543,10 +1543,11 @@
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Angemeldet",
+        "user": "Benutzer",
         "guest": "Gast",
         "admin": "Admin"
       },
+      "booking-user": "Gebucht von",
       "hint": {
         "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
         "guest": "Diese Buchung wurde erstellt von einem Gast.",

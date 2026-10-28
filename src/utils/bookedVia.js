@@ -64,3 +64,16 @@ export function ownerMovedTo(original, edited) {
   const primary = primaryMail(edited?.mail);
   return primary && primary !== primaryMail(original.mail) ? primary : null;
 }
+
+/**
+ * The account that booked for someone else, `null` otherwise: a booking of
+ * the Buchungsweg Benutzer whose first mail is not the account's
+ * (`assignedUserId`, the account's mail).
+ */
+export function bookingUserOf(booking) {
+  if (bookedViaOf(booking) !== BOOKED_VIA.USER) return null;
+  const account = (booking.assignedUserId || "").trim().toLowerCase();
+  return account && account !== primaryMail(booking.mail)
+    ? booking.assignedUserId
+    : null;
+}
