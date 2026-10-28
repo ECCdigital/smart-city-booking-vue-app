@@ -339,6 +339,15 @@
                 </span>
                 <span class="booking-fact__value">{{ bookedVia }}</span>
               </div>
+              <div
+                v-if="bookingUser"
+                class="booking-fact booking-page__booking-user"
+              >
+                <span class="booking-fact__label">
+                  {{ $t("booking.booked-via.booking-user") }}
+                </span>
+                <span class="booking-fact__value">{{ bookingUser }}</span>
+              </div>
               <div class="booking-fact">
                 <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
@@ -410,7 +419,11 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
-import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import {
+  bookedViaLabel,
+  bookedViaTitle,
+  bookingUserOf,
+} from "@/utils/bookedVia";
 import { bookingKindLabel } from "@/utils/businessBooking";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
@@ -490,6 +503,10 @@ export default {
     },
     bookedVia() {
       return bookedViaLabel(this.booking.bookedVia);
+    },
+    /** The account of a user who booked for someone else, or `null`. */
+    bookingUser() {
+      return bookingUserOf(this.booking);
     },
     /** The state read as a path (spec N2). */
     path() {
