@@ -41,6 +41,7 @@ class Tenant {
     applications,
     maxBookingAdvanceInMonths,
     cancellationRefundTiers,
+    cancellationRefundPercentageWithoutTimeSpan,
     defaultEventCreationMode,
     enablePublicStatusView,
     ownerUserIds,
@@ -82,6 +83,8 @@ class Tenant {
     this.applications = applications || [];
     this.maxBookingAdvanceInMonths = maxBookingAdvanceInMonths;
     this.cancellationRefundTiers = cancellationRefundTiers || [];
+    this.cancellationRefundPercentageWithoutTimeSpan =
+      cancellationRefundPercentageWithoutTimeSpan ?? 100;
     this.defaultEventCreationMode = defaultEventCreationMode || "";
     this.enablePublicStatusView = enablePublicStatusView;
     this.ownerUserIds = ownerUserIds || [];

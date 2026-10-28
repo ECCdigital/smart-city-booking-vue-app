@@ -1,6 +1,7 @@
 <script>
 import {
   MIXED,
+  displayStatus,
   groupBookingStatus,
   statusColor,
   statusIcon,
@@ -37,6 +38,7 @@ export default {
     },
   },
   methods: {
+    displayStatus,
     statusColor,
     statusIcon,
     statusLabel,
@@ -78,12 +80,12 @@ export default {
         <span class="mr-2">{{ member.id }}</span>
         <v-chip
           x-small
-          :color="statusColor(member.status)"
+          :color="statusColor(displayStatus(member))"
           text-color="white"
           class="font-weight-medium"
         >
-          <v-icon left x-small>{{ statusIcon(member.status) }}</v-icon>
-          {{ statusLabel(member.status) }}
+          <v-icon left x-small>{{ statusIcon(displayStatus(member)) }}</v-icon>
+          {{ statusLabel(displayStatus(member)) }}
         </v-chip>
       </li>
     </ul>
