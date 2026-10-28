@@ -112,6 +112,7 @@
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
+      "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
       "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
     },
     "conflict-codes": {
@@ -1530,14 +1531,26 @@
     }
   },
   "booking": {
+    "owner-change": {
+      "title": "Buchung einem anderen Konto zuordnen?",
+      "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
+      "message": "Diese Buchung wurde manuell von einem Admin angelegt. Über die E-Mail-Adresse wird sie einem Konto zugeordnet, sofern ein Benutzerkonto mit dieser Adresse vorhanden ist.",
+      "consequence": "Durch das Ändern der Mailadresse wird die Buchung der neuen E-Mail-Adresse zugeordnet und verschwindet ggf. aus dem Konto der bisherigen E-Mailadresse.",
+      "question": "Sind Sie sicher, dass Sie die Änderung vornehmen möchten?",
+      "previous": "Bisher",
+      "next": "Künftig",
+      "confirm": "Änderung speichern",
+      "cancel": "Abbrechen"
+    },
     "booked-via": {
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Angemeldet",
+        "user": "Benutzer",
         "guest": "Gast",
         "admin": "Admin"
       },
+      "booking-user": "Gebucht von",
       "hint": {
         "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
         "guest": "Diese Buchung wurde erstellt von einem Gast.",
@@ -1762,6 +1775,7 @@
       "confirmed": "Bestätigt",
       "rejected": "Abgelehnt",
       "cancelled": "Storniert",
+      "withdrawn": "Widerrufen",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
       "paidShort": "bezahlt"
@@ -1780,14 +1794,17 @@
       "reject": "Ablehnen",
       "cancel": "Stornieren",
       "reinstate": "Wiederherstellen",
+      "acceptWithdrawal": "Widerruf akzeptieren",
       "delete": "Löschen"
     },
     "payment": {
       "paid": "Ja",
       "unpaid": "Nein",
+      "lapsed": "Entfällt",
       "status": {
         "paid": "Bezahlt",
-        "unpaid": "Nicht bezahlt"
+        "unpaid": "Nicht bezahlt",
+        "lapsed": "Entfällt"
       }
     },
     "cancellationReceipt": {
@@ -1815,6 +1832,19 @@
         }
       }
     },
+    "withdrawalReceipt": {
+      "reprint": {
+        "hint": "Erzeugt eine Revision des Widerrufbelegs unter derselben Nummer.",
+        "success": {
+          "title": "Widerrufbeleg ausgestellt",
+          "message": "Der Widerrufbeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Widerrufbeleg konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
     "initialState": {
       "label": "Anfangszustand",
       "paymentMethod": "Zahlungsmethode auswählen",
@@ -1834,6 +1864,27 @@
         "title": "Buchung wiederherstellen",
         "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "kind": {
+      "private": "Privat",
+      "business": "Geschäftlich"
+    },
+    "acceptWithdrawal": {
+      "success": {
+        "title": "Widerruf akzeptiert",
+        "message": "Die Buchung ist widerrufen; die Kundin oder der Kunde erhält eine Bestätigung per E-Mail."
+      },
+      "error": {
+        "title": "Fehler beim Akzeptieren des Widerrufs",
+        "message": "Der Widerruf konnte nicht akzeptiert werden."
+      },
+      "dialog": {
+        "title": "Widerruf akzeptieren",
+        "hint": "Die Buchung {id} wird widerrufen. Das lässt sich nicht rückgängig machen. Die Kundin oder der Kunde erhält eine Bestätigung per E-Mail.",
+        "hint-refund": "Durch den Widerruf entstehen keine Kosten. Der bereits bezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
+        "hint-no-cost": "Durch den Widerruf entstehen keine Kosten.",
+        "hint-lapse": "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
       }
     },
     "transition": {
@@ -1888,7 +1939,8 @@
         "phone": "Telefon",
         "street": "Straße",
         "zip-code": "Postleitzahl",
-        "location": "Stadt"
+        "location": "Stadt",
+        "kind": "Buchungsart"
       },
       "custom-fields": {
         "title": "Benutzerdefinierte Felder",
@@ -1943,6 +1995,7 @@
         "receipts": "Belege",
         "invoices": "Rechnungen",
         "cancellations": "Stornobelege",
+        "withdrawals": "Widerrufbelege",
         "attachments": "Anhänge",
         "none": "keine",
         "issued-at": "Ausgestellt am {date}",

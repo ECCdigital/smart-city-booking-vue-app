@@ -72,6 +72,7 @@
               @open-receipt-template="openReceiptTemplate"
               @open-invoice-template="openInvoiceTemplate"
               @open-cancellation-template="openCancellationTemplate"
+              @open-withdrawal-template="openWithdrawalTemplate"
             />
           </keep-alive>
         </v-col>
@@ -122,6 +123,15 @@
       @close="showEditCancellationTemplateDialog = false"
       @submit="onSubmitCancellationTemplate"
     />
+    <WithdrawalTemplateDialog
+      :open="showEditWithdrawalTemplateDialog"
+      :withdrawal-template="tenant.withdrawalTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
+      @close="showEditWithdrawalTemplateDialog = false"
+      @submit="onSubmitWithdrawalTemplate"
+    />
   </div>
 </template>
 
@@ -154,6 +164,7 @@ import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
+import WithdrawalTemplateDialog from "@/components/Tenant/WithdrawalTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import {
@@ -166,6 +177,7 @@ export default {
   name: "TenantOverview",
   components: {
     CancellationTemplateDialog,
+    WithdrawalTemplateDialog,
     SaveBar,
     UnsavedChangesDialog,
     TenantEditGeneral,
@@ -289,6 +301,7 @@ export default {
       showEditTemplateDialog: false,
       showEditInvoiceTemplateDialog: false,
       showEditCancellationTemplateDialog: false,
+      showEditWithdrawalTemplateDialog: false,
       defaultApps: {
         giroCockpit: {
           type: "payment",
@@ -638,6 +651,9 @@ export default {
     openCancellationTemplate() {
       this.showEditCancellationTemplateDialog = true;
     },
+    openWithdrawalTemplate() {
+      this.showEditWithdrawalTemplateDialog = true;
+    },
     onSubmitReceiptTemplate(template) {
       this.onUpdateTenant({ receiptTemplate: template });
       this.showEditTemplateDialog = false;
@@ -649,6 +665,10 @@ export default {
     onSubmitCancellationTemplate(template) {
       this.onUpdateTenant({ cancellationTemplate: template });
       this.showEditCancellationTemplateDialog = false;
+    },
+    onSubmitWithdrawalTemplate(template) {
+      this.onUpdateTenant({ withdrawalTemplate: template });
+      this.showEditWithdrawalTemplateDialog = false;
     },
     async fetchInstanceCustomFields() {
       try {

@@ -554,6 +554,13 @@ describe("BookingPage", () => {
       expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
         "ACME"
       );
+      // Private or business is always stated, read off the company here.
+      expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
+        "Geschäftlich"
+      );
+      expect(bare.wrapper.find(".booking-page__customer").text()).toContain(
+        "Privat"
+      );
       const fields = filled.wrapper.find(".booking-page__custom-fields").text();
       expect(fields).toContain("Teilnehmer");
       expect(fields).toContain("12");
@@ -591,7 +598,7 @@ describe("BookingPage", () => {
     });
 
     it.each([
-      [{ bookedVia: "user" }, "Angemeldet"],
+      [{ bookedVia: "user" }, "Benutzer"],
       [{ bookedVia: "admin" }, "Admin"],
       [{}, "Unbekannt"],
     ])("marks the name of %o with the badge %s", async (extra, word) => {
@@ -618,6 +625,40 @@ describe("BookingPage", () => {
       const fact = wrapper.find(".booking-page__booked-via");
       expect(fact.text()).toContain("Buchungsweg");
       expect(fact.text()).toContain(word);
+    });
+
+    // A user who booked for someone else: the booking's mail is not the
+    // account's, so Details names the account under the Buchungsweg.
+    it.each([
+      [
+        "names the booking user when the mail is another",
+        { bookedVia: "user", assignedUserId: "max@example.org" },
+        "max@example.org",
+      ],
+      [
+        "names nobody when the user booked with their own mail",
+        { bookedVia: "user", assignedUserId: "Erika@Example.org" },
+        null,
+      ],
+      [
+        "names nobody for a booking made by an admin",
+        { bookedVia: "admin", assignedUserId: "max@example.org" },
+        null,
+      ],
+    ])("%s", async (_, extra, bookingUser) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking(extra),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const fact = wrapper.find(".booking-page__booking-user");
+      if (bookingUser) {
+        expect(fact.text()).toContain("Gebucht von");
+        expect(fact.text()).toContain(bookingUser);
+      } else {
+        expect(fact.exists()).toBe(false);
+      }
     });
 
     it.each([
@@ -886,11 +927,16 @@ describe("BookingPage", () => {
    */
   describe("the transitions", () => {
     it.each([
-      ["requested", "Freigeben", ["Ablehnen"]],
-      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
-      ["confirmed", null, ["Stornieren"]],
+      ["requested", "Freigeben", ["Ablehnen", "Widerruf akzeptieren"]],
+      [
+        "payment_due",
+        "Als bezahlt markieren",
+        ["Stornieren", "Widerruf akzeptieren"],
+      ],
+      ["confirmed", null, ["Stornieren", "Widerruf akzeptieren"]],
       ["rejected", "Wiederherstellen", null],
       ["cancelled", "Wiederherstellen", null],
+      ["withdrawn", null, null],
     ])(
       "offers at %s the button %s and the menu %j",
       async (status, button, menu) => {
@@ -902,6 +948,18 @@ describe("BookingPage", () => {
         expect(await offeredActions(wrapper)).toEqual({ button, menu });
       }
     );
+
+    it("offers no Widerruf akzeptieren for a business booking", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed", company: "ACME" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: ["Stornieren"],
+      });
+    });
 
     it("offers nothing to a reader without the update right", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);

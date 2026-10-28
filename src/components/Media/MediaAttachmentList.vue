@@ -20,7 +20,7 @@
                   {{ attachment.title || "Ohne Titel" }}
                 </span>
                 <v-chip
-                  v-if="attachment.required"
+                  v-if="isRequired(attachment)"
                   x-small
                   color="red"
                   text-color="white"
@@ -138,7 +138,7 @@
                 <v-col cols="12" sm="4">
                   <v-switch
                     :input-value="attachment.show"
-                    @change="setField(attachment, 'show', !!$event)"
+                    @change="setShow(attachment, !!$event)"
                     dense
                     label="Im Buchungsprozess anzeigen"
                     hide-details
@@ -146,14 +146,26 @@
                   ></v-switch>
                 </v-col>
                 <v-col cols="12" sm="4">
-                  <v-switch
-                    :input-value="attachment.required"
-                    @change="setField(attachment, 'required', !!$event)"
-                    dense
-                    label="Muss akzeptiert werden"
-                    hide-details
-                    color="primary"
-                  ></v-switch>
+                  <v-tooltip :disabled="!!attachment.show" top>
+                    <template v-slot:activator="{ on }">
+                      <div v-on="on">
+                        <v-switch
+                          :input-value="isRequired(attachment)"
+                          :disabled="!attachment.show"
+                          @change="setField(attachment, 'required', !!$event)"
+                          dense
+                          label="Muss akzeptiert werden"
+                          hide-details
+                          color="primary"
+                        ></v-switch>
+                      </div>
+                    </template>
+                    <span>
+                      Nur möglich, wenn der Anhang im Buchungsprozess angezeigt
+                      wird. Sonst kann er eingesehen, aber nicht akzeptiert
+                      werden.
+                    </span>
+                  </v-tooltip>
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-switch
@@ -297,6 +309,14 @@ export default {
     },
     setField(attachment, field, value) {
       this.update(attachment, { [field]: value });
+    },
+    // Only an attachment shown in the checkout can be accepted there, so
+    // hiding it drops the requirement as well.
+    setShow(attachment, show) {
+      this.update(attachment, show ? { show } : { show, required: false });
+    },
+    isRequired(attachment) {
+      return !!attachment.show && !!attachment.required;
     },
     // The list is the caller's: a change goes out as a new list with the
     // attachment rebuilt, nothing is changed in place.

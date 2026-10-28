@@ -301,6 +301,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -355,6 +356,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -401,7 +403,7 @@ describe("Bookings", () => {
       await clickCardButton(wrapper, "zurücksetzen");
       expect(selectedStatusLabels()).toEqual([]);
       expect(resetButtons()).toEqual([]);
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("resets type and status together with Alle zurücksetzen", async () => {
@@ -417,7 +419,7 @@ describe("Bookings", () => {
       expect(selectedType()).toBe("Alle");
       expect(selectedStatusLabels()).toEqual([]);
       expect(funnelBadge(wrapper)).toBeNull();
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("stays open while toggling", async () => {
@@ -532,7 +534,7 @@ describe("Bookings", () => {
   });
 
   /**
-   * The Buchungsweg filter: Angemeldet, Gast, Admin and Unbekannt as a
+   * The Buchungsweg filter: Benutzer, Gast, Admin and Unbekannt as a
    * checkbox list, narrowing every view; Unbekannt keeps the bookings
    * without one. Every reach reads `bookedVia`, so it is always offered.
    */
@@ -561,7 +563,7 @@ describe("Bookings", () => {
       const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
 
       await openFilterCard(wrapper);
-      await toggleStatus(wrapper, "Angemeldet");
+      await toggleStatus(wrapper, "Benutzer");
       await toggleStatus(wrapper, "Unbekannt");
 
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([

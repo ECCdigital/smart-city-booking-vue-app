@@ -607,6 +607,15 @@
                   v-model="selectedBooking.location"
                 ></v-text-field>
               </v-col>
+              <v-col cols="12">
+                <v-checkbox
+                  v-model="isBusiness"
+                  dense
+                  hide-details
+                  class="mt-1"
+                  label="Geschäftliche Buchung"
+                ></v-checkbox>
+              </v-col>
             </v-row>
           </BaseSection>
 
@@ -856,6 +865,14 @@
       @submit="submitChanges"
       @cancel="resetChanges"
     />
+
+    <BookingOwnerChangeDialog
+      :open="!!ownerChange"
+      :previous-owner="ownerChange?.previousOwner"
+      :new-owner="ownerChange?.newOwner"
+      @confirm="settleOwnerChange(true)"
+      @cancel="settleOwnerChange(false)"
+    />
   </div>
 </template>
 
@@ -872,6 +889,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import BookingInitialState from "@/components/Booking/BookingInitialState.vue";
 import BookingCustomFieldsSection from "@/components/Booking/BookingCustomFieldsSection.vue";
 import BookingEditSummary from "@/components/Booking/BookingEditSummary.vue";
+import BookingOwnerChangeDialog from "@/components/Booking/BookingOwnerChangeDialog.vue";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
@@ -898,6 +916,8 @@ import {
   toUpdatePayload,
 } from "@/utils/bookingForm";
 import { BOOKING_STATUS } from "@/utils/bookingStatus";
+import { ownerMovedTo } from "@/utils/bookedVia";
+import { isBusinessBooking } from "@/utils/businessBooking";
 import _ from "lodash";
 
 export default {
@@ -909,6 +929,7 @@ export default {
     BookingInitialState,
     BookingCustomFieldsSection,
     BookingEditSummary,
+    BookingOwnerChangeDialog,
     CheckoutCalendar,
   },
   props: {
@@ -1051,9 +1072,25 @@ export default {
       // Create mode: the "Anfangszustand" and a create the backend refused (spec E10).
       initialState: defaultInitialState(),
       createError: null,
+      // The open question whether the save may hand the booking to another
+      // account: `{ previousOwner, newOwner, resolve }`, `null` when none.
+      ownerChange: null,
     };
   },
   computed: {
+    /**
+     * Private or business: the stored answer, or without it the company's
+     * reading. Only a change by the admin writes it; a booking without the
+     * answer keeps none until then.
+     */
+    isBusiness: {
+      get() {
+        return isBusinessBooking(this.selectedBooking);
+      },
+      set(value) {
+        this.$set(this.selectedBooking, "isBusiness", Boolean(value));
+      },
+    },
     ...mapGetters({
       tenants: "tenants/tenants",
       tenantId: "tenants/currentTenantId",
@@ -1873,6 +1910,7 @@ export default {
             this.inProgress = false;
           });
       } else {
+        if (!(await this.confirmOwnerChange())) return;
         this.inProgress = true;
         // The update PUT carries content only (spec E1.1): no flag, no
         // `status` - the state is moved by the transitions, never by a save.
@@ -1899,6 +1937,25 @@ export default {
             this.inProgress = false;
           });
       }
+    },
+    /**
+     * Whether the save may go ahead: a corrected first mail of a booking made
+     * by an admin hands it to another account, so the admin is asked first.
+     */
+    confirmOwnerChange() {
+      const newOwner = ownerMovedTo(this.booking, this.selectedBooking);
+      if (!newOwner) return Promise.resolve(true);
+      return new Promise((resolve) => {
+        this.ownerChange = {
+          previousOwner: this.booking.assignedUserId || this.booking.mail,
+          newOwner,
+          resolve,
+        };
+      });
+    },
+    settleOwnerChange(confirmed) {
+      this.ownerChange?.resolve(confirmed);
+      this.ownerChange = null;
     },
     padTo2Digits(num) {
       return num.toString().padStart(2, "0");

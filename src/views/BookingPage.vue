@@ -339,6 +339,15 @@
                 </span>
                 <span class="booking-fact__value">{{ bookedVia }}</span>
               </div>
+              <div
+                v-if="bookingUser"
+                class="booking-fact booking-page__booking-user"
+              >
+                <span class="booking-fact__label">
+                  {{ $t("booking.booked-via.booking-user") }}
+                </span>
+                <span class="booking-fact__value">{{ bookingUser }}</span>
+              </div>
               <div class="booking-fact">
                 <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
@@ -406,11 +415,16 @@ import {
 import {
   pathOf,
   paymentStatusLabel,
-  transitionActions,
+  bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
-import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import {
+  bookedViaLabel,
+  bookedViaTitle,
+  bookingUserOf,
+} from "@/utils/bookedVia";
+import { bookingKindLabel } from "@/utils/businessBooking";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
 /**
@@ -490,6 +504,10 @@ export default {
     bookedVia() {
       return bookedViaLabel(this.booking.bookedVia);
     },
+    /** The account of a user who booked for someone else, or `null`. */
+    bookingUser() {
+      return bookingUserOf(this.booking);
+    },
     /** The state read as a path (spec N2). */
     path() {
       return pathOf(this.booking);
@@ -499,7 +517,7 @@ export default {
       if (!this.canUpdate) {
         return [];
       }
-      return transitionActions(this.booking.status);
+      return bookingTransitionActions(this.booking);
     },
     objects() {
       return Object.values(this.booking.bookableItems || {});
@@ -515,9 +533,15 @@ export default {
         "zip-code": "zipCode",
         location: "location",
       };
-      return Object.entries(keys)
+      const fields = Object.entries(keys)
         .map(([key, field]) => ({ key, value: this.booking[field] }))
         .filter((field) => field.value != null && field.value !== "");
+      if (fields.length === 0) return [];
+      // Private or business, always stated: it decides the withdrawal.
+      return [
+        ...fields,
+        { key: "kind", value: bookingKindLabel(this.booking) },
+      ];
     },
     customFields() {
       return filledCustomFields(this.booking);

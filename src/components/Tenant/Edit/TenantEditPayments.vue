@@ -614,6 +614,55 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-row>
+        <v-col class="col-12 col-md-3"
+          ><v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Widerrufbelegnummer Präfix"
+            placeholder="WB"
+            persistent-placeholder
+            v-model="modelTenant.withdrawalNumberPrefix"
+        /></v-col>
+        <v-col>
+          <v-card
+            :color="
+              $vuetify.theme.dark
+                ? modelTenant?.withdrawalTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.withdrawalTemplate
+                ? 'success lighten-5'
+                : 'error lighten-5'
+            "
+            class="rounded"
+          >
+            <v-card-text
+              :class="
+                (modelTenant?.withdrawalTemplate ? 'success' : 'error') +
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
+              "
+            >
+              <div>
+                <v-icon left>{{
+                  modelTenant?.withdrawalTemplate ? "mdi-check" : "mdi-close"
+                }}</v-icon>
+                {{
+                  modelTenant?.withdrawalTemplate
+                    ? "Es ist eine Widerrufbelegvorlage hinterlegt."
+                    : "Es ist keine Widerrufbelegvorlage hinterlegt."
+                }}
+              </div>
+              <v-btn small outlined @click="$emit('open-withdrawal-template')"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </SubSection>
 
     <v-dialog v-model="showTestResultDialog" max-width="640" scrollable>
