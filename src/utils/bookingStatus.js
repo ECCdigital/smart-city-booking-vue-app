@@ -43,6 +43,24 @@ const PRESENTATION = {
   [MIXED]: { color: "grey", icon: "mdi-help-circle-outline" },
 };
 
+/**
+ * The state the UI names for a booking: a request the user
+ * withdrew before it was confirmed is stored as `rejected`, but reads
+ * Storniert, as in the storefront - the cancellation audit says who cut it
+ * (`cancellationRefund.origin`). A rejection by the administration or the
+ * system, and an old one without the audit, stays Abgelehnt. Transitions
+ * still follow the stored `status`.
+ */
+export function displayStatus(booking) {
+  if (
+    booking?.status === BOOKING_STATUS.REJECTED &&
+    booking.cancellationRefund?.origin === "user"
+  ) {
+    return BOOKING_STATUS.CANCELLED;
+  }
+  return booking?.status ?? null;
+}
+
 export function statusLabel(status) {
   if (status == null) return "";
   const key = `booking.status.${status}`;
@@ -159,16 +177,19 @@ export function statusRank(status) {
 }
 
 /**
- * The list's status filter (spec E11): the bookings whose state is among
- * `statuses`, in their order. An empty selection keeps nothing.
+ * The list's status filter (spec E11): the bookings whose state as shown
+ * (`displayStatus`) is among `statuses`, in their order. An empty selection
+ * keeps nothing.
  */
 export function filterBookingsByStatus(bookings, statuses) {
-  return bookings.filter((booking) => statuses.includes(booking?.status));
+  return bookings.filter((booking) =>
+    statuses.includes(displayStatus(booking))
+  );
 }
 
 /** The "Status" column of the Excel export (spec E6). */
 export function statusExportValue(booking) {
-  return statusLabel(booking?.status);
+  return statusLabel(displayStatus(booking));
 }
 
 /** "Kostenfrei" is derived from the price - a marker beside the state, not a state. */
@@ -305,8 +326,15 @@ function mainPathOf(free) {
   ];
 }
 
-/** The step a cancelled booking was cut behind: `cancelledFrom`, or Bestätigt where that is unknown. */
+/**
+ * The step a cancelled booking was cut behind: Angefragt for a stored
+ * `rejected` (also where it reads Storniert), else `cancelledFrom`, or
+ * Bestätigt where that is unknown.
+ */
 function cancelledOriginOf(booking) {
+  if (booking?.status === BOOKING_STATUS.REJECTED) {
+    return BOOKING_STATUS.REQUESTED;
+  }
   return booking?.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
 }
 
@@ -365,7 +393,8 @@ function buildPath({ status, free, cancelledFrom, dateOf, end }) {
  * Zahlung offen -> Bestätigt (without Zahlung offen for a free booking), each
  * step with a `STEP_STATE`, and for Abgelehnt / Storniert the point where the
  * path was cut - behind Angefragt, or behind `cancelledFrom` (behind Bestätigt
- * where that is unknown). Dates are raw: `timeCreated` at Angefragt,
+ * where that is unknown); a request the user withdrew reads Storniert behind
+ * Angefragt (`displayStatus`). Dates are raw: `timeCreated` at Angefragt,
  * `timePaid` at Bestätigt only while the booking is Bestätigt and priced
  * (glossary), `cancelledAt` at the end; a missing or zero timestamp is
  * `null`. The headline formats them.
@@ -373,7 +402,7 @@ function buildPath({ status, free, cancelledFrom, dateOf, end }) {
 export function pathOf(booking) {
   const free = isFree(booking);
   return buildPath({
-    status: booking?.status,
+    status: displayStatus(booking),
     free,
     cancelledFrom: cancelledOriginOf(booking),
     dateOf: (step) => stepDate(step, booking, free),
@@ -407,6 +436,20 @@ export function totalPriceOf(members) {
 }
 
 /**
+ * The state of a group as shown: the members' shared `displayStatus`,
+ * `MIXED` where they disagree, `null` without members. The series' actions
+ * keep `groupBookingStatus()`.
+ */
+export function groupDisplayStatus(members) {
+  if (!Array.isArray(members)) {
+    return null;
+  }
+  return groupBookingStatus(
+    members.map((member) => ({ status: displayStatus(member) }))
+  );
+}
+
+/**
  * The series read as a booking (spec N5): the path from the total price
  * (free where it is zero) at the members' shared state; `null` for a mixed
  * series or one without members, which the headline draws without a path.
@@ -417,7 +460,7 @@ export function totalPriceOf(members) {
  * same one - the rule after "Serie stornieren".
  */
 export function seriesPathOf(groupBooking, members) {
-  const status = groupBookingStatus(members);
+  const status = groupDisplayStatus(members);
   if (status == null || status === MIXED) {
     return null;
   }
@@ -456,7 +499,7 @@ export function mixedCounts(members) {
   return Object.values(BOOKING_STATUS)
     .map((status) => ({
       ...presentation(status),
-      count: list.filter((member) => member?.status === status).length,
+      count: list.filter((member) => displayStatus(member) === status).length,
     }))
     .filter((entry) => entry.count > 0);
 }

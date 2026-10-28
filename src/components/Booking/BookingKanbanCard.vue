@@ -141,13 +141,13 @@
         <v-chip
           v-if="element.bookingItem?.status"
           x-small
-          :color="statusColor(element.bookingItem.status)"
+          :color="statusColor(displayStatus(element.bookingItem))"
           text-color="white"
         >
           <v-icon x-small left>{{
-            statusIcon(element.bookingItem.status)
+            statusIcon(displayStatus(element.bookingItem))
           }}</v-icon>
-          {{ statusLabel(element.bookingItem.status) }}
+          {{ statusLabel(displayStatus(element.bookingItem)) }}
         </v-chip>
 
         <v-chip
@@ -180,6 +180,7 @@ import {
   actionColor,
   actionIcon,
   actionLabel,
+  displayStatus,
   freeMarker,
   isFree,
   statusColor,
@@ -230,6 +231,7 @@ export default {
     actionColor,
     actionIcon,
     actionLabel,
+    displayStatus,
     isFree,
     statusColor,
     statusIcon,

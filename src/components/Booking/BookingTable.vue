@@ -154,12 +154,12 @@
         <template v-slot:item.status="{ item }">
           <v-chip
             small
-            :color="statusColor(item.status)"
+            :color="statusColor(displayStatus(item))"
             text-color="white"
             class="font-weight-medium"
           >
-            <v-icon left x-small>{{ statusIcon(item.status) }}</v-icon>
-            {{ statusLabel(item.status) }}
+            <v-icon left x-small>{{ statusIcon(displayStatus(item)) }}</v-icon>
+            {{ statusLabel(displayStatus(item)) }}
           </v-chip>
           <v-chip
             v-if="isFree(item)"
@@ -296,6 +296,7 @@ import {
   allowsAction,
   freeMarker,
   isFree,
+  displayStatus,
   statusColor,
   statusIcon,
   statusLabel,
@@ -385,6 +386,7 @@ export default {
     isMarkedBookedVia(item) {
       return [BOOKED_VIA.GUEST, BOOKED_VIA.ADMIN].includes(item.bookedVia);
     },
+    displayStatus,
     isFree,
     statusColor,
     statusIcon,
