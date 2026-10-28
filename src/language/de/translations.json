@@ -1308,7 +1308,9 @@
       "nonNegativeDays": "Der Wert darf nicht negativ sein",
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
-      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden.",
+      "withoutTimeSpanHint": "Buchungen ohne festen Zeitraum fallen unter keine Stufe der Staffel. Sie werden standardmäßig zu 100 % erstattet. Legen Sie bei Bedarf einen anderen Wert fest. Dieser Wert gilt für diesen Mandanten für alle Buchungen ohne Zeitraum.",
+      "withoutTimeSpanLabel": "Erstattung ohne Zeitraum"
     },
     "legalDocuments": {
       "title": "Rechtsdokumente",

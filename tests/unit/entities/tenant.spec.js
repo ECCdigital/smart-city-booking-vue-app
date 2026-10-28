@@ -12,3 +12,18 @@ describe("Tenant — the short description", () => {
     expect(new Tenant({ name: "Verein" }).description).toBe("");
   });
 });
+
+describe("Tenant — the refund of a booking without a time span", () => {
+  it("carries the configured percentage", () => {
+    expect(
+      new Tenant({ cancellationRefundPercentageWithoutTimeSpan: 0 })
+        .cancellationRefundPercentageWithoutTimeSpan
+    ).toBe(0);
+  });
+
+  it("defaults to a full refund", () => {
+    expect(
+      new Tenant({ name: "Verein" }).cancellationRefundPercentageWithoutTimeSpan
+    ).toBe(100);
+  });
+});
