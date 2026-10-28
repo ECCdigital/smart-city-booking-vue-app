@@ -43,3 +43,24 @@ export function filterBookingsByBookedVia(bookings, ways) {
 export function bookedViaHint(bookedVia) {
   return i18n.t(`booking.booked-via.hint.${bookedViaOf({ bookedVia })}`);
 }
+
+/** The first address of a booking's mail, in lower case: whom it belongs to. */
+function primaryMail(mail) {
+  const [primary] = (mail || "")
+    .split(/[,\n]+/)
+    .map((address) => address.trim())
+    .filter(Boolean);
+  return primary ? primary.toLowerCase() : "";
+}
+
+/**
+ * The account a save hands the booking to, `null` when it stays. A booking
+ * of the Buchungsweg Admin belongs to its first mail, so when the admin
+ * corrects that address, the backend moves it to the corrected one; every
+ * other booking keeps its owner.
+ */
+export function ownerMovedTo(original, edited) {
+  if (bookedViaOf(original) !== BOOKED_VIA.ADMIN) return null;
+  const primary = primaryMail(edited?.mail);
+  return primary && primary !== primaryMail(original.mail) ? primary : null;
+}
