@@ -220,6 +220,15 @@ describe("getApiErrorMessage", () => {
       );
     });
 
+    it("names the refused withdrawal of a business booking", () => {
+      const error = lifecycleError(403, "booking_withdrawal_not_private", {
+        bookingId: "bk-1",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Eine geschäftliche Buchung kann nicht widerrufen werden."
+      );
+    });
+
     it("names the management gate of a declined tenant", () => {
       const error = lifecycleError(403, "tenant_declined", {
         tenantId: "tenant-b",

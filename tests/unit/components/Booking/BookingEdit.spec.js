@@ -205,6 +205,50 @@ describe("BookingEdit", () => {
     });
   });
 
+  /** Private or business: the checkbox follows the company until the admin sets it. */
+  describe("Geschäftliche Buchung", () => {
+    function businessBox(wrapper) {
+      return wrapper
+        .findAllComponents({ name: "v-checkbox" })
+        .wrappers.find((box) => box.props("label") === "Geschäftliche Buchung")
+        .find("input");
+    }
+
+    it("reads a booking without the answer off the company", async () => {
+      const withCompany = await mountEdit({
+        booking: booking({ company: "ACME" }),
+      });
+      const withoutCompany = await mountEdit({
+        booking: booking({ company: "" }),
+      });
+
+      expect(businessBox(withCompany.wrapper).element.checked).toBe(true);
+      expect(businessBox(withoutCompany.wrapper).element.checked).toBe(false);
+    });
+
+    it("shows the stored answer over the company", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ company: "ACME", isBusiness: false }),
+      });
+
+      expect(businessBox(wrapper).element.checked).toBe(false);
+    });
+
+    it("sends no answer until the admin sets it, then the one set", async () => {
+      const untouched = await mountEdit({ booking: booking({ company: "" }) });
+      saveAnswers({ data: {} });
+      await submit(untouched.wrapper);
+      expect(putBody()).not.toHaveProperty("isBusiness");
+
+      vi.clearAllMocks();
+      const touched = await mountEdit({ booking: booking({ company: "" }) });
+      saveAnswers({ data: {} });
+      await businessBox(touched.wrapper).trigger("click");
+      await submit(touched.wrapper);
+      expect(putBody()).toMatchObject({ isBusiness: true });
+    });
+  });
+
   describe("Speichern", () => {
     it("sends content only on an update - no flag, no status", async () => {
       const { wrapper } = await mountEdit({

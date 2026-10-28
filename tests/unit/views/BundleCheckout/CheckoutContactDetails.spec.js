@@ -58,6 +58,7 @@ function mountStep(bookable, user = null) {
       contactDetails: {
         name: null,
         company: null,
+        isBusiness: null,
         mail: null,
         phone: null,
         street: null,
@@ -105,5 +106,41 @@ describe("CheckoutContactDetails — restricted bookables", () => {
 
     expect(wrapper.text()).not.toContain(LOGIN_HINT);
     expect(guestButton(wrapper).length).toBe(1);
+  });
+});
+
+/** Private or business booking: the checkbox at the end of the contact data. */
+describe("CheckoutContactDetails — Geschäftliche Buchung", () => {
+  function businessBox(wrapper) {
+    return wrapper.find(".checkout-contact-details__business input");
+  }
+
+  it("follows the company until the booker sets it", async () => {
+    const wrapper = mountStep({});
+    expect(businessBox(wrapper).element.checked).toBe(false);
+
+    wrapper.props("contactDetails").company = "ACME";
+    await wrapper.vm.$nextTick();
+    expect(businessBox(wrapper).element.checked).toBe(true);
+    expect(wrapper.props("contactDetails").isBusiness).toBeNull();
+  });
+
+  it("keeps the booker's choice over the company", async () => {
+    const wrapper = mountStep({});
+
+    await businessBox(wrapper).trigger("click");
+    expect(wrapper.props("contactDetails").isBusiness).toBe(true);
+
+    wrapper.props("contactDetails").company = "";
+    await wrapper.vm.$nextTick();
+    expect(businessBox(wrapper).element.checked).toBe(true);
+  });
+
+  it("explains the choice in a tooltip on a help icon", () => {
+    const wrapper = mountStep({});
+    expect(wrapper.text()).toContain("Geschäftliche Buchung");
+    expect(wrapper.find('[aria-label^="Für ein Unternehmen"]').exists()).toBe(
+      true
+    );
   });
 });

@@ -7,15 +7,18 @@ import {
   actionLabel,
   allowedActions,
   allowsAction,
+  displayStatus,
   filterBookingsByStatus,
   freeMarker,
   groupAllowsAction,
   transitionTarget,
   groupBookingStatus,
+  groupDisplayStatus,
   isFree,
   isAwaitingPayment,
   isPaid,
   isRejectedOrCancelled,
+  bookingTransitionActions,
   mixedCounts,
   pathOf,
   paymentLabel,
@@ -45,6 +48,7 @@ describe("presentation of a booking status", () => {
     [BOOKING_STATUS.CONFIRMED, "Bestätigt", "success", "mdi-check-circle"],
     [BOOKING_STATUS.REJECTED, "Abgelehnt", "error", "mdi-cancel"],
     [BOOKING_STATUS.CANCELLED, "Storniert", "error", "mdi-close-circle"],
+    [BOOKING_STATUS.WITHDRAWN, "Widerrufen", "error", "mdi-undo-variant"],
   ])("%s reads as %s", (status, label, color, icon) => {
     expect(statusLabel(status)).toBe(label);
     expect(statusColor(status)).toBe(color);
@@ -71,11 +75,16 @@ describe("presentation of a booking status", () => {
  */
 describe("allowedActions", () => {
   it.each([
-    [BOOKING_STATUS.REQUESTED, ["confirm", "cancel", "delete"]],
-    [BOOKING_STATUS.PAYMENT_DUE, ["pay", "cancel"]],
-    [BOOKING_STATUS.CONFIRMED, ["cancel"]],
+    [
+      BOOKING_STATUS.REQUESTED,
+      ["confirm", "cancel", "acceptWithdrawal", "delete"],
+    ],
+    [BOOKING_STATUS.PAYMENT_DUE, ["pay", "cancel", "acceptWithdrawal"]],
+    [BOOKING_STATUS.CONFIRMED, ["cancel", "acceptWithdrawal"]],
     [BOOKING_STATUS.REJECTED, ["reinstate", "delete"]],
     [BOOKING_STATUS.CANCELLED, ["reinstate"]],
+    // A withdrawal is final: nothing leaves Widerrufen.
+    [BOOKING_STATUS.WITHDRAWN, []],
   ])("at %s allows %j", (status, actions) => {
     expect(allowedActions(status)).toEqual(actions);
   });
@@ -83,6 +92,34 @@ describe("allowedActions", () => {
   it("allows nothing for a mixed group or an unknown status", () => {
     expect(allowedActions(MIXED)).toEqual([]);
     expect(allowedActions(undefined)).toEqual([]);
+  });
+
+  it("offers Widerruf akzeptieren for a private booking only", () => {
+    expect(
+      allowsAction({ status: "confirmed", company: "" }, "acceptWithdrawal")
+    ).toBe(true);
+    expect(
+      allowsAction(
+        { status: "confirmed", company: "ACME", isBusiness: false },
+        "acceptWithdrawal"
+      )
+    ).toBe(true);
+    expect(
+      allowsAction({ status: "confirmed", company: "ACME" }, "acceptWithdrawal")
+    ).toBe(false);
+    expect(
+      allowsAction(
+        { status: "confirmed", isBusiness: true },
+        "acceptWithdrawal"
+      )
+    ).toBe(false);
+    expect(
+      bookingTransitionActions({ status: "confirmed", isBusiness: true })
+    ).toEqual(["cancel"]);
+    expect(bookingTransitionActions({ status: "confirmed" })).toEqual([
+      "cancel",
+      "acceptWithdrawal",
+    ]);
   });
 
   it("answers for a booking through allowsAction", () => {
@@ -98,6 +135,7 @@ describe("actionLabel", () => {
     expect(actionLabel("confirm")).toBe("Freigeben");
     expect(actionLabel("pay")).toBe("Als bezahlt markieren");
     expect(actionLabel("reinstate")).toBe("Wiederherstellen");
+    expect(actionLabel("acceptWithdrawal")).toBe("Widerruf akzeptieren");
     expect(actionLabel("delete")).toBe("Löschen");
   });
 
@@ -112,16 +150,24 @@ describe("actionLabel", () => {
 });
 
 describe("statusRank", () => {
-  it("orders the states requested < payment_due < confirmed < cancelled < rejected", () => {
+  it("orders the states requested < payment_due < confirmed < cancelled < withdrawn < rejected", () => {
     const shuffled = [
       "rejected",
+      "withdrawn",
       "confirmed",
       "requested",
       "cancelled",
       "payment_due",
     ];
     expect([...shuffled].sort((a, b) => statusRank(a) - statusRank(b))).toEqual(
-      ["requested", "payment_due", "confirmed", "cancelled", "rejected"]
+      [
+        "requested",
+        "payment_due",
+        "confirmed",
+        "cancelled",
+        "withdrawn",
+        "rejected",
+      ]
     );
   });
 
@@ -139,6 +185,7 @@ describe("filterBookingsByStatus", () => {
     { id: "b-confirmed", status: "confirmed" },
     { id: "b-rejected", status: "rejected" },
     { id: "b-cancelled", status: "cancelled" },
+    { id: "b-withdrawn", status: "withdrawn" },
   ];
 
   it("keeps the bookings whose state is selected, in their order", () => {
@@ -149,7 +196,7 @@ describe("filterBookingsByStatus", () => {
     ).toEqual(["b-requested", "b-cancelled"]);
   });
 
-  it("keeps every booking while all five states are selected", () => {
+  it("keeps every booking while all six states are selected", () => {
     expect(
       filterBookingsByStatus(bookings, Object.values(BOOKING_STATUS))
     ).toEqual(bookings);
@@ -220,6 +267,12 @@ describe("isPaid", () => {
       false,
     ],
     ["cancelled", {}, false],
+    ["withdrawn", { cancellationRefund: { cancelledFrom: "confirmed" } }, true],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "payment_due" } },
+      false,
+    ],
   ])("at %s with %j is %s", (status, extra, paid) => {
     expect(isPaid({ status, priceEur: 10, ...extra })).toBe(paid);
   });
@@ -252,6 +305,12 @@ describe("paymentLabel", () => {
       { cancellationRefund: { cancelledFrom: "payment_due" } },
       "Nein",
     ],
+    ["withdrawn", { cancellationRefund: { cancelledFrom: "confirmed" } }, "Ja"],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "payment_due" } },
+      "Entfällt",
+    ],
   ])("answers Ja/Nein for a priced booking at %s", (status, extra, label) => {
     expect(paymentLabel({ status, priceEur: 25, ...extra })).toBe(label);
   });
@@ -275,6 +334,16 @@ describe("paymentStatusLabel", () => {
       "Bezahlt",
     ],
     [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "confirmed" } },
+      "Bezahlt",
+    ],
+    [
+      "withdrawn",
+      { cancellationRefund: { cancelledFrom: "requested" } },
+      "Entfällt",
+    ],
+    [
       "cancelled",
       { cancellationRefund: { cancelledFrom: "payment_due" } },
       "Nicht bezahlt",
@@ -293,6 +362,7 @@ describe("isRejectedOrCancelled", () => {
   it("is true for the two ended states only", () => {
     expect(isRejectedOrCancelled({ status: "rejected" })).toBe(true);
     expect(isRejectedOrCancelled({ status: "cancelled" })).toBe(true);
+    expect(isRejectedOrCancelled({ status: "withdrawn" })).toBe(true);
     expect(isRejectedOrCancelled({ status: "requested" })).toBe(false);
     expect(isRejectedOrCancelled({ status: "confirmed" })).toBe(false);
     expect(isRejectedOrCancelled(undefined)).toBe(false);
@@ -529,6 +599,27 @@ describe("pathOf", () => {
       expect(stepStates(fromConfirmed)).toEqual(["done", "done", "done"]);
       expect(fromConfirmed.end.afterIndex).toBe(2);
       expect(fromConfirmed.end.label).toBe("Storniert");
+    });
+
+    it("cuts Widerrufen behind the step it was withdrawn from, Angefragt included", () => {
+      const withdrawn = (from) =>
+        priced({
+          status: BOOKING_STATUS.WITHDRAWN,
+          cancellationRefund: { cancelledFrom: from },
+        });
+
+      const fromRequested = pathOf(withdrawn(BOOKING_STATUS.REQUESTED));
+      expect(stepStates(fromRequested)).toEqual(["done", "void", "void"]);
+      expect(fromRequested.terminal).toBe(true);
+      expect(fromRequested.end).toMatchObject({
+        status: BOOKING_STATUS.WITHDRAWN,
+        label: "Widerrufen",
+        afterIndex: 0,
+      });
+
+      const fromConfirmed = pathOf(withdrawn(BOOKING_STATUS.CONFIRMED));
+      expect(stepStates(fromConfirmed)).toEqual(["done", "done", "done"]);
+      expect(fromConfirmed.end.afterIndex).toBe(2);
     });
 
     it("cuts Storniert behind Bestätigt where the origin is unknown", () => {
@@ -951,5 +1042,106 @@ describe("seriesActionLabel", () => {
     expect(seriesActionLabel("cancel", BOOKING_STATUS.CONFIRMED)).toBe(
       "Serie stornieren"
     );
+  });
+});
+
+/**
+ * A request the user withdrew before it was confirmed is stored as
+ * `rejected` but reads Storniert, as in the storefront (ticket #642).
+ */
+describe("displayStatus", () => {
+  function rejectedBy(origin) {
+    return {
+      status: BOOKING_STATUS.REJECTED,
+      cancellationRefund: { origin, cancelledFrom: "requested" },
+      rejectionReason: "Termin passt nicht mehr",
+    };
+  }
+
+  it("reads Storniert for a request the user withdrew", () => {
+    expect(displayStatus(rejectedBy("user"))).toBe(BOOKING_STATUS.CANCELLED);
+  });
+
+  it("stays Abgelehnt for a rejection by the administration or the system", () => {
+    expect(displayStatus(rejectedBy("admin"))).toBe(BOOKING_STATUS.REJECTED);
+    expect(displayStatus(rejectedBy("system"))).toBe(BOOKING_STATUS.REJECTED);
+  });
+
+  it("stays Abgelehnt for an old rejection without the audit", () => {
+    expect(displayStatus({ status: BOOKING_STATUS.REJECTED })).toBe(
+      BOOKING_STATUS.REJECTED
+    );
+  });
+
+  it("is the stored status otherwise, and null without a booking", () => {
+    expect(displayStatus({ status: BOOKING_STATUS.CANCELLED })).toBe(
+      BOOKING_STATUS.CANCELLED
+    );
+    expect(displayStatus({ status: BOOKING_STATUS.REQUESTED })).toBe(
+      BOOKING_STATUS.REQUESTED
+    );
+    expect(displayStatus(null)).toBeNull();
+  });
+
+  it("files the withdrawn request under Storniert in the filter and the export", () => {
+    const bookings = [
+      { id: "b-user", ...rejectedBy("user") },
+      { id: "b-admin", ...rejectedBy("admin") },
+    ];
+    expect(
+      filterBookingsByStatus(bookings, ["cancelled"]).map((b) => b.id)
+    ).toEqual(["b-user"]);
+    expect(
+      filterBookingsByStatus(bookings, ["rejected"]).map((b) => b.id)
+    ).toEqual(["b-admin"]);
+    expect(statusExportValue(rejectedBy("user"))).toBe("Storniert");
+    expect(statusExportValue(rejectedBy("admin"))).toBe("Abgelehnt");
+  });
+
+  it("cuts the path behind Angefragt with a Storniert end and the reason", () => {
+    const path = pathOf({ priceEur: 25, ...rejectedBy("user") });
+    expect(path.reachedIndex).toBe(0);
+    expect(path.end).toMatchObject({
+      status: BOOKING_STATUS.CANCELLED,
+      label: "Storniert",
+      afterIndex: 0,
+      reason: "Termin passt nicht mehr",
+    });
+    expect(path.steps.map((step) => step.state)).toEqual([
+      STEP_STATE.DONE,
+      STEP_STATE.VOID,
+      STEP_STATE.VOID,
+    ]);
+  });
+
+  it("keeps the Abgelehnt end for a rejection by the administration", () => {
+    expect(pathOf(rejectedBy("admin")).end).toMatchObject({
+      status: BOOKING_STATUS.REJECTED,
+      label: "Abgelehnt",
+    });
+  });
+
+  it("reads a series the user withdrew as Storniert behind Angefragt", () => {
+    const members = [rejectedBy("user"), rejectedBy("user")];
+    expect(groupDisplayStatus(members)).toBe(BOOKING_STATUS.CANCELLED);
+    expect(groupBookingStatus(members)).toBe(BOOKING_STATUS.REJECTED);
+    const path = seriesPathOf({ timeCreated: 1 }, members);
+    expect(path.end).toMatchObject({
+      status: BOOKING_STATUS.CANCELLED,
+      afterIndex: 0,
+      reason: "Termin passt nicht mehr",
+    });
+  });
+
+  it("counts withdrawn and rejected members apart in a series", () => {
+    const members = [rejectedBy("user"), rejectedBy("admin")];
+    expect(groupDisplayStatus(members)).toBe(MIXED);
+    expect(seriesPathOf({ timeCreated: 1 }, members)).toBeNull();
+    expect(
+      mixedCounts(members).map((entry) => [entry.status, entry.count])
+    ).toEqual([
+      [BOOKING_STATUS.REJECTED, 1],
+      [BOOKING_STATUS.CANCELLED, 1],
+    ]);
   });
 });

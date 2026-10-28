@@ -62,6 +62,7 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { continuesToProvider, payableBookings } from "@/utils/checkoutNextStep";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
+import { isBusinessBooking } from "@/utils/businessBooking";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
 import CheckoutSeriesBooking from "@/views/BundleCheckout/CheckoutSeriesBooking.vue";
 import CheckoutGroupBookingSummary from "@/views/BundleCheckout/CheckoutGroupBookingSummary.vue";
@@ -117,6 +118,7 @@ export default {
       contactDetails: {
         name: null,
         company: null,
+        isBusiness: null,
         mail: null,
         phone: null,
         street: null,
@@ -816,7 +818,10 @@ export default {
       const response = await ApiCheckoutService.groupCheckout(
         this.tenantId,
         {
-          contactData: this.contactDetails,
+          contactData: {
+            ...this.contactDetails,
+            isBusiness: isBusinessBooking(this.contactDetails),
+          },
           bookingAttempts: this.bookingAttempts,
           paymentProvider: this.selectedPaymentApp,
         },

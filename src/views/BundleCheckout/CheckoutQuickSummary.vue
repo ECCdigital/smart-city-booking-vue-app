@@ -18,6 +18,10 @@
           <v-col> {{ contactDetails.company }} </v-col>
         </v-row>
         <v-row no-gutters>
+          <v-col class="font-weight-bold col-md-2"> Buchungsart: </v-col>
+          <v-col> {{ bookingKind }} </v-col>
+        </v-row>
+        <v-row no-gutters>
           <v-col class="font-weight-bold col-md-2"> Adresse: </v-col>
           <v-col>
             {{ contactDetails.street }}<br />
@@ -322,6 +326,7 @@
 
 <script>
 import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
+import { bookingKindLabel, isBusinessBooking } from "@/utils/businessBooking";
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
@@ -512,6 +517,7 @@ export default {
         couponCode: this.coupon?.id,
         name: this.contactDetails.name,
         company: this.contactDetails.company,
+        isBusiness: isBusinessBooking(this.contactDetails),
         street: this.contactDetails.street,
         zipCode: this.contactDetails.zipCode,
         location: this.contactDetails.location,
@@ -666,6 +672,10 @@ export default {
   },
 
   computed: {
+    /** „Privat“ or „Geschäftlich“, as the checkbox of the contact step says. */
+    bookingKind() {
+      return bookingKindLabel(this.contactDetails);
+    },
     showDiscountOption() {
       return this.bookingDiscountPercent > 0;
     },

@@ -649,7 +649,7 @@ const routes = [
   },
   {
     path: "/booking/verify-reject/:tenantId",
-    name: "booking-request-reject",
+    name: "booking-verify-reject",
     component: lazyLoad("VerifyRejectBooking"),
     meta: {
       title: "Stornierung bestätigen",
