@@ -607,6 +607,15 @@
                   v-model="selectedBooking.location"
                 ></v-text-field>
               </v-col>
+              <v-col cols="12">
+                <v-checkbox
+                  v-model="isBusiness"
+                  dense
+                  hide-details
+                  class="mt-1"
+                  label="Geschäftliche Buchung"
+                ></v-checkbox>
+              </v-col>
             </v-row>
           </BaseSection>
 
@@ -908,6 +917,7 @@ import {
 } from "@/utils/bookingForm";
 import { BOOKING_STATUS } from "@/utils/bookingStatus";
 import { ownerMovedTo } from "@/utils/bookedVia";
+import { isBusinessBooking } from "@/utils/businessBooking";
 import _ from "lodash";
 
 export default {
@@ -1068,6 +1078,19 @@ export default {
     };
   },
   computed: {
+    /**
+     * Private or business: the stored answer, or without it the company's
+     * reading. Only a change by the admin writes it; a booking without the
+     * answer keeps none until then.
+     */
+    isBusiness: {
+      get() {
+        return isBusinessBooking(this.selectedBooking);
+      },
+      set(value) {
+        this.$set(this.selectedBooking, "isBusiness", Boolean(value));
+      },
+    },
     ...mapGetters({
       tenants: "tenants/tenants",
       tenantId: "tenants/currentTenantId",

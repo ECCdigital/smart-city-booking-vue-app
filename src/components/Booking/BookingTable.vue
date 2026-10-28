@@ -154,12 +154,12 @@
         <template v-slot:item.status="{ item }">
           <v-chip
             small
-            :color="statusColor(item.status)"
+            :color="statusColor(displayStatus(item))"
             text-color="white"
             class="font-weight-medium"
           >
-            <v-icon left x-small>{{ statusIcon(item.status) }}</v-icon>
-            {{ statusLabel(item.status) }}
+            <v-icon left x-small>{{ statusIcon(displayStatus(item)) }}</v-icon>
+            {{ statusLabel(displayStatus(item)) }}
           </v-chip>
           <v-chip
             v-if="isFree(item)"
@@ -236,7 +236,7 @@
               </v-list-item>
 
               <v-list-item
-                v-for="action in transitionActions(item.status)"
+                v-for="action in bookingTransitionActions(item)"
                 :key="action"
                 link
                 @click="transition(action, item.id)"
@@ -296,11 +296,12 @@ import {
   allowsAction,
   freeMarker,
   isFree,
+  displayStatus,
   statusColor,
   statusIcon,
   statusLabel,
   statusRank,
-  transitionActions,
+  bookingTransitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
 import { BOOKED_VIA } from "@/utils/bookedVia";
@@ -385,11 +386,12 @@ export default {
     isMarkedBookedVia(item) {
       return [BOOKED_VIA.GUEST, BOOKED_VIA.ADMIN].includes(item.bookedVia);
     },
+    displayStatus,
     isFree,
     statusColor,
     statusIcon,
     statusLabel,
-    transitionActions,
+    bookingTransitionActions,
     /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
     refundMarker(booking) {
       return refundStateMarker(refundStateOf(booking));

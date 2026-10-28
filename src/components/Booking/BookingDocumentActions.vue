@@ -2,6 +2,7 @@
   <div class="booking-document-actions">
     <BookingDocuments
       :attachments="booking.attachments"
+      :groups="documentGroups"
       @download="$emit('download', $event)"
     >
       <template #receipts-action>
@@ -92,7 +93,34 @@
       </template>
       <template #cancellations-footer>
         <v-alert
-          v-if="errors.cancellationReceipt"
+          v-if="errors.cancellationReceipt && !withdrawn"
+          type="error"
+          dense
+          outlined
+          class="mt-2 mb-0"
+        >
+          {{ errors.cancellationReceipt }}
+        </v-alert>
+      </template>
+
+      <template #withdrawals-action>
+        <v-btn
+          v-if="canReprintWithdrawalReceipt"
+          text
+          x-small
+          color="primary"
+          class="booking-document-actions__reprint-withdrawal"
+          :title="$t('booking.withdrawalReceipt.reprint.hint')"
+          :loading="busy.cancellationReceipt"
+          @click="reprintCancellationReceipt"
+        >
+          <v-icon left x-small>mdi-file-replace-outline</v-icon>
+          {{ $t("booking.page.documents.reprint") }}
+        </v-btn>
+      </template>
+      <template #withdrawals-footer>
+        <v-alert
+          v-if="errors.cancellationReceipt && withdrawn"
           type="error"
           dense
           outlined
@@ -238,8 +266,33 @@ export default {
     canReprintCancellationReceipt() {
       return (
         isRejectedOrCancelled(this.booking) &&
+        !this.withdrawn &&
         BookingPermissionService.allowReprint(this.booking)
       );
+    },
+    /** At Widerrufen the same reprint issues the withdrawal receipt („Widerrufbeleg“). */
+    canReprintWithdrawalReceipt() {
+      return (
+        this.withdrawn && BookingPermissionService.allowReprint(this.booking)
+      );
+    },
+    withdrawn() {
+      return this.booking?.status === BOOKING_STATUS.WITHDRAWN;
+    },
+    /** Widerrufbelege is listed for a withdrawn booking or one that carries one. */
+    documentGroups() {
+      const hasWithdrawalReceipt = (this.booking?.attachments || []).some(
+        (attachment) => attachment?.type === "withdrawal"
+      );
+      return this.withdrawn || hasWithdrawalReceipt
+        ? [
+            "receipts",
+            "invoices",
+            "cancellations",
+            "withdrawals",
+            "attachments",
+          ]
+        : ["receipts", "invoices", "cancellations", "attachments"];
     },
   },
   methods: {
@@ -317,11 +370,15 @@ export default {
      * reloads as well (spec E5).
      */
     async reprintCancellationReceipt() {
+      // A withdrawn booking's reprint issues its withdrawal receipt.
+      const keys = this.withdrawn
+        ? "booking.withdrawalReceipt.reprint"
+        : "booking.cancellationReceipt.reprint";
       await this.produce("cancellationReceipt", {
         call: () =>
           ApiBookingService.reprintCancellationReceipt(this.booking.id),
-        successKey: "booking.cancellationReceipt.reprint.success",
-        errorKey: "booking.cancellationReceipt.reprint.error",
+        successKey: `${keys}.success`,
+        errorKey: `${keys}.error`,
         errorMessage: getBookingErrorMessage,
       });
     },

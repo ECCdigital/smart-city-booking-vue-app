@@ -489,6 +489,97 @@ export const CANCELLATION_VARIABLES = [
   PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL,
 ];
 
+/** The withdrawal receipt („Widerrufbeleg“): no fee, no tier calculation. */
+export const WITHDRAWAL_VARIABLES = [
+  {
+    name: "title",
+    placeholder: "{{title}}",
+    label: "Dokumenttitel",
+    description: "Titel des Belegs („Widerrufbeleg“)",
+  },
+  {
+    name: "withdrawalNumber",
+    placeholder: "{{withdrawalNumber}}",
+    label: "Widerrufbelegnummer",
+    description: "Nummer des Widerrufbelegs",
+  },
+  {
+    name: "bookingId",
+    placeholder: "{{bookingId}}",
+    label: "Buchungs-ID",
+    description: "ID der widerrufenen Buchung",
+  },
+  {
+    name: "withdrawalDate",
+    placeholder: "{{withdrawalDate}}",
+    label: "Widerrufsdatum",
+    description: "Datum und Uhrzeit, zu der der Widerruf angenommen wurde",
+  },
+  {
+    name: "hasOriginalDocument",
+    placeholder:
+      "{{#if hasOriginalDocument}}Rechnung {{originalInvoiceNumber}}{{/if}}",
+    label: "Rechnung vorhanden (Bedingung)",
+    description:
+      "Wahr, wenn zur Buchung eine Rechnung oder ein Zahlungsbeleg ausgestellt war",
+  },
+  {
+    name: "originalInvoiceNumber",
+    placeholder: "{{originalInvoiceNumber}}",
+    label: "Original-Rechnungsnummer",
+    description: "Nummer der Rechnung bzw. des Zahlungsbelegs, falls vorhanden",
+  },
+  {
+    name: "originalInvoiceDate",
+    placeholder: "{{originalInvoiceDate}}",
+    label: "Original-Rechnungsdatum",
+    description: "Datum der Rechnung bzw. des Zahlungsbelegs",
+  },
+  {
+    name: "alreadyPaid",
+    placeholder:
+      "{{#if alreadyPaid}}Text bei erfolgter Zahlung{{else}}Text ohne Zahlung{{/if}}",
+    label: "Bereits bezahlt (Bedingung)",
+    description:
+      "Wahr, wenn die Buchung bezahlt war: der Betrag wird vollständig erstattet, sonst entfällt der Rechnungsbetrag",
+  },
+  {
+    name: "refundAmount",
+    placeholder: "{{refundAmount}}",
+    label: "Gutgeschriebener Betrag",
+    description: "Erstatteter bzw. entfallender Betrag (formatiert)",
+  },
+  {
+    name: "location",
+    placeholder: "{{location}}",
+    label: "Ort",
+    description: "Ort",
+  },
+  {
+    name: "invoiceAddress",
+    placeholder: "{{{invoiceAddress}}}",
+    label: "Kundenadresse",
+    description: "Adresse des Kunden",
+  },
+  {
+    name: "mainContent",
+    placeholder: "{{{mainContent}}}",
+    label: "Positionstabelle",
+    description: "Gutgeschriebene Positionen (HTML)",
+  },
+  {
+    name: "totalAmount",
+    placeholder: "{{totalAmount}}",
+    label: "Gesamtbetrag",
+    description: "Gutgeschriebener Gesamtbetrag (negativ)",
+  },
+  ...PDF_STRUCTURED_VARIABLES,
+  ...PDF_BOOKING_FIELD_VARIABLES,
+  PDF_BOOKING_VARIABLE,
+  ...PDF_HELPER_VARIABLES,
+  PDF_BOOKING_ITEMS_TABLE_PARTIAL("booked-items"),
+];
+
 const SAMPLE_CUSTOMER_CONTACT =
   "<strong>Name:</strong> Max Mustermann<br />" +
   "<strong>Firma:</strong> Beispiel GmbH<br />" +
@@ -798,6 +889,26 @@ export const SAMPLE_DATA = {
     coupon: null,
     totals: PDF_SAMPLE_TOTALS_NEGATIVE,
   },
+  withdrawal: {
+    title: "Widerrufbeleg",
+    withdrawalNumber: "WB-2026-0001-1",
+    bookingId: "BK-987654",
+    withdrawalDate: "20.05.2026, 14:32",
+    hasOriginalDocument: true,
+    originalInvoiceNumber: "R-2026-000123",
+    originalInvoiceDate: "18.05.2026",
+    alreadyPaid: true,
+    refundAmount: "120,00 €",
+    location: "Musterstadt",
+    totalAmount: "-120,00 €",
+    invoiceAddress: SAMPLE_INVOICE_ADDRESS,
+    mainContent: SAMPLE_CANCELLATION_MAIN_CONTENT,
+    booking: PDF_SAMPLE_BOOKING_NEGATIVE,
+    bookings: PDF_SAMPLE_BOOKINGS_NEGATIVE,
+    items: PDF_SAMPLE_ITEMS_NEGATIVE,
+    coupon: null,
+    totals: PDF_SAMPLE_TOTALS_NEGATIVE,
+  },
 };
 
 export function getVariablesForContext(context) {
@@ -810,6 +921,8 @@ export function getVariablesForContext(context) {
       return INVOICE_VARIABLES;
     case "cancellation":
       return CANCELLATION_VARIABLES;
+    case "withdrawal":
+      return WITHDRAWAL_VARIABLES;
     default:
       return [];
   }

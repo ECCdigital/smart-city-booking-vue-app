@@ -48,6 +48,14 @@ export default {
     emitTenant() {
       this.$emit("update:tenant", this.localTenant);
     },
+    updateWithoutTimeSpanPercentage(percentage) {
+      this.$set(
+        this.localTenant,
+        "cancellationRefundPercentageWithoutTimeSpan",
+        percentage
+      );
+      this.emitTenant();
+    },
     updateRefundTiers(tiers) {
       this.$set(this.localTenant, "cancellationRefundTiers", tiers);
       this.emitTenant();
@@ -112,7 +120,11 @@ export default {
 
     <TenantCancellationRefundTiersEditor
       :tiers="localTenant.cancellationRefundTiers"
+      :without-time-span-percentage="
+        localTenant.cancellationRefundPercentageWithoutTimeSpan
+      "
       @update:tiers="updateRefundTiers"
+      @update:withoutTimeSpanPercentage="updateWithoutTimeSpanPercentage"
     />
   </v-form>
 </template>

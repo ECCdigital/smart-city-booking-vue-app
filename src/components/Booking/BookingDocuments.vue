@@ -61,18 +61,27 @@ import FormatService from "@/services/FormatService";
 
 /**
  * The Dokumente block of a Buchungsseite (CONTEXT.md): the booking's
- * attachments in their four groups - Belege, Rechnungen, Stornobelege,
- * Anhänge - as dense lists with a counter per group, "keine" for an empty
- * one and a download icon per row. The producing action of a group goes into
- * its `<group>-action` slot, an error under its list into `<group>-footer`;
- * the block itself only lists and emits `download` with the group and item.
- * `groups` narrows the block to some of the four, in the glossary's order.
+ * attachments in their groups - Belege, Rechnungen, Stornobelege,
+ * Widerrufbelege, Anhänge - as dense lists with a counter per group,
+ * "keine" for an empty one and a download icon per row. The producing action
+ * of a group goes into its `<group>-action` slot, an error under its list
+ * into `<group>-footer`; the block itself only lists and emits `download`
+ * with the group and item. `groups` narrows the block to some of them, in
+ * the glossary's order; Widerrufbelege is listed only where asked for.
  */
-const GROUP_KEYS = ["receipts", "invoices", "cancellations", "attachments"];
+const GROUP_KEYS = [
+  "receipts",
+  "invoices",
+  "cancellations",
+  "withdrawals",
+  "attachments",
+];
+const DEFAULT_GROUP_KEYS = GROUP_KEYS.filter((key) => key !== "withdrawals");
 const TYPE_OF_GROUP = {
   receipts: "receipt",
   invoices: "invoice",
   cancellations: "cancellation",
+  withdrawals: "withdrawal",
 };
 const TYPED = Object.values(TYPE_OF_GROUP);
 
@@ -83,10 +92,10 @@ export default {
       type: Array,
       default: () => [],
     },
-    /** The group keys to list; all four by default. */
+    /** The group keys to list; all but Widerrufbelege by default. */
     groups: {
       type: Array,
-      default: () => GROUP_KEYS,
+      default: () => DEFAULT_GROUP_KEYS,
     },
   },
   computed: {

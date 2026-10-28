@@ -752,6 +752,7 @@ describe("GroupBookingPage", () => {
       );
       expect(entries.map((entry) => entry.textContent.trim())).toEqual([
         "Stornieren",
+        "Widerruf akzeptieren",
       ]);
       entries[0].click();
       await wrapper.vm.$nextTick();

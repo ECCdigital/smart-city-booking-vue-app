@@ -112,6 +112,7 @@
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
+      "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
       "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
     },
     "conflict-codes": {
@@ -1308,7 +1309,9 @@
       "nonNegativeDays": "Der Wert darf nicht negativ sein",
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
-      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden.",
+      "withoutTimeSpanHint": "Buchungen ohne festen Zeitraum fallen unter keine Stufe der Staffel. Sie werden standardmäßig zu 100 % erstattet. Legen Sie bei Bedarf einen anderen Wert fest. Dieser Wert gilt für diesen Mandanten für alle Buchungen ohne Zeitraum.",
+      "withoutTimeSpanLabel": "Erstattung ohne Zeitraum"
     },
     "legalDocuments": {
       "title": "Rechtsdokumente",
@@ -1587,7 +1590,7 @@
       "title": "Erstattungsvorschau",
       "expectedTitle": "Erwartete Erstattung",
       "auditTitle": "Erstattung bei Stornierung",
-      "originalAmount": "Ursprungsbetrag",
+      "originalAmount": "Ursprungs\u00adbetrag",
       "refundAmount": "Erstattung",
       "cancellationFee": "Einbehalt",
       "refundShare": "{percentage} % Erstattung",
@@ -1604,6 +1607,7 @@
       "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
       "singlePolicyWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
+      "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
@@ -1771,6 +1775,7 @@
       "confirmed": "Bestätigt",
       "rejected": "Abgelehnt",
       "cancelled": "Storniert",
+      "withdrawn": "Widerrufen",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
       "paidShort": "bezahlt"
@@ -1789,14 +1794,17 @@
       "reject": "Ablehnen",
       "cancel": "Stornieren",
       "reinstate": "Wiederherstellen",
+      "acceptWithdrawal": "Widerruf akzeptieren",
       "delete": "Löschen"
     },
     "payment": {
       "paid": "Ja",
       "unpaid": "Nein",
+      "lapsed": "Entfällt",
       "status": {
         "paid": "Bezahlt",
-        "unpaid": "Nicht bezahlt"
+        "unpaid": "Nicht bezahlt",
+        "lapsed": "Entfällt"
       }
     },
     "cancellationReceipt": {
@@ -1824,6 +1832,19 @@
         }
       }
     },
+    "withdrawalReceipt": {
+      "reprint": {
+        "hint": "Erzeugt eine Revision des Widerrufbelegs unter derselben Nummer.",
+        "success": {
+          "title": "Widerrufbeleg ausgestellt",
+          "message": "Der Widerrufbeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Widerrufbeleg konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
     "initialState": {
       "label": "Anfangszustand",
       "paymentMethod": "Zahlungsmethode auswählen",
@@ -1843,6 +1864,27 @@
         "title": "Buchung wiederherstellen",
         "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "kind": {
+      "private": "Privat",
+      "business": "Geschäftlich"
+    },
+    "acceptWithdrawal": {
+      "success": {
+        "title": "Widerruf akzeptiert",
+        "message": "Die Buchung ist widerrufen; die Kundin oder der Kunde erhält eine Bestätigung per E-Mail."
+      },
+      "error": {
+        "title": "Fehler beim Akzeptieren des Widerrufs",
+        "message": "Der Widerruf konnte nicht akzeptiert werden."
+      },
+      "dialog": {
+        "title": "Widerruf akzeptieren",
+        "hint": "Die Buchung {id} wird widerrufen. Das lässt sich nicht rückgängig machen. Die Kundin oder der Kunde erhält eine Bestätigung per E-Mail.",
+        "hint-refund": "Durch den Widerruf entstehen keine Kosten. Der bereits bezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
+        "hint-no-cost": "Durch den Widerruf entstehen keine Kosten.",
+        "hint-lapse": "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
       }
     },
     "transition": {
@@ -1897,7 +1939,8 @@
         "phone": "Telefon",
         "street": "Straße",
         "zip-code": "Postleitzahl",
-        "location": "Stadt"
+        "location": "Stadt",
+        "kind": "Buchungsart"
       },
       "custom-fields": {
         "title": "Benutzerdefinierte Felder",
@@ -1952,6 +1995,7 @@
         "receipts": "Belege",
         "invoices": "Rechnungen",
         "cancellations": "Stornobelege",
+        "withdrawals": "Widerrufbelege",
         "attachments": "Anhänge",
         "none": "keine",
         "issued-at": "Ausgestellt am {date}",

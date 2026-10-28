@@ -2,19 +2,22 @@
 
 Since 4.3.x a booking's state is **one stored value**, `booking.status`, moved by named transitions. The three flags (`isCommitted`, `isPayed`, `isRejected`) are derivations the backend still delivers for the rule engine and the JS embed. The Admin UI reads the value and not the flags; this is the mapping between the German words on screen and the code, plus the rules that are easy to break without noticing.
 
-## The five states
+## The six states
 
 `src/utils/bookingStatus.js` owns the mapping. Every label is an i18n key under `booking.status.*`; the module resolves it through the app's i18n instance, so callers get the word straight back.
 
-| German        | `status`      | Chip                        | What it is                                                                                         |
-| ------------- | ------------- | --------------------------- | -------------------------------------------------------------------------------------------------- |
-| Angefragt     | `requested`   | orange, `mdi-clock-outline` | Placed, not yet confirmed. The only state a priced booking can be hard-deleted in.                 |
-| Zahlung offen | `payment_due` | blue, `mdi-cash-clock`      | Confirmed with a price and not paid. Says both things - there is no second chip for the payment.   |
-| Bestätigt     | `confirmed`   | success, `mdi-check-circle` | Confirmed and paid, or confirmed and free. A "paid date" (`timePaid`) is shown only here.          |
-| Abgelehnt     | `rejected`    | error, `mdi-cancel`         | Cancelled out of `requested`. Reinstate goes back to `requested`.                                  |
-| Storniert     | `cancelled`   | error, `mdi-close-circle`   | Cancelled out of `payment_due` or `confirmed`. `cancellationRefund.cancelledFrom` remembers which. |
+| German        | `status`      | Chip                        | What it is                                                                                                                                           |
+| ------------- | ------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Angefragt     | `requested`   | orange, `mdi-clock-outline` | Placed, not yet confirmed. The only state a priced booking can be hard-deleted in.                                                                   |
+| Zahlung offen | `payment_due` | blue, `mdi-cash-clock`      | Confirmed with a price and not paid. Says both things - there is no second chip for the payment.                                                     |
+| Bestätigt     | `confirmed`   | success, `mdi-check-circle` | Confirmed and paid, or confirmed and free. A "paid date" (`timePaid`) is shown only here.                                                            |
+| Abgelehnt     | `rejected`    | error, `mdi-cancel`         | Cancelled out of `requested`. Reinstate goes back to `requested`.                                                                                    |
+| Storniert     | `cancelled`   | error, `mdi-close-circle`   | Cancelled out of `payment_due` or `confirmed`. `cancellationRefund.cancelledFrom` remembers which.                                                   |
+| Widerrufen    | `withdrawn`   | error, `mdi-undo-variant`   | A private customer's withdrawal, accepted out of any live state; `cancelledFrom` remembers which. Final: nothing leaves it (ECCdigital/tickets#611). |
 
-Sort order of the "Status" column (`statusRank`): `requested < payment_due < confirmed < cancelled < rejected`.
+Sort order of the "Status" column (`statusRank`): `requested < payment_due < confirmed < cancelled < withdrawn < rejected`.
+
+**Withdrawn by the user.** A request the user withdrew before it was confirmed is stored as `rejected` but reads Storniert, as in the storefront: `displayStatus(booking)` answers `cancelled` where `cancellationRefund.origin === "user"`. Chips, the headline (cut behind Angefragt, reason under „Stornierungsgrund“), the status filter, the series counts (`groupDisplayStatus`, `mixedCounts`) and the export read it; actions, sort order and `groupBookingStatus` keep the stored `status`. A rejection by the administration or the system, and an old one without the audit, stays Abgelehnt.
 
 ## Two derived words that are not states
 
@@ -25,22 +28,23 @@ Sort order of the "Status" column (`statusRank`): `requested < payment_due < con
 
 "Rückerstattung offen" / "Rückerstattung erfolgt" (glossary „Erstattungsstand“, `refundStateOf(booking)`, `refundStateMarker(state)` in `src/utils/cancellationRefund.js`) is stored, not derived - `cancellationRefund.refundState`, `open` or `completed` - and is a marker chip beside Storniert as well, never a state.
 
-"Bezahlt" as a fact (the export column, the details chip) is read off the state too: `isPaid(booking)` is true at `confirmed`, and at `cancelled` iff `cancelledFrom === "confirmed"`. `paymentLabel(booking)` turns that into Kostenfrei / Ja / Nein for the Excel export, `paymentStatusLabel(booking)` into Kostenfrei / Bezahlt / Nicht bezahlt for „Zahlungsstatus“ on the booking page and the series page.
+"Bezahlt" as a fact (the export column, the details chip) is read off the state too: `isPaid(booking)` is true at `confirmed`, and at `cancelled` or `withdrawn` iff `cancelledFrom === "confirmed"`. `paymentLabel(booking)` turns that into Kostenfrei / Ja / Nein for the Excel export, `paymentStatusLabel(booking)` into Kostenfrei / Bezahlt / Nicht bezahlt for „Zahlungsstatus“ on the booking page and the series page.
 
 ## The action verbs
 
 Each verb is an i18n key under `booking.action.*` and names one backend transition on its own route. There is no "Freigabe zurücknehmen" and no "Zahlung zurücknehmen" - the backend has no such transition and answers 400.
 
-| German                | `BOOKING_ACTION` | Allowed at                 | Route                                 |
-| --------------------- | ---------------- | -------------------------- | ------------------------------------- |
-| Freigeben             | `confirm`        | `requested`                | `GET …/bookings/:id/commit`           |
-| Als bezahlt markieren | `pay`            | `payment_due`              | `POST …/bookings/:id/pay`             |
-| Ablehnen              | `cancel`         | `requested`                | `POST …/bookings/:id/reject`          |
-| Stornieren            | `cancel`         | `payment_due`, `confirmed` | `POST …/bookings/:id/reject`          |
-| Wiederherstellen      | `reinstate`      | `rejected`, `cancelled`    | `POST …/bookings/:id/reinstate`       |
-| Löschen               | `delete`         | `requested`, `rejected`    | `DELETE …/bookings/:id` (hard delete) |
+| German                | `BOOKING_ACTION`   | Allowed at                                                     | Route                                   |
+| --------------------- | ------------------ | -------------------------------------------------------------- | --------------------------------------- |
+| Freigeben             | `confirm`          | `requested`                                                    | `GET …/bookings/:id/commit`             |
+| Als bezahlt markieren | `pay`              | `payment_due`                                                  | `POST …/bookings/:id/pay`               |
+| Ablehnen              | `cancel`           | `requested`                                                    | `POST …/bookings/:id/reject`            |
+| Stornieren            | `cancel`           | `payment_due`, `confirmed`                                     | `POST …/bookings/:id/reject`            |
+| Wiederherstellen      | `reinstate`        | `rejected`, `cancelled`                                        | `POST …/bookings/:id/reinstate`         |
+| Widerruf akzeptieren  | `acceptWithdrawal` | `requested`, `payment_due`, `confirmed`, private bookings only | `POST …/bookings/:id/accept-withdrawal` |
+| Löschen               | `delete`           | `requested`, `rejected`                                        | `DELETE …/bookings/:id` (hard delete)   |
 
-`allowedActions(status)` answers the third column, `allowsAction(booking, action)` asks it for one booking, and `actionLabel(action, status)` picks Ablehnen or Stornieren for a cancel. "Freigeben" stays the tenants' established word for `confirm`; the kanban's workflow actions (`commit`, `paid`, `reject`) use the same verbs.
+`allowedActions(status)` answers the third column, `allowsAction(booking, action)` asks it for one booking (and refuses Widerruf akzeptieren for a business booking, `isBusinessBooking` in `src/utils/businessBooking.js`), `bookingTransitionActions(booking)` lists a booking's menu, and `actionLabel(action, status)` picks Ablehnen or Stornieren for a cancel. "Freigeben" stays the tenants' established word for `confirm`; the kanban's workflow actions (`commit`, `paid`, `reject`) use the same verbs.
 
 ## The headline over the path
 
@@ -51,10 +55,10 @@ Since 4.3.x a booking's state is drawn once, the same way in two hosts - the det
 | Kopfzeile         | `BookingStatusPath.vue`                                | The state area of a booking: avatar and state word, the actions, the segments with their dates, `hint` under the line, and the slots `reason`, `payment` and the default one. The host computes the path; the component never reads the route. |
 | Hauptpfad         | `pathOf(booking)` → `path.steps`                       | Angefragt → Zahlung offen → Bestätigt; without Zahlung offen where the booking is free.                                                                                                                                                        |
 | Schritt, Segment  | `STEP_STATE` - `done`, `current`, `upcoming`, `void`   | One state of the main path as one segment of the line: reached, the current one, still to come, or dropped by a cut. In the chooser the segments are radios.                                                                                   |
-| Endsegment        | `path.end`, `path.terminal`                            | The red segment Abgelehnt / Storniert that cuts the path after the step reached (`end.afterIndex`); it carries `cancelledAt` as `date` and the `rejectionReason` as `reason`.                                                                  |
-| Erreicht          | `path.reachedIndex`                                    | The last step the booking had before the cut: Angefragt at Abgelehnt, `cancelledFrom` at Storniert, Bestätigt where that is unknown. For a series, see below.                                                                                  |
+| Endsegment        | `path.end`, `path.terminal`                            | The red segment Abgelehnt / Storniert / Widerrufen that cuts the path after the step reached (`end.afterIndex`); it carries `cancelledAt` as `date` and the `rejectionReason` as `reason`.                                                     |
+| Erreicht          | `path.reachedIndex`                                    | The last step the booking had before the cut: Angefragt at Abgelehnt, `cancelledFrom` at Storniert and Widerrufen, Bestätigt where that is unknown. For a series, see below.                                                                   |
 | Hauptaktion       | `splitActions(actions).primary`                        | The one action along the path - Freigeben, Als bezahlt markieren, Wiederherstellen - as a filled button (`booking-action-primary`).                                                                                                            |
-| Nebenweg          | `splitActions(actions).secondary`                      | Ablehnen / Stornieren (and the delete). **Always in the ⋮-menu** (`booking-action-menu`), also without a Hauptaktion: at Bestätigt, Stornieren stands alone in the menu, never as a button.                                                    |
+| Nebenweg          | `splitActions(actions).secondary`                      | Ablehnen / Stornieren, Widerruf akzeptieren (and the delete). **Always in the ⋮-menu** (`booking-action-menu`), also without a Hauptaktion: at Bestätigt, Stornieren stands alone in the menu, never as a button.                              |
 | Zustand der Serie | `seriesPathOf(groupBooking, members)`, `label` prop    | The series read as one booking, captioned so in the series drawer (see below).                                                                                                                                                                 |
 | Anfangszustand    | `chooser` + `value` props, event `input`, `label` prop | The choice in the create form, on the same headline, captioned so (see below).                                                                                                                                                                 |
 
