@@ -554,6 +554,13 @@ describe("BookingPage", () => {
       expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
         "ACME"
       );
+      // Private or business is always stated, read off the company here.
+      expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
+        "Geschäftlich"
+      );
+      expect(bare.wrapper.find(".booking-page__customer").text()).toContain(
+        "Privat"
+      );
       const fields = filled.wrapper.find(".booking-page__custom-fields").text();
       expect(fields).toContain("Teilnehmer");
       expect(fields).toContain("12");
@@ -886,11 +893,16 @@ describe("BookingPage", () => {
    */
   describe("the transitions", () => {
     it.each([
-      ["requested", "Freigeben", ["Ablehnen"]],
-      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
-      ["confirmed", null, ["Stornieren"]],
+      ["requested", "Freigeben", ["Ablehnen", "Widerruf akzeptieren"]],
+      [
+        "payment_due",
+        "Als bezahlt markieren",
+        ["Stornieren", "Widerruf akzeptieren"],
+      ],
+      ["confirmed", null, ["Stornieren", "Widerruf akzeptieren"]],
       ["rejected", "Wiederherstellen", null],
       ["cancelled", "Wiederherstellen", null],
+      ["withdrawn", null, null],
     ])(
       "offers at %s the button %s and the menu %j",
       async (status, button, menu) => {
@@ -902,6 +914,18 @@ describe("BookingPage", () => {
         expect(await offeredActions(wrapper)).toEqual({ button, menu });
       }
     );
+
+    it("offers no Widerruf akzeptieren for a business booking", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed", company: "ACME" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: ["Stornieren"],
+      });
+    });
 
     it("offers nothing to a reader without the update right", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);

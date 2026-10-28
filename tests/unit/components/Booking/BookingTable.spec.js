@@ -180,9 +180,12 @@ describe("BookingTable", () => {
     }
 
     it.each([
-      ["requested", ["Freigeben", "Ablehnen"]],
-      ["payment_due", ["Als bezahlt markieren", "Stornieren"]],
-      ["confirmed", ["Stornieren"]],
+      ["requested", ["Freigeben", "Ablehnen", "Widerruf akzeptieren"]],
+      [
+        "payment_due",
+        ["Als bezahlt markieren", "Stornieren", "Widerruf akzeptieren"],
+      ],
+      ["confirmed", ["Stornieren", "Widerruf akzeptieren"]],
       ["rejected", ["Wiederherstellen"]],
       ["cancelled", ["Wiederherstellen"]],
     ])("offers exactly %s's transitions: %j", async (status, expected) => {

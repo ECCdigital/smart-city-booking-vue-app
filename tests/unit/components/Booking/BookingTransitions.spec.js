@@ -20,6 +20,7 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     payBooking: vi.fn(),
     rejectBooking: vi.fn(),
     reinstateBooking: vi.fn(),
+    acceptWithdrawal: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
   },
 }));
@@ -930,6 +931,114 @@ describe("BookingTransitions", () => {
   });
 
   /**
+   * Widerruf akzeptieren: a confirmation that says
+   * the step is final and what happens to the money, then the route; a
+   * member of a series is withdrawn alone.
+   */
+  describe("acceptWithdrawal", () => {
+    it("asks once, then posts to the accept-withdrawal route", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiBookingService.acceptWithdrawal.mockResolvedValue(OK);
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "confirmed" }),
+      });
+      expect(ApiBookingService.acceptWithdrawal).not.toHaveBeenCalled();
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain("lässt sich nicht rückgängig machen");
+      expect(text).toContain("vollständig erstattet");
+
+      await clickDialogButton(wrapper, "Widerruf akzeptieren");
+
+      expect(ApiBookingService.acceptWithdrawal).toHaveBeenCalledWith("bk-1");
+      expect(wrapper.emitted("transitioned")).toEqual([
+        [{ action: "acceptWithdrawal", bookingId: "bk-1" }],
+      ]);
+      expect(toastMessages(store)).toContain(
+        i18n.t("booking.acceptWithdrawal.success.message")
+      );
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+    });
+
+    it.each([
+      ["unpaid", { status: "payment_due" }],
+      ["not yet confirmed", { status: "requested" }],
+    ])(
+      "says that it costs nothing and the invoiced amount lapses for a booking %s",
+      async (_name, overrides) => {
+        const { wrapper } = mountTransitions();
+
+        await start(wrapper, "acceptWithdrawal", {
+          booking: booking(overrides),
+        });
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain(
+          "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
+        );
+        expect(text).not.toContain("vollständig erstattet");
+      }
+    );
+
+    it("says only that it costs nothing for a free booking", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "requested", priceEur: 0 }),
+      });
+
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain("Durch den Widerruf entstehen keine Kosten.");
+      expect(text).not.toContain("Rechnungsbetrag");
+    });
+
+    it("names the booking in bold italics", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "confirmed" }),
+      });
+
+      expect(
+        document.querySelector(".v-dialog--active strong > em").textContent
+      ).toBe("bk-1");
+    });
+
+    it("withdraws only the one member of a series", async () => {
+      const { wrapper } = mountTransitions();
+      ApiBookingService.acceptWithdrawal.mockResolvedValue(OK);
+
+      await start(wrapper, "acceptWithdrawal", series());
+      await clickDialogButton(wrapper, "Widerruf akzeptieren");
+
+      expect(ApiBookingService.acceptWithdrawal).toHaveBeenCalledWith("bk-1");
+      expect(ApiGroupBookingService.rejectGroupBooking).not.toHaveBeenCalled();
+    });
+
+    it("is refused for a business booking: it has no withdrawal", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "confirmed", isBusiness: true }),
+      });
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(ApiBookingService.acceptWithdrawal).not.toHaveBeenCalled();
+    });
+
+    it("is refused for a withdrawn booking: Widerrufen is final", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", {
+        booking: booking({ status: "withdrawn" }),
+      });
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(ApiBookingService.acceptWithdrawal).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
    * A series drawer acts on the whole series (`seriesOnly`): the dialogs
    * offer no "Nur diese Buchung", and the action is gated on the members'
    * shared state - a mixed series is refused before any dialog opens.
@@ -983,6 +1092,17 @@ describe("BookingTransitions", () => {
         message: expected,
         refetch: false,
       });
+    });
+
+    it("knows no series-wide withdrawal", async () => {
+      const { wrapper, store } = mountTransitions();
+
+      await start(wrapper, "acceptWithdrawal", seriesOnly(series()));
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(toastMessages(store)).toContain(
+        i18n.t("group-booking.transition.not-allowed.message")
+      );
     });
 
     it("knows no series-wide reinstate", async () => {

@@ -77,6 +77,51 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog
+      v-if="booking"
+      :value="dialog === 'acceptWithdrawal'"
+      persistent
+      max-width="520px"
+    >
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="orange">mdi-undo-variant</v-icon>
+          <span class="text-h6">{{
+            $t("booking.acceptWithdrawal.dialog.title")
+          }}</span>
+        </v-card-title>
+        <v-card-text>
+          <i18n
+            path="booking.acceptWithdrawal.dialog.hint"
+            tag="p"
+            class="text-body-2"
+          >
+            <template #id>
+              <strong
+                ><em>{{ booking.id }}</em></strong
+              >
+            </template>
+          </i18n>
+          <p class="mb-0 text-body-2">{{ withdrawalPaymentHint }}</p>
+        </v-card-text>
+        <v-card-text v-if="error" class="pt-0">
+          <v-alert type="error" border="left" elevation="2" class="mb-0">
+            {{ error }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn text @click="closeDialog">Abbrechen</v-btn>
+          <v-btn
+            color="primary"
+            :loading="inProgress"
+            @click="acceptWithdrawal"
+          >
+            {{ $t("booking.action.acceptWithdrawal") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -101,6 +146,7 @@ import {
   allowsAction,
   groupAllowsAction,
   groupBookingStatus,
+  isFree,
 } from "@/utils/bookingStatus";
 import {
   getApiErrorMessage,
@@ -154,6 +200,17 @@ export default {
           : "booking.reinstate.dialog.hint-rejected";
       return this.$t(key, { id: this.booking?.id });
     },
+    /**
+     * A withdrawal costs nothing: a paid booking is refunded in full, the
+     * price of one not yet confirmed or paid lapses.
+     */
+    withdrawalPaymentHint() {
+      const key = "booking.acceptWithdrawal.dialog";
+      if (isFree(this.booking)) return this.$t(`${key}.hint-no-cost`);
+      return this.booking?.status === BOOKING_STATUS.CONFIRMED
+        ? this.$t(`${key}.hint-refund`)
+        : this.$t(`${key}.hint-lapse`);
+    },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
@@ -173,8 +230,12 @@ export default {
       this.target = target;
       this.error = null;
       if (this.seriesOnly) {
-        // There is no series-wide reinstate (spec E9).
-        if (action === BOOKING_ACTION.REINSTATE) {
+        // There is no series-wide reinstate (spec E9), and no series-wide
+        // withdrawal: a withdrawal is accepted per booking.
+        if (
+          action === BOOKING_ACTION.REINSTATE ||
+          action === BOOKING_ACTION.ACCEPT_WITHDRAWAL
+        ) {
           this.refuse(action, "group-booking.transition.not-allowed");
           return;
         }
@@ -203,6 +264,10 @@ export default {
         case BOOKING_ACTION.REINSTATE:
           // There is no series-wide reinstate; a member is reinstated alone.
           this.openDialog("reinstate");
+          break;
+        case BOOKING_ACTION.ACCEPT_WITHDRAWAL:
+          // A member of a series is withdrawn alone.
+          this.openDialog("acceptWithdrawal");
           break;
         default:
           break;
@@ -341,6 +406,17 @@ export default {
         call: () => ApiBookingService.reinstateBooking(booking.id),
         successKey: "booking.reinstate.success",
         errorKey: "booking.reinstate.error",
+        result: { bookingId: booking.id },
+      });
+    },
+
+    async acceptWithdrawal() {
+      const booking = this.booking;
+      return this.run(BOOKING_ACTION.ACCEPT_WITHDRAWAL, {
+        overlay: "Widerruf wird akzeptiert...",
+        call: () => ApiBookingService.acceptWithdrawal(booking.id),
+        successKey: "booking.acceptWithdrawal.success",
+        errorKey: "booking.acceptWithdrawal.error",
         result: { bookingId: booking.id },
       });
     },
