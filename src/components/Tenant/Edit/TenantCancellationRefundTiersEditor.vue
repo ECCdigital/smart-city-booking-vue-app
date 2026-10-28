@@ -123,7 +123,9 @@
     <v-dialog v-model="dialogOpen" max-width="650" persistent scrollable>
       <v-card class="refund-tier-dialog">
         <v-card-title class="d-flex align-center py-4 px-6">
-          <v-icon left>mdi-cash-refund</v-icon>
+          <v-icon left>{{
+            editingIndex >= 0 ? "mdi-pencil" : "mdi-plus"
+          }}</v-icon>
           <span class="text-h5">
             {{
               editingIndex >= 0

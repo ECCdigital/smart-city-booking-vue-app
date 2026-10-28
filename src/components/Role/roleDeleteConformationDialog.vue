@@ -12,7 +12,9 @@
       <v-divider />
       <v-card-text class="pa-6">
         Sind Sie sicher, dass Sie die Rolle
-        <strong>{{ toDelete.id }}</strong> löschen wollen?
+        <strong>{{ toDelete.name || toDelete.id }}</strong
+        ><template v-if="toDelete.name"> ({{ toDelete.id }})</template>
+        löschen wollen?
       </v-card-text>
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
