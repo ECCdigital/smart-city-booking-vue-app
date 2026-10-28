@@ -103,6 +103,24 @@ describe("PasswordReset — without a link from the mail", () => {
     expect(toasts.map((t) => t.type)).toEqual(["error"]);
     expect(wrapper.find("input[name=email]").exists()).toBe(true);
   });
+
+  it("says too many attempts when the limit is hit, and keeps the form", async () => {
+    ApiAuthService.forgotPassword.mockRejectedValue(serverError(429));
+    const wrapper = mountReset();
+
+    await wrapper.find("input[name=email]").setValue("erika@example.de");
+    await submit(wrapper);
+
+    expect(toasts).toEqual([
+      expect.objectContaining({
+        type: "error",
+        title: "Zu viele Versuche",
+        message:
+          "Es gab zu viele Versuche in kurzer Zeit. Bitte versuchen Sie es später erneut.",
+      }),
+    ]);
+    expect(wrapper.find("input[name=email]").exists()).toBe(true);
+  });
 });
 
 describe("PasswordReset — with the link from the mail", () => {
