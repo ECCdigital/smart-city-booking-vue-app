@@ -185,10 +185,18 @@
     >
       {{ htmlLength }} / {{ maxLength }}
     </div>
-    <v-dialog v-if="links" v-model="linkDialog" max-width="480">
+    <v-dialog v-if="links" v-model="linkDialog" max-width="480" scrollable>
       <v-card class="tiptap-link-dialog">
-        <v-card-title>{{ $t("richtext.link.title") }}</v-card-title>
-        <v-card-text>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-link-variant</v-icon>
+          <span class="text-h5">{{ $t("richtext.link.title") }}</span>
+          <v-spacer />
+          <v-btn icon @click="linkDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
           <v-text-field
             v-model="linkAddress"
             :label="$t('richtext.link.address')"
@@ -203,15 +211,17 @@
             @keydown.enter.prevent="applyLink"
           />
         </v-card-text>
-        <v-card-actions>
-          <v-btn v-if="linkActive" text @click="removeLink">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn v-if="linkActive" outlined color="error" @click="removeLink">
+            <v-icon left small>mdi-link-variant-off</v-icon>
             {{ $t("richtext.link.remove") }}
           </v-btn>
-          <v-spacer />
-          <v-btn text @click="linkDialog = false">
+          <v-btn outlined @click="linkDialog = false">
             {{ $t("richtext.link.cancel") }}
           </v-btn>
           <v-btn color="primary" elevation="0" @click="applyLink">
+            <v-icon left small>mdi-check</v-icon>
             {{ $t("richtext.link.apply") }}
           </v-btn>
         </v-card-actions>

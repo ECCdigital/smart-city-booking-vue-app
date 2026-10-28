@@ -120,19 +120,23 @@
       </v-expansion-panel>
     </v-expansion-panels>
 
-    <v-dialog v-model="dialogOpen" max-width="650" persistent>
+    <v-dialog v-model="dialogOpen" max-width="650" persistent scrollable>
       <v-card class="refund-tier-dialog">
-        <v-card-title class="subtitle-1">
-          <v-icon left color="primary" small>mdi-cash-refund</v-icon>
-          {{
-            editingIndex >= 0
-              ? $t("tenant.cancellationRefundTiers.editTitle")
-              : $t("tenant.cancellationRefundTiers.createTitle")
-          }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-cash-refund</v-icon>
+          <span class="text-h5">
+            {{
+              editingIndex >= 0
+                ? $t("tenant.cancellationRefundTiers.editTitle")
+                : $t("tenant.cancellationRefundTiers.createTitle")
+            }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
         </v-card-title>
         <v-divider />
 
-        <v-card-text class="pt-4">
+        <v-card-text class="pa-6">
           <v-form ref="dialogForm" v-model="dialogValid">
             <v-row dense>
               <v-col cols="12" md="6">
@@ -184,12 +188,14 @@
         </v-card-text>
 
         <v-divider />
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="closeDialog">
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">
             {{ $t("tenant.cancellationRefundTiers.cancel") }}
           </v-btn>
-          <v-btn color="primary" text :disabled="!canSave" @click="saveTier">
+          <v-btn color="primary" :disabled="!canSave" @click="saveTier">
+            <v-icon left small>
+              {{ editingIndex >= 0 ? "mdi-content-save" : "mdi-plus" }}
+            </v-icon>
             {{
               editingIndex >= 0
                 ? $t("tenant.cancellationRefundTiers.save")
@@ -200,24 +206,38 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="confirmDelete.open" max-width="420">
+    <v-dialog
+      v-model="confirmDelete.open"
+      persistent
+      scrollable
+      max-width="420"
+    >
       <v-card>
-        <v-card-title class="subtitle-1">
-          {{ $t("tenant.cancellationRefundTiers.deleteTitle") }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">
+            {{ $t("tenant.cancellationRefundTiers.deleteTitle") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="confirmDelete.open = false"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           {{
             $t("tenant.cancellationRefundTiers.deleteDescription", {
               days: deletingTier?.daysBeforeStart,
             })
           }}
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="confirmDelete.open = false">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="confirmDelete.open = false">
             {{ $t("tenant.cancellationRefundTiers.cancel") }}
           </v-btn>
-          <v-btn color="error" text @click="removeTier">
+          <v-btn color="error" @click="removeTier">
+            <v-icon left small>mdi-delete</v-icon>
             {{ $t("tenant.cancellationRefundTiers.remove") }}
           </v-btn>
         </v-card-actions>

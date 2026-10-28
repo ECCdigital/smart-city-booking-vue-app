@@ -1,23 +1,24 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
     <v-card class="">
-      <v-card-title class="py-4 px-6">
-        <span class="text-h5">
-          <v-icon left>mdi-account-plus</v-icon> Neues Mitglied hinzufügen</span
-        >
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-account-plus</v-icon>
+        <span class="text-h5">Neues Mitglied hinzufügen</span>
+        <v-spacer />
+        <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
       </v-card-title>
       <v-divider></v-divider>
-      <v-card-text class="pt-6 pb-2 px-8">
-        <v-tabs v-model="model" fixed-tabs>
-          <v-tab
-            ><v-icon class="mr-2">mdi-email</v-icon> Per E-Mail einladen</v-tab
-          >
-          <v-tab><v-icon class="mr-2">mdi-link</v-icon> Einladungslink </v-tab>
-          <v-tab>
-            <v-icon class="mr-2">mdi-account-plus</v-icon> Manuell hinzufügen
-          </v-tab>
-        </v-tabs>
-
+      <v-tabs v-model="model" fixed-tabs class="flex-grow-0">
+        <v-tab
+          ><v-icon class="mr-2">mdi-email</v-icon> Per E-Mail einladen</v-tab
+        >
+        <v-tab><v-icon class="mr-2">mdi-link</v-icon> Einladungslink </v-tab>
+        <v-tab>
+          <v-icon class="mr-2">mdi-account-plus</v-icon> Manuell hinzufügen
+        </v-tab>
+      </v-tabs>
+      <v-divider />
+      <v-card-text class="pa-6">
         <v-tabs-items v-model="model">
           <v-tab-item class="mt-4 mx-2">
             <div class="text-body-1">
@@ -184,21 +185,6 @@
                 ></v-select>
               </div>
             </div>
-
-            <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mr-4" outlined @click="closeDialog">
-                schließen
-              </v-btn>
-              <v-btn
-                class=""
-                color="primary"
-                @click="inviteUsers"
-                :disabled="validEmailCount === 0"
-              >
-                <v-icon left>mdi-send</v-icon>
-                {{ validEmailCount }} Benutzer einladen
-              </v-btn>
-            </div>
           </v-tab-item>
           <v-tab-item class="mx-2">
             <div class="d-flex align-center justify-space-between mt-4">
@@ -313,11 +299,6 @@
                   </v-list-item-action>
                 </v-list-item>
               </v-list>
-              <div class="d-flex align-end justify-end mt-4">
-                <v-btn class="mt-4" outlined @click="closeDialog">
-                  schließen
-                </v-btn>
-              </div>
             </div>
 
             <div v-else>
@@ -473,20 +454,6 @@
                     </div>
                   </v-col>
                 </v-row>
-
-                <div class="d-flex justify-end mt-4">
-                  <v-btn class="mr-2" outlined @click="cancelCreateLink">
-                    Abbrechen
-                  </v-btn>
-                  <v-btn
-                    color="primary"
-                    @click="createInvitationLink"
-                    :loading="creatingLink"
-                  >
-                    <v-icon left>mdi-link-plus</v-icon>
-                    Link erstellen
-                  </v-btn>
-                </div>
               </v-form>
             </div>
           </v-tab-item>
@@ -544,45 +511,82 @@
                 class="mt-2"
               />
             </v-form>
-
-            <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mr-4" outlined @click="closeDialog">
-                schließen
-              </v-btn>
-              <v-btn
-                color="primary"
-                @click="addUserDirectly"
-                :disabled="!directAddValid || directAddEmailExists"
-                :loading="directAddLoading"
-              >
-                <v-icon left>mdi-account-plus</v-icon>
-                Benutzer hinzufügen
-              </v-btn>
-            </div>
           </v-tab-item>
         </v-tabs-items>
       </v-card-text>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <template v-if="!model">
+          <v-btn outlined @click="closeDialog">Schließen</v-btn>
+          <v-btn
+            color="primary"
+            @click="inviteUsers"
+            :disabled="validEmailCount === 0"
+          >
+            <v-icon left>mdi-send</v-icon>
+            {{ validEmailCount }} Benutzer einladen
+          </v-btn>
+        </template>
+        <template v-else-if="model === 1 && createLinkMode">
+          <v-btn outlined @click="cancelCreateLink">Abbrechen</v-btn>
+          <v-btn
+            color="primary"
+            @click="createInvitationLink"
+            :loading="creatingLink"
+          >
+            <v-icon left>mdi-link-plus</v-icon>
+            Link erstellen
+          </v-btn>
+        </template>
+        <v-btn v-else-if="model === 1" outlined @click="closeDialog">
+          Schließen
+        </v-btn>
+        <template v-else>
+          <v-btn outlined @click="closeDialog">Schließen</v-btn>
+          <v-btn
+            color="primary"
+            @click="addUserDirectly"
+            :disabled="!directAddValid || directAddEmailExists"
+            :loading="directAddLoading"
+          >
+            <v-icon left>mdi-account-plus</v-icon>
+            Benutzer hinzufügen
+          </v-btn>
+        </template>
+      </v-card-actions>
     </v-card>
-    <v-dialog v-model="openDeleteDialog" max-width="500px">
+    <v-dialog
+      v-model="openDeleteDialog"
+      persistent
+      scrollable
+      max-width="500px"
+    >
       <v-card>
-        <v-card-title class="text-h5"> Einladungslink löschen </v-card-title>
-        <v-card-text>
-          <div class="text-body-1">
-            Möchten Sie diese Einladungslink wirklich löschen? Gelöschte Links
-            können nicht wiederhergestellt werden.
-          </div>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">Einladungslink löschen</span>
+          <v-spacer />
+          <v-btn icon @click="openDeleteDialog = false"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
+          Möchten Sie diese Einladungslink wirklich löschen? Gelöschte Links
+          können nicht wiederhergestellt werden.
         </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click="openDeleteDialog = false">Abbrechen</v-btn>
           <v-btn
-            color="red"
+            color="error"
             @click="
               $emit('deleteLink', linkToDelete);
               openDeleteDialog = false;
             "
           >
-            Link löschen
+            <v-icon left small>mdi-delete</v-icon>
+            Löschen
           </v-btn>
         </v-card-actions>
       </v-card>

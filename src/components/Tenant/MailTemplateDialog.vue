@@ -1,7 +1,8 @@
 <template>
   <v-dialog v-model="openDialog" persistent max-width="1400px" scrollable>
     <v-card>
-      <v-card-title class="d-flex align-center">
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-email-edit-outline</v-icon>
         <span class="text-h5">E-Mail Vorlage bearbeiten</span>
         <v-chip
           x-small
@@ -16,14 +17,15 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
-      <v-card-subtitle>
+      <v-divider />
+      <v-card-subtitle class="px-6 pt-4">
         <div class="mt-2 info--text">
           <v-icon color="info" small>mdi-information-outline</v-icon>
           Das Layout-Template umschließt jede E-Mail mit Logo, Kopf- und
           Fußzeile.
         </div>
       </v-card-subtitle>
-      <v-card-text>
+      <v-card-text class="px-6 pb-6">
         <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
           <v-tab>
             <v-icon left small>mdi-palette-outline</v-icon>
@@ -78,10 +80,13 @@
           </v-tab-item>
         </v-tabs-items>
       </v-card-text>
-      <v-card-actions class="border-top">
-        <v-spacer />
-        <v-btn outlined @click="closeDialog">abbrechen</v-btn>
-        <v-btn color="primary" @click="onSave">Übernehmen</v-btn>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+        <v-btn color="primary" @click="onSave">
+          <v-icon left small>mdi-check</v-icon>
+          Übernehmen
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -192,9 +197,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.border-top {
-  border-top: 1px solid #eee;
-}
-</style>

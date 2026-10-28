@@ -238,7 +238,7 @@
 
         <v-divider />
 
-        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
+        <v-card-text class="pa-6">
           <v-form ref="editForm">
             <v-tabs-items v-model="editActiveTab">
               <v-tab-item>
@@ -598,10 +598,7 @@
 
         <!-- Actions -->
         <v-card-actions class="justify-end px-6 py-4">
-          <v-btn outlined @click="cancelEdit">
-            <v-icon left small>mdi-close</v-icon>
-            Abbrechen
-          </v-btn>
+          <v-btn outlined @click="cancelEdit">Abbrechen</v-btn>
           <v-btn color="primary" @click="saveEdit">
             <v-icon left small>mdi-content-save</v-icon>
             Übernehmen
@@ -611,19 +608,35 @@
     </v-dialog>
 
     <!-- ═══ Delete Confirmation ═══ -->
-    <v-dialog v-model="confirmDelete.open" max-width="420">
+    <v-dialog
+      v-model="confirmDelete.open"
+      persistent
+      scrollable
+      max-width="420"
+    >
       <v-card>
-        <v-card-title class="subtitle-1">Service entfernen?</v-card-title>
-        <v-card-text>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">Service entfernen?</span>
+          <v-spacer />
+          <v-btn icon @click="confirmDelete.open = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
           Der Karten-Service
           <strong>{{ deletingLabel }}</strong>
           wird aus der Konfiguration entfernt. Diese Aktion wird erst beim
           Speichern übernommen.
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="confirmDelete.open = false">Abbrechen</v-btn>
-          <v-btn color="error" text @click="doRemove">Entfernen</v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="confirmDelete.open = false">Abbrechen</v-btn>
+          <v-btn color="error" @click="doRemove">
+            <v-icon left small>mdi-delete</v-icon>
+            Entfernen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

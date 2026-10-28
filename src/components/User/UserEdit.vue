@@ -1,5 +1,5 @@
 <template>
-  <v-row justify="center">
+  <v-row justify="center" class="yellow">
     <v-dialog v-model="openDialog" persistent max-width="900px" scrollable>
       <v-card>
         <v-card-title class="d-flex align-center py-4 px-6">
@@ -8,7 +8,7 @@
             size="48"
             class="white--text font-weight-bold mr-4"
           >
-            {{ getUserInitials() }}
+            {{ getUserInitials() }}+
           </v-avatar>
           <div class="flex-grow-1">
             <div class="text-h5 font-weight-medium">
@@ -48,7 +48,7 @@
             <v-icon left small>mdi-cancel</v-icon>
             Suspendiert
           </v-chip>
-          <v-btn icon @click="closeDialog">
+          <v-btn icon @click="closeDialog" :disabled="inProgress">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -76,7 +76,7 @@
 
         <v-divider />
 
-        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
+        <v-card-text class="pa-6">
           <v-tabs-items v-model="activeTab">
             <v-tab-item>
               <div class="mb-4">
@@ -951,7 +951,6 @@
         <!-- Actions -->
         <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click="closeDialog" :disabled="inProgress">
-            <v-icon left small>mdi-close</v-icon>
             Abbrechen
           </v-btn>
           <v-btn

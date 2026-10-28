@@ -51,27 +51,38 @@
       v-if="booking"
       :value="dialog === 'reinstate'"
       persistent
+      scrollable
       max-width="520px"
     >
       <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="warning">mdi-restore</v-icon>
-          <span class="text-h6">{{
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-restore</v-icon>
+          <span class="text-h5">{{
             $t("booking.reinstate.dialog.title")
           }}</span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
-        <v-card-text>
-          <p class="mb-0 text-body-2">{{ reinstateHint }}</p>
-        </v-card-text>
-        <v-card-text v-if="error" class="pt-0">
-          <v-alert type="error" border="left" elevation="2" class="mb-0">
+        <v-divider />
+        <v-card-text class="pa-6">
+          <p class="mb-0">{{ reinstateHint }}</p>
+          <v-alert
+            v-if="error"
+            type="error"
+            border="left"
+            elevation="2"
+            class="mt-4 mb-0"
+          >
             {{ error }}
           </v-alert>
         </v-card-text>
-        <v-card-actions class="px-4 pb-4">
-          <v-spacer />
-          <v-btn text @click="closeDialog">Abbrechen</v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
           <v-btn color="primary" :loading="inProgress" @click="reinstate">
+            <v-icon left small>mdi-restore</v-icon>
             {{ $t("booking.action.reinstate") }}
           </v-btn>
         </v-card-actions>

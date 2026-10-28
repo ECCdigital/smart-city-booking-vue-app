@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Changed
+
+-   Dialogs share one layout ([ECCdigital/tickets#738](https://github.com/ECCdigital/tickets/issues/738)), that of the dialogs for a tenant's members: title with icon and an X to close at the right, dividers, only the content scrolls, buttons bottom right in a fixed footer with „Abbrechen“ or „Schließen“ first. Confirmations of a deletion no longer show a yellow card with „Ja“/„Nein“ but a red confirm button with its verb, such as „Löschen“. The layout is described in `docs/agents/components.md`
+
 ### Added
 
 -   Salto KS, question before a change of site, System-User or Umgebung ([ECCdigital/tickets#574](https://github.com/ECCdigital/tickets/issues/574)): saving another Site-ID, System-User or Umgebung while IQs have an activation asks „Aktivierungen ruhen lassen?“ first and names how many IQs rest; after „Trotzdem speichern“ the IQ activation lists the IQs anew. When Salto refuses to activate an IQ the System-User was activated at before (`salto_iq_already_activated_at_salto`), the message names a new, never activated System-User as the one way out. Requires the backend with ECCdigital/tickets#573

@@ -618,7 +618,7 @@
 
     <v-dialog v-model="showTestResultDialog" max-width="640" scrollable>
       <v-card>
-        <v-card-title class="d-flex align-center">
+        <v-card-title class="d-flex align-center py-4 px-6">
           <v-icon left :color="ePayBLTestResult?.success ? 'success' : 'error'">
             {{
               ePayBLTestResult?.success
@@ -626,10 +626,15 @@
                 : "mdi-alert-circle"
             }}
           </v-icon>
-          ePayBL Verbindungstest
+          <span class="text-h5">ePayBL Verbindungstest</span>
+          <v-spacer />
+          <v-btn icon @click="showTestResultDialog = false"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
+        <v-divider />
 
-        <v-card-text>
+        <v-card-text class="pa-6">
           <v-alert v-if="ePayBLTestError" type="error" dense class="mb-0">
             {{ ePayBLTestError }}
           </v-alert>
@@ -789,10 +794,12 @@
             </div>
           </template>
         </v-card-text>
+        <v-divider />
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="showTestResultDialog = false">Schließen</v-btn>
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="showTestResultDialog = false">
+            Schließen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

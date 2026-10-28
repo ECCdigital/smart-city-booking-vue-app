@@ -1,12 +1,17 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
-    <v-card color="accent">
-      <v-card-title>
-        <v-icon class="mr-2" color="info">mdi-information</v-icon>
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
+    <v-card>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-information</v-icon>
         <span class="text-h5">Buchung freigeben</span>
+        <v-spacer />
+        <v-btn icon @click="closeDialog">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-text>
-        <span class="text-h6">
+      <v-divider />
+      <v-card-text class="pa-6">
+        <div>
           <i18n
             v-if="!seriesOnly"
             path="group-booking.commit.member-of-series"
@@ -19,41 +24,38 @@
           <template v-if="canCommitGroup">
             {{ $t("group-booking.commit.question") }}
           </template>
-        </span>
-      </v-card-text>
-      <v-card-text>
+        </div>
         <GroupBookingStatusSummary
+          class="mt-4"
           :members="groupBookings"
           :series-allowed="canCommitGroup"
         />
-      </v-card-text>
-      <v-card-text v-if="error" class="text-center">
-        <v-alert type="error" border="left" elevation="2">
+        <v-alert v-if="error" type="error" border="left" class="mt-4 mb-0">
           {{ error }}
         </v-alert>
-      </v-card-text>
-      <v-card-text class="d-flex justify-center">
-        <v-col v-if="canCommitGroup" cols="auto">
+        <div class="d-flex justify-center flex-wrap mt-4">
           <v-btn
+            v-if="canCommitGroup"
             large
             color="primary"
+            class="ma-2"
             :loading="inProgress"
             @click="commitGroupBooking"
             >Serie freigeben</v-btn
           >
-        </v-col>
-        <v-col v-if="!seriesOnly" cols="auto">
           <v-btn
+            v-if="!seriesOnly"
             large
             color="primary"
+            class="ma-2"
             @click="commitSingleBooking"
             :loading="inProgress"
             >Nur diese Buchung freigeben</v-btn
           >
-        </v-col>
+        </div>
       </v-card-text>
-      <v-card-actions>
-        <v-spacer />
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
       </v-card-actions>
     </v-card>

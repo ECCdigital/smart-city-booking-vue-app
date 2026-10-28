@@ -1,62 +1,63 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
-    <v-card color="accent">
-      <v-card-title>
-        <v-icon class="mr-2" color="error">mdi-alert</v-icon>
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
+    <v-card>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
         <span class="text-h5">Buchung löschen</span>
+        <v-spacer />
+        <v-btn icon @click="closeDialog">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-text>
-        <span class="text-h6">
-          Die Buchung
-          <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
-          Sie die gesamte Serie löschen?
-        </span>
-      </v-card-text>
-      <v-card-text class="d-flex justify-center">
-        <v-col cols="auto">
+      <v-divider />
+      <v-card-text class="pa-6">
+        Die Buchung
+        <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
+        Sie die gesamte Serie löschen?
+        <div class="d-flex justify-center flex-wrap mt-4">
           <v-tooltip :disabled="!groupDeleteDisabled" top>
             <template v-slot:activator="{ on }">
-              <div v-on="on">
+              <div v-on="on" class="ma-2">
                 <v-btn
                   large
-                  color="primary"
+                  color="error"
                   :loading="inProgress"
                   :disabled="groupDeleteDisabled"
                   @click="onDeleteGroup"
-                  >Serie löschen</v-btn
                 >
+                  <v-icon left small>mdi-delete</v-icon>
+                  Serie löschen
+                </v-btn>
               </div>
             </template>
             <span>
               Bestätigte oder bezahlte Buchungen müssen storniert werden.
             </span>
           </v-tooltip>
-        </v-col>
-        <v-col cols="auto">
           <v-tooltip :disabled="!singleDeleteDisabled" top>
             <template v-slot:activator="{ on }">
-              <div v-on="on">
+              <div v-on="on" class="ma-2">
                 <v-btn
                   large
-                  color="primary"
+                  color="error"
                   :disabled="singleDeleteDisabled"
                   @click="onDeleteSingle"
                   :loading="inProgress"
-                  >Nur diese Buchung löschen</v-btn
                 >
+                  <v-icon left small>mdi-delete</v-icon>
+                  Nur diese Buchung löschen
+                </v-btn>
               </div>
             </template>
             <span>
               Bestätigte oder bezahlte Buchungen müssen storniert werden.
             </span>
           </v-tooltip>
-        </v-col>
+        </div>
       </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-col class="shrink">
-          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        </v-col>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
