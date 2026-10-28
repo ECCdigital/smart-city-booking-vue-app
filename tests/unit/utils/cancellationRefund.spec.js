@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filterBookingsByRefundState,
   getCancellationRefundAudit,
+  refundPolicyText,
   refundStateMarker,
   refundStateOf,
 } from "@/utils/cancellationRefund";
@@ -115,5 +116,26 @@ describe("refundStateMarker", () => {
 
   it("has no chip without a refund state", () => {
     expect(refundStateMarker(null)).toBeNull();
+  });
+});
+
+describe("refundPolicyText", () => {
+  it("names the calendar days before the start in the customer's summary", () => {
+    expect(
+      refundPolicyText("userPolicySummary", { days: 3, percentage: 50 })
+    ).toBe("Bei 3 Kalendertagen bis zum Beginn beträgt die Erstattung 50 %.");
+  });
+
+  it("says the booking has no time span where there are no days", () => {
+    expect(
+      refundPolicyText("userPolicySummary", { days: null, percentage: 50 })
+    ).toBe(
+      "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
+    );
+    expect(
+      refundPolicyText("userPolicySummary", { days: undefined, percentage: 0 })
+    ).toBe(
+      "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
+    );
   });
 });

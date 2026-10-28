@@ -19,6 +19,7 @@ describe("ApiBookingService", () => {
         .fn()
         .mockResolvedValue({ data: { success: true, data: null, errors: [] } }),
       put: vi.fn().mockResolvedValue({ data: {} }),
+      get: vi.fn().mockResolvedValue({ data: "pdf" }),
     };
   });
 
@@ -34,6 +35,25 @@ describe("ApiBookingService", () => {
       {}
     );
     expect(data).toEqual({ success: true, data: null, errors: [] });
+  });
+
+  it("posts an accepted withdrawal to the booking's accept-withdrawal route", async () => {
+    const data = await ApiBookingService.acceptWithdrawal("bk-1");
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith(
+      "api/t1/bookings/bk-1/accept-withdrawal",
+      {}
+    );
+    expect(data).toEqual({ success: true, data: null, errors: [] });
+  });
+
+  it("fetches a withdrawal receipt by its file name as a blob", async () => {
+    await ApiBookingService.getWithdrawalReceipt("bk-1", "WB-1.pdf");
+
+    expect(global.ApiClient.get).toHaveBeenCalledWith(
+      "api/t1/bookings/bk-1/withdrawal-receipt/WB-1.pdf",
+      { responseType: "blob" }
+    );
   });
 
   it("posts a cancellation receipt reprint and answers with the booking", async () => {

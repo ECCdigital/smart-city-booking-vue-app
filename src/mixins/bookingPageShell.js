@@ -17,6 +17,8 @@ const DOCUMENT_FETCHERS = {
   invoices: (bookingId, name) => ApiBookingService.getInvoice(bookingId, name),
   cancellations: (bookingId, name) =>
     ApiBookingService.getCancellationReceipt(bookingId, name),
+  withdrawals: (bookingId, name) =>
+    ApiBookingService.getWithdrawalReceipt(bookingId, name),
 };
 
 /** How long "Link kopiert" stays on the button (the codebase's copy pattern). */

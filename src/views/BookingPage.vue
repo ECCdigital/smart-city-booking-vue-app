@@ -406,11 +406,12 @@ import {
 import {
   pathOf,
   paymentStatusLabel,
-  transitionActions,
+  bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import { bookingKindLabel } from "@/utils/businessBooking";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
 /**
@@ -499,7 +500,7 @@ export default {
       if (!this.canUpdate) {
         return [];
       }
-      return transitionActions(this.booking.status);
+      return bookingTransitionActions(this.booking);
     },
     objects() {
       return Object.values(this.booking.bookableItems || {});
@@ -515,9 +516,15 @@ export default {
         "zip-code": "zipCode",
         location: "location",
       };
-      return Object.entries(keys)
+      const fields = Object.entries(keys)
         .map(([key, field]) => ({ key, value: this.booking[field] }))
         .filter((field) => field.value != null && field.value !== "");
+      if (fields.length === 0) return [];
+      // Private or business, always stated: it decides the withdrawal.
+      return [
+        ...fields,
+        { key: "kind", value: bookingKindLabel(this.booking) },
+      ];
     },
     customFields() {
       return filledCustomFields(this.booking);
