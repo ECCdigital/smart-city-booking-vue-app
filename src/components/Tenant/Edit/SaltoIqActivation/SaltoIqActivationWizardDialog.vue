@@ -90,15 +90,19 @@ export default {
 </script>
 
 <template>
-  <v-dialog :value="!!iq" max-width="640" persistent @input="close">
+  <v-dialog :value="!!iq" max-width="640" persistent scrollable @input="close">
     <v-card v-if="iq">
-      <v-card-title class="headline">
-        {{ $t("accessPoint.tenant.salto.iq.wizard.title") }} {{ iqName }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-cellphone-key</v-icon>
+        <span class="text-h5">
+          {{ $t("accessPoint.tenant.salto.iq.wizard.title") }} {{ iqName }}
+        </span>
         <v-spacer />
         <v-btn icon @click="close"><v-icon>mdi-close</v-icon></v-btn>
       </v-card-title>
+      <v-divider />
 
-      <v-card-text>
+      <v-card-text class="pa-6">
         <v-alert v-if="error" type="error" text dense class="mb-3">
           {{ error }}
         </v-alert>

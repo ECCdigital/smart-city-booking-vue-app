@@ -12,7 +12,7 @@ function mountDialog(toDelete) {
 function yesButton(wrapper) {
   return wrapper
     .findAll(".v-dialog button")
-    .wrappers.find((button) => button.text() === "Ja");
+    .wrappers.find((button) => button.text() === "Löschen");
 }
 
 /**

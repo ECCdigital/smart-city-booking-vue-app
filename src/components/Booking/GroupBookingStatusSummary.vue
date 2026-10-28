@@ -72,13 +72,11 @@ export default {
     >
       {{ seriesActionHint }}
     </v-alert>
-    <p class="text-caption mb-1">{{ $t("group-booking.status.members") }}</p>
-    <div class="group-booking-status-summary__members">
-      <div
-        v-for="member in members"
-        :key="member.id"
-        class="d-flex align-center py-1"
-      >
+    <p class="text-subtitle-2 mb-1">
+      {{ $t("group-booking.status.members") }}
+    </p>
+    <ul class="group-booking-status-summary__members pl-6 mb-0">
+      <li v-for="member in members" :key="member.id" class="py-1">
         <span class="mr-2">{{ member.id }}</span>
         <v-chip
           x-small
@@ -89,8 +87,8 @@ export default {
           <v-icon left x-small>{{ statusIcon(displayStatus(member)) }}</v-icon>
           {{ statusLabel(displayStatus(member)) }}
         </v-chip>
-      </div>
-    </div>
+      </li>
+    </ul>
   </div>
 </template>
 

@@ -329,29 +329,36 @@
     <v-dialog
       v-model="showDeleteDialog"
       persistent
+      scrollable
       max-width="500px"
       @click:outside.stop
     >
-      <v-card color="accent">
-        <v-card-title>
-          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
+      <v-card>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
           <span class="text-h5">Buchungsobjekt löschen</span>
+          <v-spacer />
+          <v-btn icon @click.stop="showDeleteDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
-        <v-card-text>
-          <span class="text-h6">
-            Sind Sie sicher, dass Sie das Buchungsobjekt
-            <strong>{{ item.title }}</strong> löschen wollen?
-          </span>
+        <v-divider />
+        <v-card-text class="pa-6">
+          Sind Sie sicher, dass Sie das Buchungsobjekt
+          <strong>{{ item.title }}</strong> löschen wollen?
           <p class="text-body-2 bookable-card__muted mt-3 mb-0">
             Diese Aktion kann nicht rückgängig gemacht werden.
           </p>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click.stop="showDeleteDialog = false">
             Abbrechen
           </v-btn>
-          <v-btn color="error" @click.stop="confirmDelete"> Löschen </v-btn>
+          <v-btn color="error" @click.stop="confirmDelete">
+            <v-icon left small>mdi-delete</v-icon>
+            Löschen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -144,13 +144,18 @@
       </div>
     </v-fab-transition>
 
-    <v-dialog v-model="feedUrlDialog" max-width="600">
+    <v-dialog v-model="feedUrlDialog" scrollable max-width="600">
       <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2">mdi-calendar-sync</v-icon>
-          Kalender-Feed abonnieren
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-calendar-sync</v-icon>
+          <span class="text-h5">Kalender-Feed abonnieren</span>
+          <v-spacer />
+          <v-btn icon @click="feedUrlDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           <p class="text-body-2 grey--text text--darken-1 mb-4">
             Fügen Sie diese URL in Ihrem Kalender-Client hinzu (z.B. Google
             Calendar, Apple Kalender, Outlook), um Events automatisch zu
@@ -168,9 +173,9 @@
             persistent-hint
           />
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="feedUrlDialog = false">Schließen</v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="feedUrlDialog = false">Schließen</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

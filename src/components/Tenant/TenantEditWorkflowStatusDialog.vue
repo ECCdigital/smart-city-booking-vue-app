@@ -1,10 +1,16 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
     <v-card>
-      <v-card-title> Workflow Status bearbeiten </v-card-title>
-      <v-card-text>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-pencil</v-icon>
+        <span class="text-h5">Workflow Status bearbeiten</span>
+        <v-spacer />
+        <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-6">
         <v-text-field
-          class="mx-1"
+          class="mx-1 mb-8"
           background-color="accent"
           hide-details
           filled
@@ -12,8 +18,6 @@
           label="Statusname"
           v-model="workflowStatus.name"
         ></v-text-field>
-      </v-card-text>
-      <v-card-text>
         <v-alert type="info" border="left" elevation="1" colored-border>
           <strong>Hinweis zur Workflow-Konfiguration:</strong><br />
           Hier können Sie definieren, welche Aktionen ausgeführt werden sollen,
@@ -205,10 +209,13 @@
           </v-btn>
         </div>
       </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-btn color="primary" @click="saveWorkflowStatus">Übernehmen</v-btn>
+        <v-btn color="primary" @click="saveWorkflowStatus">
+          <v-icon left small>mdi-check</v-icon>
+          Übernehmen
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

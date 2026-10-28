@@ -48,7 +48,7 @@
             <v-icon left small>mdi-cancel</v-icon>
             Suspendiert
           </v-chip>
-          <v-btn icon @click="closeDialog">
+          <v-btn icon @click="closeDialog" :disabled="inProgress">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -76,7 +76,7 @@
 
         <v-divider />
 
-        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
+        <v-card-text class="pa-6">
           <v-tabs-items v-model="activeTab">
             <v-tab-item>
               <div class="mb-4">
@@ -951,7 +951,6 @@
         <!-- Actions -->
         <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click="closeDialog" :disabled="inProgress">
-            <v-icon left small>mdi-close</v-icon>
             Abbrechen
           </v-btn>
           <v-btn

@@ -624,13 +624,22 @@ export default {
       :value="!!identityQuestion"
       max-width="520"
       persistent
+      scrollable
       @input="answerIdentityQuestion(false)"
     >
       <v-card v-if="identityQuestion" data-test="salto-identity-change">
-        <v-card-title class="headline">
-          {{ $t("accessPoint.tenant.salto.identityChange.title") }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-alert-outline</v-icon>
+          <span class="text-h5">
+            {{ $t("accessPoint.tenant.salto.identityChange.title") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="answerIdentityQuestion(false)"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           {{
             $tc(
               "accessPoint.tenant.salto.identityChange.text",
@@ -639,12 +648,13 @@ export default {
             )
           }}
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="answerIdentityQuestion(false)">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="answerIdentityQuestion(false)">
             {{ $t("accessPoint.tenant.salto.identityChange.cancel") }}
           </v-btn>
-          <v-btn color="primary" text @click="answerIdentityQuestion(true)">
+          <v-btn color="primary" @click="answerIdentityQuestion(true)">
+            <v-icon left small>mdi-content-save</v-icon>
             {{ $t("accessPoint.tenant.salto.identityChange.confirm") }}
           </v-btn>
         </v-card-actions>

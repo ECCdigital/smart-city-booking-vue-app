@@ -43,6 +43,13 @@ function dialogElement(selector, text) {
   );
 }
 
+// The buttons sit in the footer of the dialog, below every tab.
+function footerButton(text) {
+  return Array.from(
+    activeDialog().querySelectorAll(".v-card__actions button")
+  ).find((el) => el.textContent.includes(text));
+}
+
 function noticeCheckbox() {
   const label = noticeLabel();
   return label ? document.getElementById(label.getAttribute("for")) : null;
@@ -81,7 +88,7 @@ describe("TenantInviteUserDialog invitation notice", () => {
     });
 
     const emails = dialogElement("label", "E-Mail-Adressen");
-    const close = dialogElement("button", "schließen");
+    const close = footerButton("Schließen");
     expect(precedes(emails, noticeLabel())).toBe(true);
     expect(precedes(noticeLabel(), close)).toBe(true);
   });
@@ -93,7 +100,7 @@ describe("TenantInviteUserDialog invitation notice", () => {
     });
 
     const links = dialogElement("span", "Bestehende Einladungslinks");
-    const close = dialogElement("button", "schließen");
+    const close = footerButton("Schließen");
     expect(precedes(links, noticeLabel())).toBe(true);
     expect(precedes(noticeLabel(), close)).toBe(true);
   });
@@ -107,7 +114,7 @@ describe("TenantInviteUserDialog invitation notice", () => {
     dialogElement("button", "Neuen Einladungslink erstellen").click();
     await wrapper.vm.$nextTick();
 
-    const create = dialogElement("button", "Link erstellen");
+    const create = footerButton("Link erstellen");
     expect(noticeCheckbox().checked).toBe(true);
     expect(precedes(noticeLabel(), create)).toBe(true);
   });

@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Changed
+
+-   Dialogs share one layout ([ECCdigital/tickets#738](https://github.com/ECCdigital/tickets/issues/738)), that of the dialogs for a tenant's members: title with icon and an X to close at the right, dividers, only the content scrolls, buttons bottom right in a fixed footer with „Abbrechen“ or „Schließen“ first. Confirmations of a deletion no longer show a yellow card with „Ja“/„Nein“ but a red confirm button with its verb, such as „Löschen“. The layout is described in `docs/agents/components.md`
+
 ### Added
 
 -   „Besitzer benachrichtigen, wenn eine Einladung angenommen wird“ ([ECCdigital/tickets#564](https://github.com/ECCdigital/tickets/issues/564)): a setting of the tenant, for every invitation, saved as `notifyOwnersOnInvitationAccepted`. Its Besitzer change it in „Neues Mitglied hinzufügen“ under „Per E-Mail einladen“ and „Einladungslink“, saved at once; a new tenant chooses it at the creation. A tenant without the field shows it as on, as the backend reads it. Requires the backend with ECCdigital/smart-city-booking-backend#339

@@ -1,41 +1,51 @@
 <template>
   <div class="notification-container">
-    <v-dialog v-model="sequentialDialog" max-width="750">
+    <v-dialog v-model="sequentialDialog" max-width="750" scrollable>
       <v-card v-if="filteredNotifications.length > 0">
-        <v-card-title class="headline">
-          <span v-if="filteredNotifications.length > 1" class="ml-4">
-            Benachrichtigung {{ currentNotificationIndex + 1 }} von
-            {{ filteredNotifications.length }}</span
-          >
-          <v-spacer></v-spacer>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-bell-outline</v-icon>
+          <span class="text-h5">
+            Benachrichtigung
+            <template v-if="filteredNotifications.length > 1">
+              {{ currentNotificationIndex + 1 }} von
+              {{ filteredNotifications.length }}
+            </template>
+          </span>
+          <v-spacer />
           <v-btn icon @click="sequentialDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           <div
             v-if="filteredNotifications[currentNotificationIndex]"
             v-html="filteredNotifications[currentNotificationIndex].message"
           ></div>
         </v-card-text>
-        <v-card-actions v-if="filteredNotifications.length > 1">
-          <v-btn
-            text
-            :disabled="currentNotificationIndex === 0"
-            @click="previousNotification"
-          >
-            <v-icon>mdi-chevron-left</v-icon> Previous
-          </v-btn>
-          <v-spacer></v-spacer>
-          <v-btn
-            text
-            :disabled="
-              currentNotificationIndex >= filteredNotifications.length - 1
-            "
-            @click="nextNotification"
-          >
-            Next <v-icon>mdi-chevron-right</v-icon>
-          </v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <template v-if="filteredNotifications.length > 1">
+            <v-btn
+              outlined
+              :disabled="currentNotificationIndex === 0"
+              @click="previousNotification"
+            >
+              <v-icon left small>mdi-chevron-left</v-icon>
+              Zurück
+            </v-btn>
+            <v-btn
+              outlined
+              :disabled="
+                currentNotificationIndex >= filteredNotifications.length - 1
+              "
+              @click="nextNotification"
+            >
+              Weiter
+              <v-icon right small>mdi-chevron-right</v-icon>
+            </v-btn>
+          </template>
+          <v-btn outlined @click="sequentialDialog = false">Schließen</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -3,21 +3,29 @@
     :value="value"
     max-width="480"
     persistent
+    scrollable
     @input="$emit('input', $event)"
   >
     <v-card>
-      <v-card-title class="text-h6">
-        {{ $t("unsavedChangesLeave.title") }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
+        <span class="text-h5">{{ $t("unsavedChangesLeave.title") }}</span>
+        <v-spacer />
+        <v-btn icon @click="$emit('stay')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-text>
+      <v-divider />
+      <v-card-text class="pa-6">
         {{ $t("unsavedChangesLeave.message") }}
       </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text @click="$emit('stay')">
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="$emit('stay')">
           {{ $t("unsavedChangesLeave.stay") }}
         </v-btn>
-        <v-btn color="warning" text @click="$emit('discard')">
+        <v-btn color="error" @click="$emit('discard')">
+          <v-icon left small>mdi-delete-outline</v-icon>
           {{ $t("unsavedChangesLeave.discard") }}
         </v-btn>
       </v-card-actions>

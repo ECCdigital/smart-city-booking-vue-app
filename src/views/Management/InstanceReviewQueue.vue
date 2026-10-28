@@ -214,14 +214,20 @@
       <SupervisionNoticePanel class="review-queue__panel" />
     </div>
 
-    <v-dialog v-model="rejectDialog" max-width="480">
-      <v-card v-if="rejecting" class="section-card">
-        <v-card-title class="section-header">
-          <v-icon>mdi-close-circle-outline</v-icon>
-          <span>{{ $t("supervision.review.actions.reject") }}</span>
+    <v-dialog v-model="rejectDialog" persistent scrollable max-width="480">
+      <v-card v-if="rejecting">
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">
+            {{ $t("supervision.review.actions.reject") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="rejectDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
         <v-divider />
-        <v-card-text class="review-queue__dialog-body">
+        <v-card-text class="pa-6">
           <p class="review-queue__dialog-offer">
             {{ rejecting.title || rejecting.offerId }} · {{ rejecting.tenant }}
           </p>
@@ -236,19 +242,19 @@
             data-test="review-queue-reason"
           />
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="rejectDialog = false">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="rejectDialog = false">
             {{ $t("supervision.review.dialog.cancel") }}
           </v-btn>
           <v-btn
             color="error"
-            depressed
             :disabled="deciding"
             :loading="deciding"
             data-test="review-queue-reject-confirm"
             @click="confirmReject"
           >
+            <v-icon left small>mdi-close-circle</v-icon>
             {{ $t("supervision.review.actions.reject") }}
           </v-btn>
         </v-card-actions>
@@ -671,10 +677,6 @@ export default {
   margin-top: 2px;
   text-transform: none;
   letter-spacing: normal;
-}
-
-.review-queue__dialog-body {
-  padding: var(--scb-section-body-padding);
 }
 
 .review-queue__dialog-offer {
