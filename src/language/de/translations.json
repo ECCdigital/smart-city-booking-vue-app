@@ -1533,14 +1533,26 @@
     }
   },
   "booking": {
+    "owner-change": {
+      "title": "Buchung einem anderen Konto zuordnen?",
+      "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
+      "message": "Diese Buchung wurde manuell von einem Admin angelegt. Über die E-Mail-Adresse wird sie einem Konto zugeordnet, sofern ein Benutzerkonto mit dieser Adresse vorhanden ist.",
+      "consequence": "Durch das Ändern der Mailadresse wird die Buchung der neuen E-Mail-Adresse zugeordnet und verschwindet ggf. aus dem Konto der bisherigen E-Mailadresse.",
+      "question": "Sind Sie sicher, dass Sie die Änderung vornehmen möchten?",
+      "previous": "Bisher",
+      "next": "Künftig",
+      "confirm": "Änderung speichern",
+      "cancel": "Abbrechen"
+    },
     "booked-via": {
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Angemeldet",
+        "user": "Benutzer",
         "guest": "Gast",
         "admin": "Admin"
       },
+      "booking-user": "Gebucht von",
       "hint": {
         "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
         "guest": "Diese Buchung wurde erstellt von einem Gast.",

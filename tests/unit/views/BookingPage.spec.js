@@ -598,7 +598,7 @@ describe("BookingPage", () => {
     });
 
     it.each([
-      [{ bookedVia: "user" }, "Angemeldet"],
+      [{ bookedVia: "user" }, "Benutzer"],
       [{ bookedVia: "admin" }, "Admin"],
       [{}, "Unbekannt"],
     ])("marks the name of %o with the badge %s", async (extra, word) => {
@@ -625,6 +625,40 @@ describe("BookingPage", () => {
       const fact = wrapper.find(".booking-page__booked-via");
       expect(fact.text()).toContain("Buchungsweg");
       expect(fact.text()).toContain(word);
+    });
+
+    // A user who booked for someone else: the booking's mail is not the
+    // account's, so Details names the account under the Buchungsweg.
+    it.each([
+      [
+        "names the booking user when the mail is another",
+        { bookedVia: "user", assignedUserId: "max@example.org" },
+        "max@example.org",
+      ],
+      [
+        "names nobody when the user booked with their own mail",
+        { bookedVia: "user", assignedUserId: "Erika@Example.org" },
+        null,
+      ],
+      [
+        "names nobody for a booking made by an admin",
+        { bookedVia: "admin", assignedUserId: "max@example.org" },
+        null,
+      ],
+    ])("%s", async (_, extra, bookingUser) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking(extra),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const fact = wrapper.find(".booking-page__booking-user");
+      if (bookingUser) {
+        expect(fact.text()).toContain("Gebucht von");
+        expect(fact.text()).toContain(bookingUser);
+      } else {
+        expect(fact.exists()).toBe(false);
+      }
     });
 
     it.each([
