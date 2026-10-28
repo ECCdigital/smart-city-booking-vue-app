@@ -174,7 +174,7 @@
             <v-list-item-title>Buchung bearbeiten</v-list-item-title>
           </v-list-item>
           <v-list-item
-            v-for="action in transitionActions(selectedEvent.status)"
+            v-for="action in bookingTransitionActions(selectedEvent)"
             :key="action"
             link
             @click="transition(action, selectedEvent.id)"
@@ -216,7 +216,7 @@ import {
   actionLabel,
   allowsAction,
   isRejectedOrCancelled,
-  transitionActions,
+  bookingTransitionActions,
 } from "@/utils/bookingStatus";
 
 export default {
@@ -304,6 +304,7 @@ export default {
               timed: true,
               user: booking.name,
               company: booking.company || "",
+              isBusiness: booking.isBusiness,
               status: booking.status,
             };
           }) || []
@@ -314,7 +315,7 @@ export default {
     actionIcon,
     actionLabel,
     allowsAction,
-    transitionActions,
+    bookingTransitionActions,
     getBookingTitle(booking) {
       const bookableItems = booking.bookableItems;
       if (!bookableItems) {

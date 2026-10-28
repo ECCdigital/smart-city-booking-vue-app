@@ -2,6 +2,7 @@ import {
   RECEIPT_VARIABLES,
   INVOICE_VARIABLES,
   CANCELLATION_VARIABLES,
+  WITHDRAWAL_VARIABLES,
   SAMPLE_DATA,
 } from "@/components/Mail/templateVariables.js";
 import { PDF_ITEMS_PREVIEW_CSS } from "@/components/PDF/pdfPreviewStyles.js";
@@ -381,6 +382,89 @@ function makeCancellationDefaultBlocks() {
   ];
 }
 
+function makeWithdrawalDefaultBlocks() {
+  // Content mirrors the backend default template
+  // (default-withdrawal-receipt.temp.html), adapted for the block editor.
+  return [
+    {
+      type: "row",
+      columns: [
+        {
+          width: 12,
+          blocks: [
+            {
+              type: "rawHtml",
+              html:
+                '<div class="meta">Widerrufbelegnummer: {{withdrawalNumber}}<br />' +
+                "Buchungsnummer: {{bookingId}}<br />" +
+                "{{#if hasOriginalDocument}}Ursprüngliche Rechnungsnummer: {{originalInvoiceNumber}}<br />{{/if}}" +
+                "{{location}}, {{withdrawalDate}}</div>",
+            },
+            {
+              type: "rawHtml",
+              html: "<div>{{{invoiceAddress}}}</div>",
+            },
+            {
+              type: "heading",
+              text: "Widerrufbeleg",
+              level: 1,
+              align: "left",
+            },
+            {
+              type: "text",
+              html:
+                "<p>Sehr geehrte Damen und Herren,<br /><br />" +
+                `hiermit bestätigen wir Ihren Widerruf der Buchung <strong>${chip(
+                  "bookingId",
+                  "Buchungs-ID"
+                )}</strong>. Durch den Widerruf entstehen Ihnen keine Kosten.</p>`,
+              align: "left",
+            },
+            {
+              type: "rawHtml",
+              html:
+                '<div class="cancellation-note">' +
+                "<strong>Widerruf angenommen am:</strong> {{withdrawalDate}}" +
+                "</div>",
+            },
+            {
+              type: "rawHtml",
+              html:
+                "{{#if alreadyPaid}}" +
+                '<div class="refund-note">' +
+                "Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen vollständig erstattet." +
+                "</div>" +
+                "{{else}}{{#if hasOriginalDocument}}" +
+                "<p>Die Rechnung mit der Nummer <strong>{{originalInvoiceNumber}}</strong> vom {{originalInvoiceDate}} " +
+                "wird damit vollständig aufgehoben; der Rechnungsbetrag in Höhe von <strong>{{refundAmount}}</strong> entfällt.</p>" +
+                "{{else}}" +
+                "<p>Der eingetragene Rechnungsbetrag in Höhe von <strong>{{refundAmount}}</strong> entfällt.</p>" +
+                "{{/if}}{{/if}}",
+            },
+            {
+              type: "rawHtml",
+              html: "{{{mainContent}}}",
+            },
+            {
+              type: "text",
+              html: `<p>Bei Rückfragen zu diesem Widerrufbeleg wenden Sie sich bitte unter Angabe der Widerrufbelegnummer <strong>${chip(
+                "withdrawalNumber",
+                "Widerrufbelegnummer"
+              )}</strong> an uns.</p>`,
+              align: "left",
+            },
+            {
+              type: "text",
+              html: '<p style="color:#888;font-size:12px;">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>',
+              align: "left",
+            },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
 export const PDF_TEMPLATE_CATALOG = {
   receipt: {
     key: "receipt",
@@ -473,6 +557,38 @@ export const PDF_TEMPLATE_CATALOG = {
       };
     },
     defaultBlocks: makeCancellationDefaultBlocks,
+  },
+  withdrawal: {
+    key: "withdrawal",
+    title: "Widerrufbeleg-Vorlage",
+    description:
+      "Vorlage für Widerrufbelege. Pflichtvariablen: {{withdrawalNumber}}, {{{invoiceAddress}}} sowie {{{mainContent}}} oder das Tabellen-Partial {{> pdfBookingItemsTable}}. Ein Widerruf kostet nichts: {{#if alreadyPaid}} (Erstattung) … {{else}} (Rechnungsbetrag entfällt) …",
+    icon: "mdi-undo-variant",
+    variables: WITHDRAWAL_VARIABLES,
+    sampleData: SAMPLE_DATA.withdrawal,
+    requiredVariables: [
+      {
+        label: "{{{mainContent}}}",
+        variables: ["mainContent"],
+        partials: ["pdfBookingItemsTable"],
+      },
+      { label: "{{{invoiceAddress}}}", variables: ["invoiceAddress"] },
+    ],
+    documentTitle: "Widerrufbeleg {{withdrawalNumber}}",
+    buildDocument(bodyHtml, pageTemplates) {
+      return buildDocument(
+        "Widerrufbeleg {{withdrawalNumber}}",
+        bodyHtml,
+        pageTemplates || {}
+      );
+    },
+    defaultPageTemplates() {
+      return {
+        headerHtml: "",
+        footerHtml: makeDefaultPageFooter("{{title}} {{withdrawalNumber}}"),
+      };
+    },
+    defaultBlocks: makeWithdrawalDefaultBlocks,
   },
 };
 

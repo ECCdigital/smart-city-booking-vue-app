@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import { isBusinessBooking } from "@/utils/businessBooking";
 
 /**
  * The booking state as the UI reads it: `booking.status`, the one stored
@@ -17,6 +18,7 @@ export const BOOKING_STATUS = Object.freeze({
   CONFIRMED: "confirmed",
   REJECTED: "rejected",
   CANCELLED: "cancelled",
+  WITHDRAWN: "withdrawn",
 });
 
 /** What `groupBookingStatus()` answers when the members disagree. */
@@ -40,6 +42,7 @@ const PRESENTATION = {
   [BOOKING_STATUS.CONFIRMED]: { color: "success", icon: "mdi-check-circle" },
   [BOOKING_STATUS.REJECTED]: { color: "error", icon: "mdi-cancel" },
   [BOOKING_STATUS.CANCELLED]: { color: "error", icon: "mdi-close-circle" },
+  [BOOKING_STATUS.WITHDRAWN]: { color: "error", icon: "mdi-undo-variant" },
   [MIXED]: { color: "grey", icon: "mdi-help-circle-outline" },
 };
 
@@ -81,19 +84,33 @@ export const BOOKING_ACTION = Object.freeze({
   PAY: "pay",
   CANCEL: "cancel",
   REINSTATE: "reinstate",
+  ACCEPT_WITHDRAWAL: "acceptWithdrawal",
   DELETE: "delete",
 });
 
+/**
+ * Widerruf akzeptieren is offered at every live state; Widerrufen is final -
+ * no reinstate, no delete.
+ */
 const ACTIONS_BY_STATUS = {
   [BOOKING_STATUS.REQUESTED]: [
     BOOKING_ACTION.CONFIRM,
     BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
     BOOKING_ACTION.DELETE,
   ],
-  [BOOKING_STATUS.PAYMENT_DUE]: [BOOKING_ACTION.PAY, BOOKING_ACTION.CANCEL],
-  [BOOKING_STATUS.CONFIRMED]: [BOOKING_ACTION.CANCEL],
+  [BOOKING_STATUS.PAYMENT_DUE]: [
+    BOOKING_ACTION.PAY,
+    BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
+  ],
+  [BOOKING_STATUS.CONFIRMED]: [
+    BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
+  ],
   [BOOKING_STATUS.REJECTED]: [BOOKING_ACTION.REINSTATE, BOOKING_ACTION.DELETE],
   [BOOKING_STATUS.CANCELLED]: [BOOKING_ACTION.REINSTATE],
+  [BOOKING_STATUS.WITHDRAWN]: [],
 };
 
 /** The actions a booking in `status` offers; `[]` for mixed or unknown. */
@@ -101,7 +118,18 @@ export function allowedActions(status) {
   return ACTIONS_BY_STATUS[status] || [];
 }
 
+/**
+ * Whether one booking offers `action`: its state allows it, and Widerruf
+ * akzeptieren only for a private booking - a business one has no
+ * withdrawal.
+ */
 export function allowsAction(booking, action) {
+  if (
+    action === BOOKING_ACTION.ACCEPT_WITHDRAWAL &&
+    isBusinessBooking(booking)
+  ) {
+    return false;
+  }
   return allowedActions(booking?.status).includes(action);
 }
 
@@ -119,7 +147,7 @@ function verbOf(prefix, action, status) {
   return i18n.t(`${prefix}.${action}`);
 }
 
-/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen. */
+/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen, Widerruf akzeptieren. */
 export function actionLabel(action, status) {
   return verbOf("booking.action", action, status);
 }
@@ -144,6 +172,13 @@ export function transitionActions(status) {
   );
 }
 
+/** The transitions one booking's menu offers: its state's, as `allowsAction` answers them. */
+export function bookingTransitionActions(booking) {
+  return transitionActions(booking?.status).filter((action) =>
+    allowsAction(booking, action)
+  );
+}
+
 const ACTION_PRESENTATION = {
   [BOOKING_ACTION.CONFIRM]: {
     icon: "mdi-checkbox-marked-circle",
@@ -152,6 +187,10 @@ const ACTION_PRESENTATION = {
   [BOOKING_ACTION.PAY]: { icon: "mdi-cash-check", color: "success" },
   [BOOKING_ACTION.CANCEL]: { icon: "mdi-close-circle", color: "orange" },
   [BOOKING_ACTION.REINSTATE]: { icon: "mdi-restore", color: "warning" },
+  [BOOKING_ACTION.ACCEPT_WITHDRAWAL]: {
+    icon: "mdi-undo-variant",
+    color: "orange",
+  },
 };
 
 export function actionIcon(action) {
@@ -162,12 +201,13 @@ export function actionColor(action) {
   return ACTION_PRESENTATION[action]?.color || "grey";
 }
 
-/** The order of the "Status" column: requested < payment_due < confirmed < cancelled < rejected. */
+/** The order of the "Status" column: requested < payment_due < confirmed < cancelled < withdrawn < rejected. */
 const RANK = [
   BOOKING_STATUS.REQUESTED,
   BOOKING_STATUS.PAYMENT_DUE,
   BOOKING_STATUS.CONFIRMED,
   BOOKING_STATUS.CANCELLED,
+  BOOKING_STATUS.WITHDRAWN,
   BOOKING_STATUS.REJECTED,
 ];
 
@@ -211,13 +251,16 @@ export function freeMarker() {
 
 /**
  * Whether the booking has been paid, read off the state: `confirmed` says so;
- * a `cancelled` booking was paid iff it was cancelled out of `confirmed`.
+ * a `cancelled` or `withdrawn` booking was paid iff it left `confirmed`.
  */
 export function isPaid(booking) {
   if (booking?.status === BOOKING_STATUS.CONFIRMED) {
     return true;
   }
-  if (booking?.status === BOOKING_STATUS.CANCELLED) {
+  if (
+    booking?.status === BOOKING_STATUS.CANCELLED ||
+    booking?.status === BOOKING_STATUS.WITHDRAWN
+  ) {
     return (
       booking.cancellationRefund?.cancelledFrom === BOOKING_STATUS.CONFIRMED
     );
@@ -225,30 +268,46 @@ export function isPaid(booking) {
   return false;
 }
 
-/** The "Bezahlt" column of the Excel export: Kostenfrei / Ja / Nein (spec E6). */
+/**
+ * A withdrawn booking that was never paid owes nothing: the payment lapses
+ * rather than stands open.
+ */
+function isPaymentLapsed(booking) {
+  return booking?.status === BOOKING_STATUS.WITHDRAWN && !isPaid(booking);
+}
+
+/** The "Bezahlt" column of the Excel export: Kostenfrei / Ja / Nein / Entfällt (spec E6). */
 export function paymentLabel(booking) {
   if (isFree(booking)) {
     return i18n.t("booking.status.free");
+  }
+  if (isPaymentLapsed(booking)) {
+    return i18n.t("booking.payment.lapsed");
   }
   return isPaid(booking)
     ? i18n.t("booking.payment.paid")
     : i18n.t("booking.payment.unpaid");
 }
 
-/** The Zahlungsstatus on the booking page: Kostenfrei / Bezahlt / Nicht bezahlt. */
+/** The Zahlungsstatus on the booking page: Kostenfrei / Bezahlt / Nicht bezahlt / Entfällt. */
 export function paymentStatusLabel(booking) {
   if (isFree(booking)) {
     return i18n.t("booking.status.free");
+  }
+  if (isPaymentLapsed(booking)) {
+    return i18n.t("booking.payment.status.lapsed");
   }
   return isPaid(booking)
     ? i18n.t("booking.payment.status.paid")
     : i18n.t("booking.payment.status.unpaid");
 }
 
+/** Whether the booking no longer lives: Abgelehnt, Storniert or Widerrufen. */
 export function isRejectedOrCancelled(booking) {
   return (
     booking?.status === BOOKING_STATUS.REJECTED ||
-    booking?.status === BOOKING_STATUS.CANCELLED
+    booking?.status === BOOKING_STATUS.CANCELLED ||
+    booking?.status === BOOKING_STATUS.WITHDRAWN
   );
 }
 
@@ -327,9 +386,9 @@ function mainPathOf(free) {
 }
 
 /**
- * The step a cancelled booking was cut behind: Angefragt for a stored
- * `rejected` (also where it reads Storniert), else `cancelledFrom`, or
- * Bestätigt where that is unknown.
+ * The step a cancelled or withdrawn booking was cut behind: Angefragt for a
+ * stored `rejected` (also where it reads Storniert), else `cancelledFrom`,
+ * or Bestätigt where that is unknown.
  */
 function cancelledOriginOf(booking) {
   if (booking?.status === BOOKING_STATUS.REJECTED) {
@@ -341,18 +400,20 @@ function cancelledOriginOf(booking) {
 /**
  * The path itself, shared by a booking and a series: the main path with a
  * `STEP_STATE` per step, cut behind Angefragt at Abgelehnt and behind
- * `cancelledFrom` at Storniert. `dateOf(step)` and `end` carry the raw
- * dates and the reason.
+ * `cancelledFrom` at Storniert and Widerrufen. `dateOf(step)` and `end`
+ * carry the raw dates and the reason.
  */
 function buildPath({ status, free, cancelledFrom, dateOf, end }) {
   const mainPath = mainPathOf(free);
-  const terminal =
-    status === BOOKING_STATUS.REJECTED || status === BOOKING_STATUS.CANCELLED;
+  const terminal = isRejectedOrCancelled({ status });
 
   let reachedFrom = status;
   if (status === BOOKING_STATUS.REJECTED) {
     reachedFrom = BOOKING_STATUS.REQUESTED;
-  } else if (status === BOOKING_STATUS.CANCELLED) {
+  } else if (
+    status === BOOKING_STATUS.CANCELLED ||
+    status === BOOKING_STATUS.WITHDRAWN
+  ) {
     reachedFrom = cancelledFrom;
   }
   const reachedIndex = Math.max(0, mainPath.indexOf(reachedFrom));
