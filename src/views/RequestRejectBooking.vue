@@ -224,6 +224,7 @@ import CancellationRefundPanel from "@/components/Booking/CancellationRefundPane
 import FormatService from "@/services/FormatService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
+import { refundPolicyText } from "@/utils/cancellationRefund";
 
 /** The 403 `request-reject` answers with when the tenant's policy forbids it. */
 const USER_CANCELLATION_DISABLED = "booking_user_cancellation_disabled";
@@ -329,13 +330,8 @@ export default {
     },
     refundPolicySummary() {
       if (!this.refundPreview) return "";
-      const days =
-        this.refundPreview.daysBeforeStart === null ||
-        this.refundPreview.daysBeforeStart === undefined
-          ? "–"
-          : this.refundPreview.daysBeforeStart;
-      return this.$t("booking.cancellationRefund.userPolicySummary", {
-        days,
+      return refundPolicyText("userPolicySummary", {
+        days: this.refundPreview.daysBeforeStart,
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },
