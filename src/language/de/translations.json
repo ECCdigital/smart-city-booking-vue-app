@@ -1389,6 +1389,8 @@
         "phone": "Telefonnummer",
         "website": "Website",
         "location": "Anschrift",
+        "invitation-notice": "Besitzer benachrichtigen, wenn eine Einladung angenommen wird",
+        "invitation-notice-hint": "Sofern aktiviert, erhalten die Besitzer des Mandanten eine E-Mail, wenn jemand über eine Einladung Mitglied wird.",
         "submit": "Mandant anlegen",
         "contact": "Kontakt",
         "cancel": "Abbrechen"

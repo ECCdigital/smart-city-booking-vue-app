@@ -33,6 +33,7 @@ describe("OnboardingTenantStep — required contact", () => {
       phone: "",
       website: "",
       location: "",
+      notifyOwnersOnInvitationAccepted: true,
     });
   });
 

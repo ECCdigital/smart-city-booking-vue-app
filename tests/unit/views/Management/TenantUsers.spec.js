@@ -7,6 +7,7 @@ import { flushPromises } from "@tests/unit/support/api";
 import i18n from "@/language/index";
 import TenantUsers from "@/views/Management/TenantUsers.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import { inviteMembersRoute } from "@/utils/tenantUsers";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
@@ -15,7 +16,11 @@ vi.mock("@/services/api/ApiTenantService", () => ({
     addTenantOwner: vi.fn(),
     getTenantUsers: vi.fn(),
     getTenant: vi.fn(),
+    submitTenant: vi.fn(),
   },
+}));
+vi.mock("@/services/permissions/TenantPermissionService", () => ({
+  default: { isTenantOwner: vi.fn(() => false) },
 }));
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn(async () => ({ data: [] })) },
@@ -98,7 +103,11 @@ const stub = (name) => ({
 // The dialog's own form is its spec; here it is open or not, and closes.
 const InviteDialog = {
   name: "TenantInviteUserDialog",
-  props: { open: Boolean },
+  props: {
+    open: Boolean,
+    notifyOwnersOnInvitationAccepted: Boolean,
+    canChangeInvitationNotice: Boolean,
+  },
   render(h) {
     if (!this.open) return null;
     return h("div", { attrs: { "data-test": "invite-dialog" } }, [
@@ -114,7 +123,7 @@ const InviteDialog = {
   },
 };
 
-function membersStore() {
+function membersStore(addToast = () => {}) {
   return new Vuex.Store({
     modules: {
       loading: {
@@ -126,7 +135,7 @@ function membersStore() {
         namespaced: true,
         getters: { currentTenantId: () => "t1" },
       },
-      toasts: { namespaced: true, actions: { add: () => {} } },
+      toasts: { namespaced: true, actions: { add: addToast } },
     },
   });
 }
@@ -141,11 +150,11 @@ function membersRouter() {
 }
 
 /** Opens the members page at `router`'s route, as a load or reload does. */
-async function openMembersPage(router) {
+async function openMembersPage(router, store = membersStore()) {
   const wrapper = mountComponent(TenantUsers, {
     localVue,
     router,
-    store: membersStore(),
+    store,
     stubs: {
       TenantInviteUserDialog: InviteDialog,
       TenantUserDetailDialog: stub("TenantUserDetailDialog"),
@@ -199,5 +208,90 @@ describe("TenantUsers, invited in by link", () => {
     const wrapper = await openMembersPage(router);
 
     expect(inviteDialog(wrapper).exists()).toBe(false);
+  });
+});
+
+/**
+ * The mail to the Besitzer when an invitation is accepted is one setting of
+ * the tenant. The page reads it with the tenant, hands it to the invite
+ * dialog for a Besitzer only, and writes nothing but that one field back.
+ */
+describe("TenantUsers, the Besitzer's notice of an accepted invitation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiTenantService.getTenantUsers.mockResolvedValue({
+      users: [],
+      userDetails: [],
+    });
+    TenantPermissionService.isTenantOwner.mockReturnValue(true);
+  });
+
+  const dialogOf = (wrapper) =>
+    wrapper.findComponent({ name: "TenantInviteUserDialog" });
+
+  async function openAsBesitzer(tenant, addToast) {
+    ApiTenantService.getTenant.mockResolvedValue({ data: tenant });
+    const router = membersRouter();
+    await router.push({ name: "user" });
+    return openMembersPage(router, membersStore(addToast));
+  }
+
+  it("reads a tenant without the field as on", async () => {
+    const wrapper = await openAsBesitzer({ id: "t1" });
+
+    expect(dialogOf(wrapper).props("notifyOwnersOnInvitationAccepted")).toBe(
+      true
+    );
+    expect(dialogOf(wrapper).props("canChangeInvitationNotice")).toBe(true);
+  });
+
+  it("reads the setting the Besitzer turned off", async () => {
+    const wrapper = await openAsBesitzer({
+      id: "t1",
+      notifyOwnersOnInvitationAccepted: false,
+    });
+
+    expect(dialogOf(wrapper).props("notifyOwnersOnInvitationAccepted")).toBe(
+      false
+    );
+  });
+
+  it("lets no one but a Besitzer of the tenant change it", async () => {
+    TenantPermissionService.isTenantOwner.mockReturnValue(false);
+
+    const wrapper = await openAsBesitzer({ id: "t1" });
+
+    expect(TenantPermissionService.isTenantOwner).toHaveBeenCalledWith("t1");
+    expect(dialogOf(wrapper).props("canChangeInvitationNotice")).toBe(false);
+  });
+
+  it("saves only that one field of the tenant", async () => {
+    ApiTenantService.submitTenant.mockResolvedValue({ data: {} });
+    const wrapper = await openAsBesitzer({ id: "t1", name: "Bad" });
+
+    dialogOf(wrapper).vm.$emit("change-invitation-notice", false);
+    await flushPromises();
+
+    expect(ApiTenantService.submitTenant).toHaveBeenCalledWith({
+      id: "t1",
+      notifyOwnersOnInvitationAccepted: false,
+    });
+    expect(dialogOf(wrapper).props("notifyOwnersOnInvitationAccepted")).toBe(
+      false
+    );
+  });
+
+  it("turns the setting back and says so when the save fails", async () => {
+    ApiTenantService.submitTenant.mockRejectedValue(new Error("Network Error"));
+    const addToast = vi.fn();
+    const wrapper = await openAsBesitzer({ id: "t1" }, addToast);
+
+    dialogOf(wrapper).vm.$emit("change-invitation-notice", false);
+    await flushPromises();
+
+    expect(dialogOf(wrapper).props("notifyOwnersOnInvitationAccepted")).toBe(
+      true
+    );
+    expect(addToast.mock.calls.at(-1)[1]).toMatchObject({ type: "error" });
   });
 });
