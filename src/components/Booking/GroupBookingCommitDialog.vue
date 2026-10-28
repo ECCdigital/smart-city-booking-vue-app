@@ -33,30 +33,28 @@
         <v-alert v-if="error" type="error" border="left" class="mt-4 mb-0">
           {{ error }}
         </v-alert>
-        <div class="d-flex justify-center flex-wrap mt-4">
-          <v-btn
-            v-if="canCommitGroup"
-            large
-            color="primary"
-            class="ma-2"
-            :loading="inProgress"
-            @click="commitGroupBooking"
-            >Serie freigeben</v-btn
-          >
-          <v-btn
-            v-if="!seriesOnly"
-            large
-            color="primary"
-            class="ma-2"
-            @click="commitSingleBooking"
-            :loading="inProgress"
-            >Nur diese Buchung freigeben</v-btn
-          >
-        </div>
       </v-card-text>
       <v-divider />
-      <v-card-actions class="justify-end px-6 py-4">
+      <v-card-actions class="justify-end flex-wrap px-6 py-4">
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+        <v-btn
+          v-if="canCommitGroup"
+          color="primary"
+          :loading="inProgress"
+          @click="commitGroupBooking"
+        >
+          <v-icon left small>mdi-check-all</v-icon>
+          Serie freigeben
+        </v-btn>
+        <v-btn
+          v-if="!seriesOnly"
+          color="primary"
+          :loading="inProgress"
+          @click="commitSingleBooking"
+        >
+          <v-icon left small>mdi-check</v-icon>
+          Nur diese Buchung freigeben
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

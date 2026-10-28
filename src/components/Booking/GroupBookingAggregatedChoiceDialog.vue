@@ -17,30 +17,24 @@
         <v-alert v-if="error" type="error" border="left" class="mt-4 mb-0">
           {{ error }}
         </v-alert>
-        <div class="d-flex justify-center flex-wrap mt-4">
-          <v-btn
-            large
-            color="primary"
-            class="ma-2"
-            :loading="inProgress"
-            @click="$emit('choose-primary')"
-          >
-            {{ primaryLabel }}
-          </v-btn>
-          <v-btn
-            large
-            color="primary"
-            class="ma-2"
-            :loading="inProgress"
-            @click="$emit('choose-secondary')"
-          >
-            {{ secondaryLabel }}
-          </v-btn>
-        </div>
       </v-card-text>
       <v-divider />
-      <v-card-actions class="justify-end px-6 py-4">
+      <v-card-actions class="justify-end flex-wrap px-6 py-4">
         <v-btn outlined @click="$emit('close')">Abbrechen</v-btn>
+        <v-btn
+          color="primary"
+          :loading="inProgress"
+          @click="$emit('choose-primary')"
+        >
+          {{ primaryLabel }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          :loading="inProgress"
+          @click="$emit('choose-secondary')"
+        >
+          {{ secondaryLabel }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

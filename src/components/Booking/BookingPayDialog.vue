@@ -306,43 +306,43 @@ export default {
             </v-col>
           </v-row>
         </v-container>
-        <div v-if="hasGroupBooking" class="d-flex justify-center">
-          <v-btn
-            v-if="canPayGroup"
-            color="primary"
-            class="ma-2"
-            large
-            :loading="inProgress"
-            @click="payGroupBooking"
-          >
-            Serie als bezahlt markieren
-          </v-btn>
-          <v-btn
-            v-if="!seriesOnly"
-            color="secondary"
-            class="ma-2"
-            large
-            :loading="inProgress"
-            @click="paySingleBooking"
-          >
-            Nur diese Buchung als bezahlt markieren
-          </v-btn>
-        </div>
       </v-card-text>
 
       <v-divider />
-      <v-card-actions class="justify-end px-6 py-4">
+      <v-card-actions class="flex-column align-end px-6 py-4" style="gap: 8px">
+        <div class="d-flex flex-wrap justify-end" style="gap: 8px">
+          <template v-if="hasGroupBooking">
+            <v-btn
+              v-if="canPayGroup"
+              color="primary"
+              :loading="inProgress"
+              @click="payGroupBooking"
+            >
+              <v-icon left small>mdi-cash-multiple</v-icon>
+              Serie als bezahlt markieren
+            </v-btn>
+            <v-btn
+              v-if="!seriesOnly"
+              color="primary"
+              :loading="inProgress"
+              @click="paySingleBooking"
+            >
+              <v-icon left small>mdi-cash-check</v-icon>
+              Nur diese Buchung als bezahlt markieren
+            </v-btn>
+          </template>
+          <v-btn
+            v-else
+            color="primary"
+            :disabled="!selectedPaymentMethod"
+            :loading="inProgress"
+            @click="paySingleBooking"
+          >
+            <v-icon left small>mdi-cash-check</v-icon>
+            Als bezahlt markieren
+          </v-btn>
+        </div>
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-btn
-          v-if="!hasGroupBooking"
-          color="primary"
-          :disabled="!selectedPaymentMethod"
-          :loading="inProgress"
-          @click="paySingleBooking"
-        >
-          <v-icon left small>mdi-cash-check</v-icon>
-          Als bezahlt markieren
-        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
