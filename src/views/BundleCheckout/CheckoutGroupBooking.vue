@@ -74,6 +74,7 @@ import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
   formatCheckoutValidationError,
+  getGroupCheckoutErrorToastKey,
   isLoginRefusal,
   LOGIN_REQUIRED_TOAST_KEY,
 } from "@/utils/checkoutErrors";
@@ -778,13 +779,18 @@ export default {
         // A 401 after the bookings were made (the payment) is no refusal of
         // the completion: sending the series again would book it twice.
         if (!booked && isLoginRefusal(error)) {
-          // ECCdigital/tickets#123: the group checkout has no step
+          // The group checkout has no step
           // „Anmeldung“; the single checkout of the offer starts with it.
           this.addToast(
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
           this.backToSignIn();
+          return;
         }
+        const toastKey = booked
+          ? "checkout.error.unexpected"
+          : getGroupCheckoutErrorToastKey(error);
+        this.addToast(ToastService.createToast(toastKey, "error"));
       } finally {
         this.isSubmitting = false;
       }
