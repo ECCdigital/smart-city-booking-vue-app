@@ -61,6 +61,7 @@
       </v-simple-table>
 
       <v-checkbox
+        v-if="!isRejection"
         v-model="useOverride"
         :label="$t('booking.cancellationRefund.override')"
         hide-details
@@ -68,7 +69,7 @@
         @change="emitOverride"
       />
       <v-text-field
-        v-if="useOverride"
+        v-if="!isRejection && useOverride"
         v-model.number="localPercentage"
         :label="$t('booking.cancellationRefund.overridePercentage')"
         :rules="percentageRules"
@@ -117,6 +118,17 @@ export default {
   computed: {
     isGroup() {
       return Array.isArray(this.preview?.bookings);
+    },
+    /**
+     * Turning a request down costs the customer nothing: the backend
+     * refunds it in full and ignores an override, so none is offered.
+     */
+    isRejection() {
+      if (!this.preview) return false;
+      return this.isGroup
+        ? this.preview.bookings.length > 0 &&
+            this.preview.bookings.every((booking) => booking.rejection === true)
+        : this.preview.rejection === true;
     },
     percentageRules() {
       return [
@@ -184,6 +196,9 @@ export default {
       );
     },
     policySummary() {
+      if (this.isRejection) {
+        return this.$t("booking.cancellationRefund.rejectionPolicy");
+      }
       if (this.isGroup) {
         const percentages = [
           ...new Set(

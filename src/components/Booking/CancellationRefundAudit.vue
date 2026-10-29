@@ -37,6 +37,10 @@ export default {
     policySummary() {
       if (!this.audit) return "";
 
+      if (this.audit.rejection) {
+        return this.$t("booking.cancellationRefund.rejectionAudit");
+      }
+
       const days = this.hasTimeSpan ? this.audit.daysBeforeStart : null;
       const percentage = this.audit.appliedRefundPercentage;
 

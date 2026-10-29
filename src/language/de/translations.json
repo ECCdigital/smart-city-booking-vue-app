@@ -1612,6 +1612,8 @@
       "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
+      "rejectionPolicy": "Die Buchung ist angefragt. Das Ablehnen ist für den Buchenden kostenfrei: Es wird kein Betrag einbehalten.",
+      "rejectionAudit": "Die Anfrage wurde abgelehnt. Das Ablehnen war für den Buchenden kostenfrei: Es wurde kein Betrag einbehalten.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
       "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
       "cancelGroup": "Gesamte Serie stornieren",
