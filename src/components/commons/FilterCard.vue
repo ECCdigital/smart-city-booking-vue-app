@@ -38,7 +38,35 @@
         </button>
       </div>
       <div
-        v-if="section.segmented"
+        v-if="isRange(section)"
+        :key="`range-${section.key}`"
+        class="scb-filter-card__range"
+      >
+        <v-text-field
+          :value="boundText(section, 'from')"
+          :label="$t('filter.from')"
+          type="number"
+          min="0"
+          outlined
+          dense
+          hide-details
+          data-test="filter-range-from"
+          @input="changeBound(section, 'from', $event)"
+        />
+        <v-text-field
+          :value="boundText(section, 'to')"
+          :label="$t('filter.to')"
+          type="number"
+          min="0"
+          outlined
+          dense
+          hide-details
+          data-test="filter-range-to"
+          @input="changeBound(section, 'to', $event)"
+        />
+      </div>
+      <div
+        v-else-if="section.segmented"
         :key="`segments-${section.key}`"
         class="scb-filter-card__segments"
       >
@@ -103,6 +131,7 @@
 import {
   emptySelection,
   isMultiple,
+  isRange,
   restrictionCount,
   totalRestrictionCount,
 } from "@/utils/filterSections";
@@ -129,6 +158,21 @@ export default {
     },
   },
   methods: {
+    isRange,
+    boundText(section, bound) {
+      const value = section.selected?.[bound];
+      return value === null || value === undefined ? "" : String(value);
+    },
+    // An emptied field opens its side of the range; so does anything that is
+    // no number.
+    changeBound(section, bound, text) {
+      const number = text === "" || text === null ? NaN : Number(text);
+      this.$emit("change", section.key, {
+        ...emptySelection(section),
+        ...section.selected,
+        [bound]: Number.isFinite(number) ? number : null,
+      });
+    },
     restricts(section) {
       return restrictionCount(section) > 0;
     },
@@ -223,6 +267,12 @@ export default {
   letter-spacing: 0;
   text-transform: none;
   color: var(--v-primary-base);
+}
+
+.scb-filter-card__range {
+  display: flex;
+  gap: var(--scb-space-2);
+  padding: var(--scb-space-1) var(--scb-space-4) var(--scb-space-3);
 }
 
 .scb-filter-card__segments {

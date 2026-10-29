@@ -971,7 +971,20 @@
       }
     },
     "list": {
-      "search": "Name, ID oder Veranstalter"
+      "search": "Name, ID oder Veranstalter",
+      "filter": {
+        "public": "Öffentliche Veranstaltung",
+        "registration": "Anmeldepflichtige Veranstaltung",
+        "free": "Kostenfreie Veranstaltung",
+        "format": "Format",
+        "attendees": "Max. Teilnehmeranzahl",
+        "all": "Alle",
+        "yes": "Ja",
+        "no": "Nein",
+        "presence": "Präsenz",
+        "online": "Online",
+        "hybrid": "Hybrid"
+      }
     },
     "participation-link": {
       "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
@@ -3591,7 +3604,9 @@
     "reset": "zurücksetzen",
     "resetAll": "Alle zurücksetzen",
     "empty": "Keine Einträge",
-    "tags": "Tags"
+    "tags": "Tags",
+    "from": "von",
+    "to": "bis"
   },
   "role": {
     "list": {
