@@ -1,6 +1,6 @@
-const state = {
+const state = () => ({
   skipStatusChangeConfirmations: {},
-};
+});
 
 const mutations = {
   SET_SKIP_STATUS_CONFIRMATION(state, { statusKey, skip }) {

@@ -2,7 +2,7 @@ import PersistenceService from "@/services/PersistenceService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 const namespaced = true;
 
-const state = {
+const state = () => ({
   data: PersistenceService.getFromLocalStorage("tenant") || null,
   tenants: PersistenceService.getFromLocalStorage("tenants") || null,
   currentTenantId:
@@ -10,7 +10,7 @@ const state = {
   // The supervision level (glossary "Aufsichtsstufe") of one tenant, with
   // the tenant it belongs to. Never persisted: the instance owner changes it.
   supervision: { tenantId: null, level: null },
-};
+});
 
 /**
  * `GET /api/tenants/:tenant` is for the tenant's owner and the instance

@@ -22,7 +22,7 @@ async function mountLastStep({ format, url, location } = {}) {
     modules: {
       events: {
         ...eventsModule,
-        state: () => JSON.parse(JSON.stringify(eventsModule.state)),
+        state: eventsModule.state,
       },
       toasts: { namespaced: true, actions: { add: () => {} } },
     },

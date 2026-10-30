@@ -73,7 +73,7 @@ function createStore(supervisionLevel) {
     modules: {
       events: {
         ...eventsModule,
-        state: () => JSON.parse(JSON.stringify(eventsModule.state)),
+        state: eventsModule.state,
       },
       tenants: {
         namespaced: true,

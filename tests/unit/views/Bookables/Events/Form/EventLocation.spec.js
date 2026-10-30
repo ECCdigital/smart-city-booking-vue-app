@@ -34,7 +34,7 @@ function createStore() {
     modules: {
       events: {
         ...eventsModule,
-        state: () => JSON.parse(JSON.stringify(eventsModule.state)),
+        state: eventsModule.state,
       },
       toasts: { namespaced: true, actions: { add: () => {} } },
     },
