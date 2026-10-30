@@ -207,6 +207,24 @@ export function isLockBusyError(error) {
 }
 
 /**
+ * The positions a reinstatement would book twice: the `conflicts` of a 409
+ * `booking_reinstatement_conflict`, each
+ * `{ bookableId, title, bookings: [{ id, timeBegin, timeEnd, parent?, child? }] }`
+ * - `parent` or `child` the `{ bookableId, title }` a booking takes - or `null`
+ * for any other error. Not a moved state: nothing on screen is stale.
+ */
+export function getReinstatementConflicts(error) {
+  const data = error?.response?.data;
+  if (
+    error?.response?.status !== 409 ||
+    data?.code !== "booking_reinstatement_conflict"
+  ) {
+    return null;
+  }
+  return Array.isArray(data.params?.conflicts) ? data.params.conflicts : [];
+}
+
+/**
  * The refetch rule of spec E5: after every 409 and 404 the host reloads the
  * booking (form, detail) or the list (list, calendar, kanban), so that the
  * screen shows the server's state instead of the one the transition was

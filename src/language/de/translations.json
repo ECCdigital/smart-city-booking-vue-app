@@ -2013,6 +2013,14 @@
         "title": "Buchung wiederherstellen",
         "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt, es wird keine E-Mail versendet.",
         "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
+      },
+      "conflict": {
+        "intro": "In diesem Zeitraum gibt es inzwischen bereits eine andere Buchung: | In diesem Zeitraum gibt es inzwischen bereits andere Buchungen:",
+        "for": "für",
+        "via-parent": "mit dem übergeordneten Objekt",
+        "via-child": "über das untergeordnete Objekt",
+        "question": "Wenn Sie die aktuelle Buchung trotzdem wiederherstellen, ist das Objekt doppelt belegt.",
+        "proceed": "Trotzdem wiederherstellen"
       }
     },
     "kind": {

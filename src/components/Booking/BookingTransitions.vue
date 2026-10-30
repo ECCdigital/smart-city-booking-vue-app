@@ -82,6 +82,48 @@
         <v-card-text class="pa-6">
           <p class="mb-0">{{ reinstateHint }}</p>
           <v-alert
+            v-if="conflicts.length > 0"
+            type="warning"
+            border="left"
+            text
+            class="mt-4 mb-0 reinstate-conflicts"
+          >
+            <p class="mb-2">
+              {{ $tc("booking.reinstate.conflict.intro", conflictRows.length) }}
+            </p>
+            <ul class="mb-2">
+              <li
+                v-for="{ conflict, other } in conflictRows"
+                :key="`${conflict.bookableId}-${other.id}`"
+              >
+                <a
+                  :href="bookingHref(other.id)"
+                  target="_blank"
+                  rel="noopener"
+                  >{{ other.id }}</a
+                >
+                {{ $t("booking.reinstate.conflict.for") }} „<span
+                  :class="{
+                    'reinstate-conflicts__taken': !takenThrough(other),
+                  }"
+                  >{{ String(conflict.title || "").trim() }}</span
+                >“<template v-if="other.parent">
+                  {{ $t("booking.reinstate.conflict.via-parent") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.parent.title || "").trim() }}</span
+                  >“</template
+                ><template v-else-if="other.child">
+                  {{ $t("booking.reinstate.conflict.via-child") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.child.title || "").trim() }}</span
+                  >“</template
+                >
+                ({{ formatPeriod(other) }})
+              </li>
+            </ul>
+            <p class="mb-0">{{ $t("booking.reinstate.conflict.question") }}</p>
+          </v-alert>
+          <v-alert
             v-if="error"
             type="error"
             border="left"
@@ -96,7 +138,11 @@
           <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
           <v-btn color="primary" :loading="inProgress" @click="reinstate">
             <v-icon left small>mdi-restore</v-icon>
-            {{ $t("booking.action.reinstate") }}
+            {{
+              conflicts.length > 0
+                ? $t("booking.reinstate.conflict.proceed")
+                : $t("booking.action.reinstate")
+            }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -177,8 +223,11 @@ import {
   getApiErrorMessage,
   getBookingValidationReasons,
   getGroupReinstatementConflicts,
+  getReinstatementConflicts,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 
 /**
  * The one place the admin's four transitions run (spec E2, E3): Freigeben,
@@ -204,6 +253,8 @@ export default {
       dialog: null,
       inProgress: false,
       error: null,
+      /** What a reinstatement would book twice; once named, the next click reinstates anyway. */
+      conflicts: [],
       /** The members a series reinstatement would book twice, once the route named them. */
       groupConflicts: [],
     };
@@ -228,6 +279,12 @@ export default {
           ? "booking.reinstate.dialog.hint-cancelled"
           : "booking.reinstate.dialog.hint-rejected";
       return this.$t(key, { id: this.booking?.id });
+    },
+    /** One row per booking in the way, with the position it collides on. */
+    conflictRows() {
+      return this.conflicts.flatMap((conflict) =>
+        (conflict.bookings || []).map((other) => ({ conflict, other }))
+      );
     },
     /**
      * A withdrawal costs nothing: a paid booking is refunded in full, the
@@ -258,6 +315,7 @@ export default {
     start(action, target) {
       this.target = target;
       this.error = null;
+      this.conflicts = [];
       this.groupConflicts = [];
       if (this.seriesOnly) {
         // There is no series-wide withdrawal: a withdrawal is accepted per
@@ -315,6 +373,7 @@ export default {
     closeDialog() {
       this.dialog = null;
       this.error = null;
+      this.conflicts = [];
       this.groupConflicts = [];
     },
 
@@ -426,15 +485,45 @@ export default {
       });
     },
 
+    /**
+     * The first click asks the route as it is; a period other bookings took
+     * meanwhile comes back as conflicts, shown in the dialog without a toast
+     * or reload. The next click reinstates anyway. A member reinstated alone
+     * from the series dialog shows its conflicts in the single dialog.
+     */
     async reinstate() {
       const booking = this.booking;
+      const ignoreConflicts = this.conflicts.length > 0;
       return this.run(BOOKING_ACTION.REINSTATE, {
         overlay: "Buchung wird wiederhergestellt...",
-        call: () => ApiBookingService.reinstateBooking(booking.id),
+        call: () =>
+          ApiBookingService.reinstateBooking(booking.id, { ignoreConflicts }),
         successKey: "booking.reinstate.success",
         errorKey: "booking.reinstate.error",
         result: { bookingId: booking.id },
+        handleError: (error) => {
+          const conflicts = getReinstatementConflicts(error);
+          if (conflicts) {
+            this.conflicts = conflicts;
+            this.dialog = "reinstate";
+          }
+          return conflicts !== null;
+        },
       });
+    },
+    /** The parent or dependent a booking holds the position through, if any. */
+    takenThrough(other) {
+      return other.parent || other.child || null;
+    },
+    bookingHref(bookingId) {
+      return this.$router?.resolve(
+        bookingPageRoute(bookingId, this.booking?.tenantId)
+      ).href;
+    },
+    formatPeriod({ timeBegin, timeEnd }) {
+      return `${FormatService.dateTime(timeBegin)} – ${FormatService.dateTime(
+        timeEnd
+      )}`;
     },
 
     /**
@@ -590,4 +679,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* The object booked twice, as the warning names it. */
+.reinstate-conflicts__taken {
+  font-weight: 600;
+}
+</style>
