@@ -21,8 +21,9 @@ describe("Welcome — the answer of the registration", () => {
       mocks: { $router: { push: vi.fn() } },
     });
 
+    // ECCdigital/tickets#600: the same text for every address.
     expect(wrapper.text()).toContain(
-      "Falls die Adresse noch nicht bestätigt ist"
+      "Vielen Dank für Ihre Registrierung. Wir haben Ihnen eine E-Mail gesendet, um Ihre Registrierung abzuschließen."
     );
   });
 });

@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Notice after the registration ([ECCdigital/tickets#600](https://github.com/ECCdigital/tickets/issues/600)): „Vielen Dank für Ihre Registrierung. Wir haben Ihnen eine E-Mail gesendet, um Ihre Registrierung abzuschließen.“, the same for every address; the toast after every registration reads „Sie erhalten eine E-Mail, um Ihre Registrierung abzuschließen.“ An address with a verified account gets a hint of its account with a button to „Passwort vergessen“ from the backend with ECCdigital/tickets#600
 -   Dialogs share one layout ([ECCdigital/tickets#738](https://github.com/ECCdigital/tickets/issues/738)), that of the dialogs for a tenant's members: title with icon and an X to close at the right, dividers, only the content scrolls, buttons bottom right in a fixed footer with „Abbrechen“ or „Schließen“ first. Confirmations of a deletion no longer show a yellow card with „Ja“/„Nein“ but a red confirm button with its verb, such as „Löschen“. The layout is described in `docs/agents/components.md`
 
 ### Added
