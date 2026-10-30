@@ -69,7 +69,7 @@
     "success": {
       "default": {
         "title": "Registrierung abgeschickt",
-        "message": "Falls die Adresse noch nicht bestätigt ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
+        "message": "Sie erhalten eine E-Mail, um Ihre Registrierung abzuschließen."
       }
     },
     "error": {
@@ -1003,7 +1003,20 @@
       }
     },
     "list": {
-      "search": "Name, ID oder Veranstalter"
+      "search": "Name, ID oder Veranstalter",
+      "filter": {
+        "public": "Öffentliche Veranstaltung",
+        "registration": "Anmeldepflichtige Veranstaltung",
+        "free": "Kostenfreie Veranstaltung",
+        "format": "Format",
+        "attendees": "Max. Teilnehmeranzahl",
+        "all": "Alle",
+        "yes": "Ja",
+        "no": "Nein",
+        "presence": "Präsenz",
+        "online": "Online",
+        "hybrid": "Hybrid"
+      }
     },
     "participation-link": {
       "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
@@ -1508,6 +1521,8 @@
         "phone": "Telefonnummer",
         "website": "Website",
         "location": "Anschrift",
+        "invitation-notice": "Besitzer benachrichtigen, wenn eine Einladung angenommen wird",
+        "invitation-notice-hint": "Sofern aktiviert, erhalten die Besitzer des Mandanten eine E-Mail, wenn jemand über eine Einladung Mitglied wird.",
         "submit": "Mandant anlegen",
         "contact": "Kontakt",
         "cancel": "Abbrechen"
@@ -1665,14 +1680,26 @@
     }
   },
   "booking": {
+    "owner-change": {
+      "title": "Buchung einem anderen Konto zuordnen?",
+      "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
+      "message": "Diese Buchung wurde manuell von einem Admin angelegt. Über die E-Mail-Adresse wird sie einem Konto zugeordnet, sofern ein Benutzerkonto mit dieser Adresse vorhanden ist.",
+      "consequence": "Durch das Ändern der Mailadresse wird die Buchung der neuen E-Mail-Adresse zugeordnet und verschwindet ggf. aus dem Konto der bisherigen E-Mailadresse.",
+      "question": "Sind Sie sicher, dass Sie die Änderung vornehmen möchten?",
+      "previous": "Bisher",
+      "next": "Künftig",
+      "confirm": "Änderung speichern",
+      "cancel": "Abbrechen"
+    },
     "booked-via": {
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Angemeldet",
+        "user": "Benutzer",
         "guest": "Gast",
         "admin": "Admin"
       },
+      "booking-user": "Gebucht von",
       "hint": {
         "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
         "guest": "Diese Buchung wurde erstellt von einem Gast.",
@@ -1984,8 +2011,8 @@
       },
       "dialog": {
         "title": "Buchung wiederherstellen",
-        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
-        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt, es wird keine E-Mail versendet.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
       }
     },
     "kind": {
@@ -2212,6 +2239,32 @@
         "message": "Die Buchungen konnten nicht als bezahlt markiert werden."
       }
     },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchungen der Serie wurden wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchungen der Serie konnten nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "member": "Die Buchung {id} ist Teil einer Serienbuchung.",
+        "group": "Alle stornierten Buchungen der Serie wiederherstellen",
+        "single": "Nur diese Buchung wiederherstellen",
+        "hint": "Keine Buchung der Serie ist storniert oder abgelehnt. | Die stornierte oder abgelehnte Buchung kehrt in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet. | Die {count} stornierten und abgelehnten Buchungen kehren jeweils in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
+      },
+      "conflict": {
+        "intro": "Für einen Termin der Serie gibt es inzwischen andere Buchungen: | Für {n} Termine der Serie gibt es inzwischen andere Buchungen:",
+        "member": "Buchung {id} ({period})",
+        "for": "für",
+        "via-parent": "mit dem übergeordneten Objekt",
+        "via-child": "über das untergeordnete Objekt",
+        "question": "Wenn Sie diese Termine trotzdem wiederherstellen, sind die Objekte doppelt belegt.",
+        "proceed": "Alle trotzdem wiederherstellen",
+        "skip": "Nur konfliktfreie wiederherstellen"
+      }
+    },
     "reject": {
       "success": {
         "title": "Erfolgreich abgelehnt",
@@ -2252,7 +2305,8 @@
       "confirm": "Serie freigeben",
       "pay": "Serie als bezahlt markieren",
       "reject": "Serie ablehnen",
-      "cancel": "Serie stornieren"
+      "cancel": "Serie stornieren",
+      "reinstate": "Serie wiederherstellen"
     },
     "cancellationReceipt": {
       "reprint": {
@@ -2523,6 +2577,10 @@
       "success": {
         "title": "Erfolgreich bearbeitet",
         "message": "Der Benutzer wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Speichern",
+        "message": "Der Benutzer konnte nicht gespeichert werden."
       }
     },
     "edit-profile": {
@@ -3880,7 +3938,9 @@
     "reset": "zurücksetzen",
     "resetAll": "Alle zurücksetzen",
     "empty": "Keine Einträge",
-    "tags": "Tags"
+    "tags": "Tags",
+    "from": "von",
+    "to": "bis"
   },
   "role": {
     "list": {

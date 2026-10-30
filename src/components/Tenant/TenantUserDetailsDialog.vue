@@ -98,7 +98,7 @@
       <v-divider />
 
       <!-- Tab Content -->
-      <v-card-text class="pa-6" style="max-height: 600px; overflow-y: auto">
+      <v-card-text class="pa-6">
         <v-tabs-items v-model="activeTab">
           <!-- Overview Tab -->
           <v-tab-item>

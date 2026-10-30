@@ -1,47 +1,40 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
-    <v-card color="accent">
-      <v-card-title>
-        <v-icon class="mr-2" color="info">mdi-information</v-icon>
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
+    <v-card>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-information</v-icon>
         <span class="text-h5">{{ title }}</span>
+        <v-spacer />
+        <v-btn icon @click="$emit('close')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-text>
-        <span class="text-h6">
-          Die Buchung
-          <strong>{{ bookingId }}</strong>
-          ist Teil einer Serienbuchung. {{ question }}
-        </span>
-      </v-card-text>
-      <v-card-text v-if="error" class="text-center">
-        <v-alert type="error" border="left" elevation="2">
+      <v-divider />
+      <v-card-text class="pa-6">
+        Die Buchung
+        <strong>{{ bookingId }}</strong>
+        ist Teil einer Serienbuchung. {{ question }}
+        <v-alert v-if="error" type="error" border="left" class="mt-4 mb-0">
           {{ error }}
         </v-alert>
       </v-card-text>
-      <v-card-text class="d-flex justify-center">
-        <v-col cols="auto">
-          <v-btn
-            large
-            color="primary"
-            :loading="inProgress"
-            @click="$emit('choose-primary')"
-          >
-            {{ primaryLabel }}
-          </v-btn>
-        </v-col>
-        <v-col cols="auto">
-          <v-btn
-            large
-            color="primary"
-            :loading="inProgress"
-            @click="$emit('choose-secondary')"
-          >
-            {{ secondaryLabel }}
-          </v-btn>
-        </v-col>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
+      <v-divider />
+      <v-card-actions class="justify-end flex-wrap px-6 py-4">
         <v-btn outlined @click="$emit('close')">Abbrechen</v-btn>
+        <v-btn
+          color="primary"
+          :loading="inProgress"
+          @click="$emit('choose-primary')"
+        >
+          {{ primaryLabel }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          :loading="inProgress"
+          @click="$emit('choose-secondary')"
+        >
+          {{ secondaryLabel }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

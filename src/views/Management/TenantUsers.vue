@@ -351,12 +351,15 @@
       :members="members"
       :invitation-links.sync="api.invitations"
       :tenantId="tenantId"
+      :notify-owners-on-invitation-accepted="notifyOwnersOnInvitationAccepted"
+      :can-change-invitation-notice="isTenantOwner"
       @close="showInviteDialog = false"
       @invite="onInvite"
       @toast="addToast"
       @createLink="createInvitationLink"
       @deleteLink="deleteLink"
       @add-direct="onAddDirect"
+      @change-invitation-notice="updateInvitationNotice"
     ></TenantInviteUserDialog>
 
     <TenantEndMembershipDialog
@@ -406,6 +409,7 @@ import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
@@ -467,6 +471,7 @@ export default {
       itemsPerPage: 8,
       showInviteDialog: false,
       notifySupervisorsOnBooking: true,
+      notifyOwnersOnInvitationAccepted: true,
       api: {
         users: [],
         roles: [],
@@ -509,6 +514,9 @@ export default {
     }),
     allowReport() {
       return UserPermissionService.allowReport(this.tenantId);
+    },
+    isTenantOwner() {
+      return TenantPermissionService.isTenantOwner(this.tenantId);
     },
     members() {
       return this.api.users.map((user) => {
@@ -950,8 +958,34 @@ export default {
         const response = await ApiTenantService.getTenant(this.tenantId);
         this.notifySupervisorsOnBooking =
           !!response.data?.notifySupervisorsOnBooking;
+        // The backend treats a missing value as on, so the page does too.
+        this.notifyOwnersOnInvitationAccepted =
+          response.data?.notifyOwnersOnInvitationAccepted !== false;
       } catch (e) {
         console.error(e);
+      }
+    },
+
+    /** Writes only this one field; the backend leaves the rest as it is. */
+    async updateInvitationNotice(value) {
+      const previous = this.notifyOwnersOnInvitationAccepted;
+      this.notifyOwnersOnInvitationAccepted = value;
+      try {
+        await ApiTenantService.submitTenant({
+          id: this.tenantId,
+          notifyOwnersOnInvitationAccepted: value,
+        });
+        await this.addToast({
+          type: "success",
+          message: "Benachrichtigung der Besitzer wurde gespeichert",
+        });
+      } catch (e) {
+        console.error(e);
+        this.notifyOwnersOnInvitationAccepted = previous;
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Speichern der Benachrichtigung der Besitzer",
+        });
       }
     },
 

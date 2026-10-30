@@ -48,7 +48,7 @@
             <v-icon left small>mdi-cancel</v-icon>
             {{ $t("user.suspension.chip") }}
           </v-chip>
-          <v-btn icon @click="closeDialog">
+          <v-btn icon @click="closeDialog" :disabled="inProgress">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -76,7 +76,7 @@
 
         <v-divider />
 
-        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
+        <v-card-text class="pa-6">
           <v-tabs-items v-model="activeTab">
             <v-tab-item>
               <div class="mb-4">
@@ -921,15 +921,9 @@
         <!-- Actions -->
         <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click="closeDialog" :disabled="inProgress">
-            <v-icon left small>mdi-close</v-icon>
             Abbrechen
           </v-btn>
-          <v-btn
-            color="primary"
-            @click="submitChanges"
-            :loading="inProgress"
-            :disabled="!isFormValid()"
-          >
+          <v-btn color="primary" @click="submitChanges" :loading="inProgress">
             <v-icon left small>mdi-content-save</v-icon>
             Speichern
           </v-btn>
@@ -941,6 +935,7 @@
 
 <script>
 import ApiUsersService from "@/services/api/ApiUsersService";
+import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import UserSuspensionCard from "@/components/User/UserSuspensionCard.vue";
 
@@ -997,6 +992,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
+      addToast: "toasts/add",
     }),
     getUserInitials() {
       if (this.selectedUser.firstName && this.selectedUser.lastName) {
@@ -1034,12 +1030,6 @@ export default {
         this.selectedUser.city,
       ].filter(Boolean);
       return parts.join(", ");
-    },
-    isFormValid() {
-      return (
-        this.selectedUser.firstName?.trim() &&
-        this.selectedUser.lastName?.trim()
-      );
     },
     formatDate(timestamp) {
       const date = new Date(timestamp);
@@ -1102,17 +1092,19 @@ export default {
       this.$set(this.selectedUser, "suspension", user.suspension);
       this.$set(this.selectedUser, "blacklistMatch", user.blacklistMatch);
     },
+    // The name is no condition of the save: the backend stores a person
+    // without one, and the admin must still be able to verify or suspend
+    // them (ECCdigital/tickets#654).
     async submitChanges() {
-      if (!this.isFormValid()) {
-        return;
-      }
-
       try {
         this.inProgress = true;
         await ApiUsersService.submitUser(this.selectedUser);
         this.closeDialog();
       } catch (error) {
         console.error(error);
+        await this.addToast(
+          ToastService.createToast("user.edit.error", "error")
+        );
       } finally {
         this.inProgress = false;
       }

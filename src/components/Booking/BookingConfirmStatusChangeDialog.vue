@@ -1,13 +1,17 @@
 <!-- BookingConfirmStatusChangeDialog.vue -->
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="600px">
-    <v-card color="accent">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-3" color="warning">mdi-alert-circle</v-icon>
-        <span class="text-h6">Status-Änderung bestätigen</span>
+  <v-dialog v-model="openDialog" persistent scrollable max-width="600px">
+    <v-card>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-alert-circle</v-icon>
+        <span class="text-h5">Status-Änderung bestätigen</span>
+        <v-spacer />
+        <v-btn icon :disabled="inProgress" @click="closeDialog">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-
-      <v-card-text class="pt-4">
+      <v-divider />
+      <v-card-text class="pa-6">
         <p class="mb-3">
           Beim Verschieben wird die Buchung automatisch in folgenden Status
           gesetzt:
@@ -32,13 +36,13 @@
           class="mt-2"
         ></v-checkbox>
       </v-card-text>
-
-      <v-card-actions class="px-6 pb-4">
-        <v-spacer></v-spacer>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
         <v-btn outlined @click="closeDialog" :disabled="inProgress">
           Abbrechen
         </v-btn>
         <v-btn color="primary" @click="onConfirm" :loading="inProgress">
+          <v-icon left small>mdi-check</v-icon>
           Bestätigen
         </v-btn>
       </v-card-actions>

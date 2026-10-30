@@ -8,6 +8,7 @@ import {
 import {
   getApiErrorMessage,
   getBookingValidationReasons,
+  getGroupReinstatementConflicts,
   isForbiddenError,
   isLockBusyError,
   isOutOfReach,
@@ -743,5 +744,25 @@ describe("getBookingValidationReasons", () => {
     expect(getBookingValidationReasons(serverError(400))).toEqual([]);
     expect(getBookingValidationReasons(serverError(500))).toEqual([]);
     expect(getBookingValidationReasons(new Error("Network Error"))).toEqual([]);
+  });
+});
+
+describe("getGroupReinstatementConflicts", () => {
+  it("answers the conflicts per member of a 409 group_booking_reinstatement_conflict", () => {
+    const conflicts = [{ bookingId: "bk-2", conflicts: [] }];
+    const error = lifecycleError(409, "group_booking_reinstatement_conflict", {
+      groupBookingId: "grp-1",
+      conflicts,
+    });
+
+    expect(getGroupReinstatementConflicts(error)).toEqual(conflicts);
+  });
+
+  it("answers null for any other error", () => {
+    expect(
+      getGroupReinstatementConflicts(lifecycleError(409, "invalid_transition"))
+    ).toBeNull();
+    expect(getGroupReinstatementConflicts(serverError())).toBeNull();
+    expect(getGroupReinstatementConflicts(undefined)).toBeNull();
   });
 });

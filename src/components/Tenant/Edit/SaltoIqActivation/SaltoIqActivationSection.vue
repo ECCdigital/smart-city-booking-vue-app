@@ -464,21 +464,31 @@ export default {
       :value="!!discardIq"
       max-width="480"
       persistent
+      scrollable
       @input="discardIqId = null"
     >
       <v-card v-if="discardIq">
-        <v-card-title class="headline">
-          {{ $t("accessPoint.tenant.salto.iq.discardConfirm.title") }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">
+            {{ $t("accessPoint.tenant.salto.iq.discardConfirm.title") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="discardIqId = null"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           {{ $t(discardWarningKey) }}
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="discardIqId = null">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="discardIqId = null">
             {{ $t("accessPoint.tenant.salto.iq.discardConfirm.cancel") }}
           </v-btn>
-          <v-btn color="error" text @click="confirmDiscard">
+          <v-btn color="error" @click="confirmDiscard">
+            <v-icon left small>mdi-delete</v-icon>
             {{ $t("accessPoint.tenant.salto.iq.discardConfirm.confirm") }}
           </v-btn>
         </v-card-actions>

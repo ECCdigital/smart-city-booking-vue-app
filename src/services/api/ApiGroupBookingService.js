@@ -66,6 +66,27 @@ export default {
     );
     return response.data;
   },
+  /**
+   * Wiederherstellen of a series: its cancelled and rejected members back to
+   * where they were, the others untouched. A period other bookings took
+   * meanwhile is a 409 `group_booking_reinstatement_conflict` unless
+   * `ignoreConflicts` (every member) or `skipConflicts` (only the free ones).
+   */
+  async reinstateGroupBooking(
+    tenantId,
+    groupBookingId,
+    { ignoreConflicts = false, skipConflicts = false } = {}
+  ) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const payload = {};
+    if (ignoreConflicts) payload.ignoreConflicts = true;
+    if (skipConflicts) payload.skipConflicts = true;
+    const response = await ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/reinstate`,
+      payload
+    );
+    return response.data;
+  },
   deleteGroupBooking(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.delete(`api/${t}/group-bookings/${groupBookingId}`);

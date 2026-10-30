@@ -118,3 +118,84 @@ describe("Search — further actions in the row", () => {
     ).toBe(true);
   });
 });
+
+const PUBLIC = {
+  key: "public",
+  label: "Öffentlich",
+  multiple: false,
+  segmented: true,
+  empty: "all",
+  options: [
+    { value: "all", label: "Alle" },
+    { value: "yes", label: "Ja" },
+  ],
+  matches: (room, selection) => room.isPublic === (selection === "yes"),
+};
+
+const SIZE = {
+  key: "size",
+  label: "Größe",
+  range: true,
+  matches: (room, { from }) => room.timeCreated >= from,
+};
+
+/**
+ * A page's field filters sit behind the funnel before the tags and apply
+ * together, with the text search too.
+ */
+describe("Search — field filters behind the funnel", () => {
+  const rooms = [
+    { title: "Alpha", timeCreated: 3, isPublic: true },
+    { title: "Beta", timeCreated: 2, isPublic: false },
+    { title: "Alpine", timeCreated: 1, isPublic: true },
+  ];
+
+  function mountFiltered() {
+    return mountSearch({
+      items: rooms,
+      showFilters: true,
+      sortable: false,
+      fieldFilters: [PUBLIC, SIZE],
+    });
+  }
+
+  const filter = (wrapper, key, selection) =>
+    wrapper
+      .findComponent({ name: "SearchBar" })
+      .vm.$emit("filter", key, selection);
+
+  it("lists everything while each filter stands on its empty selection", () => {
+    const wrapper = mountFiltered();
+
+    expect(listed(wrapper)).toEqual(["Alpha", "Beta", "Alpine"]);
+    expect(
+      wrapper.findComponent({ name: "SearchBar" }).props("filters")
+    ).toHaveLength(3);
+  });
+
+  it("narrows the list at once when a filter changes", async () => {
+    const wrapper = mountFiltered();
+
+    await filter(wrapper, "public", "yes");
+
+    expect(listed(wrapper)).toEqual(["Alpha", "Alpine"]);
+  });
+
+  it("applies set filters together", async () => {
+    const wrapper = mountFiltered();
+
+    await filter(wrapper, "public", "yes");
+    await filter(wrapper, "size", { from: 2, to: null });
+
+    expect(listed(wrapper)).toEqual(["Alpha"]);
+  });
+
+  it("lists everything again once a filter is reset", async () => {
+    const wrapper = mountFiltered();
+    await filter(wrapper, "public", "yes");
+
+    await filter(wrapper, "public", "all");
+
+    expect(listed(wrapper)).toEqual(["Alpha", "Beta", "Alpine"]);
+  });
+});

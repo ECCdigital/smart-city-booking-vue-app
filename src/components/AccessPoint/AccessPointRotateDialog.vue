@@ -80,16 +80,23 @@ export default {
     :value="open"
     max-width="560"
     persistent
+    scrollable
     @input="!$event && $emit('close')"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon left color="warning">mdi-autorenew</v-icon>
-        {{ $t("accessPoint.management.rotate.title") }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
+        <span class="text-h5">
+          {{ $t("accessPoint.management.rotate.title") }}
+        </span>
+        <v-spacer />
+        <v-btn icon :disabled="rotating" @click="$emit('close')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
 
-      <v-card-text class="pt-4">
+      <v-card-text class="pa-6">
         <template v-if="!rotated">
           <p>{{ $t("accessPoint.management.rotate.question", { label }) }}</p>
           <v-alert color="warning" text dense class="mb-0">
@@ -142,9 +149,8 @@ export default {
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text :disabled="rotating" @click="$emit('close')">
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined :disabled="rotating" @click="$emit('close')">
           {{
             rotated
               ? $t("accessPoint.management.close")
@@ -153,10 +159,11 @@ export default {
         </v-btn>
         <v-btn
           v-if="!rotated"
-          color="warning"
+          color="error"
           :loading="rotating"
           @click="rotate"
         >
+          <v-icon left small>mdi-autorenew</v-icon>
           {{ $t("accessPoint.management.rotate.confirm") }}
         </v-btn>
       </v-card-actions>

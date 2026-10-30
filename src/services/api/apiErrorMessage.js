@@ -354,3 +354,22 @@ export async function unpackBlobErrorBody(error) {
     response: { ...response, data: await parseBlobBody(response.data) },
   };
 }
+
+/**
+ * The members a series-wide reinstatement would book twice: the `conflicts`
+ * of a 409 `group_booking_reinstatement_conflict`, one
+ * `{ bookingId, conflicts }` per member, `conflicts` in the form of the
+ * single booking's (`{ bookableId, title, bookings: [{ id, timeBegin,
+ * timeEnd, parent?, child? }] }`) - or `null` for any other error. Not a
+ * moved state: nothing on screen is stale.
+ */
+export function getGroupReinstatementConflicts(error) {
+  const data = error?.response?.data;
+  if (
+    error?.response?.status !== 409 ||
+    data?.code !== "group_booking_reinstatement_conflict"
+  ) {
+    return null;
+  }
+  return Array.isArray(data.params?.conflicts) ? data.params.conflicts : [];
+}

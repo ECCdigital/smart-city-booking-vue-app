@@ -1,8 +1,22 @@
 <template>
-  <v-dialog :value="open" max-width="480" persistent @input="onDialogInput">
+  <v-dialog
+    :value="open"
+    max-width="480"
+    persistent
+    scrollable
+    @input="onDialogInput"
+  >
     <v-card>
-      <v-card-title class="subtitle-1"> E-Mail-Link </v-card-title>
-      <v-card-text>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-email-outline</v-icon>
+        <span class="text-h5">E-Mail-Link</span>
+        <v-spacer />
+        <v-btn icon @click="close">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-6">
         <div class="text-caption grey--text mb-3">
           Empfänger als feste Adresse oder mit Variablen, z.&nbsp;B.
           <code>{{ supportEmailExample }}</code
@@ -53,10 +67,11 @@
           <code class="mailto-preview">{{ previewHref || "—" }}</code>
         </div>
       </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text @click="close">Abbrechen</v-btn>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="close">Abbrechen</v-btn>
         <v-btn color="primary" :disabled="!previewHref" @click="onApply">
+          <v-icon left small>mdi-check</v-icon>
           Übernehmen
         </v-btn>
       </v-card-actions>

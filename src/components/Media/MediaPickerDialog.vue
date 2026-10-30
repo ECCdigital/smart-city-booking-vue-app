@@ -8,9 +8,9 @@
     @input="$emit('input', $event)"
   >
     <v-card>
-      <v-card-title class="d-flex align-center flex-nowrap">
-        <v-icon color="primary" class="mr-2">mdi-image-multiple-outline</v-icon>
-        <span :class="phone ? 'text-subtitle-1 text-truncate' : 'text-h6'">
+      <v-card-title class="d-flex align-center flex-nowrap py-4 px-6">
+        <v-icon left>mdi-image-multiple-outline</v-icon>
+        <span :class="phone ? 'text-subtitle-1 text-truncate' : 'text-h5'">
           {{ title }}
         </span>
         <v-spacer />
@@ -18,6 +18,7 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
+      <v-divider />
 
       <v-tabs v-model="tab" class="flex-grow-0">
         <v-tab href="#library">Mediathek</v-tab>
@@ -27,7 +28,7 @@
       <v-divider />
 
       <v-card-text
-        class="pa-4"
+        class="pa-6"
         style="min-height: 420px"
         @dragover.prevent="onDragOver"
         @dragleave.prevent="dragOver = false"
@@ -215,12 +216,11 @@
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <span v-if="tab !== 'external'" class="text--secondary ml-2">
+      <v-card-actions class="justify-end px-6 py-4">
+        <span v-if="tab !== 'external'" class="text--secondary mr-auto">
           {{ selected.length }} ausgewählt
         </span>
-        <v-spacer />
-        <v-btn text @click="close">Abbrechen</v-btn>
+        <v-btn outlined @click="close">Abbrechen</v-btn>
         <v-btn color="primary" :disabled="confirmDisabled" @click="confirm">
           <v-icon small left>mdi-plus</v-icon>
           Übernehmen

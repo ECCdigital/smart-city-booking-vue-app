@@ -75,7 +75,7 @@ import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
   addressBlacklistedRefusal,
   formatCheckoutValidationError,
-  getCheckoutErrorToastKey,
+  getGroupCheckoutErrorToastKey,
   isLoginRefusal,
   LOGIN_REQUIRED_TOAST_KEY,
 } from "@/utils/checkoutErrors";
@@ -785,30 +785,27 @@ export default {
         // A 401 after the bookings were made (the payment) is no refusal of
         // the completion: sending the series again would book it twice.
         if (!booked && isLoginRefusal(error)) {
-          // ECCdigital/tickets#123: the group checkout has no step
+          // The group checkout has no step
           // „Anmeldung“; the single checkout of the offer starts with it.
           this.addToast(
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
           this.backToSignIn();
-        } else if (
-          !booked &&
-          addressBlacklistedRefusal(error.response?.data) !== null
-        ) {
+          return;
+        }
+        const blacklistedAddress = booked
+          ? null
+          : addressBlacklistedRefusal(error.response?.data);
+        if (blacklistedAddress !== null) {
           // An address on the blacklist: the
           // summary keeps it on the page with the address to write to.
-          this.blacklistRefusal = addressBlacklistedRefusal(
-            error.response?.data
-          );
-        } else if (!booked) {
-          // Any other refusal of the series.
-          this.addToast(
-            ToastService.createToast(
-              getCheckoutErrorToastKey(error.response?.data),
-              "error"
-            )
-          );
+          this.blacklistRefusal = blacklistedAddress;
+          return;
         }
+        const toastKey = booked
+          ? "checkout.error.unexpected"
+          : getGroupCheckoutErrorToastKey(error);
+        this.addToast(ToastService.createToast(toastKey, "error"));
       } finally {
         this.isSubmitting = false;
       }

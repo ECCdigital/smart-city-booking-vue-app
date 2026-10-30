@@ -2,9 +2,8 @@
   <AuthPage title="Herzlich willkommen!" icon="mdi-email-outline">
     <div class="scb-form">
       <p class="scb-form__note mb-0">
-        Vielen Dank für Ihre Registrierung. Falls die Adresse noch nicht
-        bestätigt ist, haben wir Ihnen eine E-Mail gesendet, um Ihre
-        Registrierung abzuschließen.
+        Vielen Dank für Ihre Registrierung. Wir haben Ihnen eine E-Mail
+        gesendet, um Ihre Registrierung abzuschließen.
       </p>
       <v-btn
         color="primary"

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, lifecycleError } from "@tests/unit/support/api";
+import { activeDialogText, dialogButton } from "@tests/unit/support/dialog";
 import toasts from "@/store/modules/toasts";
 
 vi.mock("@/store", () => ({
@@ -123,6 +124,14 @@ function nameInput(wrapper) {
   return wrapper
     .findAllComponents({ name: "v-text-field" })
     .wrappers.find((field) => field.props("label") === "Name *")
+    .find("input");
+}
+
+/** The E-Mail field; its label is a slot, so it is found by its value. */
+function mailInput(wrapper, mail) {
+  return wrapper
+    .findAllComponents({ name: "v-text-field" })
+    .wrappers.find((field) => field.props("value") === mail)
     .find("input");
 }
 
@@ -270,6 +279,64 @@ describe("BookingEdit", () => {
         expect(putBody()).not.toHaveProperty(key)
       );
       expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    describe("a corrected first mail of a booking made by an admin", () => {
+      async function editMail(bookedVia) {
+        const { wrapper } = await mountEdit({
+          booking: booking({
+            bookedVia,
+            mail: "max@exmaple.test",
+            assignedUserId: "max@exmaple.test",
+          }),
+        });
+        saveAnswers({ data: {} });
+        await mailInput(wrapper, "max@exmaple.test").setValue(
+          "max@example.test"
+        );
+        await submit(wrapper);
+        return wrapper;
+      }
+
+      it("asks before the booking moves to the other account", async () => {
+        const wrapper = await editMail("admin");
+
+        expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+        expect(activeDialogText()).toContain("max@exmaple.test");
+        expect(activeDialogText()).toContain("max@example.test");
+        wrapper.destroy();
+      });
+
+      it("saves once the admin confirms", async () => {
+        const wrapper = await editMail("admin");
+
+        dialogButton("Änderung speichern").click();
+        await flushPromises();
+
+        expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+        expect(putBody()).toMatchObject({ mail: "max@example.test" });
+        expect(wrapper.emitted("saved")).toHaveLength(1);
+        wrapper.destroy();
+      });
+
+      it("saves nothing when the admin cancels, and keeps the form", async () => {
+        const wrapper = await editMail("admin");
+
+        dialogButton("Abbrechen").click();
+        await flushPromises();
+
+        expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+        expect(wrapper.emitted("saved")).toBeUndefined();
+        expect(wrapper.vm.selectedBooking.mail).toBe("max@example.test");
+        wrapper.destroy();
+      });
+
+      it("saves a booking made via an account without asking", async () => {
+        const wrapper = await editMail("user");
+
+        expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+        wrapper.destroy();
+      });
     });
 
     it("saves the comment of the series alone, not the series", async () => {
