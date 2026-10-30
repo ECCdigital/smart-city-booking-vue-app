@@ -29,6 +29,7 @@ vi.mock("@/services/api/ApiGroupBookingService", () => ({
     commitGroupBooking: vi.fn(),
     payGroupBooking: vi.fn(),
     rejectGroupBooking: vi.fn(),
+    reinstateGroupBooking: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
   },
 }));
@@ -886,7 +887,58 @@ describe("BookingTransitions", () => {
       );
     });
 
-    it("reinstates only the one booking - a series has no reinstate", async () => {
+    it("asks at a member of a series for all cancelled members or this one, with the members and their state", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(
+        wrapper,
+        "reinstate",
+        series([{ status: "cancelled" }, { id: "bk-2", status: "confirmed" }])
+      );
+
+      const reinstateDialog = dialog(wrapper, "GroupBookingReinstateDialog");
+      expect(reinstateDialog.props("open")).toBe(true);
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain(
+        "Alle stornierten Buchungen der Serie wiederherstellen"
+      );
+      expect(text).toContain("Nur diese Buchung wiederherstellen");
+      expect(text).toContain("Gemischt");
+      expect(text).toContain("bk-2");
+      expect(
+        ApiGroupBookingService.reinstateGroupBooking
+      ).not.toHaveBeenCalled();
+    });
+
+    it("reinstates the series' cancelled members over the group route", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiGroupBookingService.reinstateGroupBooking.mockResolvedValue(OK);
+
+      await start(
+        wrapper,
+        "reinstate",
+        series([{ status: "cancelled" }, { id: "bk-2", status: "rejected" }])
+      );
+      await clickDialogButton(
+        wrapper,
+        "Alle stornierten Buchungen der Serie wiederherstellen"
+      );
+
+      expect(ApiGroupBookingService.reinstateGroupBooking).toHaveBeenCalledWith(
+        null,
+        "grp-1",
+        { ignoreConflicts: false, skipConflicts: false }
+      );
+      expect(ApiBookingService.reinstateBooking).not.toHaveBeenCalled();
+      expect(wrapper.emitted("transitioned")).toEqual([
+        [{ action: "reinstate", groupBookingId: "grp-1" }],
+      ]);
+      expect(toastMessages(store)).toContain(
+        "Die Buchungen der Serie wurden wiederhergestellt."
+      );
+    });
+
+    it("reinstates only the one member where asked", async () => {
       const { wrapper } = mountTransitions();
       ApiBookingService.reinstateBooking.mockResolvedValue(OK);
 
@@ -895,12 +947,136 @@ describe("BookingTransitions", () => {
         "reinstate",
         series([{ status: "cancelled" }, { id: "bk-2", status: "cancelled" }])
       );
-      await clickDialogButton(wrapper, "Wiederherstellen");
+      dialog(wrapper, "GroupBookingReinstateDialog").vm.$emit(
+        "reinstate-single-booking"
+      );
+      await flushPromises();
 
       expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(
+        ApiGroupBookingService.reinstateGroupBooking
+      ).not.toHaveBeenCalled();
       expect(wrapper.emitted("transitioned")).toEqual([
         [{ action: "reinstate", bookingId: "bk-1" }],
       ]);
+    });
+
+    describe("where periods of the series were taken meanwhile", () => {
+      const CONFLICT = lifecycleError(
+        409,
+        "group_booking_reinstatement_conflict",
+        {
+          groupBookingId: "grp-1",
+          conflicts: [
+            {
+              bookingId: "bk-2",
+              conflicts: [
+                {
+                  bookableId: "room-a",
+                  title: "Raum A",
+                  bookings: [
+                    {
+                      id: "bk-9",
+                      timeBegin: 1_700_000_000_000,
+                      timeEnd: 1_700_003_600_000,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      async function askWithConflict() {
+        const mounted = mountTransitions();
+        ApiGroupBookingService.reinstateGroupBooking.mockRejectedValueOnce(
+          CONFLICT
+        );
+        await start(
+          mounted.wrapper,
+          "reinstate",
+          series([{ status: "cancelled" }, { id: "bk-2", status: "cancelled" }])
+        );
+        await clickDialogButton(
+          mounted.wrapper,
+          "Alle stornierten Buchungen der Serie wiederherstellen"
+        );
+        return mounted;
+      }
+
+      it("names the member, the object and the booking in the way, without a toast", async () => {
+        const { wrapper, store } = await askWithConflict();
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain("Buchung bk-2");
+        expect(text).toContain("bk-9");
+        expect(text).toContain("Raum A");
+        expect(toastMessages(store)).not.toContain(
+          i18n.t("group-booking.reinstate.error.message")
+        );
+        expect(wrapper.emitted("transitioned")).toBeUndefined();
+        expect(
+          dialogButton("Nur konfliktfreie wiederherstellen")
+        ).toBeDefined();
+        expect(dialogButton("Alle trotzdem wiederherstellen")).toBeDefined();
+      });
+
+      it("reinstates only the conflict-free members on the next click", async () => {
+        const { wrapper } = await askWithConflict();
+        ApiGroupBookingService.reinstateGroupBooking.mockResolvedValue(OK);
+
+        await clickDialogButton(wrapper, "Nur konfliktfreie wiederherstellen");
+
+        expect(
+          ApiGroupBookingService.reinstateGroupBooking
+        ).toHaveBeenLastCalledWith(null, "grp-1", {
+          ignoreConflicts: false,
+          skipConflicts: true,
+        });
+        expect(wrapper.emitted("transitioned")).toEqual([
+          [{ action: "reinstate", groupBookingId: "grp-1" }],
+        ]);
+      });
+
+      it("reinstates every member anyway on the next click", async () => {
+        const { wrapper } = await askWithConflict();
+        ApiGroupBookingService.reinstateGroupBooking.mockResolvedValue(OK);
+
+        await clickDialogButton(wrapper, "Alle trotzdem wiederherstellen");
+
+        expect(
+          ApiGroupBookingService.reinstateGroupBooking
+        ).toHaveBeenLastCalledWith(null, "grp-1", {
+          ignoreConflicts: true,
+          skipConflicts: false,
+        });
+      });
+
+      it("offers no conflict-free choice where every member is in conflict", async () => {
+        const mounted = mountTransitions();
+        ApiGroupBookingService.reinstateGroupBooking.mockRejectedValueOnce(
+          CONFLICT
+        );
+        await start(mounted.wrapper, "reinstate", {
+          ...series([
+            { status: "confirmed" },
+            { id: "bk-2", status: "cancelled" },
+          ]),
+          seriesOnly: true,
+        });
+        dialog(mounted.wrapper, "GroupBookingReinstateDialog").vm.$emit(
+          "reinstate-group-booking",
+          {}
+        );
+        await flushPromises();
+        await mounted.wrapper.vm.$nextTick();
+
+        expect(
+          dialogButton("Nur konfliktfreie wiederherstellen")
+        ).toBeUndefined();
+        expect(dialogButton("Alle trotzdem wiederherstellen")).toBeDefined();
+      });
     });
 
     it("keeps the dialog open with the conflict and asks for a reload on a 409", async () => {
@@ -1105,16 +1281,37 @@ describe("BookingTransitions", () => {
       );
     });
 
-    it("knows no series-wide reinstate", async () => {
-      const { wrapper, store } = mountTransitions();
+    it("reinstates the series without the single-member option, a mixed one too", async () => {
+      const { wrapper } = mountTransitions();
+      ApiGroupBookingService.reinstateGroupBooking.mockResolvedValue(OK);
 
       await start(
         wrapper,
         "reinstate",
         seriesOnly(
-          series([{ status: "rejected" }, { id: "bk-2", status: "rejected" }])
+          series([{ status: "confirmed" }, { id: "bk-2", status: "rejected" }])
         )
       );
+
+      expect(
+        document.querySelector(".v-dialog--active").textContent
+      ).not.toContain("Nur diese Buchung wiederherstellen");
+      await clickDialogButton(
+        wrapper,
+        "Alle stornierten Buchungen der Serie wiederherstellen"
+      );
+
+      expect(ApiGroupBookingService.reinstateGroupBooking).toHaveBeenCalledWith(
+        null,
+        "grp-1",
+        { ignoreConflicts: false, skipConflicts: false }
+      );
+    });
+
+    it("refuses to reinstate a series without a cancelled or rejected member", async () => {
+      const { wrapper, store } = mountTransitions();
+
+      await start(wrapper, "reinstate", seriesOnly(series()));
 
       expect(document.querySelector(".v-dialog--active")).toBeNull();
       expect(toastMessages(store)).toContain(

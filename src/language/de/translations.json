@@ -1877,8 +1877,8 @@
       },
       "dialog": {
         "title": "Buchung wiederherstellen",
-        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
-        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt, es wird keine E-Mail versendet.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
       }
     },
     "kind": {
@@ -2105,6 +2105,32 @@
         "message": "Die Buchungen konnten nicht als bezahlt markiert werden."
       }
     },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchungen der Serie wurden wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchungen der Serie konnten nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "member": "Die Buchung {id} ist Teil einer Serienbuchung.",
+        "group": "Alle stornierten Buchungen der Serie wiederherstellen",
+        "single": "Nur diese Buchung wiederherstellen",
+        "hint": "Keine Buchung der Serie ist storniert oder abgelehnt. | Die stornierte oder abgelehnte Buchung kehrt in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet. | Die {count} stornierten und abgelehnten Buchungen kehren jeweils in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
+      },
+      "conflict": {
+        "intro": "Für einen Termin der Serie gibt es inzwischen andere Buchungen: | Für {n} Termine der Serie gibt es inzwischen andere Buchungen:",
+        "member": "Buchung {id} ({period})",
+        "for": "für",
+        "via-parent": "mit dem übergeordneten Objekt",
+        "via-child": "über das untergeordnete Objekt",
+        "question": "Wenn Sie diese Termine trotzdem wiederherstellen, sind die Objekte doppelt belegt.",
+        "proceed": "Alle trotzdem wiederherstellen",
+        "skip": "Nur konfliktfreie wiederherstellen"
+      }
+    },
     "reject": {
       "success": {
         "title": "Erfolgreich abgelehnt",
@@ -2145,7 +2171,8 @@
       "confirm": "Serie freigeben",
       "pay": "Serie als bezahlt markieren",
       "reject": "Serie ablehnen",
-      "cancel": "Serie stornieren"
+      "cancel": "Serie stornieren",
+      "reinstate": "Serie wiederherstellen"
     },
     "cancellationReceipt": {
       "reprint": {

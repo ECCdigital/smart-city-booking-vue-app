@@ -22,6 +22,30 @@ describe("ApiGroupBookingService", () => {
     delete global.ApiClient;
   });
 
+  it("reinstates a series of the current tenant, with the conflict choice in the body only where set", async () => {
+    global.ApiClient.post.mockResolvedValue({ data: { success: true } });
+
+    const result = await ApiGroupBookingService.reinstateGroupBooking(
+      null,
+      "grp-1"
+    );
+    await ApiGroupBookingService.reinstateGroupBooking("t2", "grp-1", {
+      skipConflicts: true,
+    });
+
+    expect(global.ApiClient.post).toHaveBeenNthCalledWith(
+      1,
+      "api/t1/group-bookings/grp-1/reinstate",
+      {}
+    );
+    expect(global.ApiClient.post).toHaveBeenNthCalledWith(
+      2,
+      "api/t2/group-bookings/grp-1/reinstate",
+      { skipConflicts: true }
+    );
+    expect(result).toEqual({ success: true });
+  });
+
   it("gets one series by id from the current tenant, unpopulated by default", () => {
     const response = { data: { success: true, data: { id: "grp-1" } } };
     global.ApiClient.get.mockReturnValue(response);
