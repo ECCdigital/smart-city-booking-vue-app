@@ -27,6 +27,9 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowReprint: vi.fn(() => true),
   },
 }));
+vi.mock("@/services/permissions/UserPermissionService", () => ({
+  default: { allowReport: vi.fn(() => false) },
+}));
 vi.mock("@/services/api/ApiBookingService", () => ({
   default: {
     getBooking: vi.fn(),
@@ -85,6 +88,7 @@ import BookingPage from "@/views/BookingPage.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
 import { isTenantMember } from "@/utils/tenantMembership";
 import { saveBlob } from "@/utils/fileDownload";
 
@@ -229,6 +233,7 @@ describe("BookingPage", () => {
     isTenantMember.mockReturnValue(true);
     BookingPermissionService.allowUpdate.mockReturnValue(true);
     BookingPermissionService.allowReadAny.mockReturnValue(true);
+    UserPermissionService.allowReport.mockReturnValue(false);
     ApiBookingService.getBooking.mockResolvedValue({ data: booking() });
     ApiGroupBookingService.getGroupBookingByBooking.mockRejectedValue(
       lifecycleError(404, "group_booking_not_found")
@@ -554,6 +559,13 @@ describe("BookingPage", () => {
       expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
         "ACME"
       );
+      // Private or business is always stated, read off the company here.
+      expect(filled.wrapper.find(".booking-page__customer").text()).toContain(
+        "Geschäftlich"
+      );
+      expect(bare.wrapper.find(".booking-page__customer").text()).toContain(
+        "Privat"
+      );
       const fields = filled.wrapper.find(".booking-page__custom-fields").text();
       expect(fields).toContain("Teilnehmer");
       expect(fields).toContain("12");
@@ -561,6 +573,65 @@ describe("BookingPage", () => {
       const comments = filled.wrapper.find(".booking-page__comments").text();
       expect(comments).toContain("Interne Bemerkung");
       expect(comments).toContain("Schlüssel liegt am Empfang");
+    });
+
+    it("offers „E-Mailadresse melden“ to a role that may report", async () => {
+      const hidden = mountPage();
+      await settle(hidden.wrapper);
+      expect(
+        hidden.wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(false);
+
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').text()
+      ).toContain("E-Mailadresse melden");
+      expect(wrapper.vm.reportableAddresses).toEqual(["erika@example.org"]);
+      expect(wrapper.find('[data-test="booking-report-user"]').exists()).toBe(
+        false
+      );
+    });
+
+    it("offers only „Benutzer melden“ when the mail is the booker's", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          assignedUserId: "Erika@example.org",
+          mail: "erika@example.org",
+        }),
+      });
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(
+        wrapper.find('[data-test="booking-report-user"]').text()
+      ).toContain("Benutzer melden");
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(false);
+    });
+
+    it("offers only „E-Mailadresse melden“ when the mail is not the booker's", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          assignedUserId: "erika@example.org",
+          mail: ["erika@example.org", "max@example.org"],
+        }),
+      });
+      UserPermissionService.allowReport.mockReturnValue(true);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(wrapper.find('[data-test="booking-report-user"]').exists()).toBe(
+        false
+      );
+      expect(
+        wrapper.find('[data-test="booking-report-addresses"]').exists()
+      ).toBe(true);
+      expect(wrapper.vm.reportableAddresses).toEqual(["max@example.org"]);
     });
 
     it("leaves out the objects and the customer block when they are empty", async () => {
@@ -591,7 +662,7 @@ describe("BookingPage", () => {
     });
 
     it.each([
-      [{ bookedVia: "user" }, "Angemeldet"],
+      [{ bookedVia: "user" }, "Benutzer"],
       [{ bookedVia: "admin" }, "Admin"],
       [{}, "Unbekannt"],
     ])("marks the name of %o with the badge %s", async (extra, word) => {
@@ -618,6 +689,40 @@ describe("BookingPage", () => {
       const fact = wrapper.find(".booking-page__booked-via");
       expect(fact.text()).toContain("Buchungsweg");
       expect(fact.text()).toContain(word);
+    });
+
+    // A user who booked for someone else: the booking's mail is not the
+    // account's, so Details names the account under the Buchungsweg.
+    it.each([
+      [
+        "names the booking user when the mail is another",
+        { bookedVia: "user", assignedUserId: "max@example.org" },
+        "max@example.org",
+      ],
+      [
+        "names nobody when the user booked with their own mail",
+        { bookedVia: "user", assignedUserId: "Erika@Example.org" },
+        null,
+      ],
+      [
+        "names nobody for a booking made by an admin",
+        { bookedVia: "admin", assignedUserId: "max@example.org" },
+        null,
+      ],
+    ])("%s", async (_, extra, bookingUser) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking(extra),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const fact = wrapper.find(".booking-page__booking-user");
+      if (bookingUser) {
+        expect(fact.text()).toContain("Gebucht von");
+        expect(fact.text()).toContain(bookingUser);
+      } else {
+        expect(fact.exists()).toBe(false);
+      }
     });
 
     it.each([
@@ -886,11 +991,16 @@ describe("BookingPage", () => {
    */
   describe("the transitions", () => {
     it.each([
-      ["requested", "Freigeben", ["Ablehnen"]],
-      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
-      ["confirmed", null, ["Stornieren"]],
+      ["requested", "Freigeben", ["Ablehnen", "Widerruf akzeptieren"]],
+      [
+        "payment_due",
+        "Als bezahlt markieren",
+        ["Stornieren", "Widerruf akzeptieren"],
+      ],
+      ["confirmed", null, ["Stornieren", "Widerruf akzeptieren"]],
       ["rejected", "Wiederherstellen", null],
       ["cancelled", "Wiederherstellen", null],
+      ["withdrawn", null, null],
     ])(
       "offers at %s the button %s and the menu %j",
       async (status, button, menu) => {
@@ -902,6 +1012,18 @@ describe("BookingPage", () => {
         expect(await offeredActions(wrapper)).toEqual({ button, menu });
       }
     );
+
+    it("offers no Widerruf akzeptieren for a business booking", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed", company: "ACME" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: ["Stornieren"],
+      });
+    });
 
     it("offers nothing to a reader without the update right", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);

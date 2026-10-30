@@ -10,7 +10,8 @@
   >
     <v-card tile>
       <v-toolbar flat>
-        <v-toolbar-title>Kopfbereich</v-toolbar-title>
+        <v-icon left>mdi-page-layout-header</v-icon>
+        <v-toolbar-title class="text-h5">Kopfbereich</v-toolbar-title>
         <v-chip
           v-if="draft"
           class="ml-4"
@@ -40,7 +41,7 @@
         <v-btn text :disabled="!draft || inProgress" @click="askForReset">
           Auf Standard zurücksetzen
         </v-btn>
-        <v-btn text :disabled="inProgress" @click="requestClose">
+        <v-btn outlined :disabled="inProgress" @click="requestClose">
           {{ cancelLabel }}
         </v-btn>
         <v-btn
@@ -50,7 +51,11 @@
           :loading="saving"
           @click="save"
         >
+          <v-icon left small>mdi-content-save</v-icon>
           Speichern
+        </v-btn>
+        <v-btn icon class="ml-2" :disabled="inProgress" @click="requestClose">
+          <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-toolbar>
 

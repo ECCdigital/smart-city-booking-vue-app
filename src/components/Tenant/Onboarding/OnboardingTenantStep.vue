@@ -148,6 +148,25 @@
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
+
+        <v-switch
+          v-model="form.notifyOwnersOnInvitationAccepted"
+          hide-details
+          color="primary"
+          class="mt-4"
+          data-test="tenant-invitation-notice"
+        >
+          <template v-slot:label>
+            <div>
+              <div class="font-weight-medium">
+                {{ $t("tenant.onboarding.tenant.invitation-notice") }}
+              </div>
+              <div class="text-caption text--secondary">
+                {{ $t("tenant.onboarding.tenant.invitation-notice-hint") }}
+              </div>
+            </div>
+          </template>
+        </v-switch>
       </v-card-text>
 
       <!-- In a dialog the card is the dialog: the actions close it, and the
@@ -232,6 +251,7 @@ export default {
         phone: "",
         website: "",
         location: "",
+        notifyOwnersOnInvitationAccepted: true,
       },
       rules: {
         required: [

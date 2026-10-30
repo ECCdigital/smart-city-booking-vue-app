@@ -8,6 +8,7 @@ import {
 import {
   getApiErrorMessage,
   getBookingValidationReasons,
+  getGroupReinstatementConflicts,
   getReinstatementConflicts,
   isForbiddenError,
   isLockBusyError,
@@ -80,6 +81,15 @@ describe("getApiErrorMessage", () => {
       expect(getApiErrorMessage(error, FALLBACK)).toBe(
         "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
       );
+    });
+
+    it("asks for the reason of a suspension", () => {
+      expect(
+        getApiErrorMessage(
+          lifecycleError(400, "suspension_reason_required"),
+          FALLBACK
+        )
+      ).toBe("Für eine Sperre ist ein Grund nötig.");
     });
 
     it("says a booking cannot be born in the state the create PUT named", () => {
@@ -212,6 +222,15 @@ describe("getApiErrorMessage", () => {
       );
     });
 
+    it("names the refused withdrawal of a business booking", () => {
+      const error = lifecycleError(403, "booking_withdrawal_not_private", {
+        bookingId: "bk-1",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Eine geschäftliche Buchung kann nicht widerrufen werden."
+      );
+    });
+
     it("names the management gate of a declined tenant", () => {
       const error = lifecycleError(403, "tenant_declined", {
         tenantId: "tenant-b",
@@ -259,6 +278,42 @@ describe("getApiErrorMessage", () => {
       });
       expect(getApiErrorMessage(error, FALLBACK)).toBe(
         "Die Buchung ist inzwischen in einem anderen Zustand. Betroffene Buchungen: b2, b3"
+      );
+    });
+
+    it("says an instance owner cannot be suspended", () => {
+      expect(
+        getApiErrorMessage(
+          lifecycleError(409, "instance_owner_not_suspendable"),
+          FALLBACK
+        )
+      ).toBe("Ein Instanz-Owner lässt sich nicht sperren.");
+    });
+
+    it.each([
+      [
+        400,
+        "blacklist_reason_required",
+        "Für einen Sperrlisten-Eintrag ist ein Grund nötig.",
+      ],
+      [
+        400,
+        "blacklist_value_invalid",
+        "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
+      ],
+      [
+        409,
+        "blacklist_entry_exists",
+        "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
+      ],
+      [
+        404,
+        "blacklist_entry_not_found",
+        "Der Eintrag steht nicht mehr auf der Sperrliste.",
+      ],
+    ])("reads the blacklist's %i `%s`", (status, code, text) => {
+      expect(getApiErrorMessage(lifecycleError(status, code), FALLBACK)).toBe(
+        text
       );
     });
 
@@ -711,5 +766,25 @@ describe("getReinstatementConflicts", () => {
     ).toBeNull();
     expect(getReinstatementConflicts(serverError())).toBeNull();
     expect(getReinstatementConflicts(undefined)).toBeNull();
+  });
+});
+
+describe("getGroupReinstatementConflicts", () => {
+  it("answers the conflicts per member of a 409 group_booking_reinstatement_conflict", () => {
+    const conflicts = [{ bookingId: "bk-2", conflicts: [] }];
+    const error = lifecycleError(409, "group_booking_reinstatement_conflict", {
+      groupBookingId: "grp-1",
+      conflicts,
+    });
+
+    expect(getGroupReinstatementConflicts(error)).toEqual(conflicts);
+  });
+
+  it("answers null for any other error", () => {
+    expect(
+      getGroupReinstatementConflicts(lifecycleError(409, "invalid_transition"))
+    ).toBeNull();
+    expect(getGroupReinstatementConflicts(serverError())).toBeNull();
+    expect(getGroupReinstatementConflicts(undefined)).toBeNull();
   });
 });

@@ -1,13 +1,21 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
-    <v-card color="accent">
-      <v-form ref="form" v-model="valid" @submit.prevent="onReject">
-        <v-card-title>
-          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
-          <span class="text-h5">Buchung stornieren</span>
-        </v-card-title>
-        <v-card-text>
-          <span v-if="!seriesOnly" class="text-h6">
+  <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
+    <v-card>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
+        <span class="text-h5">Buchung stornieren</span>
+        <v-spacer />
+        <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-6">
+        <v-form
+          id="group-booking-reject-form"
+          ref="form"
+          v-model="valid"
+          @submit.prevent="onReject"
+        >
+          <span v-if="!seriesOnly">
             Die Buchung
             <strong>{{ toReject.id }}</strong> ist Teil einer Serienbuchung.
           </span>
@@ -28,13 +36,9 @@
               :label="$t('booking.cancellationRefund.cancelSingle')"
             />
           </v-radio-group>
-        </v-card-text>
-        <v-card-text v-if="error" class="text-center">
-          <v-alert type="error" border="left" elevation="2">
+          <v-alert v-if="error" type="error" border="left">
             {{ error }}
           </v-alert>
-        </v-card-text>
-        <v-card-text>
           <v-textarea
             outlined
             v-model="rejectReason"
@@ -109,24 +113,26 @@
               :label="$t('booking.cancellationRefund.bankName')"
             ></v-text-field>
           </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="primary"
-            :loading="inProgress || previewLoading"
-            :disabled="!canSubmit"
-            type="submit"
-          >
-            {{
-              cancellationScope === "group"
-                ? $t("booking.cancellationRefund.cancelGroup")
-                : $t("booking.cancellationRefund.cancelSingle")
-            }}
-          </v-btn>
-          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        </v-card-actions>
-      </v-form>
+        </v-form>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+        <v-btn
+          color="error"
+          :loading="inProgress || previewLoading"
+          :disabled="!canSubmit"
+          type="submit"
+          form="group-booking-reject-form"
+        >
+          <v-icon left small>mdi-cancel</v-icon>
+          {{
+            cancellationScope === "group"
+              ? $t("booking.cancellationRefund.cancelGroup")
+              : $t("booking.cancellationRefund.cancelSingle")
+          }}
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>

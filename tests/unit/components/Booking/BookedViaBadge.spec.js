@@ -12,7 +12,7 @@ describe("BookedViaBadge", () => {
   it.each([
     [
       "user",
-      "Angemeldet",
+      "Benutzer",
       "Diese Buchung wurde erstellt von einem angemeldeten User.",
     ],
     ["guest", "Gast", "Diese Buchung wurde erstellt von einem Gast."],

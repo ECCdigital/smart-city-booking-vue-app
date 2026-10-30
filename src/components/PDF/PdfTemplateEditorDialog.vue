@@ -1,9 +1,9 @@
 <template>
   <v-dialog v-model="dialogOpen" persistent max-width="1400px" scrollable>
     <v-card v-if="catalog">
-      <v-card-title class="d-flex align-center">
+      <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon left>{{ catalog.icon }}</v-icon>
-        <span class="text-h6">{{ catalog.title }}</span>
+        <span class="text-h5">{{ catalog.title }}</span>
         <v-chip
           x-small
           :color="mode === 'expert' ? 'warning' : 'success'"
@@ -17,8 +17,9 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
+      <v-divider />
 
-      <v-card-subtitle>
+      <v-card-subtitle class="px-6 pt-4">
         <div class="mt-1 mb-1 text-body-2 grey--text text--darken-1">
           {{ catalog.description }}
         </div>
@@ -32,7 +33,7 @@
         </v-alert>
       </v-card-subtitle>
 
-      <v-card-text class="pa-3">
+      <v-card-text class="px-6 pb-6">
         <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
           <v-tab>
             <v-icon left small>mdi-view-grid-outline</v-icon>
@@ -396,13 +397,16 @@
         </v-tabs-items>
       </v-card-text>
 
-      <v-card-actions class="border-top">
-        <div class="text-caption grey--text">
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <div class="text-caption grey--text mr-auto">
           {{ Math.round((currentSize / 1024) * 10) / 10 }} KB
         </div>
-        <v-spacer />
-        <v-btn text @click="onClose">abbrechen</v-btn>
-        <v-btn color="primary" @click="onSave">Übernehmen</v-btn>
+        <v-btn outlined @click="onClose">Abbrechen</v-btn>
+        <v-btn color="primary" @click="onSave">
+          <v-icon left small>mdi-check</v-icon>
+          Übernehmen
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -446,7 +450,8 @@ export default {
     templateType: {
       type: String,
       required: true,
-      validator: (v) => ["receipt", "invoice", "cancellation"].includes(v),
+      validator: (v) =>
+        ["receipt", "invoice", "cancellation", "withdrawal"].includes(v),
     },
     value: { type: String, default: "" },
     tenantId: { type: String, default: "" },
@@ -1096,9 +1101,6 @@ export default {
   font-family: "Courier New", monospace;
   font-size: 13px;
   line-height: 1.5;
-}
-.border-top {
-  border-top: 1px solid #eee;
 }
 .variable-menu {
   background: #fff !important;

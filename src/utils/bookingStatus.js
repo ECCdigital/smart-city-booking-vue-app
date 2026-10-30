@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import { isBusinessBooking } from "@/utils/businessBooking";
 
 /**
  * The booking state as the UI reads it: `booking.status`, the one stored
@@ -17,6 +18,7 @@ export const BOOKING_STATUS = Object.freeze({
   CONFIRMED: "confirmed",
   REJECTED: "rejected",
   CANCELLED: "cancelled",
+  WITHDRAWN: "withdrawn",
 });
 
 /** What `groupBookingStatus()` answers when the members disagree. */
@@ -40,8 +42,27 @@ const PRESENTATION = {
   [BOOKING_STATUS.CONFIRMED]: { color: "success", icon: "mdi-check-circle" },
   [BOOKING_STATUS.REJECTED]: { color: "error", icon: "mdi-cancel" },
   [BOOKING_STATUS.CANCELLED]: { color: "error", icon: "mdi-close-circle" },
+  [BOOKING_STATUS.WITHDRAWN]: { color: "error", icon: "mdi-undo-variant" },
   [MIXED]: { color: "grey", icon: "mdi-help-circle-outline" },
 };
+
+/**
+ * The state the UI names for a booking: a request the user
+ * withdrew before it was confirmed is stored as `rejected`, but reads
+ * Storniert, as in the storefront - the cancellation audit says who cut it
+ * (`cancellationRefund.origin`). A rejection by the administration or the
+ * system, and an old one without the audit, stays Abgelehnt. Transitions
+ * still follow the stored `status`.
+ */
+export function displayStatus(booking) {
+  if (
+    booking?.status === BOOKING_STATUS.REJECTED &&
+    booking.cancellationRefund?.origin === "user"
+  ) {
+    return BOOKING_STATUS.CANCELLED;
+  }
+  return booking?.status ?? null;
+}
 
 export function statusLabel(status) {
   if (status == null) return "";
@@ -63,19 +84,33 @@ export const BOOKING_ACTION = Object.freeze({
   PAY: "pay",
   CANCEL: "cancel",
   REINSTATE: "reinstate",
+  ACCEPT_WITHDRAWAL: "acceptWithdrawal",
   DELETE: "delete",
 });
 
+/**
+ * Widerruf akzeptieren is offered at every live state; Widerrufen is final -
+ * no reinstate, no delete.
+ */
 const ACTIONS_BY_STATUS = {
   [BOOKING_STATUS.REQUESTED]: [
     BOOKING_ACTION.CONFIRM,
     BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
     BOOKING_ACTION.DELETE,
   ],
-  [BOOKING_STATUS.PAYMENT_DUE]: [BOOKING_ACTION.PAY, BOOKING_ACTION.CANCEL],
-  [BOOKING_STATUS.CONFIRMED]: [BOOKING_ACTION.CANCEL],
+  [BOOKING_STATUS.PAYMENT_DUE]: [
+    BOOKING_ACTION.PAY,
+    BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
+  ],
+  [BOOKING_STATUS.CONFIRMED]: [
+    BOOKING_ACTION.CANCEL,
+    BOOKING_ACTION.ACCEPT_WITHDRAWAL,
+  ],
   [BOOKING_STATUS.REJECTED]: [BOOKING_ACTION.REINSTATE, BOOKING_ACTION.DELETE],
   [BOOKING_STATUS.CANCELLED]: [BOOKING_ACTION.REINSTATE],
+  [BOOKING_STATUS.WITHDRAWN]: [],
 };
 
 /** The actions a booking in `status` offers; `[]` for mixed or unknown. */
@@ -83,7 +118,18 @@ export function allowedActions(status) {
   return ACTIONS_BY_STATUS[status] || [];
 }
 
+/**
+ * Whether one booking offers `action`: its state allows it, and Widerruf
+ * akzeptieren only for a private booking - a business one has no
+ * withdrawal.
+ */
 export function allowsAction(booking, action) {
+  if (
+    action === BOOKING_ACTION.ACCEPT_WITHDRAWAL &&
+    isBusinessBooking(booking)
+  ) {
+    return false;
+  }
   return allowedActions(booking?.status).includes(action);
 }
 
@@ -101,7 +147,7 @@ function verbOf(prefix, action, status) {
   return i18n.t(`${prefix}.${action}`);
 }
 
-/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen. */
+/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen, Widerruf akzeptieren. */
 export function actionLabel(action, status) {
   return verbOf("booking.action", action, status);
 }
@@ -126,6 +172,13 @@ export function transitionActions(status) {
   );
 }
 
+/** The transitions one booking's menu offers: its state's, as `allowsAction` answers them. */
+export function bookingTransitionActions(booking) {
+  return transitionActions(booking?.status).filter((action) =>
+    allowsAction(booking, action)
+  );
+}
+
 const ACTION_PRESENTATION = {
   [BOOKING_ACTION.CONFIRM]: {
     icon: "mdi-checkbox-marked-circle",
@@ -134,6 +187,10 @@ const ACTION_PRESENTATION = {
   [BOOKING_ACTION.PAY]: { icon: "mdi-cash-check", color: "success" },
   [BOOKING_ACTION.CANCEL]: { icon: "mdi-close-circle", color: "orange" },
   [BOOKING_ACTION.REINSTATE]: { icon: "mdi-restore", color: "warning" },
+  [BOOKING_ACTION.ACCEPT_WITHDRAWAL]: {
+    icon: "mdi-undo-variant",
+    color: "orange",
+  },
 };
 
 export function actionIcon(action) {
@@ -144,12 +201,13 @@ export function actionColor(action) {
   return ACTION_PRESENTATION[action]?.color || "grey";
 }
 
-/** The order of the "Status" column: requested < payment_due < confirmed < cancelled < rejected. */
+/** The order of the "Status" column: requested < payment_due < confirmed < cancelled < withdrawn < rejected. */
 const RANK = [
   BOOKING_STATUS.REQUESTED,
   BOOKING_STATUS.PAYMENT_DUE,
   BOOKING_STATUS.CONFIRMED,
   BOOKING_STATUS.CANCELLED,
+  BOOKING_STATUS.WITHDRAWN,
   BOOKING_STATUS.REJECTED,
 ];
 
@@ -159,16 +217,19 @@ export function statusRank(status) {
 }
 
 /**
- * The list's status filter (spec E11): the bookings whose state is among
- * `statuses`, in their order. An empty selection keeps nothing.
+ * The list's status filter (spec E11): the bookings whose state as shown
+ * (`displayStatus`) is among `statuses`, in their order. An empty selection
+ * keeps nothing.
  */
 export function filterBookingsByStatus(bookings, statuses) {
-  return bookings.filter((booking) => statuses.includes(booking?.status));
+  return bookings.filter((booking) =>
+    statuses.includes(displayStatus(booking))
+  );
 }
 
 /** The "Status" column of the Excel export (spec E6). */
 export function statusExportValue(booking) {
-  return statusLabel(booking?.status);
+  return statusLabel(displayStatus(booking));
 }
 
 /** "Kostenfrei" is derived from the price - a marker beside the state, not a state. */
@@ -190,13 +251,16 @@ export function freeMarker() {
 
 /**
  * Whether the booking has been paid, read off the state: `confirmed` says so;
- * a `cancelled` booking was paid iff it was cancelled out of `confirmed`.
+ * a `cancelled` or `withdrawn` booking was paid iff it left `confirmed`.
  */
 export function isPaid(booking) {
   if (booking?.status === BOOKING_STATUS.CONFIRMED) {
     return true;
   }
-  if (booking?.status === BOOKING_STATUS.CANCELLED) {
+  if (
+    booking?.status === BOOKING_STATUS.CANCELLED ||
+    booking?.status === BOOKING_STATUS.WITHDRAWN
+  ) {
     return (
       booking.cancellationRefund?.cancelledFrom === BOOKING_STATUS.CONFIRMED
     );
@@ -204,30 +268,46 @@ export function isPaid(booking) {
   return false;
 }
 
-/** The "Bezahlt" column of the Excel export: Kostenfrei / Ja / Nein (spec E6). */
+/**
+ * A withdrawn booking that was never paid owes nothing: the payment lapses
+ * rather than stands open.
+ */
+function isPaymentLapsed(booking) {
+  return booking?.status === BOOKING_STATUS.WITHDRAWN && !isPaid(booking);
+}
+
+/** The "Bezahlt" column of the Excel export: Kostenfrei / Ja / Nein / Entfällt (spec E6). */
 export function paymentLabel(booking) {
   if (isFree(booking)) {
     return i18n.t("booking.status.free");
+  }
+  if (isPaymentLapsed(booking)) {
+    return i18n.t("booking.payment.lapsed");
   }
   return isPaid(booking)
     ? i18n.t("booking.payment.paid")
     : i18n.t("booking.payment.unpaid");
 }
 
-/** The Zahlungsstatus on the booking page: Kostenfrei / Bezahlt / Nicht bezahlt. */
+/** The Zahlungsstatus on the booking page: Kostenfrei / Bezahlt / Nicht bezahlt / Entfällt. */
 export function paymentStatusLabel(booking) {
   if (isFree(booking)) {
     return i18n.t("booking.status.free");
+  }
+  if (isPaymentLapsed(booking)) {
+    return i18n.t("booking.payment.status.lapsed");
   }
   return isPaid(booking)
     ? i18n.t("booking.payment.status.paid")
     : i18n.t("booking.payment.status.unpaid");
 }
 
+/** Whether the booking no longer lives: Abgelehnt, Storniert or Widerrufen. */
 export function isRejectedOrCancelled(booking) {
   return (
     booking?.status === BOOKING_STATUS.REJECTED ||
-    booking?.status === BOOKING_STATUS.CANCELLED
+    booking?.status === BOOKING_STATUS.CANCELLED ||
+    booking?.status === BOOKING_STATUS.WITHDRAWN
   );
 }
 
@@ -252,9 +332,21 @@ export function groupBookingStatus(members) {
  * Whether a series-wide action may be offered: only where the members share
  * one state and that state allows the action (spec E9). A mixed series acts
  * per member; `allowedActions(MIXED)` is empty, so it falls out of this too.
+ * Reinstate is the exception: it takes the cancelled and rejected members
+ * and leaves the others as they are, so one such member is enough.
  */
 export function groupAllowsAction(members, action) {
+  if (action === BOOKING_ACTION.REINSTATE) {
+    return reinstatableMembers(members).length > 0;
+  }
   return allowedActions(groupBookingStatus(members)).includes(action);
+}
+
+/** The members a series-wide reinstate brings back: the cancelled and rejected ones. */
+export function reinstatableMembers(members) {
+  return (Array.isArray(members) ? members : []).filter((member) =>
+    allowsAction(member, BOOKING_ACTION.REINSTATE)
+  );
 }
 
 /**
@@ -305,26 +397,35 @@ function mainPathOf(free) {
   ];
 }
 
-/** The step a cancelled booking was cut behind: `cancelledFrom`, or Bestätigt where that is unknown. */
+/**
+ * The step a cancelled or withdrawn booking was cut behind: Angefragt for a
+ * stored `rejected` (also where it reads Storniert), else `cancelledFrom`,
+ * or Bestätigt where that is unknown.
+ */
 function cancelledOriginOf(booking) {
+  if (booking?.status === BOOKING_STATUS.REJECTED) {
+    return BOOKING_STATUS.REQUESTED;
+  }
   return booking?.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
 }
 
 /**
  * The path itself, shared by a booking and a series: the main path with a
  * `STEP_STATE` per step, cut behind Angefragt at Abgelehnt and behind
- * `cancelledFrom` at Storniert. `dateOf(step)` and `end` carry the raw
- * dates and the reason.
+ * `cancelledFrom` at Storniert and Widerrufen. `dateOf(step)` and `end`
+ * carry the raw dates and the reason.
  */
 function buildPath({ status, free, cancelledFrom, dateOf, end }) {
   const mainPath = mainPathOf(free);
-  const terminal =
-    status === BOOKING_STATUS.REJECTED || status === BOOKING_STATUS.CANCELLED;
+  const terminal = isRejectedOrCancelled({ status });
 
   let reachedFrom = status;
   if (status === BOOKING_STATUS.REJECTED) {
     reachedFrom = BOOKING_STATUS.REQUESTED;
-  } else if (status === BOOKING_STATUS.CANCELLED) {
+  } else if (
+    status === BOOKING_STATUS.CANCELLED ||
+    status === BOOKING_STATUS.WITHDRAWN
+  ) {
     reachedFrom = cancelledFrom;
   }
   const reachedIndex = Math.max(0, mainPath.indexOf(reachedFrom));
@@ -365,7 +466,8 @@ function buildPath({ status, free, cancelledFrom, dateOf, end }) {
  * Zahlung offen -> Bestätigt (without Zahlung offen for a free booking), each
  * step with a `STEP_STATE`, and for Abgelehnt / Storniert the point where the
  * path was cut - behind Angefragt, or behind `cancelledFrom` (behind Bestätigt
- * where that is unknown). Dates are raw: `timeCreated` at Angefragt,
+ * where that is unknown); a request the user withdrew reads Storniert behind
+ * Angefragt (`displayStatus`). Dates are raw: `timeCreated` at Angefragt,
  * `timePaid` at Bestätigt only while the booking is Bestätigt and priced
  * (glossary), `cancelledAt` at the end; a missing or zero timestamp is
  * `null`. The headline formats them.
@@ -373,7 +475,7 @@ function buildPath({ status, free, cancelledFrom, dateOf, end }) {
 export function pathOf(booking) {
   const free = isFree(booking);
   return buildPath({
-    status: booking?.status,
+    status: displayStatus(booking),
     free,
     cancelledFrom: cancelledOriginOf(booking),
     dateOf: (step) => stepDate(step, booking, free),
@@ -407,6 +509,20 @@ export function totalPriceOf(members) {
 }
 
 /**
+ * The state of a group as shown: the members' shared `displayStatus`,
+ * `MIXED` where they disagree, `null` without members. The series' actions
+ * keep `groupBookingStatus()`.
+ */
+export function groupDisplayStatus(members) {
+  if (!Array.isArray(members)) {
+    return null;
+  }
+  return groupBookingStatus(
+    members.map((member) => ({ status: displayStatus(member) }))
+  );
+}
+
+/**
  * The series read as a booking (spec N5): the path from the total price
  * (free where it is zero) at the members' shared state; `null` for a mixed
  * series or one without members, which the headline draws without a path.
@@ -417,7 +533,7 @@ export function totalPriceOf(members) {
  * same one - the rule after "Serie stornieren".
  */
 export function seriesPathOf(groupBooking, members) {
-  const status = groupBookingStatus(members);
+  const status = groupDisplayStatus(members);
   if (status == null || status === MIXED) {
     return null;
   }
@@ -456,7 +572,7 @@ export function mixedCounts(members) {
   return Object.values(BOOKING_STATUS)
     .map((status) => ({
       ...presentation(status),
-      count: list.filter((member) => member?.status === status).length,
+      count: list.filter((member) => displayStatus(member) === status).length,
     }))
     .filter((entry) => entry.count > 0);
 }

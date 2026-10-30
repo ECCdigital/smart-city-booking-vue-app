@@ -38,6 +38,12 @@ export const CURRENT_PASSWORD = "bisheriges-passwort";
 /** The token of the mail's link the stub backend's `POST /auth/reset-password` takes. */
 export const RESET_TOKEN = "hook-aus-der-mail";
 
+/**
+ * The pending SSO token of an address on the blacklist: the stub backend's
+ * `POST /auth/sso/signup` refuses it.
+ */
+export const BLACKLISTED_SSO_TOKEN = "blacklisted-sso-token";
+
 /** Keycloak as the stub backend's public instance config names it. */
 export const KEYCLOAK = {
   realm: "biletado",
@@ -141,6 +147,18 @@ async function startBackendStub() {
       return res.status(410).send("Token already used or expired");
     }
     return res.status(200).send("Password reset successfully");
+  });
+
+  // The SSO signup: an address on the blacklist
+  // is refused with the instance's mail address to write to.
+  app.post("/auth/sso/signup", express.json(), (req, res) => {
+    if (req.body?.token === BLACKLISTED_SSO_TOKEN) {
+      return res.status(409).json({
+        error: "checkout.address_blacklisted",
+        params: { mailAddress: "betrieb@example.test" },
+      });
+    }
+    return res.status(201).json({ message: "Registered" });
   });
 
   app.post(

@@ -1,4 +1,16 @@
 {
+  "blacklist-warning": {
+    "title": "Adresse steht auf der Sperrliste",
+    "text": "Diese Adresse steht auf der Sperrliste: | Diese Adressen stehen auf der Sperrliste:",
+    "hint": "Mit einer Adresse auf der Sperrliste sind keine Buchung im Katalog und keine Registrierung möglich. Hier können Sie trotzdem fortfahren.",
+    "cancel": "Zurück",
+    "confirm": {
+      "save": "Trotzdem speichern",
+      "invite": "Trotzdem einladen",
+      "add": "Trotzdem hinzufügen"
+    },
+    "affected": "Betroffene Adressen"
+  },
   "unsavedChangesLeave": {
     "title": "Ungespeicherte Änderungen",
     "message": "Es gibt ungespeicherte Änderungen. Wenn Sie fortfahren, gehen diese verloren. Möchten Sie die Änderungen verwerfen?",
@@ -57,7 +69,7 @@
     "success": {
       "default": {
         "title": "Registrierung abgeschickt",
-        "message": "Falls die Adresse noch nicht bestätigt ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
+        "message": "Sie erhalten eine E-Mail, um Ihre Registrierung abzuschließen."
       }
     },
     "error": {
@@ -112,7 +124,12 @@
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
-      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+      "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
+      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr.",
+      "report_target_not_of_tenant": "Melden lassen sich nur Mitglieder des Mandanten und Bucher seiner Buchungen.",
+      "report_target_tenant_owner": "Einen Besitzer des Mandanten melden nur Besitzer.",
+      "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden.",
+      "report_address_not_of_booking": "Melden lassen sich nur Adressen aus der Mailadresse einer Buchung des Mandanten."
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
@@ -123,18 +140,34 @@
       "supervision_notification_already_sent": "Die Mitteilung wurde bereits gesendet.",
       "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
       "diverging-bookings": "Betroffene Buchungen: {ids}",
-      "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut."
+      "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut.",
+      "instance_owner_not_suspendable": "Ein Instanz-Owner lässt sich nicht sperren.",
+      "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
+      "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
+      "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
+      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
-      "tenant_not_found": "Der Mandant existiert nicht mehr."
+      "tenant_not_found": "Der Mandant existiert nicht mehr.",
+      "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
+      "report_none_open": "Zu diesem User oder dieser Adresse ist keine Meldung mehr offen.",
+      "report_not_found": "Die Meldung wurde nicht gefunden."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
-      "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu."
+      "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
+      "suspension_reason_required": "Für eine Sperre ist ein Grund nötig.",
+      "blacklist_reason_required": "Für einen Sperrlisten-Eintrag ist ein Grund nötig.",
+      "blacklist_value_invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
+      "report_reason_required": "Für eine Meldung ist ein Grund nötig.",
+      "report_rejection_reason_required": "Für eine Ablehnung ist eine Begründung nötig.",
+      "report_target_without_account": "Der Bucher hat kein Konto. Gäste lassen sich hier nicht melden.",
+      "report_address_invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
+      "report_address_of_account": "Zu dieser Adresse gibt es ein Konto. Bitte melden Sie den User mit „Benutzer melden“."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -970,13 +1003,84 @@
       }
     },
     "list": {
-      "search": "Name, ID oder Veranstalter"
+      "search": "Name, ID oder Veranstalter",
+      "filter": {
+        "public": "Öffentliche Veranstaltung",
+        "registration": "Anmeldepflichtige Veranstaltung",
+        "free": "Kostenfreie Veranstaltung",
+        "format": "Format",
+        "attendees": "Max. Teilnehmeranzahl",
+        "all": "Alle",
+        "yes": "Ja",
+        "no": "Nein",
+        "presence": "Präsenz",
+        "online": "Online",
+        "hybrid": "Hybrid"
+      }
     },
     "participation-link": {
       "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
     }
   },
+  "dialog": {
+    "close": "Schließen"
+  },
   "instance": {
+    "blacklist": {
+      "title": "Sperrliste",
+      "lead": "Mit der Sperrliste schließen Sie Mailadressen von der ganzen Plattform aus, zum Beispiel nach wiederholter missbräuchlicher Nutzung oder bei Wegwerf- / Spam-Adressen. Sie gilt für alle Mandanten. Sobald Sie eine Adresse eintragen, werden die Konten mit dieser Adresse gesperrt. Mit dieser Mailadresse können keine neuen Konten angelegt und auch keine Gast-Buchungen getätigt werden.",
+      "empty": "Es steht noch keine Adresse auf der Sperrliste.",
+      "add": "Adresse eintragen",
+      "reload": "Neu laden",
+      "load-error": "Die Sperrliste konnte nicht geladen werden.",
+      "suspended": "kein Konto gesperrt | {count} Konto gesperrt | {count} Konten gesperrt",
+      "origin": {
+        "manual": "von Hand",
+        "suspension": "aus einer Sperre",
+        "reports": "aus Meldungen"
+      },
+      "edit-reason": "Grund ändern",
+      "remove": "Entfernen",
+      "create": {
+        "title": "Adresse auf die Sperrliste setzen",
+        "text": "Geben Sie eine Mailadresse ein und prüfen Sie, welche Konten betroffen sind. Gesperrt wird erst, wenn Sie auf „Auf die Sperrliste setzen“ klicken.",
+        "value": "Mailadresse",
+        "value-hint": "Eine einzelne Adresse wie max@firma.de. Für alle Adressen eines Anbieters geben Sie nur den Teil ab dem @ ein, etwa @wegwerf.de. Adressen wie max@post.wegwerf.de gehören dann nicht dazu.",
+        "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein oder den Teil ab dem @, etwa @wegwerf.de.",
+        "preview": "Betroffene Konten zeigen",
+        "suspend": "Diese Konten werden sofort gesperrt ({count}):",
+        "instance-owners": "Diese Konten bleiben offen, weil sie die Plattform verwalten ({count}):",
+        "already-suspended": "Diese Konten sind bereits gesperrt ({count}):",
+        "tenants": "in keinem Mandanten | in einem Mandanten | in {count} Mandanten",
+        "none": "Mit dieser Adresse gibt es zurzeit kein Konto. Es wird aktuell also niemand gesperrt. Zukünftig können unter dieser Adresse keine Buchungen oder Registrierungen erfolgen.",
+        "exists": "„{value}“ steht bereits auf der Sperrliste.",
+        "reason": "Grund (Pflicht, nur für Admins sichtbar)",
+        "cancel": "Abbrechen",
+        "confirm": "Auf die Sperrliste setzen",
+        "preview-error": "Die betroffenen Konten konnten nicht geladen werden.",
+        "error": "Die Adresse konnte nicht eingetragen werden.",
+        "affected": "Betroffene Konten"
+      },
+      "reason-dialog": {
+        "title": "Grund für „{value}“ ändern",
+        "text": "Sie können hier nur den Grund ändern. Stimmt die Adresse nicht, entfernen Sie den Eintrag und tragen die richtige Adresse neu ein.",
+        "reason": "Grund (Pflicht, nur für Admins sichtbar)",
+        "cancel": "Abbrechen",
+        "confirm": "Speichern",
+        "error": "Der Grund konnte nicht geändert werden."
+      },
+      "remove-dialog": {
+        "title": "„{value}“ von der Sperrliste entfernen?",
+        "suspended": "Beim Eintragen wurde {count} Konto gesperrt: | Beim Eintragen wurden {count} Konten gesperrt:",
+        "none": "Beim Eintragen wurde kein Konto gesperrt.",
+        "unsuspend": "Diese Konten wieder freigeben",
+        "unsuspend-hint": "Konten, die inzwischen aus einem anderen Grund gesperrt sind, bleiben gesperrt.",
+        "cancel": "Abbrechen",
+        "confirm": "Entfernen",
+        "error": "Der Eintrag konnte nicht entfernt werden.",
+        "affected": "Gesperrte Konten"
+      }
+    },
     "edit": {
       "owners": {
         "missing": "Die Instanz braucht mindestens einen Admin. Fügen Sie einen Admin hinzu."
@@ -1213,6 +1317,42 @@
     }
   },
   "tenant": {
+    "reports": {
+      "title": "Meldungen",
+      "open-count": "{count} offen",
+      "hint": "Prüfen und verwalten Sie als auffällig gemeldete User und Mailadressen dieses Mandanten an die Instanz (z.B. nach missbräuchlicher Nutzung oder Spam). Die Instanz entscheidet: Ein gemeldeter User kann gesperrt werden, sein Konto kann sich dann nicht mehr anmelden. Eine gemeldete Mailadresse kann auf die Sperrliste kommen, dann sind mit ihr auch keine Gast-Buchung und keine Registrierung mehr möglich. Eine offene Meldung können Sie ergänzen oder zurückziehen. Ist eine Meldung erledigt, ist eine erneute Meldung zum selben User wieder möglich.",
+      "empty": "Dieser Mandant hat noch niemanden gemeldet.",
+      "load-failed": "Die Meldungen konnten nicht geladen werden.",
+      "standing": {
+        "open": "offen",
+        "suspended": "Konto gesperrt",
+        "blacklisted": "auf Sperrliste",
+        "rejected": "abgelehnt",
+        "withdrawn": "zurückgezogen"
+      },
+      "rejection": "Begründung der Ablehnung: {reason}",
+      "add": "Ergänzen",
+      "add-title": "Meldung zu {name} ergänzen",
+      "add-reason": "Weiterer Grund (Pflicht)",
+      "add-failed": "Die Meldung konnte nicht ergänzt werden.",
+      "withdraw": "Zurückziehen",
+      "withdraw-title": "Meldung zu {name} zurückziehen?",
+      "withdraw-text": "Die Instanz entscheidet dann nicht mehr über diese Meldung. Eine neue Meldung zu {name} bleibt möglich.",
+      "withdraw-failed": "Die Meldung konnte nicht zurückgezogen werden.",
+      "cancel": "Abbrechen",
+      "address": {
+        "open": "E-Mailadresse melden",
+        "title": "E-Mailadresse an die Instanz melden",
+        "text": "Sie melden eine Mailadresse, kein Konto. Die Instanz entscheidet, ob die Adresse auf die Sperrliste kommt: Mit ihr sind dann keine Gast-Buchung und keine Registrierung mehr möglich, und Konten mit dieser Adresse werden gesperrt.",
+        "value": "Mailadresse",
+        "value-hint": "Eine einzelne Adresse wie max@firma.de.",
+        "value-invalid": "Bitte geben Sie eine vollständige Mailadresse ein, etwa max@firma.de.",
+        "member": "Die Adresse gehört zu einem Mitglied dieses Mandanten. Sie können den Benutzer auch direkt in der Mitgliederliste an die Instanz melden oder dessen Mitgliedschaft beenden.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Melden"
+      }
+    },
     "description": {
       "label": "Kurzbeschreibung (optional)",
       "hint": "Beschreiben Sie den Mandanten für Buchende. Die Beschreibung bespielsweise erscheint im Katalog oder auf eingebundenen Webseiten.",
@@ -1274,16 +1414,6 @@
         }
       }
     },
-    "updateStatus": {
-      "success": {
-        "title": "Status aktualisiert",
-        "message": "Der Mandantenstatus wurde erfolgreich aktualisiert."
-      },
-      "error": {
-        "title": "Fehler beim Aktualisieren",
-        "message": "Der Mandantenstatus konnte nicht aktualisiert werden."
-      }
-    },
     "cancellationRefundTiers": {
       "title": "Erstattungsstaffel bei Stornierungen",
       "description": "Legen Sie fest, welcher Anteil des Buchungspreises abhängig von den verbleibenden Kalendertagen bis zum Buchungsbeginn erstattet wird. Die Regelung gilt für alle Buchungsobjekte dieses Mandanten.",
@@ -1308,7 +1438,9 @@
       "nonNegativeDays": "Der Wert darf nicht negativ sein",
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
-      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden.",
+      "withoutTimeSpanHint": "Buchungen ohne festen Zeitraum fallen unter keine Stufe der Staffel. Sie werden standardmäßig zu 100 % erstattet. Legen Sie bei Bedarf einen anderen Wert fest. Dieser Wert gilt für diesen Mandanten für alle Buchungen ohne Zeitraum.",
+      "withoutTimeSpanLabel": "Erstattung ohne Zeitraum"
     },
     "legalDocuments": {
       "title": "Rechtsdokumente",
@@ -1389,6 +1521,8 @@
         "phone": "Telefonnummer",
         "website": "Website",
         "location": "Anschrift",
+        "invitation-notice": "Besitzer benachrichtigen, wenn eine Einladung angenommen wird",
+        "invitation-notice-hint": "Sofern aktiviert, erhalten die Besitzer des Mandanten eine E-Mail, wenn jemand über eine Einladung Mitglied wird.",
         "submit": "Mandant anlegen",
         "contact": "Kontakt",
         "cancel": "Abbrechen"
@@ -1494,7 +1628,25 @@
       }
     },
     "users": {
-      "search": "Name oder ID"
+      "search": "Name oder ID",
+      "tab": "Mitglieder",
+      "end-membership": {
+        "action": "Mitgliedschaft beenden",
+        "hint": "Das Mitglied verliert alle Rechte im Mandanten, offene Einladungen verfallen. Das Konto bleibt, ein Wiedereintritt per Einladung ist möglich.",
+        "confirm-title": "Mitgliedschaft beenden?",
+        "confirm-question": "Möchten Sie die Mitgliedschaft von {address} in diesem Mandanten beenden?",
+        "confirm-consequences": "{address} verliert alle Rechte im Mandanten und noch offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
+        "confirm-report": "Soll {address} dauerhaft von allen Mandanten ausgeschlossen werden (z.B. wegen missbräuchlicher Nutzung oder Spam), melden Sie {address} an die Instanz.",
+        "cancel": "Abbrechen",
+        "report": "An Instanz melden"
+      },
+      "report-hint": "Melden Sie das Mitglied an die Instanz, damit über eine Sperre für die ganze Plattform entschieden wird.",
+      "status": {
+        "title": "Status",
+        "membership": "Status der Mitgliedschaft",
+        "suspended": "Instanzweit gesperrt",
+        "suspended-hint": "Das Konto kann sich auf der ganzen Plattform nicht anmelden. Über die Sperre entscheidet die Instanz."
+      }
     }
   },
   "password": {
@@ -1528,14 +1680,26 @@
     }
   },
   "booking": {
+    "owner-change": {
+      "title": "Buchung einem anderen Konto zuordnen?",
+      "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
+      "message": "Diese Buchung wurde manuell von einem Admin angelegt. Über die E-Mail-Adresse wird sie einem Konto zugeordnet, sofern ein Benutzerkonto mit dieser Adresse vorhanden ist.",
+      "consequence": "Durch das Ändern der Mailadresse wird die Buchung der neuen E-Mail-Adresse zugeordnet und verschwindet ggf. aus dem Konto der bisherigen E-Mailadresse.",
+      "question": "Sind Sie sicher, dass Sie die Änderung vornehmen möchten?",
+      "previous": "Bisher",
+      "next": "Künftig",
+      "confirm": "Änderung speichern",
+      "cancel": "Abbrechen"
+    },
     "booked-via": {
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Angemeldet",
+        "user": "Benutzer",
         "guest": "Gast",
         "admin": "Admin"
       },
+      "booking-user": "Gebucht von",
       "hint": {
         "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
         "guest": "Diese Buchung wurde erstellt von einem Gast.",
@@ -1575,7 +1739,7 @@
       "title": "Erstattungsvorschau",
       "expectedTitle": "Erwartete Erstattung",
       "auditTitle": "Erstattung bei Stornierung",
-      "originalAmount": "Ursprungsbetrag",
+      "originalAmount": "Ursprungs\u00adbetrag",
       "refundAmount": "Erstattung",
       "cancellationFee": "Einbehalt",
       "refundShare": "{percentage} % Erstattung",
@@ -1592,6 +1756,7 @@
       "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
       "singlePolicyWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
+      "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
@@ -1759,6 +1924,7 @@
       "confirmed": "Bestätigt",
       "rejected": "Abgelehnt",
       "cancelled": "Storniert",
+      "withdrawn": "Widerrufen",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
       "paidShort": "bezahlt"
@@ -1777,14 +1943,17 @@
       "reject": "Ablehnen",
       "cancel": "Stornieren",
       "reinstate": "Wiederherstellen",
+      "acceptWithdrawal": "Widerruf akzeptieren",
       "delete": "Löschen"
     },
     "payment": {
       "paid": "Ja",
       "unpaid": "Nein",
+      "lapsed": "Entfällt",
       "status": {
         "paid": "Bezahlt",
-        "unpaid": "Nicht bezahlt"
+        "unpaid": "Nicht bezahlt",
+        "lapsed": "Entfällt"
       }
     },
     "cancellationReceipt": {
@@ -1812,6 +1981,19 @@
         }
       }
     },
+    "withdrawalReceipt": {
+      "reprint": {
+        "hint": "Erzeugt eine Revision des Widerrufbelegs unter derselben Nummer.",
+        "success": {
+          "title": "Widerrufbeleg ausgestellt",
+          "message": "Der Widerrufbeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Widerrufbeleg konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
     "initialState": {
       "label": "Anfangszustand",
       "paymentMethod": "Zahlungsmethode auswählen",
@@ -1829,8 +2011,8 @@
       },
       "dialog": {
         "title": "Buchung wiederherstellen",
-        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
-        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt, es wird keine E-Mail versendet.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
       },
       "conflict": {
         "intro": "In diesem Zeitraum gibt es inzwischen bereits eine andere Buchung: | In diesem Zeitraum gibt es inzwischen bereits andere Buchungen:",
@@ -1839,6 +2021,27 @@
         "via-child": "über das untergeordnete Objekt",
         "question": "Wenn Sie die aktuelle Buchung trotzdem wiederherstellen, ist das Objekt doppelt belegt.",
         "proceed": "Trotzdem wiederherstellen"
+      }
+    },
+    "kind": {
+      "private": "Privat",
+      "business": "Geschäftlich"
+    },
+    "acceptWithdrawal": {
+      "success": {
+        "title": "Widerruf akzeptiert",
+        "message": "Die Buchung ist widerrufen; die Kundin oder der Kunde erhält eine Bestätigung per E-Mail."
+      },
+      "error": {
+        "title": "Fehler beim Akzeptieren des Widerrufs",
+        "message": "Der Widerruf konnte nicht akzeptiert werden."
+      },
+      "dialog": {
+        "title": "Widerruf akzeptieren",
+        "hint": "Die Buchung {id} wird widerrufen. Das lässt sich nicht rückgängig machen. Die Kundin oder der Kunde erhält eine Bestätigung per E-Mail.",
+        "hint-refund": "Durch den Widerruf entstehen keine Kosten. Der bereits bezahlte Betrag wird vollständig erstattet, die Rückerstattung steht danach auf „offen“.",
+        "hint-no-cost": "Durch den Widerruf entstehen keine Kosten.",
+        "hint-lapse": "Durch den Widerruf entstehen keine Kosten. Der eingetragene Rechnungsbetrag entfällt."
       }
     },
     "transition": {
@@ -1893,7 +2096,8 @@
         "phone": "Telefon",
         "street": "Straße",
         "zip-code": "Postleitzahl",
-        "location": "Stadt"
+        "location": "Stadt",
+        "kind": "Buchungsart"
       },
       "custom-fields": {
         "title": "Benutzerdefinierte Felder",
@@ -1948,6 +2152,7 @@
         "receipts": "Belege",
         "invoices": "Rechnungen",
         "cancellations": "Stornobelege",
+        "withdrawals": "Widerrufbelege",
         "attachments": "Anhänge",
         "none": "keine",
         "issued-at": "Ausgestellt am {date}",
@@ -2042,6 +2247,32 @@
         "message": "Die Buchungen konnten nicht als bezahlt markiert werden."
       }
     },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchungen der Serie wurden wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchungen der Serie konnten nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "member": "Die Buchung {id} ist Teil einer Serienbuchung.",
+        "group": "Alle stornierten Buchungen der Serie wiederherstellen",
+        "single": "Nur diese Buchung wiederherstellen",
+        "hint": "Keine Buchung der Serie ist storniert oder abgelehnt. | Die stornierte oder abgelehnte Buchung kehrt in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet. | Die {count} stornierten und abgelehnten Buchungen kehren jeweils in ihren Zustand vor der Stornierung zurück. Die übrigen Buchungen bleiben unverändert. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten, es wird keine E-Mail versendet."
+      },
+      "conflict": {
+        "intro": "Für einen Termin der Serie gibt es inzwischen andere Buchungen: | Für {n} Termine der Serie gibt es inzwischen andere Buchungen:",
+        "member": "Buchung {id} ({period})",
+        "for": "für",
+        "via-parent": "mit dem übergeordneten Objekt",
+        "via-child": "über das untergeordnete Objekt",
+        "question": "Wenn Sie diese Termine trotzdem wiederherstellen, sind die Objekte doppelt belegt.",
+        "proceed": "Alle trotzdem wiederherstellen",
+        "skip": "Nur konfliktfreie wiederherstellen"
+      }
+    },
     "reject": {
       "success": {
         "title": "Erfolgreich abgelehnt",
@@ -2082,7 +2313,8 @@
       "confirm": "Serie freigeben",
       "pay": "Serie als bezahlt markieren",
       "reject": "Serie ablehnen",
-      "cancel": "Serie stornieren"
+      "cancel": "Serie stornieren",
+      "reinstate": "Serie wiederherstellen"
     },
     "cancellationReceipt": {
       "reprint": {
@@ -2204,6 +2436,17 @@
       "title": "Zeitraum liegt in der Vergangenheit",
       "message": "Der gewählte Beginn liegt in der Vergangenheit. Bitte wählen Sie einen Zeitpunkt ab jetzt."
     },
+    "address_blacklisted": {
+      "title": "Buchung nicht möglich",
+      "registrationTitle": "Registrierung nicht möglich",
+      "registrationNotice": "Mit dieser E-Mail-Adresse ist keine Registrierung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
+      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "operator": "den Betreiber dieses Angebots",
+      "copy": "Mailadresse kopieren",
+      "copied": "Mailadresse kopiert",
+      "copyFailed": "Die Mailadresse ließ sich nicht kopieren. Bitte markieren und kopieren Sie sie von Hand."
+    },
     "max_amount_per_booking_exceeded": {
       "title": "Höchstmenge je Buchung überschritten",
       "message": "Die gewählte Anzahl übersteigt die Höchstmenge je Buchung für dieses Objekt."
@@ -2305,7 +2548,6 @@
       "forbidden": "Es scheint, dass Sie mit dem falschen Konto angemeldet sind. Bitte melden Sie sich mit dem Konto an, das zur Annahme dieser Einladung berechtigt ist.",
       "not_found": "Es scheint, dass die Einladung nicht mehr existiert. Bitte fordern Sie eine neue Einladung an.",
       "expired": "Es scheint, dass die Einladung abgelaufen ist. Bitte fordern Sie eine neue Einladung an.",
-      "membership_suspended": "Es scheint, dass Ihre Mitgliedschaft in diesem Mandanten ausgesetzt wurde. Bitte wenden Sie sich an den Mandantenadministrator.",
       "acceptance_failed": {
         "title": "Fehler",
         "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
@@ -2343,6 +2585,10 @@
       "success": {
         "title": "Erfolgreich bearbeitet",
         "message": "Der Benutzer wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Speichern",
+        "message": "Der Benutzer konnte nicht gespeichert werden."
       }
     },
     "edit-profile": {
@@ -2357,6 +2603,133 @@
     },
     "list": {
       "search": "Name oder ID"
+    },
+    "suspension": {
+      "title": "Sperre",
+      "chip": "Gesperrt",
+      "blacklist": {
+        "chip": "Sperrliste",
+        "address": "Die Adresse steht auf der Sperrliste.",
+        "domain": "Die Adresse steht über die Domain „{entry}“ auf der Sperrliste.",
+        "none": "Die Adresse steht nicht auf der Sperrliste."
+      },
+      "origin": {
+        "manual": "von Hand",
+        "blacklist": "Sperrliste"
+      },
+      "status": {
+        "active": "Der Account ist aktiv.",
+        "suspended": "Gesperrt {origin}",
+        "suspended-with-record": "Gesperrt {origin} am {date} von {by}.",
+        "suspended-by-blacklist": "Gesperrt durch Sperrlisten-Eintrag „{entry}“ am {date} von {by}.",
+        "reason": "Grund: {reason}"
+      },
+      "consequences": {
+        "admin-sign-in": {
+          "label": "Im Admin anmelden"
+        },
+        "catalog-sign-in": {
+          "label": "Im Katalog anmelden (Passwort, SSO, Karte)"
+        },
+        "sessions": {
+          "label": "Laufende Sitzungen"
+        },
+        "guest-booking": {
+          "label": "Als Gast mit dieser Adresse buchen",
+          "stays": "weiter möglich"
+        },
+        "registration": {
+          "label": "Mit dieser Adresse neu registrieren",
+          "stays": "kein neues Konto (Adresse belegt)"
+        },
+        "bookings": {
+          "label": "{count} bestehende Buchung | {count} bestehende Buchungen",
+          "stays": "bleiben, Mandanten entscheiden"
+        },
+        "memberships": {
+          "label": "Mitgliedschaft in {count} Mandanten | Mitgliedschaften in {count} Mandanten",
+          "stays": "bleiben, ruhen"
+        },
+        "ends": "nicht mehr möglich",
+        "title": "Folgen der Sperre"
+      },
+      "suspend": {
+        "open": "Sperren",
+        "title": "{name} für die ganze Instanz sperren?",
+        "warning": "{name} kann sich danach nirgends mehr anmelden, weder im Admin noch im Katalog, und laufende Sitzungen enden sofort.",
+        "reason": "Grund (Pflicht)",
+        "cancel": "Abbrechen",
+        "confirm": "Sperren",
+        "preview-error": "Die Folgen konnten nicht geladen werden.",
+        "error": "Die Sperre konnte nicht gesetzt werden.",
+        "blacklist": "Adresse {address} auch auf die Sperrliste setzen",
+        "blacklist-hint": "Ohne Sperrliste kann mit dieser Adresse weiter als Gast gebucht werden. Entfernen Sie das Häkchen, wenn die Sperre nur vorläufig ist (z.B. bis zur Klärung einer Meldung).",
+        "on-blacklist": "Die Adresse {address} steht schon auf der Sperrliste (Eintrag „{entry}“).",
+        "reports": "Die Sperre erledigt die offene Meldung von {tenant}. | Die Sperre erledigt {count} offene Meldungen von {tenant}.",
+        "reports-owners": "Eine Mail mit dem Ergebnis geht an {owners}.",
+        "reports-no-owners": "Der Mandant hat keinen Besitzer, den eine Mail erreicht."
+      },
+      "reports": {
+        "link": "Aus einer Meldung | Aus {count} Meldungen",
+        "title": "Meldungen zur Sperre von {name}",
+        "loading": "Meldungen werden geladen...",
+        "load-failed": "Die Meldungen konnten nicht geladen werden.",
+        "close": "Schließen"
+      },
+      "unsuspend": {
+        "open": "Entsperren",
+        "title": "{name} entsperren?",
+        "text": "{name} kann sich danach wieder anmelden, im Admin und im Katalog.",
+        "remove-entry": "Sperrlisten-Eintrag „{entry}“ mit entfernen",
+        "domain-entry": "Anmelden geht wieder, aber Buchungen mit dieser Adresse weist der Checkout weiter ab.",
+        "preview-error": "Die Sperrliste konnte nicht geprüft werden.",
+        "cancel": "Abbrechen",
+        "confirm": "Entsperren",
+        "error": "Die Sperre konnte nicht aufgehoben werden."
+      }
+    },
+    "report": {
+      "open": "Melden",
+      "open-user": "Benutzer melden",
+      "title": "{name} an die Instanz melden",
+      "text": "Sie melden das Konto von {name}. Die Betreiber der Plattform entscheiden, ob es gesperrt wird. Ein gesperrtes Konto kann sich nirgends mehr anmelden. Als Gast kann mit der Mailadresse weiter gebucht werden. Soll auch das enden, melden Sie zusätzlich die E-Mailadresse.",
+      "text-unaware": "{name} erfährt von der Meldung nichts.",
+      "report-address": "Adresse {address} zusätzlich melden",
+      "report-address-hint": "Die Instanz kann die Adresse auf die Sperrliste setzen. Dann sind mit ihr keine Gast-Buchung und keine Registrierung mehr möglich.",
+      "account-gone": "Das Konto von {name} gibt es nicht mehr. Sie können noch die Mailadresse melden.",
+      "address-failed": {
+        "title": "Adresse nicht gemeldet",
+        "message": "Das Konto wurde gemeldet, die Adresse nicht: {message}"
+      },
+      "title-addresses": "E-Mailadresse an die Instanz melden",
+      "text-addresses": "Sie melden eine Mailadresse, kein Konto. Die Betreiber der Plattform entscheiden, ob die Adresse auf die Sperrliste kommt: Mit ihr sind dann keine Gast-Buchung und keine Registrierung mehr möglich, und Konten mit dieser Adresse werden gesperrt. Der Gast erfährt von der Meldung nichts.",
+      "open-user-hint": "Das Konto des Buchenden melden: Die Instanz kann es sperren.",
+      "open-addresses-hint": "Die Mailadresse melden: Die Instanz kann sie auf die Sperrliste setzen, dann ist auch keine Gast-Buchung mehr möglich.",
+      "booking": "Die Buchung hängt als Beleg an der Meldung.",
+      "reason": "Grund (Pflicht)",
+      "cancel": "Abbrechen",
+      "confirm": "Melden",
+      "created": {
+        "title": "Meldung gesendet",
+        "message": "Die Meldung ist bei der Instanz eingegangen."
+      },
+      "supplemented": {
+        "title": "Meldung ergänzt",
+        "message": "Die offene Meldung zu diesem User wurde ergänzt."
+      },
+      "error": "Die Meldung konnte nicht gesendet werden.",
+      "end-membership": "Mitgliedschaft beenden",
+      "end-membership-hint": "{name} verliert alle Rechte im Mandanten und offene Einladungen verfallen. Der User wird umgehend aus der Liste der Mitglieder dieses Mandanten entfernt. Das Konto bleibt.",
+      "open-addresses": "E-Mailadresse melden",
+      "addresses": "Diese Adresse melden: | Welche Adressen melden?",
+      "supplemented-addresses": {
+        "title": "Meldung ergänzt",
+        "message": "Die offene Meldung zu dieser Adresse wurde ergänzt."
+      },
+      "already-blacklisted": {
+        "title": "Steht bereits auf der Sperrliste",
+        "message": "{addresses} steht bereits auf der Sperrliste. Dazu entstand keine Meldung."
+      }
     }
   },
   "coupon": {
@@ -3307,6 +3680,38 @@
       },
       "page-text": "{0}–{1} von {2}"
     },
+    "reports": {
+      "hint": "Offene Meldungen der Mandanten, nach User oder Adresse gruppiert – das am längsten gemeldete Ziel zuerst. „Konto sperren“ sperrt das Konto eines gemeldeten Users: Er kann sich nicht mehr anmelden, als Gast kann mit seiner Adresse weiter gebucht werden. „Auf Sperrliste setzen“ schließt eine gemeldete Adresse aus: keine Gast-Buchung, keine Registrierung, Konten mit ihr werden gesperrt. Beides und „Ablehnen“ erledigen alle offenen Meldungen zum User oder zur Adresse, die Besitzer der meldenden Mandanten bekommen eine Mail.",
+      "loading": "Meldungen werden geladen...",
+      "empty": "Keine Meldungen offen",
+      "load-failed": "Die offenen Meldungen konnten nicht geladen werden.",
+      "count": "eine Meldung | {count} Meldungen",
+      "already-suspended": "bereits gesperrt",
+      "reported": "{tenant} · gemeldet von {by} am {date}",
+      "added": "ergänzt von {by} am {date}",
+      "booking": "Buchung {id}",
+      "open-user": "User bearbeiten",
+      "suspend": "Konto sperren",
+      "reject": "Ablehnen",
+      "reject-title": "Meldungen zu {name} ablehnen",
+      "reject-text": "Die Ablehnung erledigt alle offenen Meldungen zu {name}. Die Besitzer der meldenden Mandanten lesen die Begründung.",
+      "reject-reason": "Begründung (Pflicht)",
+      "cancel": "Abbrechen",
+      "failed": "Die Meldungen konnten nicht erledigt werden.",
+      "guest-address": "Adresse eines Gasts",
+      "blacklist": {
+        "open": "Auf Sperrliste setzen",
+        "title": "{value} auf die Sperrliste setzen?",
+        "text": "Der Eintrag erledigt alle offenen Meldungen zu jeder Adresse, die er trifft. Die Besitzer der meldenden Mandanten bekommen eine Mail, der Gast erfährt nichts.",
+        "address": "Nur die Adresse {address}",
+        "domain": "Die ganze Domain {domain}",
+        "suspends": "Sperrt sofort ein Konto: | Sperrt sofort {count} Konten:",
+        "suspends-none": "Sperrt kein Konto.",
+        "reason": "Grund (Pflicht)",
+        "confirm": "Auf Sperrliste setzen",
+        "affected": "Betroffene Konten"
+      }
+    },
     "tenant-approval-queue": {
       "hint": "Mandanten mit der Stufe „Freigabe ausstehend“ – der am längsten wartende zuerst. „Freigeben“ macht einen Mandanten beaufsichtigt, der Pfeil daneben frei; eine Begründung nimmt der Stufendialog auf der Seite „Mandanten“ auf.",
       "loading": "Mandanten werden geladen...",
@@ -3315,7 +3720,8 @@
       "registers": {
         "label": "Register der Prüfliste",
         "offers": "Angebote",
-        "tenants": "Mandanten"
+        "tenants": "Mandanten",
+        "reports": "Meldungen"
       },
       "load-failed": "Die wartenden Mandanten konnten nicht geladen werden.",
       "no-owner": "kein Owner",
@@ -3345,7 +3751,10 @@
         "tenant-selfCreated": "Selbst-Anlage",
         "review-queueEntered": "Eintritt in die Prüfliste",
         "tenant-levelChanged": "Stufenwechsel",
-        "review-decided": "Prüfentscheidung"
+        "review-decided": "Prüfentscheidung",
+        "report-created": "Neue Meldung",
+        "report-resolved": "Meldung erledigt",
+        "memberships-ended": "Mitgliedschaften beendet"
       },
       "statuses": {
         "pending": "ausstehend",
@@ -3537,7 +3946,9 @@
     "reset": "zurücksetzen",
     "resetAll": "Alle zurücksetzen",
     "empty": "Keine Einträge",
-    "tags": "Tags"
+    "tags": "Tags",
+    "from": "von",
+    "to": "bis"
   },
   "role": {
     "list": {

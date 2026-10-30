@@ -775,13 +775,17 @@ export default {
     @input="!$event && close()"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon left color="primary">{{ typeIcon }}</v-icon>
-        {{ title }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>{{ typeIcon }}</v-icon>
+        <span class="text-h5">{{ title }}</span>
+        <v-spacer />
+        <v-btn icon :disabled="saving" @click="close">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
 
-      <v-card-text class="pt-4">
+      <v-card-text class="pa-6">
         <v-form ref="form" v-model="valid">
           <!-- The way in: from the provider's listing, or by hand -->
           <template v-if="showModeToggle">
@@ -1158,15 +1162,14 @@ export default {
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
+      <v-card-actions class="justify-end px-6 py-4">
         <span
           v-if="saveRefusal"
           class="save-refusal text-caption error--text px-2"
         >
           {{ saveRefusal }}
         </span>
-        <v-btn text :disabled="saving" @click="close">
+        <v-btn outlined :disabled="saving" @click="close">
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
         <v-btn
@@ -1176,6 +1179,7 @@ export default {
           :disabled="!!saveRefusal"
           @click="submit"
         >
+          <v-icon left small>mdi-content-save</v-icon>
           {{ $t("accessPoint.management.save") }}
         </v-btn>
       </v-card-actions>

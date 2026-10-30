@@ -18,6 +18,10 @@
           <v-col> {{ contactDetails.company }} </v-col>
         </v-row>
         <v-row no-gutters>
+          <v-col class="font-weight-bold col-md-2"> Buchungsart: </v-col>
+          <v-col> {{ bookingKind }} </v-col>
+        </v-row>
+        <v-row no-gutters>
           <v-col class="font-weight-bold col-md-2"> Adresse: </v-col>
           <v-col>
             {{ contactDetails.street }}<br />
@@ -296,6 +300,13 @@
       </v-card-text>
     </v-card>
 
+    <checkout-address-blacklisted-alert
+      v-if="blacklistRefusal !== null"
+      ref="blacklistRefusal"
+      class="mt-5"
+      :mail-address="blacklistRefusal"
+    ></checkout-address-blacklisted-alert>
+
     <div class="d-flex mt-5">
       <v-spacer></v-spacer>
       <v-btn
@@ -314,12 +325,15 @@
 </template>
 
 <script>
+import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
+import { bookingKindLabel, isBusinessBooking } from "@/utils/businessBooking";
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { bookingAmountLimit } from "@/utils/bookingAmountLimit";
 import {
+  addressBlacklistedRefusal,
   getCheckoutErrorToastKey,
   isLoginRefusal,
   LOGIN_REQUIRED_TOAST_KEY,
@@ -331,6 +345,8 @@ import { mapActions } from "vuex";
 
 export default {
   name: "CheckoutQuickSummary",
+
+  components: { CheckoutAddressBlacklistedAlert },
 
   props: {
     checkoutId: {
@@ -385,6 +401,9 @@ export default {
     return {
       validating: false,
       isSubmitting: false,
+      // The instance's mail address of a refusal of the address on the
+      // blacklist, null while there is none.
+      blacklistRefusal: null,
       couponCode: null,
       bookWithoutDiscount: this.initialBookWithoutDiscount,
     };
@@ -498,6 +517,7 @@ export default {
         couponCode: this.coupon?.id,
         name: this.contactDetails.name,
         company: this.contactDetails.company,
+        isBusiness: isBusinessBooking(this.contactDetails),
         street: this.contactDetails.street,
         zipCode: this.contactDetails.zipCode,
         location: this.contactDetails.location,
@@ -521,6 +541,7 @@ export default {
 
     async checkout() {
       this.isSubmitting = true;
+      this.blacklistRefusal = null;
       let booked = false;
 
       try {
@@ -545,12 +566,27 @@ export default {
           this.$emit("login-required");
           return;
         }
+        const refusal = addressBlacklistedRefusal(error.response?.data);
+        if (refusal !== null) {
+          this.showBlacklistRefusal(refusal);
+          return;
+        }
         const toastKey = getCheckoutErrorToastKey(error.response?.data);
         this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    /** Keeps the refusal on the page, in view, instead of a toast. */
+    async showBlacklistRefusal(mailAddress) {
+      this.blacklistRefusal = mailAddress;
+      await this.$nextTick();
+      this.$refs.blacklistRefusal?.$el?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
     },
 
     async performCheckout() {
@@ -636,6 +672,10 @@ export default {
   },
 
   computed: {
+    /** „Privat“ or „Geschäftlich“, as the checkbox of the contact step says. */
+    bookingKind() {
+      return bookingKindLabel(this.contactDetails);
+    },
     showDiscountOption() {
       return this.bookingDiscountPercent > 0;
     },

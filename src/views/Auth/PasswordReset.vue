@@ -119,6 +119,7 @@
 
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
+import { rateLimitOf } from "@/utils/rateLimit";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
 import AuthPage from "@/components/Auth/AuthPage.vue";
@@ -164,10 +165,11 @@ export default {
       try {
         await ApiAuthService.forgotPassword(this.email);
         this.requested = true;
-      } catch {
-        this.addToast(
-          ToastService.createToast("password.reset.error", "error")
-        );
+      } catch (error) {
+        const key = rateLimitOf(error)
+          ? "auth.rate-limit.unknown"
+          : "password.reset.error";
+        this.addToast(ToastService.createToast(key, "error"));
       }
     },
     async setPassword() {
