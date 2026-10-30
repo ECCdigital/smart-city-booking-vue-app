@@ -18,6 +18,7 @@
           :keys="searchKeys"
           filter-key="information.tags"
           :filter-options="api.tags"
+          :field-filters="fieldFilters"
           :sortable="true"
           :sort-options="[
             { text: 'Titel', value: 'information.name' },
@@ -192,6 +193,7 @@ import BookablePermissionService from "@/services/permissions/BookablePermission
 import { slice } from "lodash";
 import Search from "@/components/commons/Search.vue";
 import ToolbarAction from "@/components/commons/ToolbarAction.vue";
+import { eventFilters } from "@/utils/eventFilters";
 
 export default {
   components: {
@@ -237,6 +239,9 @@ export default {
     },
     BookablePermissionService() {
       return BookablePermissionService;
+    },
+    fieldFilters() {
+      return eventFilters((key) => this.$t(key));
     },
     displayedEvents() {
       return this.searchResults;

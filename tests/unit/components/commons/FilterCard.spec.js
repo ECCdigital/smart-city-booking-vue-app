@@ -25,6 +25,13 @@ const TYPE = {
   selected: "all",
 };
 
+const ATTENDEES = {
+  key: "attendees",
+  label: "Teilnehmeranzahl",
+  range: true,
+  selected: { from: null, to: null },
+};
+
 function mountCard(sections) {
   return mountComponent(FilterCard, { propsData: { sections } });
 }
@@ -144,5 +151,34 @@ describe("FilterCard", () => {
     expect(wrapper.find("[data-test='filter-empty']").text()).toBe(
       "Keine Einträge"
     );
+  });
+
+  it("draws a range as the fields von and bis, handing on the bound typed", async () => {
+    const wrapper = mountCard([
+      { ...ATTENDEES, selected: { from: 5, to: null } },
+    ]);
+    const from = wrapper.find("[data-test='filter-range-from']");
+    const to = wrapper.find("[data-test='filter-range-to']");
+    expect(from.element.value).toBe("5");
+    expect(to.element.value).toBe("");
+
+    to.setValue("20");
+    from.setValue("");
+
+    expect(changes(wrapper)).toEqual([
+      ["attendees", { from: 5, to: 20 }],
+      ["attendees", { from: null, to: null }],
+    ]);
+  });
+
+  it("counts a range bounded on either side as one restriction and resets it to open", async () => {
+    const wrapper = mountCard([
+      { ...ATTENDEES, selected: { from: null, to: 20 } },
+    ]);
+    expect(head(wrapper)).toContain("1 Filter aktiv");
+
+    await wrapper.find("[data-test='filter-section-reset']").trigger("click");
+
+    expect(changes(wrapper)).toEqual([["attendees", { from: null, to: null }]]);
   });
 });
