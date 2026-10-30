@@ -30,7 +30,7 @@ function createStore(permissions = OWNER) {
       user: { namespaced: true, state: { data: { permissions } } },
       tenants: {
         ...tenants,
-        state: { ...tenants.state, tenants: [], currentTenantId: "t-1" },
+        state: { ...tenants.state(), tenants: [], currentTenantId: "t-1" },
       },
     },
   });

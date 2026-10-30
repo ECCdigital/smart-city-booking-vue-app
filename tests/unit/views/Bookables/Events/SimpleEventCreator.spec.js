@@ -66,7 +66,7 @@ async function mountCreator(location) {
     modules: {
       events: {
         ...eventsModule,
-        state: () => JSON.parse(JSON.stringify(eventsModule.state)),
+        state: eventsModule.state,
       },
       tenants: {
         namespaced: true,
