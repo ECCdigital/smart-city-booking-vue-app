@@ -1144,14 +1144,18 @@ describe("BookingTransitions", () => {
         await start(mounted.wrapper, "reinstate", {
           booking: booking({ status: "cancelled", tenantId: "tenant-1" }),
         });
-        // The toasts module keeps its state across mounts.
-        const toastsBefore = toastMessages(mounted.store).length;
+        // The toasts module keeps its state across mounts, and older toasts
+        // expire on a timer: only toasts newer than the last one count.
+        const lastToastId = Math.max(
+          0,
+          ...mounted.store.getters["toasts/all"].map((toast) => toast.id)
+        );
         await clickDialogButton(mounted.wrapper, "Wiederherstellen");
-        return { ...mounted, toastsBefore };
+        return { ...mounted, lastToastId };
       }
 
       it("names the object and links the booking in the way, without a toast or reload", async () => {
-        const { wrapper, store, toastsBefore } = await reinstateIntoConflict();
+        const { wrapper, store, lastToastId } = await reinstateIntoConflict();
 
         const text = document.querySelector(".v-dialog--active").textContent;
         expect(text).toContain(
@@ -1169,7 +1173,9 @@ describe("BookingTransitions", () => {
           "/bookings/bk-new?tenant=tenant-1"
         );
         expect(link.getAttribute("target")).toBe("_blank");
-        expect(toastMessages(store)).toHaveLength(toastsBefore);
+        expect(
+          store.getters["toasts/all"].filter((toast) => toast.id > lastToastId)
+        ).toEqual([]);
         expect(wrapper.emitted("failed")).toBeUndefined();
         expect(wrapper.emitted("transitioned")).toBeUndefined();
       });
