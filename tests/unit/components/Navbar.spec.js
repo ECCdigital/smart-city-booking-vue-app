@@ -14,6 +14,9 @@ vi.mock("@/services/api/ApiReviewQueueService", () => ({
 vi.mock("@/services/api/ApiTenantApprovalQueueService", () => ({
   default: { getTenantApprovalQueue: vi.fn() },
 }));
+vi.mock("@/services/api/ApiReportService", () => ({
+  default: { getReports: vi.fn() },
+}));
 vi.mock("@/services/api/ApiAuthService", () => ({
   default: { logout: vi.fn() },
 }));
@@ -35,6 +38,7 @@ vi.mock("@/components/NotificationDisplay", () => ({
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
+import ApiReportService from "@/services/api/ApiReportService";
 import Navbar from "@/components/Navbar.vue";
 
 const localVue = createLocalVue();
@@ -102,6 +106,7 @@ beforeEach(() => {
   ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
     pageOfOne(2)
   );
+  ApiReportService.getReports.mockResolvedValue([]);
 });
 
 describe("Navbar", () => {
@@ -119,6 +124,26 @@ describe("Navbar", () => {
   });
 
   describe("the badge of the Prüfliste", () => {
+    it("counts every user with open reports once", async () => {
+      const open = (id, targetUserId) => ({
+        id,
+        targetUserId,
+        status: "open",
+        reportedAt: 1,
+      });
+      ApiReportService.getReports.mockResolvedValue([
+        open("a", "erika@example.de"),
+        open("b", "erika@example.de"),
+        open("c", "max@example.de"),
+      ]);
+      const wrapper = await mountNavbar();
+
+      expect(ApiReportService.getReports).toHaveBeenCalledWith({
+        status: "open",
+      });
+      expect(badge(wrapper).text()).toBe("7");
+    });
+
     it("sums the counters of both registers", async () => {
       const wrapper = await mountNavbar();
 

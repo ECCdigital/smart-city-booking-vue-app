@@ -32,6 +32,13 @@
       {{ errorMessage }}
     </v-alert>
 
+    <CheckoutAddressBlacklistedAlert
+      v-if="state === 'blacklisted'"
+      :mail-address="blacklistedMailAddress"
+      registration
+      class="mb-4"
+    />
+
     <v-form
       v-if="step === 'credentials' && state !== 'success'"
       ref="credentialsForm"
@@ -205,9 +212,13 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import ToastService from "@/services/ToastService";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { mapActions, mapGetters } from "vuex";
+import { addressBlacklistedRefusal } from "@/utils/checkoutErrors";
+import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
 
 export default {
   name: "CardLoginCard",
+
+  components: { CheckoutAddressBlacklistedAlert },
 
   emits: ["success"],
 
@@ -228,8 +239,10 @@ export default {
       acceptedDataProtection: false,
       acceptedTerms: false,
       loading: false,
-      state: "", // '' | 'error' | 'success' | 'awaiting_verification' | 'awaiting_link_confirmation'
+      state: "", // '' | 'error' | 'blacklisted' | 'success' | 'awaiting_verification' | 'awaiting_link_confirmation'
       errorMessage: "",
+      /** The instance's mail address of a refusal on the blacklist, empty without one. */
+      blacklistedMailAddress: "",
       rules: {
         required: (v) => !!v || "Erforderlich.",
         email: (v) => {
@@ -386,6 +399,12 @@ export default {
     },
 
     handleError(error) {
+      const blacklisted = addressBlacklistedRefusal(error.response?.data);
+      if (blacklisted !== null) {
+        this.blacklistedMailAddress = blacklisted;
+        this.state = "blacklisted";
+        return;
+      }
       this.state = "error";
       const reason = error.response?.data?.reason;
       const status = error.response?.status;

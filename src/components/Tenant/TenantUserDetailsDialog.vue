@@ -668,55 +668,39 @@
                   mdi-account-cog
                 </v-icon>
                 <span class="text-subtitle-1 font-weight-medium">
-                  Status-Verwaltung
+                  {{ $t("tenant.users.status.title") }}
                 </span>
               </div>
 
               <v-card outlined class="action-card">
                 <v-card-text class="pa-5">
-                  <div class="d-flex flex-column flex-sm-row align-start">
-                    <div class="flex-grow-1 mb-4 mb-sm-0">
-                      <div class="text-body-1 font-weight-medium mb-1">
-                        Mitglieds-Status ändern
-                      </div>
-                      <div class="text-body-2 grey--text">
-                        Aktivieren oder sperren Sie den Zugang dieses Mitglieds.
-                      </div>
-                      <div class="mt-3">
-                        <v-chip
-                          small
-                          :color="getStatusColor(user?.status)"
-                          text-color="white"
-                        >
-                          <v-icon left x-small>mdi-circle</v-icon>
-                          Aktuell: {{ getStatusText(user?.status) }}
-                        </v-chip>
-                      </div>
-                    </div>
-
-                    <div class="d-flex flex-column">
-                      <v-btn
-                        :outlined="user?.status === 'active'"
-                        :color="user?.status === 'active' ? 'grey' : 'success'"
-                        :disabled="user?.status === 'active'"
-                        class="mb-2"
-                        @click="changeUserStatus('active')"
-                      >
-                        <v-icon left>mdi-account-check</v-icon>
-                        Aktivieren
-                      </v-btn>
-                      <v-btn
-                        :outlined="user?.status === 'suspended'"
-                        :color="
-                          user?.status === 'suspended' ? 'grey' : 'warning'
-                        "
-                        :disabled="user?.status === 'suspended'"
-                        @click="changeUserStatus('suspended')"
-                      >
-                        <v-icon left>mdi-account-cancel</v-icon>
-                        Sperren
-                      </v-btn>
-                    </div>
+                  <div class="text-body-1 font-weight-medium mb-1">
+                    {{ $t("tenant.users.status.membership") }}
+                  </div>
+                  <v-chip
+                    small
+                    :color="getStatusColor(user?.status)"
+                    text-color="white"
+                    class="mr-2"
+                  >
+                    <v-icon left x-small>mdi-circle</v-icon>
+                    {{ getStatusText(user?.status) }}
+                  </v-chip>
+                  <v-chip
+                    v-if="user?.isSuspended"
+                    small
+                    color="error"
+                    text-color="white"
+                    data-test="tenant-user-detail-suspended"
+                  >
+                    <v-icon left x-small>mdi-cancel</v-icon>
+                    {{ $t("tenant.users.status.suspended") }}
+                  </v-chip>
+                  <div
+                    v-if="user?.isSuspended"
+                    class="text-body-2 grey--text mt-3"
+                  >
+                    {{ $t("tenant.users.status.suspended-hint") }}
                   </div>
                 </v-card-text>
               </v-card>
@@ -778,8 +762,38 @@
               </v-card>
             </div>
 
+            <!-- Report -->
+            <div v-if="allowReport" class="action-section mb-6">
+              <v-card outlined class="action-card">
+                <v-card-text class="pa-5">
+                  <div class="d-flex flex-column flex-sm-row align-center">
+                    <div class="flex-grow-1 mb-3 mb-sm-0">
+                      <div class="text-body-1 font-weight-medium mb-1">
+                        <v-icon color="warning" class="mr-1">
+                          mdi-flag-outline
+                        </v-icon>
+                        {{ $t("user.report.open") }}
+                      </div>
+                      <div class="text-body-2 grey--text">
+                        {{ $t("tenant.users.report-hint") }}
+                      </div>
+                    </div>
+                    <v-btn
+                      color="warning"
+                      outlined
+                      data-test="tenant-user-detail-report"
+                      @click="$emit('report')"
+                    >
+                      <v-icon left>mdi-flag-outline</v-icon>
+                      {{ $t("user.report.open") }}
+                    </v-btn>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
+
             <!-- Danger Zone -->
-            <div class="action-section">
+            <div v-if="allowEndMembership" class="action-section">
               <div class="action-section__header mb-4">
                 <v-icon color="red" class="mr-2">mdi-alert-octagon</v-icon>
                 <span class="text-subtitle-1 font-weight-medium red--text">
@@ -792,16 +806,23 @@
                   <div class="d-flex flex-column flex-sm-row align-center">
                     <div class="flex-grow-1 mb-3 mb-sm-0">
                       <div class="text-body-1 font-weight-medium mb-1">
-                        <v-icon color="red" class="mr-1">mdi-delete</v-icon>
-                        Mitglied entfernen
+                        <v-icon color="red" class="mr-1">
+                          mdi-account-remove
+                        </v-icon>
+                        {{ $t("tenant.users.end-membership.action") }}
                       </div>
                       <div class="text-body-2 grey--text">
-                        Diese Aktion kann nicht rückgängig gemacht werden
+                        {{ $t("tenant.users.end-membership.hint") }}
                       </div>
                     </div>
-                    <v-btn color="red" dark @click="confirmDelete = true">
-                      <v-icon left>mdi-delete-forever</v-icon>
-                      Entfernen
+                    <v-btn
+                      color="red"
+                      dark
+                      data-test="tenant-user-detail-end-membership"
+                      @click="confirmDelete = true"
+                    >
+                      <v-icon left>mdi-account-remove</v-icon>
+                      {{ $t("tenant.users.end-membership.action") }}
                     </v-btn>
                   </div>
                 </v-card-text>
@@ -818,38 +839,23 @@
       </v-card-actions>
     </v-card>
 
-    <v-dialog v-model="confirmDelete" persistent scrollable max-width="500">
-      <v-card>
-        <v-card-title class="d-flex align-center py-4 px-6">
-          <v-icon left color="error">mdi-alert</v-icon>
-          <span class="text-h5">Mitglied entfernen?</span>
-          <v-spacer />
-          <v-btn icon @click="confirmDelete = false"
-            ><v-icon>mdi-close</v-icon></v-btn
-          >
-        </v-card-title>
-        <v-divider />
-        <v-card-text class="pa-6">
-          Möchten Sie das Mitglied <strong>{{ userName }}</strong> wirklich aus
-          dem Tenant entfernen? Diese Aktion kann nicht rückgängig gemacht
-          werden.
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="justify-end px-6 py-4">
-          <v-btn outlined @click="confirmDelete = false">Abbrechen</v-btn>
-          <v-btn color="error" @click="handleDelete">
-            <v-icon left small>mdi-account-remove</v-icon>
-            Entfernen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <TenantEndMembershipDialog
+      :open="confirmDelete"
+      :address="user?.userId || ''"
+      :allow-report="allowReport"
+      @confirm="handleDelete"
+      @report="reportInsteadOfEnding"
+      @cancel="confirmDelete = false"
+    />
   </v-dialog>
 </template>
 
 <script>
+import TenantEndMembershipDialog from "@/components/Tenant/TenantEndMembershipDialog.vue";
+
 export default {
   name: "TenantUserDetailDialog",
+  components: { TenantEndMembershipDialog },
   props: {
     open: {
       type: Boolean,
@@ -875,12 +881,21 @@ export default {
       type: Boolean,
       default: true,
     },
+    /** Whether the role may report the member. */
+    allowReport: {
+      type: Boolean,
+      default: false,
+    },
+    /** Whether the role may end this membership. */
+    allowEndMembership: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       activeTab: 0,
       confirmDelete: false,
-      userStatus: null,
       userRoles: null,
       notificationRecipients: [],
       newRecipientType: "user",
@@ -994,7 +1009,6 @@ export default {
     user: {
       handler(newUser) {
         if (newUser) {
-          this.userStatus = newUser.status;
           this.userRoles = newUser.roles || [];
           this.notificationRecipients = (
             newUser.bookingNotificationRecipients || []
@@ -1008,11 +1022,6 @@ export default {
   methods: {
     getMessageForCode(code) {
       return this.messages[code] || code;
-    },
-
-    changeUserStatus(newStatus) {
-      this.userStatus = newStatus;
-      this.$emit("update-status", newStatus);
     },
 
     emailRule(value) {
@@ -1081,7 +1090,6 @@ export default {
       if (this.user?.owner) return "amber darken-2";
       if (this.user?.status === "active") return "green";
       if (this.user?.status === "pending") return "blue-grey";
-      if (this.user?.status === "suspended") return "orange";
       if (this.user?.status === "rejected") return "red";
       return "grey";
     },
@@ -1089,7 +1097,6 @@ export default {
       const colors = {
         active: "green",
         pending: "orange",
-        suspended: "red",
         rejected: "red",
       };
       return colors[status] || "grey";
@@ -1098,7 +1105,6 @@ export default {
       const texts = {
         active: "Aktiv",
         pending: "Ausstehend",
-        suspended: "Gesperrt",
         rejected: "Abgelehnt",
       };
       return texts[status] || status;
@@ -1203,6 +1209,10 @@ export default {
     deleteInvitation(token) {
       this.$emit("delete-invitation", token);
     },
+    reportInsteadOfEnding() {
+      this.confirmDelete = false;
+      this.$emit("report");
+    },
     handleDelete() {
       this.$emit("delete-user");
       this.handleClose();
@@ -1234,7 +1244,6 @@ export default {
     handleClose() {
       this.activeTab = 0;
       this.confirmDelete = false;
-      this.userStatus = null;
       this.userRoles = null;
       this.notificationRecipients = [];
       this.newRecipientType = "user";

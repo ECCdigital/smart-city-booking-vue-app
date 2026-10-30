@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { RouterLinkStub } from "@vue/test-utils";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import {
+  addressBlacklistedError,
+  flushPromises,
+} from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAuthService", () => ({
   default: { register: vi.fn(async () => ({ status: 201 })) },
@@ -206,5 +209,56 @@ describe("Register — the signup limit", () => {
 
     expect(lastToast().message).toContain("später erneut");
     expect(lastToast().message).not.toContain("{wait}");
+  });
+});
+
+/**
+ * An address on the blacklist: the signup answers
+ * `409` with the checkout's refusal and the instance's mail address. Unlike
+ * the neutral answers the page keeps the message, and no account
+ * follows.
+ */
+describe("Register — an address on the blacklist", () => {
+  it("keeps the message with the instance's mail address on the page", async () => {
+    ApiAuthService.register.mockRejectedValue(
+      addressBlacklistedError(" betrieb@example.test ")
+    );
+    const wrapper = mountRegister();
+
+    await register(wrapper);
+
+    const notice = wrapper.find("[data-test='address-blacklisted']");
+    expect(notice.text()).toContain("Registrierung nicht möglich");
+    expect(notice.text()).toContain(
+      "Mit dieser E-Mail-Adresse ist keine Registrierung möglich."
+    );
+    expect(notice.find("a").attributes("href")).toBe(
+      "mailto:betrieb@example.test"
+    );
+    expect(addToast).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("names the operator of the offer without a mail address", async () => {
+    ApiAuthService.register.mockRejectedValue(addressBlacklistedError(""));
+    const wrapper = mountRegister();
+
+    await register(wrapper);
+
+    const notice = wrapper.find("[data-test='address-blacklisted']");
+    expect(notice.text()).toContain("an den Betreiber dieses Angebots");
+    expect(notice.find("a").exists()).toBe(false);
+  });
+
+  it("lets the message go with the next signup", async () => {
+    ApiAuthService.register.mockRejectedValueOnce(addressBlacklistedError(""));
+    const wrapper = mountRegister();
+    await register(wrapper);
+
+    await register(wrapper);
+
+    expect(wrapper.find("[data-test='address-blacklisted']").exists()).toBe(
+      false
+    );
   });
 });

@@ -208,6 +208,12 @@
               @changed="load"
             />
           </v-card-text>
+          <v-card-text v-show="register === registerNames.REPORTS">
+            <OpenReportsQueue
+              ref="reportsQueue"
+              @count="reportCount = $event"
+            />
+          </v-card-text>
         </v-card>
       </div>
 
@@ -268,6 +274,7 @@ import { mapActions, mapGetters } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
 import SupervisionNoticePanel from "@/components/Supervision/SupervisionNoticePanel.vue";
 import TenantApprovalQueue from "@/components/Supervision/TenantApprovalQueue.vue";
+import OpenReportsQueue from "@/components/Supervision/OpenReportsQueue.vue";
 import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiReviewService from "@/services/api/ApiReviewService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -290,9 +297,13 @@ const DECISIONS = [REVIEW_ACTIONS.APPROVE, REVIEW_ACTIONS.REJECT];
 /**
  * The registers of the page, as `?tab=` names them: the offers waiting for a
  * review - where the page opens, so their name is left out of the address -
- * and the tenants waiting for their approval.
+ * the tenants waiting for their approval and the open reports about users.
  */
-const REGISTERS = Object.freeze({ OFFERS: "offers", TENANTS: "tenants" });
+const REGISTERS = Object.freeze({
+  OFFERS: "offers",
+  TENANTS: "tenants",
+  REPORTS: "reports",
+});
 const REGISTER_VALUES = Object.values(REGISTERS);
 
 /**
@@ -303,8 +314,9 @@ const REGISTER_VALUES = Object.values(REGISTERS);
  * decision loads it anew.
  *
  * The page has a second register, the tenants waiting for their approval
- * (`TenantApprovalQueue`, glossary "Freigabeliste der Mandanten"); the card's
- * header switches between the two and counts both.
+ * (`TenantApprovalQueue`, glossary "Freigabeliste der Mandanten"), and a
+ * third, the open reports about users (`OpenReportsQueue`, glossary
+ * „Meldung“); the card's header switches between them and counts each.
  *
  * Drawn as the guided setup is: a section card of hairline rows, the waiting
  * time as each row's leading fact, and beside it the panel of the supervision
@@ -312,7 +324,12 @@ const REGISTER_VALUES = Object.values(REGISTERS);
  */
 export default {
   name: "InstanceReviewQueue",
-  components: { AdminLayout, SupervisionNoticePanel, TenantApprovalQueue },
+  components: {
+    AdminLayout,
+    SupervisionNoticePanel,
+    TenantApprovalQueue,
+    OpenReportsQueue,
+  },
   mixins: [pagedLoad],
   data() {
     return {
@@ -330,6 +347,7 @@ export default {
       registerNames: REGISTERS,
       register: REGISTERS.OFFERS,
       tenantCount: null,
+      reportCount: null,
     };
   },
   computed: {
@@ -347,6 +365,12 @@ export default {
           text: this.$t("supervision.tenant-approval-queue.registers.tenants"),
           icon: "mdi-domain",
           count: this.tenantCount,
+        },
+        {
+          value: REGISTERS.REPORTS,
+          text: this.$t("supervision.tenant-approval-queue.registers.reports"),
+          icon: "mdi-flag-outline",
+          count: this.reportCount,
         },
       ];
     },
@@ -390,10 +414,11 @@ export default {
   },
   methods: {
     ...mapActions({ selectTenant: "tenants/select", addToast: "toasts/add" }),
-    /** Both counters sit in the header: the reload reads both registers. */
+    /** The counters sit in the header: the reload reads every register. */
     reload() {
       this.load();
       this.$refs.tenantQueue.load();
+      this.$refs.reportsQueue.load();
     },
     load() {
       return this.loadPaged(async () => {

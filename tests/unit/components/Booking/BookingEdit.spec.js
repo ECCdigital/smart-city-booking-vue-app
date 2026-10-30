@@ -24,6 +24,9 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiBookablesService", () => ({
   default: { getBookable: vi.fn(), getBookablePrices: vi.fn() },
 }));
+vi.mock("@/services/api/ApiBlacklistService", () => ({
+  default: { isBlacklisted: vi.fn() },
+}));
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { validateCheckoutItem: vi.fn() },
 }));
@@ -41,6 +44,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 
 const CONFLICT_IN_CANCELLED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Storniert).";
@@ -162,6 +166,7 @@ function putBody() {
 describe("BookingEdit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ApiBlacklistService.isBlacklisted.mockResolvedValue(false);
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -670,6 +675,84 @@ describe("BookingEdit", () => {
 
       expect(summary(wrapper)).toContain(message);
       expect(wrapper.text()).toContain("bereits belegt");
+    });
+  });
+  /** The warning of a mail on the blacklist. */
+  describe("Blacklist", () => {
+    function warning(wrapper) {
+      return wrapper.findComponent({
+        name: "BlacklistWarningConformationDialog",
+      });
+    }
+    function mailInput(wrapper) {
+      return wrapper
+        .findAllComponents({ name: "v-text-field" })
+        .wrappers.find((field) => field.props("value") === "erika@example.org")
+        .find("input");
+    }
+
+    it("warns before a manual booking to a mail on the blacklist and saves only when confirmed", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).toHaveBeenCalledWith(
+        "manualBooking",
+        "erika@example.org",
+        "tenant-1"
+      );
+      expect(warning(wrapper).props("open")).toBe(true);
+      expect(warning(wrapper).props("addresses")).toEqual([
+        "erika@example.org",
+      ]);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+
+      warning(wrapper).vm.$emit("confirm");
+      await flushPromises();
+
+      expect(ApiBookingService.createBooking).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("saves nothing when the warning is left", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+      await submit(wrapper);
+
+      warning(wrapper).vm.$emit("cancel");
+      await flushPromises();
+
+      expect(warning(wrapper).props("open")).toBe(false);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+    });
+
+    it("does not ask again for the mail a booking already has", async () => {
+      const { wrapper } = await mountEdit();
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).not.toHaveBeenCalled();
+      expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks for a changed mail of a booking", async () => {
+      const { wrapper } = await mountEdit();
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+      await mailInput(wrapper).setValue("max@firma.de");
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).toHaveBeenCalledWith(
+        "bookingMail",
+        "max@firma.de",
+        "tenant-1"
+      );
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
     });
   });
 });

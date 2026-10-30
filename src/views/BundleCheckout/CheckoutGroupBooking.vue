@@ -73,6 +73,7 @@ import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
+  addressBlacklistedRefusal,
   formatCheckoutValidationError,
   getGroupCheckoutErrorToastKey,
   isLoginRefusal,
@@ -93,6 +94,9 @@ export default {
     return {
       currentStep: 1,
       isSubmitting: false,
+      // The instance's mail address of a refusal of the address on the
+      // blacklist, null while there is none.
+      blacklistRefusal: null,
       progress: {
         loading: false,
         percentage: 0,
@@ -249,6 +253,7 @@ export default {
           activePaymentApps: this.activePaymentApps,
           selectedPaymentApp: this.selectedPaymentApp,
           isSubmitting: this.isSubmitting,
+          blacklistRefusal: this.blacklistRefusal,
           coupon: this.coupon,
           couponError: this.couponError,
         },
@@ -759,6 +764,7 @@ export default {
 
     async performGroupCheckout() {
       this.isSubmitting = true;
+      this.blacklistRefusal = null;
       let booked = false;
 
       try {
@@ -785,6 +791,15 @@ export default {
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
           this.backToSignIn();
+          return;
+        }
+        const blacklistedAddress = booked
+          ? null
+          : addressBlacklistedRefusal(error.response?.data);
+        if (blacklistedAddress !== null) {
+          // An address on the blacklist: the
+          // summary keeps it on the page with the address to write to.
+          this.blacklistRefusal = blacklistedAddress;
           return;
         }
         const toastKey = booked
