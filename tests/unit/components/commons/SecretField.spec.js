@@ -11,6 +11,8 @@ function mountField(propsData = {}, attrs = {}) {
 
 const input = (wrapper) => wrapper.find("input");
 const removeButton = (wrapper) => wrapper.find('[data-test="secret-remove"]');
+const visibilityButton = (wrapper) =>
+  wrapper.find('[data-test="secret-visibility"]');
 
 /** The values the field has handed on so far, oldest first. */
 const handedOn = (wrapper) =>
@@ -37,6 +39,29 @@ describe("SecretField", () => {
 
     expect(input(wrapper).attributes("type")).toBe("password");
     expect(wrapper.html()).not.toContain("mdi-eye");
+  });
+
+  it("lets the admin show a value while typing it", async () => {
+    const wrapper = mountField({ value: "alt" });
+    await input(wrapper).setValue("neu");
+
+    expect(removeButton(wrapper).exists()).toBe(false);
+    await visibilityButton(wrapper).trigger("click");
+
+    expect(input(wrapper).attributes("type")).toBe("text");
+    expect(input(wrapper).element.value).toBe("neu");
+  });
+
+  it("hides again and drops the eye once the typed value is emptied", async () => {
+    const wrapper = mountField({ value: "alt" });
+    await input(wrapper).setValue("neu");
+    await visibilityButton(wrapper).trigger("click");
+
+    await input(wrapper).setValue("");
+
+    expect(input(wrapper).attributes("type")).toBe("password");
+    expect(visibilityButton(wrapper).exists()).toBe(false);
+    expect(removeButton(wrapper).exists()).toBe(true);
   });
 
   it("keeps the page's own placeholder while nothing is stored", async () => {

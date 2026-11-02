@@ -3961,6 +3961,8 @@
     }
   },
   "secretField": {
-    "remove": "Gespeicherten Wert entfernen"
+    "remove": "Gespeicherten Wert entfernen",
+    "show": "Eingabe anzeigen",
+    "hide": "Eingabe verbergen"
   }
 }
