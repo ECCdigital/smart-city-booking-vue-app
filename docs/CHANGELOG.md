@@ -49,6 +49,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Duplicating an offer shows only one message ([ECCdigital/tickets#750](https://github.com/ECCdigital/tickets/issues/750)): „Erfolgreich dupliziert“ appears only when the copy was created; a refused copy shows only the error. Before, both appeared together
 -   The icon in the title of the dialogs for reports, suspensions and the blacklist sits level with the first line of the title
 -   Group checkout names its failure ([ECCdigital/tickets#298](https://github.com/ECCdigital/tickets/issues/298)): the backend's bare `404 "Bookable not found"` shows „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“ as the single checkout does, any other failure the general error toast, instead of only a line in the console
 -   „Passwort vergessen“ names a hit rate limit ([ECCdigital/tickets#302](https://github.com/ECCdigital/tickets/issues/302)): a `429` of `POST /auth/forgot-password` shows the toast „Zu viele Versuche“ (`auth.rate-limit.unknown`) instead of the general error; the form stays
