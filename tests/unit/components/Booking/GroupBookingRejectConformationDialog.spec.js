@@ -51,7 +51,9 @@ function radio(label) {
 
 async function submitWithReason(wrapper) {
   await wrapper.find("textarea").setValue("Grund");
-  await wrapper.find("input[type=checkbox]").setChecked(true);
+  // A request offers no checkbox: the backend issues it no document.
+  const skip = wrapper.find("input[type=checkbox]");
+  if (skip.exists()) await skip.setChecked(true);
   await wrapper.vm.$nextTick();
   await wrapper.find("form").trigger("submit");
   await flushPromises();
@@ -107,6 +109,62 @@ describe("GroupBookingRejectConformationDialog", () => {
     });
   });
 
+  describe("with every member requested", () => {
+    const members = [
+      member("bk-1", "requested", 20),
+      member("bk-2", "requested", 30),
+    ];
+
+    it("rejects the series free of charge: its own words, no document, no refund preview", async () => {
+      const wrapper = await openDialog(members);
+
+      expect(activeDialogText()).toContain("Buchungsanfrage ablehnen");
+      expect(activeDialogText()).toContain("Begründung der Ablehnung");
+      expect(radio("Gesamte Serie ablehnen")).toBeTruthy();
+      expect(radio("Nur diese Buchung ablehnen")).toBeTruthy();
+      expect(activeDialogText()).not.toContain("Kein Stornobeleg erstellen");
+      expect(activeDialogText()).not.toContain("Erstattungsvorschau");
+      expect(activeDialogText()).toContain(
+        "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Es steht somit keine Zahlung mehr aus."
+      );
+      expect(
+        ApiGroupBookingService.getCancellationRefundPreview
+      ).not.toHaveBeenCalled();
+
+      await submitWithReason(wrapper);
+
+      expect(wrapper.emitted("reject-group-booking")[0]).toEqual([
+        "bk-1",
+        "Grund",
+        false,
+        undefined,
+        undefined,
+      ]);
+    });
+  });
+
+  describe("with every member confirmed and paid", () => {
+    it("names the amount paid and the refund of the series", async () => {
+      ApiGroupBookingService.getCancellationRefundPreview.mockResolvedValue({
+        bookings: [
+          { bookingId: "bk-1", originalAmountEur: 25, refundAmountEur: 25 },
+          { bookingId: "bk-2", originalAmountEur: 25, refundAmountEur: 12.5 },
+        ],
+      });
+
+      await openDialog([
+        member("bk-1", "confirmed"),
+        member("bk-2", "confirmed"),
+      ]);
+
+      const hint = document
+        .querySelector(".v-dialog--active .booking-reject-payment")
+        .textContent.replace(/\u00a0/g, " ");
+      expect(hint).toContain("Bereits bezahlt: 50,00 €");
+      expect(hint).toContain("Der Buchende bekommt 37,50 € zurück.");
+    });
+  });
+
   describe("with members in mixed states", () => {
     const members = [member("bk-1", "requested"), member("bk-2", "confirmed")];
 
@@ -137,7 +195,7 @@ describe("GroupBookingRejectConformationDialog", () => {
       expect(wrapper.emitted("reject-single-booking")[0]).toEqual([
         "bk-1",
         "Grund",
-        true,
+        false,
         undefined,
         undefined,
       ]);

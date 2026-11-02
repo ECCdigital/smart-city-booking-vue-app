@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import FormatService from "@/services/FormatService";
 import { isRejectedOrCancelled } from "@/utils/bookingStatus";
 
 /**
@@ -80,4 +81,85 @@ export function getCancellationRefundAudit(booking) {
     );
 
   return cancellationAttachments[0]?.cancellation || null;
+}
+
+function refundAtPercentage(originalAmountEur, percentage) {
+  const originalCents = Math.round(Number(originalAmountEur || 0) * 100);
+  return Math.round((originalCents * Number(percentage)) / 100) / 100;
+}
+
+/**
+ * The refund a cancellation will pay out, as its preview names it - one
+ * booking or the members of a series summed - or at the admin's override
+ * `refundPercentage`; `null` while no preview is at hand.
+ */
+export function expectedRefundEur(preview, refundPercentage) {
+  if (!preview) return null;
+  const bookings = Array.isArray(preview.bookings) ? preview.bookings : null;
+  const refundOf = (booking) =>
+    refundPercentage === undefined
+      ? Number(booking.refundAmountEur || 0)
+      : refundAtPercentage(booking.originalAmountEur, refundPercentage);
+  if (!bookings) return refundOf(preview);
+  const cents = bookings.reduce(
+    (sum, booking) => sum + Math.round(refundOf(booking) * 100),
+    0
+  );
+  return cents / 100;
+}
+
+/**
+ * The payment hint of the reject dialogs: whether the customer has paid, and
+ * what the cancellation leaves them - money back, a fee still to pay, or
+ * nothing more, all settled. Mirrors the cancellation document: a paid
+ * booking gets the refund back, an unpaid one owes the fee only. A rejected
+ * request costs nothing: what was paid comes back in full, without a
+ * preview to weigh. `refundAmountEur` is `null` while no
+ * preview is at hand.
+ *
+ * @returns {{ type: string, status: string, text: string }} The alert's type, its bold line and the line under it
+ */
+export function rejectPaymentOutcome({
+  request,
+  free,
+  paid,
+  priceEur,
+  refundAmountEur,
+}) {
+  const t = (key, values) =>
+    i18n.t(`booking.reject.dialog.payment.${key}`, values);
+  const currency = (value) => FormatService.currency(Number(value || 0));
+
+  if (free) {
+    return { type: "success", status: t("free"), text: t("settled") };
+  }
+
+  if (request) {
+    return paid
+      ? {
+          type: "warning",
+          status: t("request.paid"),
+          text: t("request.refund", { amount: currency(priceEur) }),
+        }
+      : { type: "success", status: t("unpaid"), text: t("request.settled") };
+  }
+
+  if (paid) {
+    const status = t("paid", { amount: currency(priceEur) });
+    if (refundAmountEur === null) return { type: "info", status, text: "" };
+    return refundAmountEur > 0
+      ? {
+          type: "warning",
+          status,
+          text: t("refund", { amount: currency(refundAmountEur) }),
+        }
+      : { type: "success", status, text: t("noRefund") };
+  }
+
+  const status = t("unpaid");
+  if (refundAmountEur === null) return { type: "info", status, text: "" };
+  const fee = Math.round((Number(priceEur || 0) - refundAmountEur) * 100) / 100;
+  return fee > 0
+    ? { type: "warning", status, text: t("feeDue", { amount: currency(fee) }) }
+    : { type: "success", status, text: t("settled") };
 }

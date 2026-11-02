@@ -1582,6 +1582,34 @@
       "error": {
         "title": "Fehler beim Stornieren",
         "message": "Die Buchung konnte nicht storniert werden."
+      },
+      "dialog": {
+        "request": {
+          "title": "Buchungsanfrage ablehnen",
+          "question": "Sind Sie sicher, dass Sie die Buchungsanfrage {id} ablehnen wollen?",
+          "reasonLabel": "Begründung der Ablehnung",
+          "reasonPlaceholder": "Aus welchem Grund wird die Anfrage abgelehnt?"
+        },
+        "booking": {
+          "title": "Buchung stornieren",
+          "question": "Sind Sie sicher, dass Sie die Buchung {id} stornieren wollen?",
+          "reasonLabel": "Begründung der Stornierung",
+          "reasonPlaceholder": "Aus welchem Grund wird die Stornierung durchgeführt?"
+        },
+        "payment": {
+          "free": "Kostenfreie Buchung",
+          "paid": "Bereits bezahlt: {amount}",
+          "unpaid": "Noch nicht bezahlt",
+          "refund": "Der Buchende bekommt {amount} zurück. Die Rückerstattung bleibt offen, bis Sie sie an der Buchung als erfolgt vermerken.",
+          "noRefund": "Der Buchende bekommt nichts zurück. Damit ist alles erledigt.",
+          "feeDue": "Der Buchende muss noch den Einbehalt von {amount} zahlen.",
+          "settled": "Der Buchende zahlt nichts und bekommt nichts zurück. Damit ist alles erledigt.",
+          "request": {
+            "paid": "Buchung bereits bezahlt",
+            "refund": "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Der vollständige Betrag von {amount} wird zurückerstattet.",
+            "settled": "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Es steht somit keine Zahlung mehr aus."
+          }
+        }
       }
     },
     "userCancellation": {
@@ -1612,12 +1640,13 @@
       "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
-      "rejectionPolicy": "Die Buchung ist angefragt. Das Ablehnen ist für den Buchenden kostenfrei: Es wird kein Betrag einbehalten.",
       "rejectionAudit": "Die Anfrage wurde abgelehnt. Das Ablehnen war für den Buchenden kostenfrei: Es wurde kein Betrag einbehalten.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
       "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
       "cancelGroup": "Gesamte Serie stornieren",
       "cancelSingle": "Nur diese Buchung stornieren",
+      "rejectGroup": "Gesamte Serie ablehnen",
+      "rejectSingle": "Nur diese Buchung ablehnen",
       "bankDetailsTitle": "Bankverbindung des Kunden (optional)",
       "bankDetailsHintSingle": "Diese Buchung wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden angeben.",
       "bankDetailsHintGroup": "Mindestens eine Buchung der Serie wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden für die Sammel-Stornorechnung angeben.",

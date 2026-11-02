@@ -3,7 +3,7 @@
     <v-card>
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon left color="error">mdi-alert</v-icon>
-        <span class="text-h5">Buchung stornieren</span>
+        <span class="text-h5">{{ $t(`${dialogKey}.title`) }}</span>
         <v-spacer />
         <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
       </v-card-title>
@@ -15,28 +15,31 @@
           v-model="valid"
           @submit.prevent="onReject"
         >
-          <p>
-            Sind Sie sicher, dass Sie die Buchung
-            <strong>{{ toReject.id }}</strong> stornieren wollen?
-          </p>
+          <i18n :path="`${dialogKey}.question`" tag="p">
+            <template #id>
+              <strong>{{ toReject.id }}</strong>
+            </template>
+          </i18n>
           <v-alert v-if="error" type="error" border="left">
             {{ error }}
           </v-alert>
           <v-textarea
             outlined
             v-model="rejectReason"
-            label="Begründung der Stornierung"
-            placeholder="Aus welchem Grund wird die Stornierung durchgeführt?"
+            :label="$t(`${dialogKey}.reasonLabel`)"
+            :placeholder="$t(`${dialogKey}.reasonPlaceholder`)"
             :rules="[(v) => !!v || 'Begründung ist erforderlich']"
             rows="2"
           ></v-textarea>
+          <!-- A rejected request costs nothing: it never gets a document. -->
           <v-checkbox
+            v-if="!isRequest"
             v-model="skipCancellation"
             label="Kein Stornobeleg erstellen"
           ></v-checkbox>
 
           <CancellationRefundPreview
-            v-if="!skipCancellation"
+            v-if="!isRequest && !skipCancellation"
             :preview="refundPreview"
             :loading="previewLoading"
             :error="previewError"
@@ -85,6 +88,16 @@
               label="Name der Bank (optional)"
             ></v-text-field>
           </div>
+          <!-- Last before the actions: what the cancellation leaves the customer. -->
+          <v-alert
+            :type="paymentOutcome.type"
+            text
+            dense
+            class="booking-reject-payment text-body-2 mt-4 mb-0"
+          >
+            <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
+            <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
+          </v-alert>
         </v-form>
       </v-card-text>
       <v-divider />
@@ -98,7 +111,7 @@
           form="booking-reject-form"
         >
           <v-icon left small>mdi-cancel</v-icon>
-          Stornieren
+          {{ submitLabel }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -109,7 +122,17 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
-import { BOOKING_STATUS } from "@/utils/bookingStatus";
+import {
+  expectedRefundEur,
+  rejectPaymentOutcome,
+} from "@/utils/cancellationRefund";
+import {
+  BOOKING_ACTION,
+  BOOKING_STATUS,
+  actionLabel,
+  isFree,
+  isPaid,
+} from "@/utils/bookingStatus";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -187,6 +210,28 @@ export default {
         return this.open;
       },
     },
+    /** A request is turned down, anything else cancelled: the dialog's words follow. */
+    isRequest() {
+      return this.toReject?.status === BOOKING_STATUS.REQUESTED;
+    },
+    dialogKey() {
+      return `booking.reject.dialog.${this.isRequest ? "request" : "booking"}`;
+    },
+    submitLabel() {
+      return actionLabel(BOOKING_ACTION.CANCEL, this.toReject?.status);
+    },
+    paymentOutcome() {
+      return rejectPaymentOutcome({
+        request: this.isRequest,
+        free: isFree(this.toReject),
+        paid: isPaid(this.toReject),
+        priceEur: this.toReject?.priceEur,
+        refundAmountEur: expectedRefundEur(
+          this.refundPreview,
+          this.refundPercentage
+        ),
+      });
+    },
     canProvideBankDetails() {
       return !!(
         this.toReject &&
@@ -200,7 +245,8 @@ export default {
       return (
         this.valid &&
         !this.previewLoading &&
-        (this.skipCancellation ||
+        (this.isRequest ||
+          this.skipCancellation ||
           (!!this.refundPreview && !this.previewError && this.refundValid))
       );
     },
@@ -302,7 +348,9 @@ export default {
       return payload;
     },
     async loadRefundPreview() {
-      if (!this.toReject?.id || this.skipCancellation) return;
+      if (!this.toReject?.id || this.isRequest || this.skipCancellation) {
+        return;
+      }
       this.previewLoading = true;
       this.previewError = null;
       this.refundPreview = null;

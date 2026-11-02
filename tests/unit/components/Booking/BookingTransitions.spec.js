@@ -633,7 +633,10 @@ describe("BookingTransitions", () => {
     it("loads the refund preview when the dialog opens for the first time", async () => {
       const { wrapper } = mountTransitions();
 
-      await start(wrapper, "cancel", { booking: booking() });
+      // A request is rejected free of charge, without a preview.
+      await start(wrapper, "cancel", {
+        booking: booking({ status: "confirmed" }),
+      });
 
       // The dialog mounts with the target; it must still see `open` turn
       // true, or its preview never loads and its confirm stays disabled.
@@ -1067,10 +1070,11 @@ describe("BookingTransitions", () => {
 
       await start(wrapper, "cancel", seriesOnly(series()));
 
+      // A series of requests is rejected.
       const text = document.querySelector(".v-dialog--active").textContent;
-      expect(text).toContain(i18n.t("booking.cancellationRefund.cancelGroup"));
+      expect(text).toContain(i18n.t("booking.cancellationRefund.rejectGroup"));
       expect(text).not.toContain(
-        i18n.t("booking.cancellationRefund.cancelSingle")
+        i18n.t("booking.cancellationRefund.rejectSingle")
       );
     });
 
