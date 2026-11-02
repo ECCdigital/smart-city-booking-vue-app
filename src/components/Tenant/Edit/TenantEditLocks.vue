@@ -4,10 +4,16 @@ import AppPanel from "@/components/AppPanel.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
 import { emptyCustomerService } from "@/utilities/access-apps";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import SecretField from "@/components/commons/SecretField.vue";
 
 export default {
   name: "TenantEditLocks",
-  components: { AccessAppCustomerServiceFields, AppPanel, BaseSection },
+  components: {
+    AccessAppCustomerServiceFields,
+    AppPanel,
+    BaseSection,
+    SecretField,
+  },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -17,9 +23,6 @@ export default {
       valid: false,
       localTenant: { ...this.tenant },
       localApps: this.cloneApps(this.apps),
-      showParevaPassword: false,
-      showIfbsSecretPhrase: false,
-      showIfbsApiKey: false,
       testingConnection: {
         pareva: false,
         ifbs: false,
@@ -268,16 +271,13 @@ export default {
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
                   label="Passwort"
                   v-model="localApps.pareva.password"
                   @input="emitApps()"
-                  :append-icon="showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="showParevaPassword = !showParevaPassword"
-                  :type="showParevaPassword ? 'text' : 'password'"
                 />
               </v-col>
             </v-row>
@@ -409,31 +409,23 @@ export default {
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
                   label="API Key"
                   v-model="localApps.ifbs.apiKey"
                   @input="emitApps()"
-                  :append-icon="showIfbsApiKey ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="showIfbsApiKey = !showIfbsApiKey"
-                  :type="showIfbsApiKey ? 'text' : 'password'"
                 />
               </v-col>
               <v-col cols="12">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
                   label="Secret Phrase"
                   v-model="localApps.ifbs.secretPhrase"
                   @input="emitApps()"
-                  :append-icon="
-                    showIfbsSecretPhrase ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="showIfbsSecretPhrase = !showIfbsSecretPhrase"
-                  :type="showIfbsSecretPhrase ? 'text' : 'password'"
                 />
               </v-col>
             </v-row>

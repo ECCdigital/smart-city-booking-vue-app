@@ -13,6 +13,7 @@ import {
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
+import SecretField from "@/components/commons/SecretField.vue";
 import { runConnectionTest } from "@/utilities/access-connection-test";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
@@ -26,6 +27,7 @@ export default {
     SaltoIqActivationSection,
     SaltoConnectionTest,
     ConnectionTestAlert,
+    SecretField,
   },
   props: {
     tenant: { type: Object, required: true },
@@ -38,11 +40,6 @@ export default {
     return {
       valid: false,
       localApps: this.cloneApps(this.apps),
-      showSecret: {
-        nuki: false,
-        "salto-ks": false,
-        "salto-ks-password": false,
-      },
       testing: { nuki: false },
       testResult: { nuki: null },
       // IQs with an activation of the stored identity, as the activation
@@ -254,7 +251,7 @@ export default {
             </div>
             <v-row dense>
               <v-col cols="12">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
@@ -272,9 +269,6 @@ export default {
                       : ''
                   "
                   persistent-hint
-                  :append-icon="showSecret.nuki ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="showSecret.nuki = !showSecret.nuki"
-                  :type="showSecret.nuki ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -501,7 +495,7 @@ export default {
                 />
               </v-col>
               <v-col cols="12">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
@@ -519,13 +513,6 @@ export default {
                       : ''
                   "
                   persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks'] = !showSecret['salto-ks']
-                  "
-                  :type="showSecret['salto-ks'] ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -548,7 +535,7 @@ export default {
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
@@ -566,14 +553,6 @@ export default {
                       : ''
                   "
                   persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks-password'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks-password'] =
-                      !showSecret['salto-ks-password']
-                  "
-                  :type="showSecret['salto-ks-password'] ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>

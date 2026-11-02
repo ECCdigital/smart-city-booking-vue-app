@@ -64,13 +64,10 @@
 
     <v-row>
       <v-col class="col-12 col-md-8">
-        <v-text-field
+        <SecretField
           background-color="accent"
           filled
           dense
-          :type="showSecret ? 'text' : 'password'"
-          :append-icon="showSecret ? 'mdi-eye' : 'mdi-eye-off'"
-          @click:append="showSecret = !showSecret"
           label="Client Secret"
           v-model="localKeycloak.privateClientSecret"
           @input="emitUpdate"
@@ -149,8 +146,11 @@
 </template>
 
 <script>
+import SecretField from "@/components/commons/SecretField.vue";
+
 export default {
   name: "InstanceEditKeycloak",
+  components: { SecretField },
   props: {
     instance: { type: Object, required: true },
     tenants: { type: Array, default: () => [] },
@@ -161,7 +161,6 @@ export default {
       localKeycloak: {
         ...(this.instance.applications?.find((a) => a.id === "keycloak") || {}),
       },
-      showSecret: false,
     };
   },
   watch: {

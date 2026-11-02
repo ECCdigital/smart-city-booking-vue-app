@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TenantEditLocks from "@/components/Tenant/Edit/TenantEditLocks.vue";
+import { SECRET_MASK } from "@/components/commons/SecretField.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
@@ -140,5 +141,19 @@ describe("TenantEditLocks connection test", () => {
       errMsg: "Nicht berechtigt",
       errNo: 403,
     });
+  });
+});
+
+describe("TenantEditLocks secrets", () => {
+  it("draws none of the stored secrets, only the dots", async () => {
+    const wrapper = await mountLocks();
+
+    const secrets = wrapper.findAll('input[type="password"]').wrappers;
+    expect(secrets).toHaveLength(3);
+    for (const secret of secrets) {
+      expect(secret.element.value).toBe("");
+      expect(secret.attributes("placeholder")).toBe(SECRET_MASK);
+    }
+    expect(wrapper.html()).not.toContain("mdi-eye");
   });
 });

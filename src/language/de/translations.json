@@ -3959,5 +3959,8 @@
     "list": {
       "search": "Name, Beschreibung oder Ressource"
     }
+  },
+  "secretField": {
+    "remove": "Gespeicherten Wert entfernen"
   }
 }

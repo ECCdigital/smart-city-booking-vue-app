@@ -42,14 +42,11 @@
         </v-row>
         <v-row dense>
           <v-col>
-            <v-text-field
+            <SecretField
               background-color="accent"
               filled
               dense
               label="Schlüssel"
-              :append-icon="showPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'"
-              :type="showPaymentSecret ? 'text' : 'password'"
-              @click:append="showPaymentSecret = !showPaymentSecret"
               v-model="modelApps.giroCockpit.paymentSecret"
             />
           </v-col>
@@ -117,16 +114,13 @@
         </v-row>
         <v-row>
           <v-col>
-            <v-text-field
+            <SecretField
               background-color="accent"
               filled
               dense
               label="Salt Passwort"
               v-model="modelApps.pmPayment.paymentSecret"
-              :append-icon="showPmPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'"
-              @click:append="showPmPaymentSecret = !showPmPaymentSecret"
-              :type="showPmPaymentSecret ? 'text' : 'password'"
-            ></v-text-field>
+            />
           </v-col>
           <v-col>
             <v-text-field
@@ -280,31 +274,21 @@
 
         <v-row dense>
           <v-col cols="6">
-            <v-text-field
+            <SecretField
               background-color="accent"
               filled
               label="Zertifikat-Passwort"
               :value="modelApps.ePayBL.certPassphrase"
               @input="update('certPassphrase', $event)"
-              :append-icon="showEPayBLSecret ? 'mdi-eye' : 'mdi-eye-off'"
-              @click:append="showEPayBLSecret = !showEPayBLSecret"
-              :type="showEPayBLSecret ? 'text' : 'password'"
             />
           </v-col>
           <v-col cols="6">
-            <v-text-field
+            <SecretField
               background-color="accent"
               filled
               label="Benachrichtigungs-Geheimnis"
               :value="modelApps.ePayBL.notificationSecret"
               @input="update('notificationSecret', $event)"
-              :append-icon="
-                showEPayBLNotificationSecret ? 'mdi-eye' : 'mdi-eye-off'
-              "
-              @click:append="
-                showEPayBLNotificationSecret = !showEPayBLNotificationSecret
-              "
-              :type="showEPayBLNotificationSecret ? 'text' : 'password'"
             />
           </v-col>
         </v-row>
@@ -863,6 +847,7 @@ import ApiPaymentService from "@/services/api/ApiPaymentService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SubSection from "@/components/commons/SubSection.vue";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
+import SecretField from "@/components/commons/SecretField.vue";
 
 import PdfBookingLayoutPicker from "@/components/PDF/PdfBookingLayoutPicker.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
@@ -876,6 +861,7 @@ export default {
     BaseSection,
     AppPanel,
     PdfBookingLayoutPicker,
+    SecretField,
   },
   props: {
     tenant: { type: Object, required: true },
@@ -884,10 +870,6 @@ export default {
   },
   data() {
     return {
-      showPaymentSecret: false,
-      showPmPaymentSecret: false,
-      showEPayBLSecret: false,
-      showEPayBLNotificationSecret: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [
