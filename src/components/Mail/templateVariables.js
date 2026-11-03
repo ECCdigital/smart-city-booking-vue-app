@@ -389,6 +389,20 @@ export const CANCELLATION_VARIABLES = [
       "Zeit vor Buchungsbeginn als Text: ab einem Tag in ganzen Tagen („20 Tage“), darunter in Stunden („13 Stunden“), oder „nicht verfügbar“",
   },
   {
+    name: "timeBeforeStartText",
+    placeholder: "{{timeBeforeStartText}}",
+    label: "Zeit vor Buchungsbeginn (für Buchende)",
+    description:
+      "Zeit vor Buchungsbeginn wie im Hinweis der Stornierungsanfrage: unter drei Tagen in Tagen und Stunden („1 Tag und 22 Stunden“), sonst in ganzen Tagen; leer ohne Zeitraum",
+  },
+  {
+    name: "appliedTierLabel",
+    placeholder: "{{appliedTierLabel}}",
+    label: "Angewandte Erstattungsstufe",
+    description:
+      "Angewandte Erstattungsstufe als Text („bis 36 Stunden vor Beginn“, „bis zum Beginn“); leer ohne Staffel",
+  },
+  {
     name: "daysBeforeStartLabel",
     placeholder: "{{daysBeforeStartLabel}}",
     label: "Tage vor Buchungsbeginn",
@@ -455,7 +469,7 @@ export const CANCELLATION_VARIABLES = [
   {
     name: "refundCalculations",
     placeholder:
-      "{{#each refundCalculations}}Buchung {{bookingId}}: {{timeBeforeStartLabel}} vor Beginn, {{refundPercentage}} % Erstattung ({{refundAmount}}), {{calculationMode}}{{#unless @last}}<br />{{/unless}}{{/each}}",
+      "{{#each refundCalculations}}Buchung {{bookingId}}: Storniert {{timeBeforeStartText}} vor Beginn der Buchung. Es gilt die Erstattungsstufe: {{appliedTierLabel}}. Die Erstattung beträgt {{refundPercentage}} % ({{refundAmount}}), {{calculationMode}}.{{#unless @last}}<br />{{/unless}}{{/each}}",
     label: "Erstattungsberechnungen (Sammel)",
     description:
       "Array der Einzelberechnungen bei Sammelstornos (bookingId, Zeit vor Beginn, %, Betrag, Berechnungsart)",
@@ -876,6 +890,8 @@ export const SAMPLE_DATA = {
     daysBeforeStart: 20,
     daysBeforeStartLabel: "20",
     timeBeforeStartLabel: "20 Tage",
+    timeBeforeStartText: "20 Tage",
+    appliedTierLabel: "bis 14 Tage vor Beginn",
     suggestedRefundPercentage: 100,
     refundPercentage: 100,
     appliedTierHours: 480,

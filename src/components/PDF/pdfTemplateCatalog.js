@@ -331,13 +331,16 @@ function makeCancellationDefaultBlocks() {
                 "Stornierungszeitpunkt: {{cancellationDate}}<br />" +
                 "{{#if refundCalculations}}" +
                 "{{#each refundCalculations}}" +
-                "Buchung {{bookingId}}: {{timeBeforeStartLabel}} vor Beginn, " +
-                "{{refundPercentage}} % Erstattung ({{refundAmount}})." +
+                "Buchung {{bookingId}}: " +
+                "{{#if timeBeforeStartText}}Storniert {{timeBeforeStartText}} vor Beginn der Buchung. {{/if}}" +
+                "{{#if appliedTierLabel}}Es gilt die Erstattungsstufe: {{appliedTierLabel}}. {{/if}}" +
+                "Die Erstattung beträgt {{refundPercentage}} % ({{refundAmount}})." +
                 "{{#unless @last}}<br />{{/unless}}" +
                 "{{/each}}" +
                 "{{else}}" +
-                "{{timeBeforeStartLabel}} vor Buchungsbeginn, " +
-                "{{refundPercentage}} % Erstattung." +
+                "{{#if timeBeforeStartText}}Storniert {{timeBeforeStartText}} vor Beginn der Buchung. {{/if}}" +
+                "{{#if appliedTierLabel}}Es gilt die Erstattungsstufe: {{appliedTierLabel}}.{{/if}}<br />" +
+                "Die Erstattung beträgt {{refundPercentage}} %." +
                 "{{/if}}" +
                 "</div>",
             },
