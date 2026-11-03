@@ -114,8 +114,8 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import {
-  formatAppliedTier,
-  formatTimeBeforeStart,
+  formatAppliedTierRule,
+  formatTimeBeforeStartForBooker,
   refundPolicyText,
 } from "@/utils/cancellationRefund";
 
@@ -151,8 +151,8 @@ export default {
     refundPolicySummary() {
       if (!this.refundPreview) return "";
       return refundPolicyText("userPolicySummary", {
-        time: formatTimeBeforeStart(this.refundPreview),
-        tier: formatAppliedTier(this.refundPreview),
+        time: formatTimeBeforeStartForBooker(this.refundPreview),
+        tier: formatAppliedTierRule(this.refundPreview),
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },

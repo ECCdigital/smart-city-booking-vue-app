@@ -3,8 +3,10 @@ import {
   filterBookingsByRefundState,
   getCancellationRefundAudit,
   formatAppliedTier,
+  formatAppliedTierRule,
   formatTierDeadline,
   formatTimeBeforeStart,
+  formatTimeBeforeStartForBooker,
   refundPolicyText,
   refundStateMarker,
   tierDeadline,
@@ -127,18 +129,20 @@ describe("refundPolicyText", () => {
   it("names the time before the start in the customer's summary", () => {
     expect(
       refundPolicyText("userPolicySummary", { time: "3 Tage", percentage: 50 })
-    ).toBe("Bei Stornierung 3 Tage vor Beginn beträgt die Erstattung 50 %.");
+    ).toBe(
+      "Sie stornieren 3 Tage vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
+    );
   });
 
   it("names the tier that applied, so the percentage can be read off it", () => {
     expect(
       refundPolicyText("userPolicySummary", {
         time: "1 Tag",
-        tier: "26 Stunden",
+        tier: "bis 26 Stunden vor Beginn",
         percentage: 11,
       })
     ).toBe(
-      "Es gilt die Erstattungsstufe „26 Stunden“: Die Erstattung beträgt 11 %."
+      "Sie stornieren 1 Tag vor Beginn der Buchung. Es gilt die Erstattungsstufe: bis 26 Stunden vor Beginn.\n\nDie Erstattung beträgt voraussichtlich 11 %."
     );
   });
 
@@ -208,5 +212,53 @@ describe("formatAppliedTier", () => {
   it("answers null where no tier applied", () => {
     expect(formatAppliedTier({ appliedTierHours: null })).toBeNull();
     expect(formatAppliedTier(null)).toBeNull();
+  });
+});
+
+describe("formatTimeBeforeStartForBooker", () => {
+  it("names days and hours below three days", () => {
+    const time = (hours) =>
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: hours });
+
+    expect(time(30)).toBe("1 Tag und 6 Stunden");
+    expect(time(49)).toBe("2 Tage und 1 Stunde");
+    expect(time(48)).toBe("2 Tage");
+    expect(time(71)).toBe("2 Tage und 23 Stunden");
+  });
+
+  it("names whole days from three days on and hours below one day", () => {
+    const time = (hours) =>
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: hours });
+
+    expect(time(72)).toBe("3 Tage");
+    expect(time(95)).toBe("3 Tage");
+    expect(time(13)).toBe("13 Stunden");
+  });
+
+  it("keeps the days of an audit from before and null without a time span", () => {
+    expect(formatTimeBeforeStartForBooker({ daysBeforeStart: 2 })).toBe(
+      "2 Tage"
+    );
+    expect(
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: null })
+    ).toBeNull();
+  });
+});
+
+describe("formatAppliedTierRule", () => {
+  it("names the tier as the booker reads it", () => {
+    expect(formatAppliedTierRule({ appliedTierHours: 36 })).toBe(
+      "bis 36 Stunden vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: 48 })).toBe(
+      "bis 2 Tage vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: 0 })).toBe(
+      "bis zum Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierDays: 3 })).toBe(
+      "bis 3 Tage vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: null })).toBeNull();
   });
 });

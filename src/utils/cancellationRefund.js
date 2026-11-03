@@ -96,6 +96,30 @@ export function formatTimeBeforeStart(calculation) {
 }
 
 /**
+ * The time before the start as the booker reads it on the pages to request
+ * and confirm a cancellation: below three days in days and hours („1 Tag und
+ * 6 Stunden“), from three days on in whole days, below one day in hours.
+ */
+export function formatTimeBeforeStartForBooker(calculation) {
+  const hours = calculation?.hoursBeforeStart;
+  if (
+    !Number.isFinite(hours) ||
+    hours < HOURS_PER_DAY ||
+    hours >= 3 * HOURS_PER_DAY
+  ) {
+    return formatTimeBeforeStart(calculation);
+  }
+  const days = formatDays(Math.floor(hours / HOURS_PER_DAY));
+  const rest = hours % HOURS_PER_DAY;
+  return rest === 0
+    ? days
+    : i18n.t("booking.cancellationRefund.timeDaysAndHours", {
+        days,
+        hours: formatHours(rest),
+      });
+}
+
+/**
  * The tier a refund calculation applied, as text: its deadline
  * (`formatTierDeadline`), „Bis zum Beginn“ for the lowest at 0 hours. An
  * audit of before backend 4.4 named it in days (`appliedTierDays`). `null`
@@ -110,6 +134,27 @@ export function formatAppliedTier(calculation) {
   }
   const days = calculation?.appliedTierDays;
   return Number.isFinite(days) ? formatDays(days) : null;
+}
+
+/**
+ * The tier a refund calculation applied as the booker reads it, „bis 36
+ * Stunden vor Beginn“ or „bis zum Beginn“; `null` where no tier applied.
+ */
+export function formatAppliedTierRule(calculation) {
+  const hours = calculation?.appliedTierHours;
+  if (Number.isFinite(hours)) {
+    return hours === 0
+      ? i18n.t("booking.cancellationRefund.tierRuleAtStart")
+      : i18n.t("booking.cancellationRefund.tierRule", {
+          deadline: formatTierDeadline(hours),
+        });
+  }
+  const days = calculation?.appliedTierDays;
+  return Number.isFinite(days)
+    ? i18n.t("booking.cancellationRefund.tierRule", {
+        deadline: formatDays(days),
+      })
+    : null;
 }
 
 /**

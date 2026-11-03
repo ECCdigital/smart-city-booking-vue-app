@@ -220,7 +220,18 @@ describe("RequestRejectBooking", () => {
       const wrapper = await previewWith({ hoursBeforeStart: 290 });
 
       expect(wrapper.text()).toContain(
-        "Bei Stornierung 12 Tage vor Beginn beträgt die Erstattung 50 %."
+        "Sie stornieren 12 Tage vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
+      );
+    });
+
+    it("names the tier that applies", async () => {
+      const wrapper = await previewWith({
+        hoursBeforeStart: 30,
+        appliedTierHours: 26,
+      });
+
+      expect(wrapper.text()).toContain(
+        "Sie stornieren 1 Tag und 6 Stunden vor Beginn der Buchung. Es gilt die Erstattungsstufe: bis 26 Stunden vor Beginn.\n\nDie Erstattung beträgt voraussichtlich 50 %."
       );
     });
 
@@ -228,7 +239,7 @@ describe("RequestRejectBooking", () => {
       const wrapper = await previewWith({ hoursBeforeStart: 13 });
 
       expect(wrapper.text()).toContain(
-        "Bei Stornierung 13 Stunden vor Beginn beträgt die Erstattung 50 %."
+        "Sie stornieren 13 Stunden vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
       );
     });
 

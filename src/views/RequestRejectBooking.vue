@@ -225,8 +225,8 @@ import FormatService from "@/services/FormatService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 import {
-  formatAppliedTier,
-  formatTimeBeforeStart,
+  formatAppliedTierRule,
+  formatTimeBeforeStartForBooker,
   refundPolicyText,
 } from "@/utils/cancellationRefund";
 
@@ -335,8 +335,8 @@ export default {
     refundPolicySummary() {
       if (!this.refundPreview) return "";
       return refundPolicyText("userPolicySummary", {
-        time: formatTimeBeforeStart(this.refundPreview),
-        tier: formatAppliedTier(this.refundPreview),
+        time: formatTimeBeforeStartForBooker(this.refundPreview),
+        tier: formatAppliedTierRule(this.refundPreview),
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },

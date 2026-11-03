@@ -80,7 +80,7 @@ describe("VerifyRejectBooking", () => {
       const wrapper = await mountWithPreview({ hoursBeforeStart: 290 });
 
       expect(wrapper.text()).toContain(
-        "Bei Stornierung 12 Tage vor Beginn beträgt die Erstattung 50 %."
+        "Sie stornieren 12 Tage vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
       );
     });
 
@@ -88,7 +88,7 @@ describe("VerifyRejectBooking", () => {
       const wrapper = await mountWithPreview({ hoursBeforeStart: 13 });
 
       expect(wrapper.text()).toContain(
-        "Bei Stornierung 13 Stunden vor Beginn beträgt die Erstattung 50 %."
+        "Sie stornieren 13 Stunden vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
       );
     });
 
