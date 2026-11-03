@@ -75,6 +75,12 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
 -   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
 
+## [4.3.3] — 2026-11-03
+
+### Added
+
+-   Switch „Testmodus“ for GiroCockpit in the tenant's payment settings (ECCdigital/tickets#796): it sets `paymentMode` of the app to `test` or `prod`, as for pmPayment. Off for an app without `paymentMode`. Requires backend with ECCdigital/tickets#796, which asks GiroCheckout for the payment methods in test mode only for `test` and in live mode otherwise
+
 ## [4.3.2] — 2026-10-27
 
 ### Fixed
