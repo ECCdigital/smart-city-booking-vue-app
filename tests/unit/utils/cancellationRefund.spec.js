@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   filterBookingsByRefundState,
   getCancellationRefundAudit,
+  formatAppliedTier,
+  formatTierDeadline,
+  formatTimeBeforeStart,
   refundPolicyText,
   refundStateMarker,
+  tierDeadline,
   refundStateOf,
 } from "@/utils/cancellationRefund";
 
@@ -120,15 +124,27 @@ describe("refundStateMarker", () => {
 });
 
 describe("refundPolicyText", () => {
-  it("names the calendar days before the start in the customer's summary", () => {
+  it("names the time before the start in the customer's summary", () => {
     expect(
-      refundPolicyText("userPolicySummary", { days: 3, percentage: 50 })
-    ).toBe("Bei 3 Kalendertagen bis zum Beginn beträgt die Erstattung 50 %.");
+      refundPolicyText("userPolicySummary", { time: "3 Tage", percentage: 50 })
+    ).toBe("Bei Stornierung 3 Tage vor Beginn beträgt die Erstattung 50 %.");
+  });
+
+  it("names the tier that applied, so the percentage can be read off it", () => {
+    expect(
+      refundPolicyText("userPolicySummary", {
+        time: "1 Tag",
+        tier: "26 Stunden",
+        percentage: 11,
+      })
+    ).toBe(
+      "Es gilt die Erstattungsstufe „26 Stunden“: Die Erstattung beträgt 11 %."
+    );
   });
 
   it("says the booking has no time span where there are no days", () => {
     expect(
-      refundPolicyText("userPolicySummary", { days: null, percentage: 50 })
+      refundPolicyText("userPolicySummary", { time: null, percentage: 50 })
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
     );
@@ -137,5 +153,60 @@ describe("refundPolicyText", () => {
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
+  });
+});
+
+/**
+ * A tier's deadline is stored in hours and reads in days where it divides by
+ * 24; the time before the start of a calculation reads in whole days from one
+ * day on, in hours below.
+ */
+describe("tierDeadline", () => {
+  it("reads a deadline that divides by 24 as days, any other as hours", () => {
+    expect(tierDeadline(48)).toEqual({ amount: 2, unit: "days" });
+    expect(tierDeadline(0)).toEqual({ amount: 0, unit: "days" });
+    expect(tierDeadline(12)).toEqual({ amount: 12, unit: "hours" });
+    expect(tierDeadline(36)).toEqual({ amount: 36, unit: "hours" });
+  });
+
+  it("names the deadline with its unit", () => {
+    expect(formatTierDeadline(24)).toBe("1 Tag");
+    expect(formatTierDeadline(48)).toBe("2 Tage");
+    expect(formatTierDeadline(12)).toBe("12 Stunden");
+    expect(formatTierDeadline(1)).toBe("1 Stunde");
+  });
+});
+
+describe("formatTimeBeforeStart", () => {
+  it("names whole days from one day on and hours below", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 47 })).toBe("1 Tag");
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 48 })).toBe("2 Tage");
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 13 })).toBe("13 Stunden");
+  });
+
+  it("names the calendar days of an audit from before", () => {
+    expect(formatTimeBeforeStart({ daysBeforeStart: 3 })).toBe("3 Tage");
+  });
+
+  it("answers null without a time span", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: null })).toBeNull();
+    expect(formatTimeBeforeStart(null)).toBeNull();
+  });
+});
+
+describe("formatAppliedTier", () => {
+  it("names the deadline of the tier that applied", () => {
+    expect(formatAppliedTier({ appliedTierHours: 26 })).toBe("26 Stunden");
+    expect(formatAppliedTier({ appliedTierHours: 48 })).toBe("2 Tage");
+    expect(formatAppliedTier({ appliedTierHours: 0 })).toBe("Bis zum Beginn");
+  });
+
+  it("names the days of an audit from before", () => {
+    expect(formatAppliedTier({ appliedTierDays: 3 })).toBe("3 Tage");
+  });
+
+  it("answers null where no tier applied", () => {
+    expect(formatAppliedTier({ appliedTierHours: null })).toBeNull();
+    expect(formatAppliedTier(null)).toBeNull();
   });
 });

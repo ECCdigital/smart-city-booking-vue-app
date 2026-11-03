@@ -331,12 +331,12 @@ function makeCancellationDefaultBlocks() {
                 "Stornierungszeitpunkt: {{cancellationDate}}<br />" +
                 "{{#if refundCalculations}}" +
                 "{{#each refundCalculations}}" +
-                "Buchung {{bookingId}}: {{daysBeforeStartLabel}} Kalendertage vor Beginn, " +
+                "Buchung {{bookingId}}: {{timeBeforeStartLabel}} vor Beginn, " +
                 "{{refundPercentage}} % Erstattung ({{refundAmount}})." +
                 "{{#unless @last}}<br />{{/unless}}" +
                 "{{/each}}" +
                 "{{else}}" +
-                "{{daysBeforeStartLabel}} Kalendertage vor Buchungsbeginn, " +
+                "{{timeBeforeStartLabel}} vor Buchungsbeginn, " +
                 "{{refundPercentage}} % Erstattung." +
                 "{{/if}}" +
                 "</div>",
@@ -530,7 +530,7 @@ export const PDF_TEMPLATE_CATALOG = {
     key: "cancellation",
     title: "Stornorechnungs-Vorlage",
     description:
-      "Vorlage für Einzel- und Sammel-Stornorechnungen. Pflichtvariablen: {{cancellationNumber}}, {{{invoiceAddress}}} sowie {{{mainContent}}} oder ein Tabellen-Partial ({{> pdfBookingItemsTable}} / {{> pdfAggregatedBookingsTable}}). Erstattungsstaffel: {{daysBeforeStartLabel}}, {{refundPercentage}}, {{cancellationFee}}, {{calculationMode}}, {{#if isFullRefund}} …",
+      "Vorlage für Einzel- und Sammel-Stornorechnungen. Pflichtvariablen: {{cancellationNumber}}, {{{invoiceAddress}}} sowie {{{mainContent}}} oder ein Tabellen-Partial ({{> pdfBookingItemsTable}} / {{> pdfAggregatedBookingsTable}}). Erstattungsstaffel: {{timeBeforeStartLabel}}, {{refundPercentage}}, {{cancellationFee}}, {{calculationMode}}, {{#if isFullRefund}} …",
     icon: "mdi-receipt-text-remove-outline",
     variables: CANCELLATION_VARIABLES,
     sampleData: SAMPLE_DATA.cancellation,

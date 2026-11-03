@@ -49,15 +49,86 @@ export function refundStateMarker(state) {
   };
 }
 
+export const HOURS_PER_DAY = 24;
+
+function formatDays(days) {
+  return i18n.tc("booking.cancellationRefund.timeDays", days, { n: days });
+}
+
+function formatHours(hours) {
+  return i18n.tc("booking.cancellationRefund.timeHours", hours, { n: hours });
+}
+
 /**
- * The policy line of a single booking's refund preview or audit: the calendar
- * days before the start where there are any, else that the booking has no
- * time span. `key` is `singlePolicy`, `auditOverride` or `userPolicySummary`.
+ * The deadline of a tier of the refund scale, stored in hours: in days where
+ * it divides by 24, else in hours.
+ *
+ * @returns {{ amount: number, unit: "days"|"hours" }}
  */
-export function refundPolicyText(key, { days, ...values }) {
-  return days === null || days === undefined
-    ? i18n.t(`booking.cancellationRefund.${key}WithoutTimeSpan`, values)
-    : i18n.t(`booking.cancellationRefund.${key}`, { days, ...values });
+export function tierDeadline(hoursBeforeStart) {
+  const hours = Number(hoursBeforeStart);
+  return hours % HOURS_PER_DAY === 0
+    ? { amount: hours / HOURS_PER_DAY, unit: "days" }
+    : { amount: hours, unit: "hours" };
+}
+
+/** The deadline of a tier as text, such as „2 Tage“ or „12 Stunden“. */
+export function formatTierDeadline(hoursBeforeStart) {
+  const { amount, unit } = tierDeadline(hoursBeforeStart);
+  return unit === "days" ? formatDays(amount) : formatHours(amount);
+}
+
+/**
+ * The time from the cancellation to the start of a refund calculation as
+ * text: whole days of 24 hours from one day on, hours below. An audit of
+ * before backend 4.4 counted calendar days (`daysBeforeStart`). `null`
+ * without a time span.
+ */
+export function formatTimeBeforeStart(calculation) {
+  const hours = calculation?.hoursBeforeStart;
+  if (Number.isFinite(hours)) {
+    return hours >= HOURS_PER_DAY
+      ? formatDays(Math.floor(hours / HOURS_PER_DAY))
+      : formatHours(hours);
+  }
+  const days = calculation?.daysBeforeStart;
+  return Number.isFinite(days) ? formatDays(days) : null;
+}
+
+/**
+ * The tier a refund calculation applied, as text: its deadline
+ * (`formatTierDeadline`), „Bis zum Beginn“ for the lowest at 0 hours. An
+ * audit of before backend 4.4 named it in days (`appliedTierDays`). `null`
+ * where no tier applied - no scale, or no time span.
+ */
+export function formatAppliedTier(calculation) {
+  const hours = calculation?.appliedTierHours;
+  if (Number.isFinite(hours)) {
+    return hours === 0
+      ? i18n.t("booking.cancellationRefund.tierAtStart")
+      : formatTierDeadline(hours);
+  }
+  const days = calculation?.appliedTierDays;
+  return Number.isFinite(days) ? formatDays(days) : null;
+}
+
+/**
+ * The policy line of a single booking's refund preview or audit: the time
+ * before the start where there is one (`formatTimeBeforeStart`) and the tier
+ * that applied (`formatAppliedTier`), else that the booking has no time
+ * span. `key` is `singlePolicy` or `userPolicySummary`.
+ */
+export function refundPolicyText(key, { time, tier, ...values }) {
+  if (time === null || time === undefined) {
+    return i18n.t(`booking.cancellationRefund.${key}WithoutTimeSpan`, values);
+  }
+  return tier === null || tier === undefined
+    ? i18n.t(`booking.cancellationRefund.${key}`, { time, ...values })
+    : i18n.t(`booking.cancellationRefund.${key}WithTier`, {
+        time,
+        tier,
+        ...values,
+      });
 }
 
 export function getCancellationRefundAudit(booking) {
