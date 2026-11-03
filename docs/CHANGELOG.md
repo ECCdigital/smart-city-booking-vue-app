@@ -7,6 +7,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+## [4.3.3] — 2026-11-03
+
 ### Added
 
 -   Switch „Testmodus“ for GiroCockpit in the tenant's payment settings (ECCdigital/tickets#796): it sets `paymentMode` of the app to `test` or `prod`, as for pmPayment. Off for an app without `paymentMode`. Requires backend with ECCdigital/tickets#796, which asks GiroCheckout for the payment methods in test mode only for `test` and in live mode otherwise
