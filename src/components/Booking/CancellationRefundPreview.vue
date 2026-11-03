@@ -90,6 +90,7 @@
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
 import {
+  bookingStartsInText,
   formatAppliedTier,
   formatTimeBeforeStart,
   refundPolicyText,
@@ -203,11 +204,14 @@ export default {
         }
         return this.$t("booking.cancellationRefund.groupPolicyMixed");
       }
-      return refundPolicyText("singlePolicy", {
+      const tier = formatAppliedTier(this.preview);
+      const policy = refundPolicyText("singlePolicy", {
         time: formatTimeBeforeStart(this.preview),
-        tier: formatAppliedTier(this.preview),
+        tier,
         percentage: this.preview.suggestedRefundPercentage,
       });
+      const startsIn = tier ? bookingStartsInText(this.preview) : null;
+      return startsIn ? `${startsIn} ${policy}` : policy;
     },
   },
   watch: {

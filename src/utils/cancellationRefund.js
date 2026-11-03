@@ -120,6 +120,32 @@ export function formatTimeBeforeStartForBooker(calculation) {
 }
 
 /**
+ * The sentence that says when the booking begins, seen from the
+ * calculation: below three days in days and hours („Die Buchung beginnt in
+ * 1 Tag und 6 Stunden.“), from three days on in whole days. `null` without
+ * a time span and once less than an hour is left.
+ */
+export function bookingStartsInText(calculation) {
+  const hours = calculation?.hoursBeforeStart;
+  if (!Number.isFinite(hours) || hours < 1) return null;
+  const days = Math.floor(hours / HOURS_PER_DAY);
+  const rest = hours % HOURS_PER_DAY;
+  const daysText = i18n.tc("booking.cancellationRefund.inDays", days, {
+    n: days,
+  });
+  let time = daysText;
+  if (hours < HOURS_PER_DAY) {
+    time = formatHours(hours);
+  } else if (hours < 3 * HOURS_PER_DAY && rest > 0) {
+    time = i18n.t("booking.cancellationRefund.timeDaysAndHours", {
+      days: daysText,
+      hours: formatHours(rest),
+    });
+  }
+  return i18n.t("booking.cancellationRefund.startsIn", { time });
+}
+
+/**
  * The tier a refund calculation applied, as text: its deadline
  * (`formatTierDeadline`), „Bis zum Beginn“ for the lowest at 0 hours. An
  * audit of before backend 4.4 named it in days (`appliedTierDays`). `null`

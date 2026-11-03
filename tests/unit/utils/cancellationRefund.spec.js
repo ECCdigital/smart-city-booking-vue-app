@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookingStartsInText,
   filterBookingsByRefundState,
   getCancellationRefundAudit,
   formatAppliedTier,
@@ -260,5 +261,27 @@ describe("formatAppliedTierRule", () => {
       "bis 3 Tage vor Beginn"
     );
     expect(formatAppliedTierRule({ appliedTierHours: null })).toBeNull();
+  });
+});
+
+describe("bookingStartsInText", () => {
+  const startsIn = (hours) => bookingStartsInText({ hoursBeforeStart: hours });
+
+  it("names days and hours below three days", () => {
+    expect(startsIn(30)).toBe("Die Buchung beginnt in 1 Tag und 6 Stunden.");
+    expect(startsIn(49)).toBe("Die Buchung beginnt in 2 Tagen und 1 Stunde.");
+    expect(startsIn(48)).toBe("Die Buchung beginnt in 2 Tagen.");
+  });
+
+  it("names whole days from three days on and hours below one day", () => {
+    expect(startsIn(72)).toBe("Die Buchung beginnt in 3 Tagen.");
+    expect(startsIn(95)).toBe("Die Buchung beginnt in 3 Tagen.");
+    expect(startsIn(13)).toBe("Die Buchung beginnt in 13 Stunden.");
+  });
+
+  it("says nothing without a time span or under an hour", () => {
+    expect(startsIn(null)).toBeNull();
+    expect(startsIn(0)).toBeNull();
+    expect(startsIn(-5)).toBeNull();
   });
 });

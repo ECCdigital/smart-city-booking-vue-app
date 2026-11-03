@@ -1758,6 +1758,8 @@
       "timeDays": "{n} Tag | {n} Tage",
       "timeHours": "{n} Stunde | {n} Stunden",
       "timeDaysAndHours": "{days} und {hours}",
+      "inDays": "{n} Tag | {n} Tagen",
+      "startsIn": "Die Buchung beginnt in {time}.",
       "tierAtStart": "Bis zum Beginn",
       "tierRule": "bis {deadline} vor Beginn",
       "tierRuleAtStart": "bis zum Beginn",
