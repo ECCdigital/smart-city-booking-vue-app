@@ -13,12 +13,23 @@
         class="mb-2"
       >
         <v-row dense>
-          <v-col cols="12">
+          <v-col class="col-auto">
             <v-switch
               v-model="modelApps.giroCockpit.active"
               color="primary"
               hide-details
               label="GiroCockpit als Zahlungsanbieter aktivieren"
+            />
+          </v-col>
+          <v-col>
+            <v-switch
+              v-model="modelApps.giroCockpit.paymentMode"
+              color="primary"
+              true-value="test"
+              false-value="prod"
+              label="Testmodus"
+              persistent-hint
+              hint="Nur für ein Testprojekt im GiroCockpit: Die Bezahlseite zeigt dann nur Zahlarten im Testmodus."
             />
           </v-col>
         </v-row>
