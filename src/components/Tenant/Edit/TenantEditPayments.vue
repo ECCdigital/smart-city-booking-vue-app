@@ -29,7 +29,7 @@
               false-value="prod"
               label="Testmodus"
               persistent-hint
-              hint="Nur für ein Testprojekt im GiroCockpit: Die Bezahlseite zeigt dann nur Zahlarten im Testmodus."
+              hint=""
             />
           </v-col>
         </v-row>
