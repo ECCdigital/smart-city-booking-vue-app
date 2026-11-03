@@ -311,6 +311,7 @@ export default {
           paymentProjectId: "",
           paymentSecret: "",
           paymentPurposeSuffix: "",
+          paymentMode: "",
           active: false,
         },
         pmPayment: {
