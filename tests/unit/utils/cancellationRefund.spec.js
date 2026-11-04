@@ -3,9 +3,9 @@ import {
   bookingStartsInText,
   filterBookingsByRefundState,
   getCancellationRefundAudit,
-  formatAppliedTier,
   formatAppliedTierRule,
   formatTierDeadline,
+  formatTierRule,
   formatTimeBeforeStart,
   formatTimeBeforeStartForBooker,
   refundPolicyText,
@@ -199,20 +199,11 @@ describe("formatTimeBeforeStart", () => {
   });
 });
 
-describe("formatAppliedTier", () => {
-  it("names the deadline of the tier that applied", () => {
-    expect(formatAppliedTier({ appliedTierHours: 26 })).toBe("26 Stunden");
-    expect(formatAppliedTier({ appliedTierHours: 48 })).toBe("2 Tage");
-    expect(formatAppliedTier({ appliedTierHours: 0 })).toBe("Bis zum Beginn");
-  });
-
-  it("names the days of an audit from before", () => {
-    expect(formatAppliedTier({ appliedTierDays: 3 })).toBe("3 Tage");
-  });
-
-  it("answers null where no tier applied", () => {
-    expect(formatAppliedTier({ appliedTierHours: null })).toBeNull();
-    expect(formatAppliedTier(null)).toBeNull();
+describe("formatTierRule", () => {
+  it("names a tier as „bis … vor Beginn“, the lowest at 0 hours as „bis zum Beginn“", () => {
+    expect(formatTierRule(26)).toBe("bis 26 Stunden vor Beginn");
+    expect(formatTierRule(48)).toBe("bis 2 Tage vor Beginn");
+    expect(formatTierRule(0)).toBe("bis zum Beginn");
   });
 });
 
