@@ -190,6 +190,39 @@ describe("BookingEdit", () => {
     );
   });
 
+  describe("the item price", () => {
+    // 1 h 10 min at 25 €/h.
+    function seventyMinutes(bookableOverrides = {}) {
+      const base = booking();
+      const [item] = base.bookableItems;
+      return booking({
+        timeEnd: base.timeBegin + 70 * 60_000,
+        bookableItems: [
+          {
+            ...item,
+            _bookableUsed: { ...item._bookableUsed, ...bookableOverrides },
+          },
+        ],
+      });
+    }
+
+    it("reckons an hour price by the minute", async () => {
+      const { wrapper } = await mountEdit({ booking: seventyMinutes() });
+
+      const [item] = wrapper.vm.bookableItems;
+      expect(wrapper.vm.calculateItemPrice(item)).toBeCloseTo(29.17, 2);
+    });
+
+    it("counts every started hour in full when the bookable says so", async () => {
+      const { wrapper } = await mountEdit({
+        booking: seventyMinutes({ priceCountStartedHours: true }),
+      });
+
+      const [item] = wrapper.vm.bookableItems;
+      expect(wrapper.vm.calculateItemPrice(item)).toBe(50);
+    });
+  });
+
   describe("the paid date", () => {
     function paymentDateField(wrapper) {
       return wrapper

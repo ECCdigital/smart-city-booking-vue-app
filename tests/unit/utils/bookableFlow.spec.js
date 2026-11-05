@@ -274,6 +274,20 @@ describe("price", () => {
     }
   });
 
+  it("switches counting started hours off on a change of the Preisart", () => {
+    const next = applyPriceType(
+      bookable({ priceType: "per-hour", priceCountStartedHours: true }),
+      "per-day"
+    );
+    expect(next.priceCountStartedHours).toBe(false);
+
+    const same = applyPriceType(
+      bookable({ priceType: "per-hour", priceCountStartedHours: true }),
+      "per-hour"
+    );
+    expect(same.priceCountStartedHours).toBe(true);
+  });
+
   it("keeps the fixed price while the Preisart stays", () => {
     const next = applyPriceType(
       bookable({
@@ -333,6 +347,16 @@ describe("price", () => {
         })
       )
     ).toEqual({ key: "per-hour-daily", amounts: { total: 60 } });
+    // Started hours: 2.5 hours count as 3.
+    expect(
+      priceExplanation(
+        bookable({
+          priceType: "per-hour",
+          priceCountStartedHours: true,
+          priceCategories: [category(10)],
+        })
+      )
+    ).toEqual({ key: "per-hour-started", amounts: { total: 30 } });
     expect(
       priceExplanation(
         bookable({

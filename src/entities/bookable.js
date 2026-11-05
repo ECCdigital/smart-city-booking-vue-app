@@ -56,6 +56,7 @@ export default class Bookable {
       },
     ];
     this.priceType = "per-item";
+    this.priceCountStartedHours = false;
     this.priceValueAddedTax = 0;
     this.enableCoupons = true;
 
