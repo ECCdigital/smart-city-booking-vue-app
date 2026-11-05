@@ -420,7 +420,7 @@
         },
         "per-day": {
           "label": "Angefangene Tage zählen voll",
-          "hint": "Jeder angefangene Tag kostet den vollen Preis. Aus: anteilig nach Minuten."
+          "hint": "Jeder angefangene Tag kostet den vollen Preis. Andernfalls wird der Preis minutengenau berechnet."
         },
         "per-item": {
           "label": "Gilt einmal je Buchung",

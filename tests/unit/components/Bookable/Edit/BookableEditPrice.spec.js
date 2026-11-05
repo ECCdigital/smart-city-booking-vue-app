@@ -165,7 +165,11 @@ describe("BookableEditPrice - the Preisart", () => {
   });
 
   it.each([
-    ["per-day", "Angefangene Tage zählen voll", "anteilig nach Minuten"],
+    [
+      "per-day",
+      "Angefangene Tage zählen voll",
+      "Andernfalls wird der Preis minutengenau berechnet.",
+    ],
     ["per-item", "Gilt einmal je Buchung", "gebuchte Menge"],
     ["per-square-meter", "Gilt einmal je Buchung", "gebuchte Fläche"],
   ])("names the fixed price of %s by what it does", (type, label, hint) => {
