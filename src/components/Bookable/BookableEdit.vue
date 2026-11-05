@@ -219,7 +219,7 @@
                 class="bookable-edit-nav__sections"
               >
                 <button
-                  v-for="section in activeTabSections"
+                  v-for="section in activeTabNavSections"
                   :key="section.id"
                   type="button"
                   class="bookable-edit-nav__section"
@@ -260,7 +260,7 @@
               :aria-label="$t('bookable.edit.nav.sections')"
             >
               <button
-                v-for="section in activeTabSections"
+                v-for="section in activeTabNavSections"
                 :key="section.id"
                 type="button"
                 class="bookable-edit-nav__sublink"
@@ -352,9 +352,11 @@ import {
 import {
   bookableEditSectionElementId,
   getBookableEditSectionById,
+  getBookableEditNavSections,
   getVisibleBookableEditSections,
   shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
+import { customerUploadsEnabled } from "@/utils/customerUploads";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
 import { areaAt, areaShown } from "@/utils/bookableAreas";
@@ -478,7 +480,14 @@ export default {
         bookable: this.bookable,
         shown: this.expertOptionShown,
         accessPoints: this.accessPoints.list,
+        customerUploadsEnabled: customerUploadsEnabled(
+          this.$store.getters["tenants/currentTenant"]
+        ),
       };
+    },
+    /** The sections of the active tab that the navigation lists. */
+    activeTabNavSections() {
+      return getBookableEditNavSections(this.activeTabKey, this.sectionContext);
     },
     activeTabSections() {
       return getVisibleBookableEditSections(

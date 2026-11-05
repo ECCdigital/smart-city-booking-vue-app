@@ -15,6 +15,7 @@ import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAtta
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
 import BookableEditRequiredFields from "@/components/Bookable/Edit/BookableEditRequiredFields.vue";
 import BookableEditBookingNotes from "@/components/Bookable/Edit/BookableEditBookingNotes.vue";
+import BookableEditUploadFields from "@/components/Bookable/Edit/BookableEditUploadFields.vue";
 import { BOOKABLE_AREAS } from "@/utils/bookableAreas";
 
 /**
@@ -191,10 +192,24 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     cards: [areaCard("attachments")],
   },
   {
+    // „Zusätzliche Felder“: the custom fields and, while the tenant has
+    // customer uploads enabled, the upload fields.
     key: "customFields",
-    labelKey: "bookable.areas.customFields.title",
+    labelKey: "bookable.edit.tabs.additionalFields",
     icon: "mdi-form-textbox",
-    cards: [areaCard("customFields", { sectionTarget: true })],
+    cards: [
+      areaCard("customFields", {
+        sectionTarget: true,
+        section: "customFields-own",
+      }),
+      {
+        key: "uploadFields",
+        comp: BookableEditUploadFields,
+        titleKey: "bookable.uploadFields.title",
+        icon: "mdi-file-upload-outline",
+        section: "customFields-uploads",
+      },
+    ],
   },
   {
     key: "additional",

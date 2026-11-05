@@ -21,7 +21,8 @@ export function bookableEditSectionElementId(sectionId) {
  * All known sections. `labelKey` names a section in the navigation with the
  * key of the card or area it is - the same key its heading reads, so the
  * navigation and the card say the same. A section that is an expert option
- * names it in `expertOption`.
+ * names it in `expertOption`; one with `inNav: false` is a target of links
+ * only and no entry of the navigation.
  */
 const ALL_SECTIONS = [
   // The two groups of the Grunddaten (BookableEditIdentity), named as the
@@ -143,12 +144,27 @@ const ALL_SECTIONS = [
     type: "scroll",
     expertOption: "cancellation",
   },
+  // „Zusätzliche Felder“: the custom fields and the upload fields, each a
+  // card. The sub-tabs of the custom fields stay targets of links.
+  {
+    tabKey: "customFields",
+    id: "customFields-own",
+    labelKey: "bookable.areas.customFields.title",
+    type: "scroll",
+  },
+  {
+    tabKey: "customFields",
+    id: "customFields-uploads",
+    labelKey: "bookable.uploadFields.title",
+    type: "scroll",
+  },
   {
     tabKey: "customFields",
     id: "customFields-values",
     labelKey: "bookable.edit.sections.customFieldsValues",
     type: "subTab",
     subTab: 0,
+    inNav: false,
   },
   {
     tabKey: "customFields",
@@ -157,6 +173,7 @@ const ALL_SECTIONS = [
     type: "subTab",
     subTab: 1,
     expertOption: "customFieldDefinitions",
+    inNav: false,
   },
   {
     tabKey: "relatedBookables",
@@ -191,7 +208,12 @@ const everyOption = () => true;
 
 function isSectionVisible(
   section,
-  { bookable, shown = everyOption, accessPoints = [] }
+  {
+    bookable,
+    shown = everyOption,
+    accessPoints = [],
+    customerUploadsEnabled = false,
+  }
 ) {
   if (section.expertOption && !shown(section.expertOption)) {
     return false;
@@ -213,6 +235,8 @@ function isSectionVisible(
     "bookingType-buffer": () => mode === "schedule",
     "openingHours-regular": () => isTimeWindowMode(bookingMode),
     "openingHours-special": () => isTimeWindowMode(bookingMode),
+    // The upload fields, while the tenant has customer uploads enabled.
+    "customFields-uploads": () => customerUploadsEnabled === true,
   };
 
   const check = visibilityById[section.id];
@@ -227,6 +251,7 @@ function isSectionVisible(
  *   `BookableEdit.expertOptionShown`); without it every option shows.
  *   `accessPoints` are the tenant's: what ParkraumService takes over and
  *   where its settings show depend on its assigned locker system.
+ *   `customerUploadsEnabled` is the tenant's switch for customer uploads.
  * @returns {Array<object>}
  */
 export function getVisibleBookableEditSections(tabKey, ctx) {
@@ -250,11 +275,18 @@ export function getBookableEditSectionById(sectionId) {
   return ALL_SECTIONS.find((section) => section.id === sectionId) || null;
 }
 
+/** The sections of the tab that are entries of the navigation. */
+export function getBookableEditNavSections(tabKey, ctx) {
+  return getVisibleBookableEditSections(tabKey, ctx).filter(
+    (section) => section.inNav !== false
+  );
+}
+
 /**
  * Whether the nav should show nested section links for this tab.
  */
 export function shouldShowBookableEditSectionNav(tabKey, ctx) {
-  return getVisibleBookableEditSections(tabKey, ctx).length >= 2;
+  return getBookableEditNavSections(tabKey, ctx).length >= 2;
 }
 
 /**

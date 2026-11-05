@@ -77,6 +77,7 @@ export default class Bookable {
     this.customFieldDefinitions = [];
     this.customFieldValues = [];
     this.customFields = [];
+    this.uploadFieldDefinitions = [];
 
     this.externalProviders = [];
 

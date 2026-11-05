@@ -5,6 +5,7 @@ import {
   bookableEditSectionElementId,
   getVisibleBookableEditSections,
 } from "@/utils/bookableEditSections";
+import { customerUploadsEnabled } from "@/utils/customerUploads";
 
 /**
  * A tab of the editing page made of cards (`BOOKABLE_EDIT_TABS`): the tab's
@@ -27,6 +28,9 @@ export default {
         bookable: this.bookable,
         shown: this.expertOptionShown,
         accessPoints: this.bookableAccessPoints.list,
+        customerUploadsEnabled: customerUploadsEnabled(
+          this.$store?.getters["tenants/currentTenant"]
+        ),
       }).map((section) => section.id);
     },
     cards() {

@@ -156,6 +156,24 @@
       "report_not_found": "Die Meldung wurde nicht gefunden."
     },
     "bad-request-codes": {
+      "customer_upload_settings_invalid": "Die Einstellungen zu Nachweisen sind ungültig.",
+      "customer_upload_formats_invalid": "Die Formate der Nachweise sind ungültig.",
+      "customer_upload_format_not_supported": "Nachweise können nur PDF, JPEG oder PNG sein.",
+      "customer_upload_formats_empty": "Wählen Sie für Nachweise mindestens ein Format.",
+      "customer_upload_retention_out_of_range": "Die Löschfrist für Nachweise ist höchstens {max} Tage.",
+      "customer_upload_reminder_out_of_range": "Die Erinnerung an Buchende vor der Einreichfrist muss eine ganze Zahl von Tagen ab 0 sein.",
+      "customer_upload_review_reminder_out_of_range": "Die Erinnerung an Admins vor dem Löschen ist höchstens {max} Tage.",
+      "upload_field_invalid": "Ein Upload-Feld ist ungültig.",
+      "upload_field_duplicate_id": "Zwei Upload-Felder haben dieselbe Id.",
+      "upload_field_label_required": "Jedes Upload-Feld braucht eine Bezeichnung.",
+      "upload_field_max_files_out_of_range": "Ein Upload-Feld nimmt {min} bis {max} Dateien.",
+      "upload_field_format_not_allowed": "Ein Upload-Feld verlangt ein Format, das der Mandant nicht erlaubt.",
+      "upload_field_formats_empty": "Jedes Upload-Feld braucht mindestens ein Format.",
+      "upload_field_max_size_invalid": "Die Höchstgröße eines Upload-Felds muss über 0 MB liegen.",
+      "upload_field_max_size_above_instance": "Die Höchstgröße eines Upload-Felds liegt über der Grenze der Instanz von {max} MB.",
+      "upload_field_category_invalid": "Die Kategorie eines Upload-Felds ist ungültig.",
+      "upload_field_timing_invalid": "Der Zeitpunkt eines Upload-Felds ist ungültig.",
+      "upload_field_deadline_invalid": "Die Frist eines Upload-Felds muss eine ganze Zahl von Tagen ab 0 sein.",
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
@@ -188,6 +206,59 @@
     "integerRequired": "Ganzzahl erforderlich"
   },
   "bookable": {
+    "uploadFields": {
+      "title": "Upload-Felder",
+      "intro": "Nachweise, die Buchende zu einer Buchung hochladen. Buchende sehen die Felder erst, wenn Checkout und Nachreichen sie anbieten.",
+      "limits": "Grenzen der Instanz: höchstens {fileSize} MB je Datei, {files} Dateien und {totalSize} MB je Buchung.",
+      "empty": "Noch keine Upload-Felder",
+      "untitled": "Neues Upload-Feld",
+      "add": "Upload-Feld hinzufügen",
+      "new": "Neues Upload-Feld anlegen",
+      "edit": "Upload-Feld bearbeiten",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "files": "höchstens eine Datei | höchstens {count} Dateien",
+      "remove": "Upload-Feld löschen",
+      "remove-title": "Upload-Feld löschen?",
+      "remove-text": "Das Upload-Feld „{label}“ wird entfernt. Vermerke zu bereits eingereichten Nachweisen an Buchungen bleiben lesbar.",
+      "label": "Bezeichnung",
+      "hint": "Hinweistext",
+      "hint-hint": "Beschreiben Sie für Buchende, was sie hochladen sollen.",
+      "consentText": "Einwilligungstext",
+      "consentText-hint": "Optional. Ein Datenschutztext, den Buchende beim Hochladen sehen, etwa zur Einwilligung in die Verarbeitung von Gesundheitsdaten. Den Text verantworten Sie als Mandant.",
+      "required": "Pflicht",
+      "required-label": "Pflicht-Nachweis",
+      "required-hint": "Ein Pflicht-Nachweis gilt als Voraussetzung für die Buchung. Nur in dem Fall werden Nachweise als „fehlend“ oder „überfällig“ markiert.",
+      "maxFiles": "Maximale Datei-Anzahl",
+      "maxFiles-hint": "{min} bis {max}, z.B. 2 für Vorder- und Rückseite eines Dokuments",
+      "maxFileSize": "Maximale Größe pro Datei",
+      "maxFileSize-hint": "maximal {max} MB",
+      "formats": "Zulässige Formate",
+      "category": "Kategorie",
+      "categories": {
+        "normal": "Normal",
+        "sensitive": "Besonders schutzwürdig"
+      },
+      "sensitive-info": "Was heißt besonders schutzwürdig?",
+      "sensitive-warning": "Besonders schutzwürdig sind etwa Ausweise oder Gesundheitsdaten. Die Datei wird sofort nach der Prüfung automatisch gelöscht. Wägen Sie ab, ob eine Sichtprüfung vor Ort zum Zeitpunkt der Buchung ausreichend wäre.",
+      "timing": "Zeitpunkt des Uploads",
+      "timings": {
+        "checkout": "Beim Checkout",
+        "afterConfirmation": "Nach der Freigabe der Buchung"
+      },
+      "deadline": "Frist vor Buchungsbeginn",
+      "deadline-hint": "Legen Sie fest, bis wann der Nachweis eingereicht werden soll. Ohne Angabe gilt der Buchungsbeginn als Frist.",
+      "validation": {
+        "label": "Geben Sie eine Bezeichnung an.",
+        "maxFiles": "Geben Sie {min} bis {max} Dateien an.",
+        "formatsEmpty": "Wählen Sie mindestens ein Format.",
+        "formatsOutsideTenant": "Der Mandant erlaubt nicht alle gewählten Formate.",
+        "maxFileSize": "Geben Sie eine Größe über 0 MB an.",
+        "maxFileSizeAboveInstance": "Höchstens {maxSize} MB, die Grenze der Instanz.",
+        "deadline": "Geben Sie eine ganze Zahl von Tagen ab 0 an."
+      }
+    },
     "flow": {
       "enter": "Zum geführten Ablauf",
       "leave": "Zur Bearbeitungsseite",
@@ -565,7 +636,8 @@
         "pricing": "Preise & Kapazität",
         "relatedBookables": "Abhängigkeiten",
         "permissions": "Berechtigungen",
-        "additional": "Sonstiges"
+        "additional": "Sonstiges",
+        "additionalFields": "Zusätzliche Felder"
       },
       "nav": {
         "tabs": "Bereiche des Buchungsobjekts",
@@ -1317,6 +1389,36 @@
     }
   },
   "tenant": {
+    "customerUploads": {
+      "title": "Nachweise von Buchenden",
+      "intro": "Ermöglichen Sie Buchenden, bei einer Buchung oder im Anschluss Nachweise hochzuladen. Dazu kann ein Vereinsausweis, ein Sozialpass oder auch eine unterzeichnete Nutzungsvereinbarung gehören. Welche Nachweise ein Buchungsobjekt verlangt, legen Sie jeweils im Buchungsobjekt unter „Upload-Felder“ fest.",
+      "enabled": "Nachweise freischalten",
+      "enabled-hint": "Erst dann zeigen die Buchungsobjekte die Upload-Felder.",
+      "formats": {
+        "label": "Erlaubte Formate",
+        "hint": "Ein Upload-Feld kann nur diese Formate verlangen.",
+        "pdf": "PDF",
+        "jpeg": "JPEG",
+        "png": "PNG"
+      },
+      "retentionDays": "Löschfrist nach Buchungsende",
+      "retentionDays-hint": "Spätestens dann löscht das System jeden Nachweis. Höchstens {max} Tage, Sie können die Frist nur verkürzen.",
+      "days": "Tage",
+      "reviewReminderDays": "Erinnerung an Admins vor dem Löschen",
+      "reviewReminderDays-hint": "So viele Tage vor dem automatischen Löschen erinnert eine E-Mail die Admins an Nachweise, die noch nicht geprüft sind.",
+      "reminderDays": "Erinnerung an Buchende vor der Einreichfrist",
+      "reminderDays-hint": "So viele Tage vor der Einreichfrist erinnert eine E-Mail die Buchenden an einen fehlenden Pflicht-Nachweis.",
+      "notifyOnSubmitted": "E-Mail „Nachweis eingereicht“",
+      "notifyOnSubmitted-hint": "Der Mandant erhält eine E-Mail mit Link, wenn ein Nachweis eingereicht wird.",
+      "notifyOnOverdue": "E-Mail „Nachweis überfällig“",
+      "notifyOnOverdue-hint": "Der Mandant erhält eine E-Mail mit Link, wenn die Frist eines Pflicht-Nachweises abläuft.",
+      "validation": {
+        "formats": "Wählen Sie mindestens ein Format.",
+        "retentionDays": "Geben Sie 0 bis 30 Tage an.",
+        "reminderDays": "Geben Sie eine ganze Zahl von Tagen ab 0 an.",
+        "reviewReminderDays": "Geben Sie 0 bis 30 Tage an."
+      }
+    },
     "reports": {
       "title": "Meldungen",
       "open-count": "{count} offen",
