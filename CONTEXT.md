@@ -108,6 +108,10 @@ _Avoid_: Preisart as a word on screen (the question asks it), Fester Preis as a 
 The fixed price of an hour price: every day the booking touches costs the amount once, whatever the hours. The same switch is called „Angefangene Tage zählen voll“ for a day price and „Gilt einmal je Buchung“ for Stück and m²; changing the Preisart sets it to the new Preisart's default.
 _Avoid_: Pauschalpreis, Fester Preis, Festpreis
 
+**Angefangene Stunden zählen voll** (admin: „Angefangene Stunden zählen voll“):
+How an hour price counts the time: on, every started hour costs the full price, and the Tarif is chosen by the hours so counted; off (the default), by the minute. Asked for „Pro Stunde“ only and not for a Tagespauschale; a day price has „Angefangene Tage zählen voll“ instead. Changing the Preisart switches it off.
+_Avoid_: Aufrunden, Stundentakt, Abrechnungsintervall
+
 **Rabattcodes** (admin: „Rabattcodes“):
 The codes bookers type in at checkout for a discount. Per bookable a switch says whether they can be redeemed there, on unless switched off; a bookable never stored with the switch reads as on, as the backend takes it.
 _Avoid_: Gutscheine, Rabatte, Coupons (the code's word, not the screen's)

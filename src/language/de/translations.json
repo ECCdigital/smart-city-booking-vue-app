@@ -431,9 +431,14 @@
           "hint": "Sonderfall: Die gebuchte Fläche multipliziert den Preis dann nicht."
         }
       },
+      "started-hours": {
+        "label": "Angefangene Stunden zählen voll",
+        "hint": "Jede angefangene Stunde kostet den vollen Preis. Andernfalls wird der Preis minutengenau berechnet."
+      },
       "explain": {
         "none": "Ohne Betrag bleibt die Buchung kostenfrei.",
         "per-hour": "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet {total}.",
+        "per-hour-started": "Jede angefangene Stunde zählt voll – eine Buchung über 2,5 Stunden sind 3 Stunden: {total}.",
         "per-hour-daily": "Jeder angefangene Tag zählt einmal – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
         "per-day-full": "Jeder angefangene Tag zählt voll – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
         "per-day-exact": "Gerechnet wird minutengenau – 6 Stunden kosten {total}.",

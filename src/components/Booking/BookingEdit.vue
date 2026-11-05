@@ -1660,8 +1660,8 @@ export default {
       const base = Number(category.priceEur) || 0;
       if (category.fixedPrice) return base;
 
-      const duration = this.getBookingDuration();
       const bookable = item._bookableUsed;
+      const duration = this.getBilledDuration(bookable);
       const amount = item.amount || 1;
 
       switch (bookable?.priceType) {
@@ -1674,6 +1674,20 @@ export default {
         default:
           return base * amount;
       }
+    },
+    /**
+     * The booking's minutes as the price counts them: an hour price with
+     * `priceCountStartedHours` counts every started hour in full.
+     */
+    getBilledDuration(bookable) {
+      const minutes = this.getBookingDuration();
+      if (
+        bookable?.priceType === "per-hour" &&
+        bookable.priceCountStartedHours
+      ) {
+        return Math.ceil(minutes / 60) * 60;
+      }
+      return minutes;
     },
     getItemPriceLabel(item) {
       const price = this.calculateItemPrice(item);
@@ -1710,7 +1724,9 @@ export default {
         return priceCategories[0];
       }
 
-      const bookingDurationInMinutes = this.getBookingDuration();
+      const bookingDurationInMinutes = this.getBilledDuration(
+        bookableItem._bookableUsed
+      );
 
       let valueToCheck;
       switch (priceType) {

@@ -217,9 +217,100 @@ describe("BookableEditPrice - the Preisart", () => {
   it("explains the price as the backend reckons it", () => {
     const hourly = mountPrice(paid("per-hour"));
     const daily = mountPrice(paid("per-hour", true));
+    const started = mountPrice({
+      ...paid("per-hour"),
+      priceCountStartedHours: true,
+    });
 
     expect(text(hourly.wrapper, "flow-price-explain")).toContain("50,00");
     expect(text(daily.wrapper, "flow-price-explain")).toContain("60,00");
+    expect(text(started.wrapper, "flow-price-explain")).toContain("60,00");
+  });
+});
+
+describe("BookableEditPrice - started hours", () => {
+  const hourly = (overrides = {}) => ({
+    priceType: "per-hour",
+    priceCategories: [category(20)],
+    ...overrides,
+  });
+
+  it("asks for an hour price, off as stored by default", () => {
+    const { wrapper } = mountPrice(hourly());
+
+    const started = find(wrapper, "flow-price-started-hours");
+    expect(started.text()).toContain("Angefangene Stunden zählen voll");
+    expect(started.text()).toContain(
+      "Andernfalls wird der Preis minutengenau berechnet."
+    );
+    expect(started.find("input").attributes("aria-checked")).toBe("false");
+  });
+
+  it("stands under the amount, before the Tagespauschale", () => {
+    const { wrapper } = mountPrice(hourly());
+
+    const order = [
+      "flow-price-amount",
+      "flow-price-started-hours",
+      "flow-price-fixed",
+    ].map((test) => find(wrapper, test).element);
+    const follows = (a, b) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(order[0], order[1])).toBe(true);
+    expect(follows(order[1], order[2])).toBe(true);
+  });
+
+  it("shows the stored choice", () => {
+    const { wrapper } = mountPrice(hourly({ priceCountStartedHours: true }));
+
+    expect(
+      find(wrapper, "flow-price-started-hours")
+        .find("input")
+        .attributes("aria-checked")
+    ).toBe("true");
+  });
+
+  it("hands on the switch", async () => {
+    const { wrapper, patches } = mountPrice(hourly());
+
+    await find(wrapper, "flow-price-started-hours")
+      .find("input")
+      .trigger("click");
+
+    expect(patches).toEqual([{ priceCountStartedHours: true }]);
+  });
+
+  it("asks for Tarife of an hour price too", () => {
+    const { wrapper } = mountPrice(hourly({ priceCategories: TIERS }));
+
+    expect(find(wrapper, "flow-price-started-hours").exists()).toBe(true);
+  });
+
+  it("is not asked for a Tagespauschale or another Preisart", () => {
+    const daily = mountPrice(
+      hourly({ priceCategories: [category(20, { fixedPrice: true })] })
+    );
+    expect(find(daily.wrapper, "flow-price-started-hours").exists()).toBe(
+      false
+    );
+
+    for (const priceType of ["per-day", "per-item", "per-square-meter"]) {
+      const { wrapper } = mountPrice(hourly({ priceType }));
+      expect(find(wrapper, "flow-price-started-hours").exists()).toBe(false);
+    }
+  });
+
+  it("starts off again on a change of the Preisart", async () => {
+    const { wrapper, patches } = mountPrice(
+      hourly({ priceCountStartedHours: true })
+    );
+
+    await find(wrapper, "flow-price-type-per-day").trigger("click");
+
+    expect(lastPatch(patches)).toMatchObject({
+      priceType: "per-day",
+      priceCountStartedHours: false,
+    });
   });
 });
 
