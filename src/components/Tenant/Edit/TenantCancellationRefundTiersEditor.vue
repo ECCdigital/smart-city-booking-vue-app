@@ -24,7 +24,7 @@
     <v-expansion-panels multiple>
       <v-expansion-panel
         v-for="(tier, index) in localTiers"
-        :key="`cancellation-refund-tier-${tier.daysBeforeStart}`"
+        :key="`cancellation-refund-tier-${tier.hoursBeforeStart}`"
       >
         <v-expansion-panel-header color="accent" expand-icon="mdi-menu-down">
           <template v-slot:default>
@@ -42,7 +42,7 @@
                 <strong class="text-truncate min-width-0">
                   {{
                     $t("tenant.cancellationRefundTiers.tierTitle", {
-                      days: tier.daysBeforeStart,
+                      deadline: formatTierDeadline(tier.hoursBeforeStart),
                     })
                   }}
                 </strong>
@@ -99,7 +99,7 @@
           <div class="text-body-2">
             {{
               $t("tenant.cancellationRefundTiers.tierDescription", {
-                days: tier.daysBeforeStart,
+                deadline: formatTierDeadline(tier.hoursBeforeStart),
                 percentage: tier.refundPercentage,
               })
             }}
@@ -165,25 +165,36 @@
         <v-card-text class="pa-6">
           <v-form ref="dialogForm" v-model="dialogValid">
             <v-row dense>
-              <v-col cols="12" md="6">
+              <v-col cols="7" md="4">
                 <v-text-field
-                  v-model.number="editingTier.daysBeforeStart"
-                  :label="$t('tenant.cancellationRefundTiers.daysBeforeStart')"
-                  :rules="daysRules"
+                  v-model.number="editingTier.amount"
+                  :label="$t('tenant.cancellationRefundTiers.deadline')"
+                  :rules="deadlineRules"
                   type="number"
                   min="0"
                   step="1"
-                  suffix="Tage"
                   background-color="accent"
                   filled
                   dense
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="5" md="3">
+                <v-select
+                  v-model="editingTier.unit"
+                  :items="unitItems"
+                  :label="$t('tenant.cancellationRefundTiers.unit')"
+                  background-color="accent"
+                  filled
+                  dense
+                />
+              </v-col>
+              <v-col cols="12" md="5">
                 <v-text-field
                   v-model.number="editingTier.refundPercentage"
                   :label="$t('tenant.cancellationRefundTiers.refundPercentage')"
                   :rules="refundRules"
+                  :hint="refundRangeHint"
+                  persistent-hint
                   type="number"
                   min="0"
                   max="100"
@@ -196,6 +207,17 @@
               </v-col>
             </v-row>
 
+            <v-alert
+              v-if="preferDaysHint"
+              type="info"
+              dense
+              text
+              icon="mdi-lightbulb-outline"
+              class="mt-2 mb-0 text-body-2"
+            >
+              {{ preferDaysHint }}
+            </v-alert>
+
             <v-card outlined class="tier-preview pa-3 mt-2">
               <div class="text-caption text--secondary mb-1">
                 <v-icon small left color="primary">mdi-eye-outline</v-icon>
@@ -204,7 +226,7 @@
               <div class="text-body-2">
                 {{
                   $t("tenant.cancellationRefundTiers.tierDescription", {
-                    days: editingTier.daysBeforeStart ?? "–",
+                    deadline: editingDeadlineText,
                     percentage: editingTier.refundPercentage ?? "–",
                   })
                 }}
@@ -253,7 +275,9 @@
         <v-card-text class="pa-6">
           {{
             $t("tenant.cancellationRefundTiers.deleteDescription", {
-              days: deletingTier?.daysBeforeStart,
+              deadline: deletingTier
+                ? formatTierDeadline(deletingTier.hoursBeforeStart)
+                : "",
             })
           }}
         </v-card-text>
@@ -274,10 +298,15 @@
 
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import {
+  HOURS_PER_DAY,
+  formatTierDeadline,
+  tierDeadline,
+} from "@/utils/cancellationRefund";
 
 function cloneTiers(tiers) {
   return (Array.isArray(tiers) ? tiers : []).map((tier) => ({
-    daysBeforeStart: tier.daysBeforeStart,
+    hoursBeforeStart: tier.hoursBeforeStart,
     refundPercentage: tier.refundPercentage,
   }));
 }
@@ -285,8 +314,16 @@ function cloneTiers(tiers) {
 function sortTiers(tiers) {
   return [...tiers].sort(
     (left, right) =>
-      Number(right.daysBeforeStart) - Number(left.daysBeforeStart)
+      Number(right.hoursBeforeStart) - Number(left.hoursBeforeStart)
   );
+}
+
+/** The tier being edited: its deadline as amount and unit, as entered. */
+function toEditingTier(tier) {
+  return {
+    ...tierDeadline(tier.hoursBeforeStart),
+    refundPercentage: tier.refundPercentage,
+  };
 }
 
 export default {
@@ -309,7 +346,8 @@ export default {
       dialogValid: false,
       editingIndex: -1,
       editingTier: {
-        daysBeforeStart: 0,
+        amount: 0,
+        unit: "days",
         refundPercentage: 100,
       },
       confirmDelete: {
@@ -322,7 +360,29 @@ export default {
     deletingTier() {
       return this.localTiers[this.confirmDelete.index] || null;
     },
-    daysRules() {
+    unitItems() {
+      return [
+        {
+          value: "days",
+          text: this.$t("tenant.cancellationRefundTiers.unitDays"),
+        },
+        {
+          value: "hours",
+          text: this.$t("tenant.cancellationRefundTiers.unitHours"),
+        },
+      ];
+    },
+    /** The deadline being edited in hours, as it is stored; a day is 24. */
+    editingHours() {
+      const factor = this.editingTier.unit === "days" ? HOURS_PER_DAY : 1;
+      return Number(this.editingTier.amount) * factor;
+    },
+    editingDeadlineText() {
+      return this.isValidDeadline(this.editingTier.amount)
+        ? formatTierDeadline(this.editingHours)
+        : "–";
+    },
+    deadlineRules() {
       return [
         (value) => this.isPresent(value) || this.$t("validation.required"),
         (value) =>
@@ -330,10 +390,10 @@ export default {
           this.$t("validation.integerRequired"),
         (value) =>
           Number(value) >= 0 ||
-          this.$t("tenant.cancellationRefundTiers.nonNegativeDays"),
-        (value) =>
-          !this.hasDuplicateDays(value) ||
-          this.$t("tenant.cancellationRefundTiers.uniqueDays"),
+          this.$t("tenant.cancellationRefundTiers.nonNegativeDeadline"),
+        () =>
+          !this.hasDuplicateDeadline(this.editingHours) ||
+          this.$t("tenant.cancellationRefundTiers.uniqueDeadline"),
       ];
     },
     percentageRules() {
@@ -347,18 +407,89 @@ export default {
           this.$t("tenant.cancellationRefundTiers.percentageRange"),
       ];
     },
+    /**
+     * Past 48 hours a deadline in hours reads harder for the booker than one
+     * in days: the whole days it comes nearest to, as text; `null` otherwise.
+     */
+    daysSuggestion() {
+      if (
+        this.editingTier.unit !== "hours" ||
+        !this.isValidDeadline(this.editingTier.amount) ||
+        this.editingHours <= 2 * HOURS_PER_DAY
+      ) {
+        return null;
+      }
+      const days = Math.round(this.editingHours / HOURS_PER_DAY);
+      return formatTierDeadline(days * HOURS_PER_DAY);
+    },
+    preferDaysHint() {
+      return this.daysSuggestion
+        ? this.$t("tenant.cancellationRefundTiers.preferDays", {
+            hours: this.$tc(
+              "booking.cancellationRefund.timeHours",
+              this.editingHours,
+              { n: this.editingHours }
+            ),
+            days: this.daysSuggestion,
+          })
+        : "";
+    },
+    /**
+     * The refunds the tier being edited may name so that more notice never
+     * refunds less: at most that of the next longer deadline, at least that
+     * of the next shorter one.
+     *
+     * @returns {{ min: number, max: number, longer: Object|null, shorter: Object|null }}
+     */
+    allowedRefundRange() {
+      const others = sortTiers(
+        this.localTiers.filter((tier, index) => index !== this.editingIndex)
+      );
+      const hours = this.editingHours;
+      const longer =
+        [...others]
+          .reverse()
+          .find((tier) => Number(tier.hoursBeforeStart) > hours) || null;
+      const shorter =
+        others.find((tier) => Number(tier.hoursBeforeStart) < hours) || null;
+      return {
+        min: shorter ? Number(shorter.refundPercentage) : 0,
+        max: longer ? Number(longer.refundPercentage) : 100,
+        longer,
+        shorter,
+      };
+    },
+    refundRangeHint() {
+      const { min, max } = this.allowedRefundRange;
+      if (min === 0 && max === 100) return "";
+      return this.$t("tenant.cancellationRefundTiers.refundRangeHint", {
+        min,
+        max,
+      });
+    },
+    refundRangeMessage() {
+      const { min, max, longer, shorter } = this.allowedRefundRange;
+      const values = {
+        min,
+        max,
+        longer: longer ? formatTierDeadline(longer.hoursBeforeStart) : "",
+        shorter: shorter ? formatTierDeadline(shorter.hoursBeforeStart) : "",
+      };
+      let key = "refundRangeBoth";
+      if (!shorter) key = "refundRangeMax";
+      else if (!longer) key = "refundRangeMin";
+      return this.$t(`tenant.cancellationRefundTiers.${key}`, values);
+    },
     refundRules() {
       return [
         ...this.percentageRules,
-        () =>
-          this.isCandidateMonotonic ||
-          this.$t("tenant.cancellationRefundTiers.monotonic"),
+        () => this.isCandidateMonotonic || this.refundRangeMessage,
       ];
     },
     candidateTiers() {
       const tiers = cloneTiers(this.localTiers);
       const candidate = {
-        daysBeforeStart: Number(this.editingTier.daysBeforeStart),
+        hoursBeforeStart: this.editingHours,
         refundPercentage: Number(this.editingTier.refundPercentage),
       };
       if (this.editingIndex >= 0) {
@@ -380,12 +511,17 @@ export default {
     canSave() {
       return (
         this.dialogValid &&
-        !this.hasDuplicateDays(this.editingTier.daysBeforeStart) &&
+        !this.hasDuplicateDeadline(this.editingHours) &&
         this.isCandidateMonotonic
       );
     },
   },
   watch: {
+    editingHours() {
+      // The allowed refund follows the deadline: check it again.
+      if (this.dialogOpen)
+        this.$nextTick(() => this.$refs.dialogForm?.validate());
+    },
     tiers: {
       deep: true,
       handler(tiers) {
@@ -400,13 +536,21 @@ export default {
     isPresent(value) {
       return value !== "" && value !== null && value !== undefined;
     },
-    hasDuplicateDays(value) {
+    isValidDeadline(value) {
+      return (
+        this.isPresent(value) &&
+        Number.isInteger(Number(value)) &&
+        Number(value) >= 0
+      );
+    },
+    hasDuplicateDeadline(hours) {
       return this.localTiers.some(
         (tier, index) =>
           index !== this.editingIndex &&
-          Number(tier.daysBeforeStart) === Number(value)
+          Number(tier.hoursBeforeStart) === Number(hours)
       );
     },
+    formatTierDeadline,
     refundColor(percentage) {
       if (percentage >= 100) return "success";
       if (percentage <= 0) return "error";
@@ -416,18 +560,20 @@ export default {
       const sorted = sortTiers(this.localTiers);
       const highest = sorted[0];
       this.editingIndex = -1;
-      this.editingTier = {
-        daysBeforeStart: highest ? Number(highest.daysBeforeStart || 0) + 1 : 0,
+      this.editingTier = toEditingTier({
+        hoursBeforeStart: highest
+          ? Number(highest.hoursBeforeStart || 0) + HOURS_PER_DAY
+          : 0,
         refundPercentage: highest
           ? Number(highest.refundPercentage ?? 100)
           : 100,
-      };
+      });
       this.dialogOpen = true;
       this.$nextTick(() => this.$refs.dialogForm?.resetValidation());
     },
     openEdit(index) {
       this.editingIndex = index;
-      this.editingTier = { ...this.localTiers[index] };
+      this.editingTier = toEditingTier(this.localTiers[index]);
       this.dialogOpen = true;
       this.$nextTick(() => this.$refs.dialogForm?.resetValidation());
     },
@@ -439,7 +585,7 @@ export default {
     saveTier() {
       if (!this.$refs.dialogForm?.validate() || !this.canSave) return;
       const tier = {
-        daysBeforeStart: Number(this.editingTier.daysBeforeStart),
+        hoursBeforeStart: this.editingHours,
         refundPercentage: Number(this.editingTier.refundPercentage),
       };
       if (this.editingIndex >= 0) {

@@ -777,33 +777,60 @@ describe("BookingPage", () => {
       expect(payment).toMatch(/20,00\s€/);
     });
 
-    it("counts no days before the start in the refund audit of a booking without a time span", async () => {
+    // The refund was fixed at the cancellation, so the audit names no tier and
+    // no time before the start.
+    it("names no tier and no time before the start in the refund audit", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
         data: booking({
           status: "cancelled",
-          timeBegin: null,
-          timeEnd: null,
-          // as the backend stored it before 4.3.1: counted from 01.01.1970
           cancellationRefund: {
             originalAmountEur: 25,
-            refundAmountEur: 25,
-            cancellationFeeEur: 0,
-            suggestedRefundPercentage: 100,
-            appliedRefundPercentage: 100,
-            daysBeforeStart: -20728,
+            refundAmountEur: 2.75,
+            cancellationFeeEur: 22.25,
+            suggestedRefundPercentage: 11,
+            appliedRefundPercentage: 11,
+            hoursBeforeStart: 30,
+            appliedTierHours: 26,
           },
         }),
       });
       const { wrapper } = mountPage();
       await settle(wrapper);
 
-      const policy = wrapper
-        .find(".booking-page__payment .cancellation-refund-panel__policy")
-        .text();
-      expect(policy).toBe(
-        "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
+      const payment = wrapper.find(".booking-page__payment");
+      expect(payment.text()).toContain("Erstattung bei Stornierung");
+      expect(payment.find(".cancellation-refund-panel__policy").exists()).toBe(
+        false
       );
-      expect(wrapper.text()).not.toContain("-20728");
+      expect(payment.text()).not.toContain("Erstattungsstufe");
+    });
+
+    it("says in the refund audit that the administration overrode the rule", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "cancelled",
+          cancellationRefund: {
+            originalAmountEur: 25,
+            refundAmountEur: 12.5,
+            cancellationFeeEur: 12.5,
+            suggestedRefundPercentage: 11,
+            appliedRefundPercentage: 50,
+            hoursBeforeStart: 30,
+            appliedTierHours: 26,
+            adminOverride: true,
+          },
+        }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      expect(
+        wrapper
+          .find(".booking-page__payment .cancellation-refund-panel__policy")
+          .text()
+      ).toBe(
+        "Die Mandantenregel schlug 11 % vor. Angewendet wurden 50 % (Admin-Überschreibung)."
+      );
     });
 
     it("shows the refund state under the refund audit and reloads after the tick", async () => {

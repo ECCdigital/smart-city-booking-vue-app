@@ -216,23 +216,42 @@ describe("RequestRejectBooking", () => {
       return wrapper;
     }
 
-    it("names the calendar days before the start", async () => {
-      const wrapper = await previewWith({ daysBeforeStart: 12 });
+    it("names the days before the start from one day on", async () => {
+      const wrapper = await previewWith({ hoursBeforeStart: 290 });
 
       expect(wrapper.text()).toContain(
-        "Bei 12 Kalendertagen bis zum Beginn beträgt die Erstattung 50 %."
+        "Sie stornieren 12 Tage vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
+      );
+    });
+
+    it("names the tier that applies", async () => {
+      const wrapper = await previewWith({
+        hoursBeforeStart: 30,
+        appliedTierHours: 26,
+      });
+
+      expect(wrapper.text()).toContain(
+        "Sie stornieren 1 Tag und 6 Stunden vor Beginn der Buchung. Es gilt die Erstattungsstufe: bis 26 Stunden vor Beginn.\n\nDie Erstattung beträgt voraussichtlich 50 %."
+      );
+    });
+
+    it("names the hours before the start below one day", async () => {
+      const wrapper = await previewWith({ hoursBeforeStart: 13 });
+
+      expect(wrapper.text()).toContain(
+        "Sie stornieren 13 Stunden vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
       );
     });
 
     // ECCdigital/tickets#306: a booking without a time span showed „Bei –
     // Kalendertagen …“.
     it("says the booking has no time span where there are no days", async () => {
-      const wrapper = await previewWith({ daysBeforeStart: null });
+      const wrapper = await previewWith({ hoursBeforeStart: null });
 
       expect(wrapper.text()).toContain(
         "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
       );
-      expect(wrapper.text()).not.toContain("Kalendertagen");
+      expect(wrapper.text()).not.toContain("vor Beginn");
     });
   });
 });

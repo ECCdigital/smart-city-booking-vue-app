@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookingStartsInText,
   filterBookingsByRefundState,
   getCancellationRefundAudit,
+  formatAppliedTier,
+  formatAppliedTierRule,
+  formatTierDeadline,
+  formatTimeBeforeStart,
+  formatTimeBeforeStartForBooker,
   refundPolicyText,
   refundStateMarker,
+  tierDeadline,
   refundStateOf,
 } from "@/utils/cancellationRefund";
 
@@ -120,15 +127,29 @@ describe("refundStateMarker", () => {
 });
 
 describe("refundPolicyText", () => {
-  it("names the calendar days before the start in the customer's summary", () => {
+  it("names the time before the start in the customer's summary", () => {
     expect(
-      refundPolicyText("userPolicySummary", { days: 3, percentage: 50 })
-    ).toBe("Bei 3 Kalendertagen bis zum Beginn beträgt die Erstattung 50 %.");
+      refundPolicyText("userPolicySummary", { time: "3 Tage", percentage: 50 })
+    ).toBe(
+      "Sie stornieren 3 Tage vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich 50 %."
+    );
+  });
+
+  it("names the tier that applied, so the percentage can be read off it", () => {
+    expect(
+      refundPolicyText("userPolicySummary", {
+        time: "1 Tag",
+        tier: "bis 26 Stunden vor Beginn",
+        percentage: 11,
+      })
+    ).toBe(
+      "Sie stornieren 1 Tag vor Beginn der Buchung. Es gilt die Erstattungsstufe: bis 26 Stunden vor Beginn.\n\nDie Erstattung beträgt voraussichtlich 11 %."
+    );
   });
 
   it("says the booking has no time span where there are no days", () => {
     expect(
-      refundPolicyText("userPolicySummary", { days: null, percentage: 50 })
+      refundPolicyText("userPolicySummary", { time: null, percentage: 50 })
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
     );
@@ -137,5 +158,130 @@ describe("refundPolicyText", () => {
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
+  });
+});
+
+/**
+ * A tier's deadline is stored in hours and reads in days where it divides by
+ * 24; the time before the start of a calculation reads in whole days from one
+ * day on, in hours below.
+ */
+describe("tierDeadline", () => {
+  it("reads a deadline that divides by 24 as days, any other as hours", () => {
+    expect(tierDeadline(48)).toEqual({ amount: 2, unit: "days" });
+    expect(tierDeadline(0)).toEqual({ amount: 0, unit: "days" });
+    expect(tierDeadline(12)).toEqual({ amount: 12, unit: "hours" });
+    expect(tierDeadline(36)).toEqual({ amount: 36, unit: "hours" });
+  });
+
+  it("names the deadline with its unit", () => {
+    expect(formatTierDeadline(24)).toBe("1 Tag");
+    expect(formatTierDeadline(48)).toBe("2 Tage");
+    expect(formatTierDeadline(12)).toBe("12 Stunden");
+    expect(formatTierDeadline(1)).toBe("1 Stunde");
+  });
+});
+
+describe("formatTimeBeforeStart", () => {
+  it("names whole days from one day on and hours below", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 47 })).toBe("1 Tag");
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 48 })).toBe("2 Tage");
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 13 })).toBe("13 Stunden");
+  });
+
+  it("names the calendar days of an audit from before", () => {
+    expect(formatTimeBeforeStart({ daysBeforeStart: 3 })).toBe("3 Tage");
+  });
+
+  it("answers null without a time span", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: null })).toBeNull();
+    expect(formatTimeBeforeStart(null)).toBeNull();
+  });
+});
+
+describe("formatAppliedTier", () => {
+  it("names the deadline of the tier that applied", () => {
+    expect(formatAppliedTier({ appliedTierHours: 26 })).toBe("26 Stunden");
+    expect(formatAppliedTier({ appliedTierHours: 48 })).toBe("2 Tage");
+    expect(formatAppliedTier({ appliedTierHours: 0 })).toBe("Bis zum Beginn");
+  });
+
+  it("names the days of an audit from before", () => {
+    expect(formatAppliedTier({ appliedTierDays: 3 })).toBe("3 Tage");
+  });
+
+  it("answers null where no tier applied", () => {
+    expect(formatAppliedTier({ appliedTierHours: null })).toBeNull();
+    expect(formatAppliedTier(null)).toBeNull();
+  });
+});
+
+describe("formatTimeBeforeStartForBooker", () => {
+  it("names days and hours below three days", () => {
+    const time = (hours) =>
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: hours });
+
+    expect(time(30)).toBe("1 Tag und 6 Stunden");
+    expect(time(49)).toBe("2 Tage und 1 Stunde");
+    expect(time(48)).toBe("2 Tage");
+    expect(time(71)).toBe("2 Tage und 23 Stunden");
+  });
+
+  it("names whole days from three days on and hours below one day", () => {
+    const time = (hours) =>
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: hours });
+
+    expect(time(72)).toBe("3 Tage");
+    expect(time(95)).toBe("3 Tage");
+    expect(time(13)).toBe("13 Stunden");
+  });
+
+  it("keeps the days of an audit from before and null without a time span", () => {
+    expect(formatTimeBeforeStartForBooker({ daysBeforeStart: 2 })).toBe(
+      "2 Tage"
+    );
+    expect(
+      formatTimeBeforeStartForBooker({ hoursBeforeStart: null })
+    ).toBeNull();
+  });
+});
+
+describe("formatAppliedTierRule", () => {
+  it("names the tier as the booker reads it", () => {
+    expect(formatAppliedTierRule({ appliedTierHours: 36 })).toBe(
+      "bis 36 Stunden vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: 48 })).toBe(
+      "bis 2 Tage vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: 0 })).toBe(
+      "bis zum Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierDays: 3 })).toBe(
+      "bis 3 Tage vor Beginn"
+    );
+    expect(formatAppliedTierRule({ appliedTierHours: null })).toBeNull();
+  });
+});
+
+describe("bookingStartsInText", () => {
+  const startsIn = (hours) => bookingStartsInText({ hoursBeforeStart: hours });
+
+  it("names days and hours below three days", () => {
+    expect(startsIn(30)).toBe("Die Buchung beginnt in 1 Tag und 6 Stunden.");
+    expect(startsIn(49)).toBe("Die Buchung beginnt in 2 Tagen und 1 Stunde.");
+    expect(startsIn(48)).toBe("Die Buchung beginnt in 2 Tagen.");
+  });
+
+  it("names whole days from three days on and hours below one day", () => {
+    expect(startsIn(72)).toBe("Die Buchung beginnt in 3 Tagen.");
+    expect(startsIn(95)).toBe("Die Buchung beginnt in 3 Tagen.");
+    expect(startsIn(13)).toBe("Die Buchung beginnt in 13 Stunden.");
+  });
+
+  it("says nothing without a time span or under an hour", () => {
+    expect(startsIn(null)).toBeNull();
+    expect(startsIn(0)).toBeNull();
+    expect(startsIn(-5)).toBeNull();
   });
 });

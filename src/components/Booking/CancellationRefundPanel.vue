@@ -24,7 +24,7 @@
       type="info"
       text
       dense
-      class="cancellation-refund-panel__policy mt-2 mb-0"
+      class="cancellation-refund-panel__policy text-body-2 mt-2 mb-0"
     >
       {{ policySummary }}
     </v-alert>
@@ -97,5 +97,6 @@ export default {
 
 .cancellation-refund-panel__policy {
   border-radius: 4px !important;
+  white-space: pre-line;
 }
 </style>
