@@ -146,6 +146,17 @@ describe("BookableEditUploadFields (Upload-Felder)", () => {
     );
   });
 
+  it("asks label and description, but no consent text", async () => {
+    const { wrapper } = mountArea();
+
+    await find(wrapper, "upload-field-add").trigger("click");
+
+    expect(activeDialogText()).toContain("Beschreibung");
+    expect(activeDialogText()).not.toContain("Hinweistext");
+    expect(activeDialogText()).not.toContain("Einwilligungstext");
+    expect(inDialog("upload-field-consent")).toBeNull();
+  });
+
   it("creates nothing without a label", async () => {
     const { wrapper, patches } = mountArea();
 

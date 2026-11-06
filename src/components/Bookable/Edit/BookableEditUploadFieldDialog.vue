@@ -161,20 +161,6 @@ export default {
       auto-grow
       @input="local = { ...local, hint: $event }"
     />
-    <v-textarea
-      data-test="upload-field-consent"
-      :value="local.consentText"
-      :label="$t('bookable.uploadFields.consentText')"
-      :hint="$t('bookable.uploadFields.consentText-hint')"
-      persistent-hint
-      background-color="accent"
-      filled
-      dense
-      rows="2"
-      auto-grow
-      class="mt-3"
-      @input="local = { ...local, consentText: $event }"
-    />
 
     <v-switch
       data-test="upload-field-required"
