@@ -49,6 +49,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   „Rolle löschen“ no longer closes silently: when the backend refuses because members or usable invitations still hold the role (`409 role_in_use`), the dialog stays open and names both counts („Die Rolle wird noch verwendet (Mitgliedschaften: 2, offene Einladungen: 1) …“); any other failure shows a general message. Needs the backend with `409 role_in_use` on `DELETE /api/:tenant/roles/:id`
 -   The icon in the title of the dialogs for reports, suspensions and the blacklist sits level with the first line of the title
 -   Group checkout names its failure ([ECCdigital/tickets#298](https://github.com/ECCdigital/tickets/issues/298)): the backend's bare `404 "Bookable not found"` shows „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“ as the single checkout does, any other failure the general error toast, instead of only a line in the console
 -   „Passwort vergessen“ names a hit rate limit ([ECCdigital/tickets#302](https://github.com/ECCdigital/tickets/issues/302)): a `429` of `POST /auth/forgot-password` shows the toast „Zu viele Versuche“ (`auth.rate-limit.unknown`) instead of the general error; the form stays
