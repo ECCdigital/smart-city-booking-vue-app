@@ -70,12 +70,14 @@
                 step === steps.length ? 0 : leadItem.bookingDiscountPercent
               "
               :initial-book-without-discount="bookWithoutDiscount"
+              :customer-upload-files="customerUploadFiles"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
               @set-book-without-discount="setBookWithoutDiscount"
               @login-required="offerLogin"
+              @customer-upload-refused="goToStep('checkout-contact-details')"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -160,6 +162,9 @@ export default {
         location: null,
         comment: null,
       },
+      // The files of the upload fields "in the checkout" by field id;
+      // they go with the checkout.
+      customerUploadFiles: {},
       coupon: null,
 
       activePaymentApps: [],
@@ -314,6 +319,7 @@ export default {
         events: {
           back: this.previousPage,
           submit: this.nextPage,
+          "update:customer-upload-files": this.setCustomerUploadFiles,
         },
       };
 
@@ -770,6 +776,9 @@ export default {
       this.bookWithoutDiscount = value;
       await this.validateItems();
     },
+    setCustomerUploadFiles(files) {
+      this.customerUploadFiles = files;
+    },
 
     adjustStepAfterRebuild(previousStepCount) {
       const newStepCount = this.steps.length;
@@ -833,6 +842,7 @@ export default {
             me: this.me,
             leadItem: this.leadItem,
             contactDetails: this.contactDetails,
+            customerUploadFiles: this.customerUploadFiles,
           };
         } else if (currentStep.component === "checkout-time-selector") {
           const props = {

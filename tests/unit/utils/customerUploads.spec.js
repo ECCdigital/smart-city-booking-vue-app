@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkoutUploadErrorKey,
+  checkoutUploadFieldsOf,
+  checkoutUploadParts,
+  checkoutUploadRefusalOf,
+  formatOfFile,
+  hasCheckoutUploads,
+  missingCheckoutUploads,
+  precheckCheckoutUpload,
   customerUploadLimitsOf,
   customerUploadSettingsIssues,
   customerUploadSettingsOf,
@@ -322,6 +330,111 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
   it("hands each member of a series to its own checks", () => {
     const member = withState([proofField()], "B1");
     expect(seriesProofsOf([member])[0].booking).toBe(member);
+  });
+});
+
+describe("customerUploads - the upload fields of the legacy checkout (ECCdigital/tickets#827)", () => {
+  const MB = 1024 * 1024;
+  const checkoutField = (overrides = {}) => ({
+    id: "f1",
+    label: "Vereinsausweis",
+    hint: "",
+    consentText: "",
+    required: true,
+    maxFiles: 2,
+    formats: ["pdf", "jpeg"],
+    maxFileSizeMb: 1,
+    ...overrides,
+  });
+  const pdf = (size = 1000, name = "ausweis.pdf") => ({
+    name,
+    type: "application/pdf",
+    size,
+  });
+
+  it("reads the fields off the public offer, none where it names none", () => {
+    expect(
+      checkoutUploadFieldsOf({ checkoutUploadFields: [checkoutField()] })
+    ).toHaveLength(1);
+    expect(checkoutUploadFieldsOf({})).toEqual([]);
+    expect(checkoutUploadFieldsOf(undefined)).toEqual([]);
+  });
+
+  it("reads the format off the type, else off the extension", () => {
+    expect(formatOfFile({ name: "a.JPG", type: "" })).toBe("jpeg");
+    expect(formatOfFile({ name: "a.bin", type: "image/png" })).toBe("png");
+    expect(formatOfFile({ name: "a.txt", type: "text/plain" })).toBeNull();
+  });
+
+  it("checks size, number and format before a file is taken", () => {
+    const f = checkoutField();
+    expect(precheckCheckoutUpload(pdf(), f, 0)).toBeNull();
+    expect(precheckCheckoutUpload(pdf(2 * MB), f, 0).code).toBe(
+      "customer_upload_too_large"
+    );
+    expect(precheckCheckoutUpload(pdf(), f, 2).code).toBe(
+      "customer_upload_field_full"
+    );
+    expect(
+      precheckCheckoutUpload(
+        { name: "a.png", type: "image/png", size: 1 },
+        f,
+        0
+      ).code
+    ).toBe("customer_upload_format_not_allowed");
+  });
+
+  it("names the required fields without a file", () => {
+    const fields = [
+      checkoutField(),
+      checkoutField({ id: "f2", required: false }),
+    ];
+    expect(missingCheckoutUploads(fields, {}).map((f) => f.id)).toEqual(["f1"]);
+    expect(missingCheckoutUploads(fields, { f1: [pdf()] })).toEqual([]);
+  });
+
+  it("puts the checkout as JSON first, then each file under its field", () => {
+    const a = pdf(10, "a.pdf");
+    expect(checkoutUploadParts({ mail: "x" }, { f1: [a], f2: [] })).toEqual([
+      ["checkout", JSON.stringify({ mail: "x" })],
+      ["customerUpload:f1", a],
+    ]);
+    expect(hasCheckoutUploads({ f1: [a] })).toBe(true);
+    expect(hasCheckoutUploads({ f1: [] })).toBe(false);
+  });
+
+  it("reads a refused customer upload off the legacy checkout's answer", () => {
+    expect(
+      checkoutUploadRefusalOf({
+        error: "checkout.customer_upload_refused",
+        params: { code: "customer_upload_virus_found", fieldId: "f1" },
+      }).code
+    ).toBe("customer_upload_virus_found");
+    expect(
+      checkoutUploadRefusalOf({
+        error: "checkout.customer_upload_required",
+        params: { code: "customer_upload_required_missing", labels: ["A"] },
+      }).code
+    ).toBe("customer_upload_required_missing");
+    expect(
+      checkoutUploadRefusalOf({
+        error: "TooManyRequestsError",
+        code: "customer_upload_rate_limited",
+      }).code
+    ).toBe("customer_upload_rate_limited");
+    expect(checkoutUploadRefusalOf("Booking conflict")).toBeNull();
+    expect(
+      checkoutUploadRefusalOf({ error: "checkout.address_blacklisted" })
+    ).toBeNull();
+  });
+
+  it("has a message for every refusal, a generic one for the unknown", () => {
+    expect(checkoutUploadErrorKey("customer_upload_virus_found")).toBe(
+      "checkout.customer-uploads.errors.virus"
+    );
+    expect(checkoutUploadErrorKey("something_else")).toBe(
+      "checkout.customer-uploads.errors.generic"
+    );
   });
 });
 

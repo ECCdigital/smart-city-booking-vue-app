@@ -341,6 +341,12 @@ import {
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 import { continuesToProvider } from "@/utils/checkoutNextStep";
 import ToastService from "@/services/ToastService";
+import {
+  checkoutUploadErrorKey,
+  checkoutUploadFieldsOf,
+  checkoutUploadRefusalOf,
+  formatsLabel,
+} from "@/utils/customerUploads";
 import { mapActions } from "vuex";
 
 export default {
@@ -394,6 +400,14 @@ export default {
     initialBookWithoutDiscount: {
       type: Boolean,
       default: false,
+    },
+    /**
+     * The files of the upload fields "in the checkout" by field id;
+     * they go with the booking.
+     */
+    customerUploadFiles: {
+      type: Object,
+      default: () => ({}),
     },
   },
 
@@ -571,12 +585,43 @@ export default {
           this.showBlacklistRefusal(refusal);
           return;
         }
+        // A file refused or a required one missing:
+        // nothing was booked; back to the contact step with the files.
+        const uploadRefusal = !booked
+          ? checkoutUploadRefusalOf(error.response?.data)
+          : null;
+        if (uploadRefusal) {
+          this.showCustomerUploadRefusal(uploadRefusal);
+          return;
+        }
         const toastKey = getCheckoutErrorToastKey(error.response?.data);
         this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    /** The refusal of a customer upload, its field named. */
+    showCustomerUploadRefusal({ code, params = {} }) {
+      const field = checkoutUploadFieldsOf(this.leadItem.bookable).find(
+        (candidate) => candidate.id === params.fieldId
+      );
+      const reason = this.$t(checkoutUploadErrorKey(code), {
+        formats: formatsLabel(params.formats ?? field?.formats ?? []),
+        size: params.maxFileSizeMb ?? field?.maxFileSizeMb,
+        count: params.maxFiles ?? field?.maxFiles,
+        fields: (params.labels || []).join(", "),
+      });
+      this.addToast(
+        ToastService.createToast(
+          "checkout.customer-uploads.refused",
+          "error",
+          8000,
+          { message: field ? `${field.label}: ${reason}` : reason }
+        )
+      );
+      this.$emit("customer-upload-refused");
     },
 
     /** Keeps the refusal on the page, in view, instead of a toast. */
@@ -596,7 +641,8 @@ export default {
       const response = await ApiCheckoutService.checkout(
         this.tenant,
         payload,
-        false
+        false,
+        this.customerUploadFiles
       );
       if (response.status !== 200) throw new Error("Checkout service failed");
       return response;

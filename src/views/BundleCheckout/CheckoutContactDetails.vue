@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="pb-10">
     <v-form ref="form" v-model="valid">
       <v-alert outlined v-if="isRestrictedBookable && !user" color="warning">
         Sie können dieses Angebot nur buchen, wenn Sie angemeldet sind. Bitte
@@ -198,6 +198,18 @@
       <v-divider class="mt-5"></v-divider>
       <span class="caption">* Pflichtfelder</span>
 
+      <h2 v-if="hasDocuments" class="mt-10 mb-8">
+        {{ $t("checkout.documents-title") }}
+      </h2>
+
+      <!-- Directly above the agreements. -->
+      <checkout-customer-uploads
+        v-if="uploadFields.length > 0"
+        :fields="uploadFields"
+        :files="customerUploadFiles"
+        @update:files="$emit('update:customer-upload-files', $event)"
+      ></checkout-customer-uploads>
+
       <checkout-agreements
         v-if="leadItem && leadItem.bookable.attachments.length > 0"
         :agreements="leadItem.bookable.attachments"
@@ -222,14 +234,23 @@
 
 <script>
 import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
+import CheckoutCustomerUploads from "@/components/Checkout/CheckoutCustomerUploads.vue";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBusinessBooking } from "@/utils/businessBooking";
+import {
+  checkoutUploadFieldsOf,
+  missingCheckoutUploads,
+} from "@/utils/customerUploads";
 
 export default {
   name: "CheckoutContactDetails",
-  components: { LoginCard, CheckoutAgreements },
+  components: {
+    LoginCard,
+    CheckoutAgreements,
+    CheckoutCustomerUploads,
+  },
 
   props: {
     leadItem: {
@@ -242,6 +263,14 @@ export default {
     contactDetails: {
       type: Object,
       required: true,
+    },
+    /**
+     * The files of the upload fields "in the checkout" by field id;
+     * `update:customer-upload-files`.
+     */
+    customerUploadFiles: {
+      type: Object,
+      default: () => ({}),
     },
   },
 
@@ -327,7 +356,26 @@ export default {
       );
     },
     isNextButtonDisabled() {
-      return !this.valid || (this.isRestrictedBookable && !this.user);
+      return (
+        !this.valid ||
+        (this.isRestrictedBookable && !this.user) ||
+        this.missingUploads.length > 0
+      );
+    },
+    /** The required upload fields still without a file. */
+    missingUploads() {
+      return missingCheckoutUploads(this.uploadFields, this.customerUploadFiles);
+    },
+    uploadFields() {
+      return checkoutUploadFieldsOf(this.leadItem.bookable);
+    },
+    /** Whether the section „Dokumente“ has proofs or agreements to show. */
+    hasDocuments() {
+      const agreements = this.leadItem?.bookable?.attachments || [];
+      return (
+        this.uploadFields.length > 0 ||
+        agreements.some((agreement) => agreement.show)
+      );
     },
     commentRequired() {
       return this.leadItem.bookable.requiredFields?.includes("comment");

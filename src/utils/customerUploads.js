@@ -294,3 +294,172 @@ export function seriesProofsOf(members) {
     .filter((member) => member.bookingId && member.fields);
 }
 
+/*
+ * The upload fields "in the checkout" of the legacy checkout:
+ * the files go with the checkout of a single
+ * booking, as multipart. The backend answers the fields with the public
+ * offer (`checkoutUploadFields`), only while the tenant has customer
+ * uploads on, each with the size limit that counts.
+ */
+
+const MEGABYTE = 1024 * 1024;
+
+const FILE_FORMATS = Object.freeze({
+  pdf: { mimeTypes: ["application/pdf"], extensions: ["pdf"] },
+  jpeg: { mimeTypes: ["image/jpeg"], extensions: ["jpg", "jpeg"] },
+  png: { mimeTypes: ["image/png"], extensions: ["png"] },
+});
+
+/** The upload fields the checkout of an offer asks for. */
+export function checkoutUploadFieldsOf(bookable) {
+  const fields = bookable?.checkoutUploadFields;
+  return Array.isArray(fields) ? fields : [];
+}
+
+/** The `accept` attribute of a file input for the formats of a field. */
+export function acceptOf(formats = []) {
+  return formats
+    .flatMap((format) => [
+      ...(FILE_FORMATS[format]?.mimeTypes ?? []),
+      ...(FILE_FORMATS[format]?.extensions ?? []).map((ext) => `.${ext}`),
+    ])
+    .join(",");
+}
+
+/** The formats of a field as the page names them: `PDF, JPEG`. */
+export function formatsLabel(formats = []) {
+  return formats.map((format) => format.toUpperCase()).join(", ");
+}
+
+/**
+ * The format of a chosen file: by its type, by its extension where the
+ * browser names no type. The backend decides by the content.
+ */
+export function formatOfFile(file) {
+  const type = String(file?.type ?? "").toLowerCase();
+  const extension = String(file?.name ?? "")
+    .toLowerCase()
+    .split(".")
+    .pop();
+  for (const [format, { mimeTypes, extensions }] of Object.entries(
+    FILE_FORMATS
+  )) {
+    if (type ? mimeTypes.includes(type) : extensions.includes(extension)) {
+      return format;
+    }
+  }
+  return null;
+}
+
+/**
+ * What the checkout checks before a file is added to a field, in the
+ * backend's order and with its codes: size, number, format.
+ *
+ * @param {{ name?: string, type?: string, size: number }} file
+ * @param {Object} field An upload field of {@link checkoutUploadFieldsOf}
+ * @param {number} chosen The files already chosen for the field
+ * @returns {{ code: string, params: Object }|null} Null when it may go
+ */
+export function precheckCheckoutUpload(file, field, chosen) {
+  if (file.size > field.maxFileSizeMb * MEGABYTE) {
+    return {
+      code: "customer_upload_too_large",
+      params: { maxFileSizeMb: field.maxFileSizeMb },
+    };
+  }
+  if (chosen >= field.maxFiles) {
+    return {
+      code: "customer_upload_field_full",
+      params: { maxFiles: field.maxFiles },
+    };
+  }
+  if (!field.formats.includes(formatOfFile(file))) {
+    return {
+      code: "customer_upload_format_not_allowed",
+      params: { formats: field.formats },
+    };
+  }
+  return null;
+}
+
+/** The required upload fields of the checkout without a file. */
+export function missingCheckoutUploads(fields, files) {
+  return fields.filter(
+    (field) => field.required && !(files?.[field.id]?.length > 0)
+  );
+}
+
+/** Whether there is any file to send with the checkout. */
+export function hasCheckoutUploads(files) {
+  return Object.values(files || {}).some((chosen) => chosen?.length > 0);
+}
+
+/** The form field of a multipart checkout that carries its JSON body. */
+export const CHECKOUT_BODY_FIELD = "checkout";
+/** The prefix of a file's form field; the id of its upload field follows. */
+export const CHECKOUT_FILE_PREFIX = "customerUpload:";
+
+/**
+ * The parts of a multipart checkout, in their order: the checkout as JSON,
+ * then each file under its field.
+ *
+ * @returns {Array<[string, string|File]>}
+ */
+export function checkoutUploadParts(body, files) {
+  const parts = [[CHECKOUT_BODY_FIELD, JSON.stringify(body)]];
+  for (const [fieldId, chosen] of Object.entries(files || {})) {
+    for (const file of chosen || []) {
+      parts.push([`${CHECKOUT_FILE_PREFIX}${fieldId}`, file]);
+    }
+  }
+  return parts;
+}
+
+const CHECKOUT_UPLOAD_REASONS = Object.freeze([
+  "checkout.customer_upload_refused",
+  "checkout.customer_upload_required",
+]);
+
+/**
+ * A refused checkout as a refused customer upload: the legacy checkout's
+ * answer `{ error: reason, params }` with the code in `params`, or the
+ * refusal before the checkout (`{ code, params }`, e.g. the rate limit).
+ *
+ * @param {Object|string|null} data The body of the failed request
+ * @returns {{ code: string, params: Object }|null} Null for any other
+ */
+export function checkoutUploadRefusalOf(data) {
+  if (!data || typeof data !== "object") return null;
+  const params = data.params ?? {};
+  if (CHECKOUT_UPLOAD_REASONS.includes(data.error)) {
+    return { code: params.code, params };
+  }
+  if (
+    typeof data.code === "string" &&
+    data.code.startsWith("customer_upload_")
+  ) {
+    return { code: data.code, params };
+  }
+  return null;
+}
+
+const CHECKOUT_UPLOAD_ERROR_KEYS = Object.freeze({
+  customer_upload_format_not_allowed: "format",
+  customer_upload_too_large: "size",
+  customer_upload_field_full: "field-full",
+  customer_upload_booking_limit: "booking-limit",
+  customer_upload_virus_found: "virus",
+  customer_upload_scanner_unavailable: "scanner",
+  customer_upload_rate_limited: "rate-limit",
+  customer_upload_file_missing: "file-missing",
+  customer_upload_field_not_found: "not-found",
+  customer_upload_required_missing: "required-missing",
+});
+
+/** The German message key of a refused customer upload of the checkout. */
+export function checkoutUploadErrorKey(code) {
+  return `checkout.customer-uploads.errors.${
+    CHECKOUT_UPLOAD_ERROR_KEYS[code] ?? "generic"
+  }`;
+}
+

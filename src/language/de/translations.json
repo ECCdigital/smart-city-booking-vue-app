@@ -2583,6 +2583,36 @@
     "no-permission": {
       "message": "Dieses Angebot ist für Sie nicht buchbar. Entweder ist es nicht verfügbar, oder Ihnen fehlt die Berechtigung dafür."
     },
+    "documents-title": "Dokumente",
+    "customer-uploads": {
+      "title": "Nachweise",
+      "intro": "Für Ihre Buchung werden folgende Nachweise benötigt:",
+      "required": "Pflicht",
+      "optional": "optional",
+      "drop-hint": "Datei hierher ziehen oder",
+      "choose": "Datei auswählen",
+      "remove": "Entfernen",
+      "limits": "{formats} · max. {size} MB",
+      "max-files": "höchstens {count} Dateien",
+      "summary-none": "keine Datei",
+      "errors": {
+        "format": "Diese Datei hat kein erlaubtes Format. Erlaubt: {formats}.",
+        "size": "Die Datei ist zu groß. Erlaubt sind höchstens {size} MB.",
+        "field-full": "Für dieses Feld sind höchstens {count} Dateien erlaubt.",
+        "booking-limit": "Für diese Buchung sind nicht mehr Nachweise erlaubt.",
+        "virus": "In der Datei wurde Schadsoftware gefunden.",
+        "scanner": "Die Datei kann gerade nicht geprüft werden. Bitte versuchen Sie es später erneut.",
+        "rate-limit": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
+        "file-missing": "Bitte wählen Sie eine Datei aus.",
+        "not-found": "Dieses Nachweisfeld gibt es nicht mehr. Bitte laden Sie die Seite neu.",
+        "required-missing": "Bitte fügen Sie die verlangten Nachweise hinzu: {fields}.",
+        "generic": "Die Datei konnte nicht angenommen werden. Bitte versuchen Sie es erneut."
+      },
+      "refused": {
+        "title": "Nachweis nicht angenommen",
+        "message": "{message} Es wurde nichts gebucht."
+      }
+    },
     "error": {
       "booking-conflict": {
         "title": "Objekt nicht verfügbar.",
