@@ -37,6 +37,7 @@ describe("customerUploads - the tenant's settings", () => {
       reviewReminderDaysBeforeDeletion: 3,
       notifyOnSubmitted: true,
       notifyOnOverdue: true,
+      notifyRoleIds: [],
     });
     expect(customerUploadsEnabled({})).toBe(false);
     expect(customerUploadsEnabled(null)).toBe(false);

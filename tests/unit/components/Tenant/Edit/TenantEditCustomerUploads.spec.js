@@ -1,4 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { flushPromises } from "@tests/unit/support/api";
+
+vi.mock("@/services/api/ApiRolesService", () => ({
+  default: { getTenantRoles: vi.fn() },
+}));
+
+import ApiRolesService from "@/services/api/ApiRolesService";
 import { mountComponent } from "@tests/unit/support/mount";
 import TenantEditCustomerUploads from "@/components/Tenant/Edit/TenantEditCustomerUploads.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
@@ -22,7 +29,13 @@ const ENABLED = {
   reviewReminderDaysBeforeDeletion: 3,
   notifyOnSubmitted: true,
   notifyOnOverdue: true,
+  notifyRoleIds: [],
 };
+
+const ROLES = [
+  { id: "role-pruefung", name: "Prüfung" },
+  { id: "role-leitung", name: "Leitung" },
+];
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 const lastUpdate = (wrapper) => {
@@ -31,6 +44,11 @@ const lastUpdate = (wrapper) => {
 };
 
 describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
+  beforeEach(() => {
+    ApiRolesService.getTenantRoles.mockReset();
+    ApiRolesService.getTenantRoles.mockResolvedValue({ data: ROLES });
+  });
+
   it("shows only the switch while customer uploads are off", () => {
     const wrapper = mountTab();
 
@@ -86,6 +104,45 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
     await find(wrapper, "customer-uploads-format-jpeg").trigger("click");
 
     expect(lastUpdate(wrapper).customerUploads.formats).toEqual(["pdf", "png"]);
+  });
+
+  it("picks the roles that get the staff's mails, out of the tenant's roles", async () => {
+    const wrapper = mountTab(ENABLED);
+    await flushPromises();
+
+    expect(ApiRolesService.getTenantRoles).toHaveBeenCalledWith(false, "t");
+    const picker = wrapper.findComponent({ name: "v-autocomplete" });
+    expect(picker.props("items")).toEqual([
+      { text: "Prüfung", value: "role-pruefung" },
+      { text: "Leitung", value: "role-leitung" },
+    ]);
+
+    picker.vm.$emit("change", ["role-pruefung"]);
+
+    expect(lastUpdate(wrapper).customerUploads.notifyRoleIds).toEqual([
+      "role-pruefung",
+    ]);
+  });
+
+  it("warns that nobody gets the mails without a role", async () => {
+    const without = mountTab(ENABLED);
+    const withRole = mountTab({ ...ENABLED, notifyRoleIds: ["role-pruefung"] });
+    const mailsOff = mountTab({
+      ...ENABLED,
+      notifyOnSubmitted: false,
+      notifyOnOverdue: false,
+    });
+    await flushPromises();
+
+    expect(find(without, "customer-uploads-notify-roles-missing").text()).toBe(
+      "Ohne Rolle erhält niemand diese E-Mails."
+    );
+    expect(
+      find(withRole, "customer-uploads-notify-roles-missing").exists()
+    ).toBe(false);
+    expect(find(mailsOff, "customer-uploads-notify-roles").exists()).toBe(
+      false
+    );
   });
 
   it("switches the mail „Nachweis überfällig“ off on its own", async () => {

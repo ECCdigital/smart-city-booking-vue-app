@@ -1,5 +1,6 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import ApiRolesService from "@/services/api/ApiRolesService";
 import {
   CUSTOMER_UPLOAD_FORMATS,
   MAX_RETENTION_DAYS,
@@ -13,7 +14,8 @@ const COPY = "tenant.customerUploads";
 /**
  * „Nachweise von Buchenden“, a section of the tab „Buchung“: whether bookers
  * may hand in customer uploads at bookings of the tenant, which formats, how
- * long they are kept and which mails go out. Only the settings - the
+ * long they are kept, which mails go out and to the members of which
+ * roles. Only the settings - the
  * upload fields are defined at each bookable. It has no form of its own:
  * its rules count in the form of the tab around it.
  */
@@ -22,6 +24,15 @@ export default {
   components: { BaseSection },
   props: {
     tenant: { type: Object, required: true },
+  },
+  data() {
+    return { roles: [] };
+  },
+  watch: {
+    "tenant.id": {
+      immediate: true,
+      handler: "loadRoles",
+    },
   },
   computed: {
     settings() {
@@ -39,8 +50,28 @@ export default {
     maxRetentionDays() {
       return MAX_RETENTION_DAYS;
     },
+    roleOptions() {
+      return this.roles.map((role) => ({ text: role.name, value: role.id }));
+    },
+    staffMailsOn() {
+      return this.settings.notifyOnSubmitted || this.settings.notifyOnOverdue;
+    },
+    withoutRole() {
+      return this.staffMailsOn && !(this.settings.notifyRoleIds || []).length;
+    },
   },
   methods: {
+    /** The roles of the tenant, to pick who gets the staff's mails. */
+    async loadRoles(tenantId) {
+      if (!tenantId) return;
+      try {
+        const response = await ApiRolesService.getTenantRoles(false, tenantId);
+        this.roles = response?.data || [];
+      } catch (error) {
+        console.error(`Could not read the roles of tenant ${tenantId}`, error);
+        this.roles = [];
+      }
+    },
     rule(name) {
       return [() => (this.issues[name] ? this.$t(this.issues[name]) : true)];
     },
@@ -183,6 +214,34 @@ export default {
         class="mt-2"
         @change="change({ notifyOnOverdue: !!$event })"
       />
+      <v-autocomplete
+        v-if="staffMailsOn"
+        data-test="customer-uploads-notify-roles"
+        :value="settings.notifyRoleIds"
+        :items="roleOptions"
+        :label="$t('tenant.customerUploads.notifyRoles')"
+        :hint="$t('tenant.customerUploads.notifyRoles-hint')"
+        persistent-hint
+        multiple
+        chips
+        small-chips
+        deletable-chips
+        background-color="accent"
+        filled
+        dense
+        class="mt-4"
+        @change="change({ notifyRoleIds: $event || [] })"
+      />
+      <v-alert
+        v-if="withoutRole"
+        data-test="customer-uploads-notify-roles-missing"
+        type="warning"
+        text
+        dense
+        class="mt-2"
+      >
+        {{ $t("tenant.customerUploads.notifyRoles-missing") }}
+      </v-alert>
     </template>
   </BaseSection>
 </template>

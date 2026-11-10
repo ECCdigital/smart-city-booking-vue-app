@@ -38,6 +38,9 @@ export function defaultCustomerUploadSettings() {
     reviewReminderDaysBeforeDeletion: 3,
     notifyOnSubmitted: true,
     notifyOnOverdue: true,
+    // The roles whose members get „Nachweis eingereicht“ and „Nachweis
+    // überfällig“; never the tenant's address. None: nobody gets them.
+    notifyRoleIds: [],
   };
 }
 
