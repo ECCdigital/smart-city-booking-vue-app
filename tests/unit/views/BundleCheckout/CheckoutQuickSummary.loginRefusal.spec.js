@@ -28,8 +28,9 @@ const leadItem = {
   bookableId: "login-room",
   amount: 1,
   valid: true,
-  userPriceEur: 0,
-  regularPriceEur: 0,
+  userPriceEur: 10,
+  userGrossPriceEur: 10,
+  regularPriceEur: 10,
   bookable: {
     id: "login-room",
     title: "Werkstatt",
@@ -66,7 +67,8 @@ async function mountFinalCheck() {
 }
 
 // ECCdigital/tickets#63: one label for every completion, whether the offer
-// is committed at once or only requested.
+// is committed at once or only requested; at 0 EUR it reads „Verbindlich
+// buchen“ (ECCdigital/tickets#937).
 const SUBMIT_LABEL = "Zahlungspflichtig buchen";
 
 function submitButton(wrapper) {

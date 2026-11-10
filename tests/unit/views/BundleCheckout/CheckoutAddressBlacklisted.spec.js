@@ -37,8 +37,9 @@ const leadItem = {
   bookableId: "room",
   amount: 1,
   valid: true,
-  userPriceEur: 0,
-  regularPriceEur: 0,
+  userPriceEur: 10,
+  userGrossPriceEur: 10,
+  regularPriceEur: 10,
   bookable: {
     id: "room",
     title: "Werkstatt",

@@ -318,7 +318,7 @@
         :disabled="!allItemsValid"
         block
       >
-        <span>Zahlungspflichtig buchen</span>
+        <span>{{ submitLabel }}</span>
       </v-btn>
     </div>
   </div>
@@ -700,6 +700,13 @@ export default {
       }
 
       return price;
+    },
+
+    // A total of 0 EUR, also after a discount, has nothing to pay (ECCdigital/tickets#937).
+    submitLabel() {
+      return this.totalGrossPrice <= 0.005
+        ? "Verbindlich buchen"
+        : "Zahlungspflichtig buchen";
     },
 
     totalGrossPrice() {
