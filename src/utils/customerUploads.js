@@ -213,28 +213,69 @@ const isWaiting = (upload) => reviewOf(upload) === "submitted";
  * instance owner by the special position), so a missing state is the one
  * rule here - the page asks no right of its own.
  *
- * A customer upload can be downloaded while it waits for its check.
+ * A customer upload can be downloaded and checked while it waits for its
+ * check: the check deletes the file and leaves a note at the booking.
+ * A fulfilled field can be asked for again
+ * („Erneut anfordern“). The fields
+ * the booking no longer shows - renamed away, deleted at the offer, closed
+ * - follow under the label they had (`former`), so their notes stay
+ * readable and what still waits can be checked.
  *
  * @param {Object} booking A booking answer with `customerUploadState`
- * @returns {Object[]|null} The fields, each with `uploads[].downloadable`
+ * @returns {Object[]|null} The fields, each with `canRequestAgain` and
+ *   `uploads[].downloadable`, `uploads[].reviewable`
  */
 export function proofFieldsOf(booking) {
   const state = booking?.customerUploadState;
-  const fields = Array.isArray(state?.fields) ? state.fields : [];
+  const fields = [
+    ...(Array.isArray(state?.fields) ? state.fields : []),
+    ...(Array.isArray(state?.otherFields) ? state.otherFields : []).map(
+      (field) => ({ ...field, former: true })
+    ),
+  ];
   if (fields.length === 0) {
     return null;
   }
   return fields.map((field) => {
     const uploads = (field.uploads || []).map((upload) => {
       const waiting = Boolean(upload.mediaId) && isWaiting(upload);
-      return { ...upload, downloadable: waiting };
+      return { ...upload, downloadable: waiting, reviewable: waiting };
     });
     return {
       ...field,
+      requests: field.requests || [],
+      reopen: field.reopen ?? null,
       uploads,
+      // Only a fulfilled field: one already open again asks for nothing new.
+      canRequestAgain: !field.former && field.state === "fulfilled",
     };
   });
 }
+
+/**
+ * The note of a checked customer upload (glossary „Vermerk“) as the section
+ * lists it: result, reviewer, time, reason, and how the file went.
+ *
+ * @param {Object} upload An upload of `proofFieldsOf`
+ * @returns {{result: string, reviewedByName: string, reviewedAt:
+ *   number|null, reason: string}|null} Null while the upload waits for its
+ *   check
+ */
+export function proofNoteOf(upload) {
+  if (isWaiting(upload)) {
+    return null;
+  }
+  const result = reviewOf(upload);
+  return {
+    result,
+    reviewedByName: upload.review?.reviewedByName || "",
+    reviewedAt: upload.review?.reviewedAt ?? null,
+    reason: upload.review?.reason || "",
+  };
+}
+
+/** The longest reason the backend takes for a rejection or a new request. */
+export const MAX_PROOF_REASON_LENGTH = 500;
 
 /**
  * The members of a series that have proofs to list, each with its fields,

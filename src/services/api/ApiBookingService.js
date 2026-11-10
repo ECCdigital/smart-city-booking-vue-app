@@ -240,4 +240,37 @@ export default {
       }
     );
   },
+  /**
+   * Checks a customer upload: `accepted`, or
+   * `rejected` with a reason. The backend deletes the file and answers the
+   * booking's `customerUploadState`.
+   */
+  reviewCustomerUpload(
+    tenantId,
+    bookingId,
+    fieldId,
+    mediaId,
+    result,
+    reason
+  ) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/${encodeURIComponent(
+        mediaId
+      )}/review`,
+      { result, reason }
+    );
+  },
+  /** „Erneut anfordern“ of a checked upload field, with a reason. */
+  requestCustomerUploadAgain(tenantId, bookingId, fieldId, reason) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/request-again`,
+      { reason }
+    );
+  },
 };

@@ -145,7 +145,9 @@
       "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
       "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
       "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
-      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung."
+      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung.",
+      "customer_upload_already_reviewed": "Dieser Nachweis wurde inzwischen schon geprüft. Bitte laden Sie die Seite neu.",
+      "customer_upload_field_not_reviewed": "Dieses Feld ist nicht geprüft oder hat noch ungeprüfte Nachweise."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
@@ -153,10 +155,14 @@
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
       "report_none_open": "Zu diesem User oder dieser Adresse ist keine Meldung mehr offen.",
-      "report_not_found": "Die Meldung wurde nicht gefunden."
+      "report_not_found": "Die Meldung wurde nicht gefunden.",
+      "customer_upload_not_found": "Der Nachweis wurde nicht gefunden. Bitte laden Sie die Seite neu."
     },
     "bad-request-codes": {
       "customer_upload_settings_invalid": "Die Einstellungen zu Nachweisen sind ungültig.",
+      "customer_upload_reason_missing": "Bitte nennen Sie einen Grund.",
+      "customer_upload_reason_too_long": "Der Grund ist zu lang.",
+      "customer_upload_review_result_invalid": "Das Ergebnis der Prüfung ist ungültig.",
       "customer_upload_formats_invalid": "Die Formate der Nachweise sind ungültig.",
       "customer_upload_format_not_supported": "Nachweise können nur PDF, JPEG oder PNG sein.",
       "customer_upload_formats_empty": "Wählen Sie für Nachweise mindestens ein Format.",
@@ -2287,7 +2293,48 @@
           "submitted": "Eingereicht",
           "rejected": "Abgelehnt",
           "overdue": "Überfällig",
-          "fulfilled": "Erfüllt"
+          "fulfilled": "Erfüllt",
+          "requestedAgain": "Erneut angefordert"
+        },
+        "note": {
+          "accepted": "Akzeptiert",
+          "rejected": "Abgelehnt",
+          "by": "{name} · {date} · {deleted}",
+          "deleted": "Datei gelöscht",
+          "reason": "Grund: {reason}"
+        },
+        "accept": "Akzeptieren",
+        "reject": "Ablehnen",
+        "request-again": "Erneut anfordern",
+        "requested-again-by": "Erneut angefordert von {name} am {date}: {reason}",
+        "requested-again-at": "Erneut angefordert am {date}: {reason}",
+        "dialog": {
+          "deletes": "Die Datei wird danach gelöscht.",
+          "reason": "Grund",
+          "reason-required": "Bitte nennen Sie einen Grund.",
+          "reason-too-long": "Höchstens {max} Zeichen.",
+          "cancel": "Abbrechen",
+          "error": "Die Prüfung konnte nicht gespeichert werden.",
+          "accepted": {
+            "title": "Nachweis akzeptieren",
+            "text": "„{file}“ als Nachweis für „{field}“ akzeptieren?",
+            "submit": "Akzeptieren",
+            "done": "Nachweis akzeptiert, Datei gelöscht"
+          },
+          "rejected": {
+            "title": "Nachweis ablehnen",
+            "text": "„{file}“ als Nachweis für „{field}“ ablehnen?",
+            "consequence": "Eine E-Mail mit der Begründung wird an den Buchenden gesendet. Danach ist ein erneuter Upload möglich.",
+            "submit": "Ablehnen",
+            "done": "Nachweis abgelehnt, Datei gelöscht"
+          },
+          "requestAgain": {
+            "title": "Nachweis erneut anfordern",
+            "text": "Den Nachweis „{field}“ erneut anfordern?",
+            "consequence": "Die bisherigen Vermerke bleiben bestehen. Der Buchende bekommt eine Mail mit dem Grund für die erneute Anforderung.",
+            "submit": "Erneut anfordern",
+            "done": "Nachweis erneut angefordert"
+          }
         },
         "download-progress": "Stelle Nachweis bereit...",
         "download-error": {

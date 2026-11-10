@@ -7,6 +7,7 @@ import {
   newUploadField,
   orderedFormats,
   proofFieldsOf,
+  proofNoteOf,
   seriesProofsOf,
   uploadFieldIssues,
 } from "@/utils/customerUploads";
@@ -233,6 +234,94 @@ describe("customerUploads - the section „Nachweise“ of a booking page", () =
     ]);
     expect(seriesProofsOf([{ id: "B2" }])).toEqual([]);
     expect(seriesProofsOf(undefined)).toEqual([]);
+  });
+});
+
+describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
+  it("offers the check for a file that waits, not for a note", () => {
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("submitted"), upload("rejected")] }),
+      ])
+    );
+
+    expect(field.uploads.map((u) => u.reviewable)).toEqual([true, false]);
+    expect(field.canRequestAgain).toBe(false);
+  });
+
+  it("offers „Erneut anfordern“ at a fulfilled field alone", () => {
+    const [fulfilled] = proofFieldsOf(
+      withState([
+        proofField({ state: "fulfilled", uploads: [upload("accepted")] }),
+      ])
+    );
+    const [waiting] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("accepted"), upload("submitted")] }),
+      ])
+    );
+    const [openAgain] = proofFieldsOf(
+      withState([
+        proofField({
+          state: "rejected",
+          uploads: [upload("accepted"), upload("rejected")],
+        }),
+      ])
+    );
+
+    expect(fulfilled.canRequestAgain).toBe(true);
+    expect(waiting.canRequestAgain).toBe(false);
+    expect(openAgain.canRequestAgain).toBe(false);
+  });
+
+  it("lists the notes of a field renamed away or deleted under its old label", () => {
+    const fields = proofFieldsOf({
+      customerUploadState: {
+        state: null,
+        fields: [],
+        otherFields: [
+          {
+            fieldId: "gone",
+            label: "Alter Ausweis",
+            uploads: [upload("accepted"), upload("submitted")],
+            requests: [],
+          },
+        ],
+      },
+    });
+
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ label: "Alter Ausweis", former: true });
+    expect(fields[0].uploads.map((u) => u.reviewable)).toEqual([false, true]);
+    expect(fields[0].canRequestAgain).toBe(false);
+  });
+
+  it("reads the note of a checked upload: result, reviewer, time, reason, deletion", () => {
+    expect(proofNoteOf(upload("submitted"))).toBe(null);
+    expect(
+      proofNoteOf(
+        upload("rejected", {
+          review: {
+            status: "rejected",
+            reason: "Unleserlich",
+            reviewedAt: 5,
+            reviewedByName: "Sabine Sachbearbeiterin",
+            autoDeleted: false,
+          },
+        })
+      )
+    ).toEqual({
+      result: "rejected",
+      reviewedByName: "Sabine Sachbearbeiterin",
+      reviewedAt: 5,
+      reason: "Unleserlich",
+      autoDeleted: false,
+    });
+  });
+
+  it("hands each member of a series to its own checks", () => {
+    const member = withState([proofField()], "B1");
+    expect(seriesProofsOf([member])[0].booking).toBe(member);
   });
 });
 

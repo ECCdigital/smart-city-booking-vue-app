@@ -141,4 +141,34 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowReadAny()).toBe(false);
     });
   });
+  /**
+   * `allowReviewProof` mirrors the backend's `booking.reviewCustomerUpload`:
+   * `manageBookings.updateAny` or the tenant
+   * owner; the instance owner only by what they hold in the tenant.
+   */
+  describe("allowReviewProof", () => {
+    it("lets updateAny and the tenant owner through", () => {
+      signIn({ tenants: [membership({ updateAny: true })] });
+      expect(BookingPermissionService.allowReviewProof()).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowReviewProof()).toBe(true);
+    });
+
+    it("refuses readAny or updateOwn alone", () => {
+      signIn({ tenants: [membership({ readAny: true, updateOwn: true })] });
+      expect(BookingPermissionService.allowReviewProof()).toBe(false);
+    });
+
+    it("refuses the instance owner by the special position alone", () => {
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowReviewProof()).toBe(false);
+
+      signIn({
+        instanceOwner: true,
+        tenants: [membership({ updateAny: true })],
+      });
+      expect(BookingPermissionService.allowReviewProof()).toBe(true);
+    });
+  });
 });

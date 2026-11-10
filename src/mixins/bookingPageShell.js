@@ -47,6 +47,9 @@ export default {
       linkCopied: false,
       linkCopiedTimer: null,
       tenantSwitchTimer: null,
+      // The dialog before a check of a customer upload or „Erneut
+      // anfordern“.
+      proofReview: { open: false, target: null, loading: false, error: null },
     };
   },
   computed: {
@@ -219,6 +222,79 @@ export default {
         });
       } finally {
         ProcessingService.hide(operationId);
+      }
+    },
+    /** Whether the viewer may check customer uploads of this tenant. */
+    canReviewProofs() {
+      return BookingPermissionService.allowReviewProof();
+    },
+    /**
+     * Opens the dialog for a check (`{ field, upload, result }` of
+     * `BookingProofs`) or „Erneut anfordern“ (`{ field }`, `result` absent)
+     * at one booking.
+     */
+    openProofReview(booking, { field, upload = null, result = null }) {
+      this.proofReview = {
+        open: true,
+        target: {
+          action: result || "requestAgain",
+          bookingId: booking.id,
+          tenantId: booking.tenantId || this.tenantId,
+          field,
+          upload,
+        },
+        loading: false,
+        error: null,
+      };
+    },
+    closeProofReview() {
+      this.proofReview = {
+        open: false,
+        target: null,
+        loading: false,
+        error: null,
+      };
+    },
+    /**
+     * Sends the check or „Erneut anfordern“, then reloads the page: the
+     * note, the state and the chips are the backend's. A refusal stays in
+     * the dialog.
+     */
+    async submitProofReview(reason) {
+      const target = this.proofReview.target;
+      if (!target) return;
+      this.proofReview.loading = true;
+      this.proofReview.error = null;
+      try {
+        if (target.action === "requestAgain") {
+          await ApiBookingService.requestCustomerUploadAgain(
+            target.tenantId,
+            target.bookingId,
+            target.field.fieldId,
+            reason
+          );
+        } else {
+          await ApiBookingService.reviewCustomerUpload(
+            target.tenantId,
+            target.bookingId,
+            target.field.fieldId,
+            target.upload.mediaId,
+            target.action,
+            reason
+          );
+        }
+        this.closeProofReview();
+        await this.addToast({
+          title: this.$t(`booking.page.proofs.dialog.${target.action}.done`),
+          type: "success",
+        });
+        await this.reload();
+      } catch (error) {
+        this.proofReview.loading = false;
+        this.proofReview.error = getApiErrorMessage(
+          error,
+          this.$t("booking.page.proofs.dialog.error")
+        );
       }
     },
     /** Saves the iCal `request` answers under `filename`; a failure toasts as the list's does. */

@@ -206,9 +206,20 @@
               </div>
               <BookingProofs
                 :fields="member.fields"
+                :can-review="canReviewProofs()"
                 @download="downloadProof"
+                @review="openProofReview(member.booking, $event)"
+                @request-again="openProofReview(member.booking, $event)"
               />
             </div>
+            <BookingProofReviewDialog
+              :open="proofReview.open"
+              :target="proofReview.target"
+              :loading="proofReview.loading"
+              :error="proofReview.error"
+              @close="closeProofReview"
+              @submit="submitProofReview"
+            />
           </v-card-text>
         </v-card>
 
@@ -420,6 +431,7 @@ import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import GroupBookingDocumentActions from "@/components/Booking/GroupBookingDocumentActions.vue";
 import BookingProofs from "@/components/Booking/BookingProofs.vue";
+import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
 import { seriesProofsOf } from "@/utils/customerUploads";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
@@ -480,6 +492,7 @@ export default {
     BookingTransitions,
     GroupBookingDocumentActions,
     BookingProofs,
+    BookingProofReviewDialog,
   },
   mixins: [bookingPageShell],
   data() {

@@ -215,7 +215,18 @@
           <v-card-text>
             <BookingProofs
               :fields="proofFields"
+              :can-review="canReviewProofs()"
               @download="downloadProof"
+              @review="openProofReview(booking, $event)"
+              @request-again="openProofReview(booking, $event)"
+            />
+            <BookingProofReviewDialog
+              :open="proofReview.open"
+              :target="proofReview.target"
+              :loading="proofReview.loading"
+              :error="proofReview.error"
+              @close="closeProofReview"
+              @submit="submitProofReview"
             />
           </v-card-text>
         </v-card>
@@ -456,6 +467,7 @@ import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vu
 import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
 import BookingProofs from "@/components/Booking/BookingProofs.vue";
+import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
@@ -513,6 +525,7 @@ export default {
     BookingAccessPoints,
     BookingDocumentActions,
     BookingProofs,
+    BookingProofReviewDialog,
     BookingPageEmptyState,
     BookingPageToolbar,
     BookingPaymentLink,
