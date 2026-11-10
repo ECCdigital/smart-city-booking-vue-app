@@ -2315,8 +2315,11 @@
         "note": {
           "accepted": "Akzeptiert",
           "rejected": "Abgelehnt",
+          "submitted": "Nicht geprüft",
           "by": "{name} · {date} · {deleted}",
+          "at": "{date} · {deleted}",
           "deleted": "Datei gelöscht",
+          "deleted-auto": "Datei automatisch gelöscht",
           "reason": "Grund: {reason}"
         },
         "accept": "Akzeptieren",

@@ -335,6 +335,33 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
     });
   });
 
+  it("reads an upload the deletion deadline deleted unchecked as a note, no longer to check (ECCdigital/tickets#832)", () => {
+    const deleted = upload("submitted", {
+      review: {
+        status: "submitted",
+        reason: "",
+        reviewedAt: null,
+        autoDeleted: true,
+        fileDeleted: true,
+      },
+    });
+    const [field] = proofFieldsOf(
+      withState([proofField({ uploads: [deleted] })])
+    );
+
+    expect(field.uploads[0]).toMatchObject({
+      downloadable: false,
+      reviewable: false,
+    });
+    expect(proofNoteOf(deleted)).toEqual({
+      result: "submitted",
+      reviewedByName: "",
+      reviewedAt: null,
+      reason: "",
+      autoDeleted: true,
+    });
+  });
+
   it("hands each member of a series to its own checks", () => {
     const member = withState([proofField()], "B1");
     expect(seriesProofsOf([member])[0].booking).toBe(member);

@@ -205,8 +205,13 @@ export const PROOF_REVIEW_STATES = Object.freeze([
 
 const reviewOf = (upload) => upload.review?.status ?? "submitted";
 
-/** Whether a customer upload waits for its check: not checked. */
-const isWaiting = (upload) => reviewOf(upload) === "submitted";
+/**
+ * Whether a customer upload waits for its check: not checked, and its file
+ * still stored - the deletion deadline deletes an unchecked file too and
+ * leaves a note.
+ */
+const isWaiting = (upload) =>
+  reviewOf(upload) === "submitted" && !upload.review?.fileDeleted;
 
 /**
  * The upload fields of a booking with their customer uploads, as the
@@ -261,8 +266,9 @@ export function proofFieldsOf(booking) {
  *
  * @param {Object} upload An upload of `proofFieldsOf`
  * @returns {{result: string, reviewedByName: string, reviewedAt:
- *   number|null, reason: string}|null} Null while the upload waits for its
- *   check
+ *   number|null, reason: string, autoDeleted: boolean}|null} Null while the
+ *   upload waits for its check; the result stays `submitted` for an upload
+ *   the deletion deadline deleted unchecked
  */
 export function proofNoteOf(upload) {
   if (isWaiting(upload)) {
@@ -274,6 +280,7 @@ export function proofNoteOf(upload) {
     reviewedByName: upload.review?.reviewedByName || "",
     reviewedAt: upload.review?.reviewedAt ?? null,
     reason: upload.review?.reason || "",
+    autoDeleted: Boolean(upload.review?.autoDeleted),
   };
 }
 

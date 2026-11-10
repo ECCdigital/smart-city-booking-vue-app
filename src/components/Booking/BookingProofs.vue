@@ -251,12 +251,22 @@ export default {
         });
       }
       const when = note.reviewedAt ? this.formatDateTime(note.reviewedAt) : "";
-      const deleted = this.$t("booking.page.proofs.note.deleted");
-      return this.$t("booking.page.proofs.note.by", {
-        name: note.reviewedByName,
-        date: when,
-        deleted,
-      });
+      const deleted = this.$t(
+        note.autoDeleted
+          ? "booking.page.proofs.note.deleted-auto"
+          : "booking.page.proofs.note.deleted"
+      );
+      if (note.reviewedByName) {
+        return this.$t("booking.page.proofs.note.by", {
+          name: note.reviewedByName,
+          date: when,
+          deleted,
+        });
+      }
+      // Deleted unchecked by the deletion deadline: no check, no time of it.
+      return when
+        ? this.$t("booking.page.proofs.note.at", { date: when, deleted })
+        : deleted;
     },
     noteReason(upload) {
       return proofNoteOf(upload)?.reason || "";
