@@ -466,3 +466,136 @@ export function checkoutUploadErrorKey(code) {
   }`;
 }
 
+/**
+ * The state of a booking over its required upload fields, as the backend
+ * derives it (`customer-upload-state.js`, `BOOKING_STATE`), from the least
+ * to the most favourable.
+ */
+export const PROOF_STATE = Object.freeze({
+  OVERDUE: "overdue",
+  MISSING: "missing",
+  TO_REVIEW: "toReview",
+  FULFILLED: "fulfilled",
+});
+
+/** The states with a chip, the most urgent first; fulfilled has none. */
+export const PROOF_MARKER_STATES = Object.freeze([
+  PROOF_STATE.OVERDUE,
+  PROOF_STATE.MISSING,
+  PROOF_STATE.TO_REVIEW,
+]);
+
+const PROOF_MARKERS = Object.freeze({
+  [PROOF_STATE.OVERDUE]: {
+    color: "error",
+    textColor: "white",
+    icon: "mdi-file-alert-outline",
+  },
+  [PROOF_STATE.MISSING]: {
+    color: "warning",
+    textColor: "white",
+    icon: "mdi-file-question-outline",
+  },
+  [PROOF_STATE.TO_REVIEW]: {
+    color: "info",
+    textColor: "white",
+    icon: "mdi-file-search-outline",
+  },
+});
+
+/**
+ * How a required field counts for its booking - the backend's
+ * `bookingStateOfField`, read off the state and `pastDeadline` it answers:
+ * no rule of its own for deadlines.
+ */
+function proofStateOfField(field) {
+  switch (field.state) {
+    case "fulfilled":
+      return PROOF_STATE.FULFILLED;
+    case "submitted":
+      return PROOF_STATE.TO_REVIEW;
+    case "overdue":
+      return PROOF_STATE.OVERDUE;
+    default:
+      return field.pastDeadline ? PROOF_STATE.OVERDUE : PROOF_STATE.MISSING;
+  }
+}
+
+/**
+ * The proof chips of a booking for the list: each
+ * state its required upload fields are in, once, the most urgent first -
+ * „Nachweis überfällig“, „Nachweis fehlt“, „Nachweis zu prüfen“. None
+ * without a state: the backend answers it only to whoever reads the
+ * tenant's bookings (`manageBookings.readAny`), so a missing state is the
+ * one rule for who sees the chips.
+ *
+ * @param {Object} booking A booking answer with `customerUploadState`
+ * @returns {string[]} States of {@link PROOF_MARKER_STATES}
+ */
+export function proofStatesOf(booking) {
+  const state = booking?.customerUploadState;
+  if (!state) return [];
+  const fields = Array.isArray(state.fields) ? state.fields : [];
+  const states = new Set(
+    fields.filter((field) => field.required).map(proofStateOfField)
+  );
+  // An answer without its fields still names the booking's state.
+  if (states.size === 0 && state.state) states.add(state.state);
+  return PROOF_MARKER_STATES.filter((candidate) => states.has(candidate));
+}
+
+/** The most urgent proof state of a booking, the kanban card's one chip. */
+export function mostUrgentProofStateOf(booking) {
+  return proofStatesOf(booking)[0] ?? null;
+}
+
+/**
+ * The chip of a proof state, as `freeMarker()` but with the key of its
+ * label (`booking.proofState.marker.<state>`); null for none.
+ */
+export function proofStateMarker(state) {
+  if (!PROOF_MARKERS[state]) return null;
+  return {
+    state,
+    labelKey: `booking.proofState.marker.${state}`,
+    ...PROOF_MARKERS[state],
+  };
+}
+
+/** The list's proof filter: the bookings with a chip among `states`. */
+export function filterBookingsByProofState(bookings, states) {
+  return bookings.filter((booking) =>
+    proofStatesOf(booking).some((state) => states.includes(state))
+  );
+}
+
+/** The states of a field that still wants a file from the customer. */
+const MISSING_FIELD_STATES = new Set(["open", "rejected", "overdue"]);
+
+/**
+ * The proofs open or unchecked at a booking, for the hint when it is
+ * released (`requested` → `confirmed`): its
+ * required fields still without a file, and every field with a file
+ * waiting for its check. The release stays allowed.
+ *
+ * @param {Object} booking A booking answer with `customerUploadState`
+ * @returns {number}
+ */
+export function openProofCountOf(booking) {
+  const fields = booking?.customerUploadState?.fields;
+  if (!Array.isArray(fields)) return 0;
+  return fields.filter(
+    (field) =>
+      field.state === "submitted" ||
+      (field.required && MISSING_FIELD_STATES.has(field.state))
+  ).length;
+}
+
+/** {@link openProofCountOf} over the bookings of a series. */
+export function openProofCountOfAll(bookings) {
+  return (bookings || []).reduce(
+    (count, booking) => count + openProofCountOf(booking),
+    0
+  );
+}
+

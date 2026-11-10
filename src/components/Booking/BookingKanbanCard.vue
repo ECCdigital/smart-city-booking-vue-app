@@ -159,6 +159,16 @@
           <v-icon x-small left>{{ freeChip.icon }}</v-icon>
           {{ freeChip.label }}
         </v-chip>
+
+        <v-chip
+          v-if="proofMarker"
+          x-small
+          :color="proofMarker.color"
+          :text-color="proofMarker.textColor"
+        >
+          <v-icon x-small left>{{ proofMarker.icon }}</v-icon>
+          {{ $t(proofMarker.labelKey) }}
+        </v-chip>
       </div>
 
       <v-tooltip v-if="!backlog" top>
@@ -188,6 +198,10 @@ import {
   statusLabel,
   bookingTransitionActions,
 } from "@/utils/bookingStatus";
+import {
+  mostUrgentProofStateOf,
+  proofStateMarker,
+} from "@/utils/customerUploads";
 
 export default {
   name: "BookingKanbanCard",
@@ -225,6 +239,13 @@ export default {
     },
     freeChip() {
       return freeMarker();
+    },
+    /**
+     * At most one proof chip, the most urgent: the card stays readable.
+     * Checking happens in the drawer only; nothing moves the card.
+     */
+    proofMarker() {
+      return proofStateMarker(mostUrgentProofStateOf(this.element.bookingItem));
     },
   },
   methods: {

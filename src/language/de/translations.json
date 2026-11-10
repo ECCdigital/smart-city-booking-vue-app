@@ -1899,6 +1899,18 @@
         "message": "Der Stand der Rückerstattung konnte nicht gespeichert werden."
       }
     },
+    "proofState": {
+      "label": "Nachweise",
+      "marker": {
+        "overdue": "Nachweis überfällig",
+        "missing": "Nachweis fehlt",
+        "toReview": "Nachweis zu prüfen"
+      },
+      "release-hint": "Es ist {count} Nachweis offen bzw. ungeprüft. | Es sind {count} Nachweise offen bzw. ungeprüft.",
+      "release-hint-series": "In der Serie ist {count} Nachweis offen bzw. ungeprüft. Freigeben ist trotzdem möglich. | In der Serie sind {count} Nachweise offen bzw. ungeprüft. Freigeben ist trotzdem möglich.",
+      "release-title": "Buchung freigeben",
+      "release-question": "Buchung {id} trotzdem freigeben?"
+    },
     "create": {
       "success": {
         "title": "Erfolgreich erstellt",
@@ -2044,7 +2056,8 @@
       "typeSingle": "Einzel",
       "typeSeries": "Serie",
       "status": "Status",
-      "refund": "Rückerstattung"
+      "refund": "Rückerstattung",
+      "proof": "Nachweise"
     },
     "action": {
       "confirm": "Freigeben",

@@ -181,6 +181,17 @@
             <v-icon left x-small>{{ refundMarker(item).icon }}</v-icon>
             {{ refundMarker(item).label }}
           </v-chip>
+          <v-chip
+            v-for="marker in proofMarkers(item)"
+            :key="marker.state"
+            small
+            :color="marker.color"
+            :text-color="marker.textColor"
+            class="font-weight-medium ml-1"
+          >
+            <v-icon left x-small>{{ marker.icon }}</v-icon>
+            {{ $t(marker.labelKey) }}
+          </v-chip>
         </template>
 
         <template v-slot:item.paymentMethod="{ item }">
@@ -304,6 +315,7 @@ import {
   bookingTransitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
+import { proofStateMarker, proofStatesOf } from "@/utils/customerUploads";
 import { BOOKED_VIA } from "@/utils/bookedVia";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
@@ -395,6 +407,10 @@ export default {
     /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
     refundMarker(booking) {
       return refundStateMarker(refundStateOf(booking));
+    },
+    /** The proof chips beside the state, the most urgent first, or none. */
+    proofMarkers(booking) {
+      return proofStatesOf(booking).map(proofStateMarker);
     },
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {

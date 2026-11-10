@@ -161,6 +161,11 @@ import {
   bookedViaTitle,
   filterBookingsByBookedVia,
 } from "@/utils/bookedVia";
+import {
+  PROOF_MARKER_STATES,
+  filterBookingsByProofState,
+  proofStateMarker,
+} from "@/utils/customerUploads";
 
 /** The icon of each way in the Buchungsweg filter. */
 const BOOKED_VIA_ICONS = {
@@ -227,6 +232,8 @@ export default {
       refundFilter: [],
       // The Buchungsweg filter, like the status filter.
       bookedViaFilter: [],
+      // The proof filter, like the status filter.
+      proofFilter: [],
       api: {
         users: [],
         bookings: [],
@@ -355,6 +362,19 @@ export default {
             icon: refundStateMarker(state).icon,
           })),
         });
+        // The proof states, like the refund states: the backend answers
+        // them only to whoever reads the tenant's bookings.
+        sections.push({
+          key: "proof",
+          label: this.$t("booking.filter.proof"),
+          selected: this.proofFilter,
+          options: PROOF_MARKER_STATES.map((state) => ({
+            value: state,
+            label: this.$t(proofStateMarker(state).labelKey),
+            color: proofStateMarker(state).color,
+            icon: proofStateMarker(state).icon,
+          })),
+        });
       }
       return sections;
     },
@@ -430,6 +450,9 @@ export default {
       if (this.bookedViaFilter.length > 0) {
         bookings = filterBookingsByBookedVia(bookings, this.bookedViaFilter);
       }
+      if (this.proofFilter.length > 0) {
+        bookings = filterBookingsByProofState(bookings, this.proofFilter);
+      }
       return bookings;
     },
     /**
@@ -470,6 +493,7 @@ export default {
       if (key === "status") this.statusFilter = selection;
       if (key === "refund") this.refundFilter = selection;
       if (key === "bookedVia") this.bookedViaFilter = selection;
+      if (key === "proof") this.proofFilter = selection;
     },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {

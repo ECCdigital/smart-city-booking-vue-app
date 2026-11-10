@@ -28,6 +28,20 @@
           {{ statusText }}
         </v-chip>
 
+        <v-alert
+          v-if="openProofCount > 0"
+          type="warning"
+          border="left"
+          text
+          class="mt-4 mb-0"
+        >
+          {{
+            $tc("booking.proofState.release-hint", openProofCount, {
+              count: openProofCount,
+            })
+          }}
+        </v-alert>
+
         <v-divider class="my-4"></v-divider>
         <v-checkbox
           v-model="dontAskAgain"
@@ -71,6 +85,11 @@ export default {
     statusKey: {
       type: String,
       required: true,
+    },
+    /** Proofs open or unchecked at a booking the move releases: a hint only. */
+    openProofCount: {
+      type: Number,
+      default: 0,
     },
   },
   data() {

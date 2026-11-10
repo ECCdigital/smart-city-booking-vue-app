@@ -76,6 +76,7 @@
       :open="confirmStatusChange"
       :status="onChangeBookingStatus"
       :status-key="currentStatusKey"
+      :open-proof-count="openProofCount"
       @reject="statusChangeRejected"
       @confirm="statusChangeConfirmed"
       :in-progress="isLoading"
@@ -88,6 +89,7 @@ import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingKanbanColumn from "@/components/Booking/KanbanColumn.vue";
 import BookingConfirmStatusChangeDialog from "@/components/Booking/BookingConfirmStatusChangeDialog.vue";
 import { mapActions, mapGetters } from "vuex";
+import { openProofCountOf } from "@/utils/customerUploads";
 
 export default {
   name: "BookingWorkflow",
@@ -123,6 +125,8 @@ export default {
       oldStatusId: null,
       temporaryEvent: null,
       currentStatusKey: null,
+      // The proofs open at a booking a column releases, for the hint.
+      openProofCount: 0,
     };
   },
   computed: {
@@ -301,7 +305,16 @@ export default {
           statusChangeActions
         );
 
-        if (this.shouldSkipStatusConfirmation(statusKey)) {
+        // A release with open or unchecked proofs always shows its hint,
+        // even where the user chose not to be asked again.
+        this.openProofCount = this.releasesBooking(statusChangeActions)
+          ? openProofCountOf(evt.added.element.bookingItem)
+          : 0;
+
+        if (
+          this.openProofCount === 0 &&
+          this.shouldSkipStatusConfirmation(statusKey)
+        ) {
           this.moveTask(evt, statusId);
         } else {
           this.showStatusChangeConfirmation(
@@ -315,6 +328,13 @@ export default {
       } else {
         this.moveTask(evt, statusId);
       }
+    },
+
+    /** Whether the column's actions release the booking (`commit`). */
+    releasesBooking(actions) {
+      return actions.some((action) =>
+        [action.bookingStatus].flat().includes("commit")
+      );
     },
 
     generateStatusKey(fromStatus, toStatus, actions) {
@@ -365,6 +385,7 @@ export default {
       this.temporaryEvent = null;
       this.newStatusId = null;
       this.oldStatusId = null;
+      this.openProofCount = 0;
       this.confirmStatusChange = false;
     },
   },

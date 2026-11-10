@@ -107,8 +107,51 @@ describe("BookingExportButton", () => {
   it("spans the filter over every column", async () => {
     const { headers, autoFilter } = await exportRows([booking()]);
 
-    expect(headers).toHaveLength(28);
-    expect(autoFilter).toBe("A1:AB1");
+    expect(headers).toHaveLength(29);
+    expect(autoFilter).toBe("A1:AC1");
+  });
+
+  it("writes the most urgent proof state after Status", async () => {
+    const field = (state, overrides = {}) => ({
+      required: true,
+      state,
+      pastDeadline: false,
+      ...overrides,
+    });
+    const { headers, rows } = await exportRows([
+      booking({
+        id: "urgent",
+        customerUploadState: {
+          state: "overdue",
+          fields: [field("submitted"), field("open"), field("overdue")],
+        },
+      }),
+      booking({
+        id: "review",
+        customerUploadState: {
+          state: "toReview",
+          fields: [field("submitted")],
+        },
+      }),
+      booking({
+        id: "done",
+        customerUploadState: {
+          state: "fulfilled",
+          fields: [field("fulfilled")],
+        },
+      }),
+      booking({ id: "none" }),
+    ]);
+
+    expect(headers.indexOf("Nachweise")).toBe(headers.indexOf("Status") + 1);
+    expect(
+      rows.map((row) => [row["ID der Buchung"], row.Nachweise ?? ""])
+    ).toEqual([
+      ["urgent", "Nachweis überfällig"],
+      ["review", "Nachweis zu prüfen"],
+      ["done", ""],
+      ["none", ""],
+    ]);
   });
 
   it("writes the Buchungsweg beside the assigned user", async () => {

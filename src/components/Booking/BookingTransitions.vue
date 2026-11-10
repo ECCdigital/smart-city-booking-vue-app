@@ -1,5 +1,54 @@
 <template>
   <div class="booking-transitions">
+    <v-dialog
+      v-if="booking"
+      :value="dialog === 'confirm'"
+      persistent
+      max-width="520px"
+    >
+      <v-card>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-check</v-icon>
+          <span class="text-h5">{{
+            $t("booking.proofState.release-title")
+          }}</span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
+          <v-alert type="warning" border="left" text class="mb-4 text-body-2">
+            {{
+              $tc("booking.proofState.release-hint", openProofCount, {
+                count: openProofCount,
+              })
+            }}
+          </v-alert>
+          <p class="mb-0">
+            {{ $t("booking.proofState.release-question", { id: booking.id }) }}
+          </p>
+          <v-alert
+            v-if="error"
+            type="error"
+            border="left"
+            elevation="2"
+            class="mt-4 mb-0"
+          >
+            {{ error }}
+          </v-alert>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+          <v-btn color="primary" :loading="inProgress" @click="confirmSingle">
+            <v-icon left small>mdi-check</v-icon>
+            {{ $t("booking.action.confirm") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <GroupBookingCommitDialog
       v-if="booking"
       :booking-id="booking.id"
@@ -227,6 +276,7 @@ import {
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
 import FormatService from "@/services/FormatService";
+import { openProofCountOf } from "@/utils/customerUploads";
 import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 
 /**
@@ -268,6 +318,10 @@ export default {
     },
     members() {
       return this.target?.bookings || [];
+    },
+    /** The proofs open or unchecked at the booking, for the release hint. */
+    openProofCount() {
+      return openProofCountOf(this.booking);
     },
     /** The host acts on the series as a whole; the dialogs offer no "Nur diese Buchung". */
     seriesOnly() {
@@ -336,6 +390,9 @@ export default {
         case BOOKING_ACTION.CONFIRM:
           if (this.groupBooking) {
             this.openDialog("commitGroup");
+          } else if (openProofCountOf(this.booking) > 0) {
+            // Open or unchecked proofs only warn: the release stays allowed.
+            this.openDialog("confirm");
           } else {
             this.confirmSingle();
           }

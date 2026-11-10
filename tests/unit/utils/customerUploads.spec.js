@@ -18,6 +18,13 @@ import {
   proofNoteOf,
   seriesProofsOf,
   uploadFieldIssues,
+  PROOF_STATE,
+  filterBookingsByProofState,
+  mostUrgentProofStateOf,
+  openProofCountOf,
+  openProofCountOfAll,
+  proofStateMarker,
+  proofStatesOf,
 } from "@/utils/customerUploads";
 
 const CONTEXT = { tenantFormats: ["pdf", "png"], maxFileSizeMb: 10 };
@@ -436,6 +443,116 @@ describe("customerUploads - the upload fields of the legacy checkout (ECCdigital
     expect(checkoutUploadErrorKey("something_else")).toBe(
       "checkout.customer-uploads.errors.generic"
     );
+  });
+});
+
+describe("customerUploads - the proof chips (ECCdigital/tickets#831)", () => {
+  const proofField = (state, overrides = {}) => ({
+    fieldId: `field-${state}-${Math.random()}`,
+    required: true,
+    state,
+    pastDeadline: false,
+    ...overrides,
+  });
+  const withFields = (fields, state = null) => ({
+    id: "b-1",
+    customerUploadState: { state, fields, otherFields: [] },
+  });
+
+  it("has no chip without a state", () => {
+    expect(proofStatesOf({ id: "b-1" })).toEqual([]);
+    expect(proofStatesOf({ id: "b-1", customerUploadState: null })).toEqual([]);
+    expect(proofStatesOf(null)).toEqual([]);
+    expect(mostUrgentProofStateOf({ id: "b-1" })).toBeNull();
+  });
+
+  it("has no chip without required fields or when all are fulfilled", () => {
+    expect(
+      proofStatesOf(withFields([proofField("open", { required: false })]))
+    ).toEqual([]);
+    expect(
+      proofStatesOf(withFields([proofField("fulfilled")], "fulfilled"))
+    ).toEqual([]);
+  });
+
+  it("orders the chips overdue, missing, to review", () => {
+    const booking = withFields([
+      proofField("submitted"),
+      proofField("open"),
+      proofField("overdue"),
+      proofField("submitted"),
+    ]);
+    expect(proofStatesOf(booking)).toEqual([
+      PROOF_STATE.OVERDUE,
+      PROOF_STATE.MISSING,
+      PROOF_STATE.TO_REVIEW,
+    ]);
+    expect(mostUrgentProofStateOf(booking)).toBe(PROOF_STATE.OVERDUE);
+  });
+
+  it("takes the most urgent chip in each order of the fields", () => {
+    expect(
+      mostUrgentProofStateOf(
+        withFields([proofField("submitted"), proofField("rejected")])
+      )
+    ).toBe(PROOF_STATE.MISSING);
+    expect(
+      mostUrgentProofStateOf(
+        withFields([proofField("fulfilled"), proofField("submitted")])
+      )
+    ).toBe(PROOF_STATE.TO_REVIEW);
+  });
+
+  it("counts an open or rejected field past its deadline as overdue", () => {
+    expect(
+      proofStatesOf(
+        withFields([proofField("rejected", { pastDeadline: true })])
+      )
+    ).toEqual([PROOF_STATE.OVERDUE]);
+  });
+
+  it("falls back on the booking's state when no fields are answered", () => {
+    expect(proofStatesOf(withFields([], "toReview"))).toEqual([
+      PROOF_STATE.TO_REVIEW,
+    ]);
+  });
+
+  it("presents each chip with a label key and none for fulfilled", () => {
+    expect(proofStateMarker(PROOF_STATE.OVERDUE)).toMatchObject({
+      labelKey: "booking.proofState.marker.overdue",
+      color: "error",
+    });
+    expect(proofStateMarker(PROOF_STATE.FULFILLED)).toBeNull();
+    expect(proofStateMarker(null)).toBeNull();
+  });
+
+  it("filters the bookings with any chip among the selection", () => {
+    const missing = { ...withFields([proofField("open")]), id: "missing" };
+    const review = { ...withFields([proofField("submitted")]), id: "review" };
+    const none = { id: "none" };
+    expect(
+      filterBookingsByProofState(
+        [missing, review, none],
+        [PROOF_STATE.TO_REVIEW]
+      ).map((b) => b.id)
+    ).toEqual(["review"]);
+  });
+
+  it("counts the proofs open or unchecked for the release", () => {
+    const booking = withFields([
+      proofField("open"),
+      proofField("rejected"),
+      proofField("overdue"),
+      proofField("fulfilled"),
+      proofField("submitted", { required: false }),
+      proofField("open", { required: false }),
+    ]);
+    expect(openProofCountOf(booking)).toBe(4);
+    expect(openProofCountOf({ id: "b-2" })).toBe(0);
+    expect(
+      openProofCountOfAll([booking, withFields([proofField("submitted")])])
+    ).toBe(5);
+    expect(openProofCountOfAll(undefined)).toBe(0);
   });
 });
 
