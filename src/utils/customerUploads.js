@@ -180,3 +180,76 @@ export function uploadFieldIssues(field, { tenantFormats, maxFileSizeMb }) {
   }
   return issues;
 }
+
+/**
+ * The states of an upload field at a booking, as the backend derives them
+ * (`customer-upload-state.js`): never stored, read off the answer.
+ */
+export const PROOF_FIELD_STATES = Object.freeze([
+  "open",
+  "submitted",
+  "rejected",
+  "overdue",
+  "fulfilled",
+]);
+
+/** Where the check of one customer upload stands. */
+export const PROOF_REVIEW_STATES = Object.freeze([
+  "submitted",
+  "accepted",
+  "rejected",
+]);
+
+const reviewOf = (upload) => upload.review?.status ?? "submitted";
+
+/** Whether a customer upload waits for its check: not checked. */
+const isWaiting = (upload) => reviewOf(upload) === "submitted";
+
+/**
+ * The upload fields of a booking with their customer uploads, as the
+ * section „Nachweise“ of its page lists them; null
+ * where there is nothing to list. The backend answers the state only to
+ * whoever may read it (`manageBookings.readAny`, the tenant owner, not the
+ * instance owner by the special position), so a missing state is the one
+ * rule here - the page asks no right of its own.
+ *
+ * A customer upload can be downloaded while it waits for its check.
+ *
+ * @param {Object} booking A booking answer with `customerUploadState`
+ * @returns {Object[]|null} The fields, each with `uploads[].downloadable`
+ */
+export function proofFieldsOf(booking) {
+  const state = booking?.customerUploadState;
+  const fields = Array.isArray(state?.fields) ? state.fields : [];
+  if (fields.length === 0) {
+    return null;
+  }
+  return fields.map((field) => {
+    const uploads = (field.uploads || []).map((upload) => {
+      const waiting = Boolean(upload.mediaId) && isWaiting(upload);
+      return { ...upload, downloadable: waiting };
+    });
+    return {
+      ...field,
+      uploads,
+    };
+  });
+}
+
+/**
+ * The members of a series that have proofs to list, each with its fields,
+ * in the order of the series; empty where none has any.
+ *
+ * @param {Object[]} members The member bookings of a group booking answer
+ * @returns {{bookingId: string, booking: Object, fields: Object[]}[]}
+ */
+export function seriesProofsOf(members) {
+  return (members || [])
+    .map((booking) => ({
+      bookingId: booking?.id,
+      booking,
+      fields: proofFieldsOf(booking),
+    }))
+    .filter((member) => member.bookingId && member.fields);
+}
+

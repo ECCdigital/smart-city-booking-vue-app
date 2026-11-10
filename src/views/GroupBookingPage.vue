@@ -181,6 +181,37 @@
           </v-card-text>
         </v-card>
 
+        <v-card
+          v-if="memberProofs.length"
+          outlined
+          class="group-booking-page__proofs section-card"
+        >
+          <v-card-title class="section-header">
+            <v-icon>mdi-file-certificate-outline</v-icon>
+            <span>{{ $t("group-booking.page.proofs.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <div
+              v-for="member in memberProofs"
+              :key="member.bookingId"
+              class="group-booking-page__proofs-member"
+            >
+              <div class="text-caption group-booking-page__proofs-heading">
+                {{
+                  $t("group-booking.page.proofs.member", {
+                    id: member.bookingId,
+                  })
+                }}
+              </div>
+              <BookingProofs
+                :fields="member.fields"
+                @download="downloadProof"
+              />
+            </div>
+          </v-card-text>
+        </v-card>
+
         <v-card outlined class="group-booking-page__comments section-card">
           <v-card-title class="section-header">
             <v-icon>mdi-comment-text-outline</v-icon>
@@ -388,6 +419,8 @@ import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vu
 import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import GroupBookingDocumentActions from "@/components/Booking/GroupBookingDocumentActions.vue";
+import BookingProofs from "@/components/Booking/BookingProofs.vue";
+import { seriesProofsOf } from "@/utils/customerUploads";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
@@ -446,6 +479,7 @@ export default {
     BookingStatusPath,
     BookingTransitions,
     GroupBookingDocumentActions,
+    BookingProofs,
   },
   mixins: [bookingPageShell],
   data() {
@@ -469,6 +503,10 @@ export default {
     /** The members from the populated `bookings`. */
     members() {
       return (this.groupBooking?.bookings || []).filter(Boolean);
+    },
+    /** The section „Nachweise“: the members whose answer carries their state. */
+    memberProofs() {
+      return seriesProofsOf(this.members);
     },
     /** The series' customer: the members share one; the first stands for all. */
     customer() {
@@ -721,6 +759,16 @@ export default {
 </script>
 
 <style scoped>
+/* The members of the section „Nachweise“, one block per booking. */
+.group-booking-page__proofs-member + .group-booking-page__proofs-member {
+  margin-top: var(--scb-space-4);
+}
+
+.group-booking-page__proofs-heading {
+  color: var(--scb-text-caption);
+  margin-bottom: var(--scb-space-1);
+}
+
 /* Two columns as the media library draws them: the series in the wide
    column, its facts in a sticky panel beside it. */
 .group-booking-page__body {

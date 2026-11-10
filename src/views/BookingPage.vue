@@ -203,6 +203,24 @@
         </v-card>
 
         <v-card
+          v-if="proofFields"
+          outlined
+          class="booking-page__proofs section-card"
+        >
+          <v-card-title class="section-header">
+            <v-icon>mdi-file-certificate-outline</v-icon>
+            <span>{{ $t("booking.page.proofs.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <BookingProofs
+              :fields="proofFields"
+              @download="downloadProof"
+            />
+          </v-card-text>
+        </v-card>
+
+        <v-card
           v-if="comments.length > 0"
           outlined
           class="booking-page__comments section-card"
@@ -437,6 +455,7 @@ import AdminLayout from "@/layouts/Admin.vue";
 import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vue";
 import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
+import BookingProofs from "@/components/Booking/BookingProofs.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
@@ -465,6 +484,7 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import { proofFieldsOf } from "@/utils/customerUploads";
 import {
   bookedViaLabel,
   bookedViaTitle,
@@ -492,6 +512,7 @@ export default {
     BookedViaBadge,
     BookingAccessPoints,
     BookingDocumentActions,
+    BookingProofs,
     BookingPageEmptyState,
     BookingPageToolbar,
     BookingPaymentLink,
@@ -649,6 +670,10 @@ export default {
     },
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
+    },
+    /** The section „Nachweise“: only where the answer carries their state. */
+    proofFields() {
+      return proofFieldsOf(this.booking);
     },
   },
   beforeRouteEnter(to, from, next) {

@@ -3,6 +3,7 @@ import FormatService from "@/services/FormatService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   getApiErrorMessage,
@@ -179,6 +180,40 @@ export default {
           message: getApiErrorMessage(
             unpacked,
             this.$t("booking.page.documents.download-error.message")
+          ),
+          type: "error",
+        });
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
+    /**
+     * Saves a customer upload (section „Nachweise“) under its file name. The
+     * backend hands it out only as a download to whoever may read the
+     * tenant's bookings; a refusal toasts like a failed document.
+     */
+    async downloadProof(upload) {
+      const operationId = ProcessingService.showSnackbar(
+        this.$t("booking.page.proofs.download-progress")
+      );
+      try {
+        const response = await ApiMediaService.getMediaFileBlob(
+          MEDIA_SCOPE.TENANT,
+          upload.mediaId
+        );
+        saveBlob(
+          new Blob([response.data], {
+            type: upload.mimeType || "application/octet-stream",
+          }),
+          upload.originalFileName || upload.mediaId
+        );
+      } catch (error) {
+        const unpacked = await unpackBlobErrorBody(error);
+        await this.addToast({
+          title: this.$t("booking.page.proofs.download-error.title"),
+          message: getApiErrorMessage(
+            unpacked,
+            this.$t("booking.page.proofs.download-error.message")
           ),
           type: "error",
         });

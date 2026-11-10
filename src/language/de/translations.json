@@ -2272,6 +2272,29 @@
           "message": "Das Dokument konnte nicht heruntergeladen werden."
         }
       },
+      "proofs": {
+        "title": "Nachweise",
+        "required": "Pflicht",
+        "optional": "optional",
+        "sensitive": "Besonders schutzwürdig",
+        "sensitive-hint": "Dazu gehören beispielsweise personenbezogene Daten. Die Datei wird sofort nach der Prüfung gelöscht.",
+        "none": "noch nichts eingereicht",
+        "deadline": "Frist: {date}",
+        "submitted-at": "Eingereicht am {date}, ungeprüft",
+        "download": "Herunterladen",
+        "state": {
+          "open": "Offen",
+          "submitted": "Eingereicht",
+          "rejected": "Abgelehnt",
+          "overdue": "Überfällig",
+          "fulfilled": "Erfüllt"
+        },
+        "download-progress": "Stelle Nachweis bereit...",
+        "download-error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Der Nachweis konnte nicht heruntergeladen werden."
+        }
+      },
       "details": {
         "title": "Details",
         "number": "Nummer",
@@ -2496,6 +2519,10 @@
         "invoice-resend": "Erneut erstellen & versenden",
         "invoice-recreate": "Erneut nur erstellen",
         "reprint": "Neu ausstellen"
+      },
+      "proofs": {
+        "title": "Nachweise",
+        "member": "Buchung #{id}"
       },
       "details": {
         "title": "Details",

@@ -6,6 +6,8 @@ import {
   customerUploadsEnabled,
   newUploadField,
   orderedFormats,
+  proofFieldsOf,
+  seriesProofsOf,
   uploadFieldIssues,
 } from "@/utils/customerUploads";
 
@@ -139,3 +141,98 @@ describe("customerUploads - an upload field", () => {
     });
   });
 });
+
+const upload = (status, overrides = {}) => ({
+  mediaId: `m-${status}`,
+  originalFileName: `${status}.pdf`,
+  mimeType: "application/pdf",
+  uploadedAt: 1,
+  review: { status, reason: "", reviewedAt: null },
+  ...overrides,
+});
+const proofField = (overrides = {}) => ({
+  fieldId: "field-proof",
+  label: "Vereinsausweis",
+  required: true,
+  state: "submitted",
+  deadline: null,
+  uploads: [],
+  ...overrides,
+});
+const withState = (fields, id = "B1") => ({
+  id,
+  customerUploadState: { state: "toReview", fields },
+});
+
+describe("customerUploads - the section „Nachweise“ of a booking page", () => {
+  it("lists nothing where the answer carries no state: no right, or no customer uploads", () => {
+    expect(proofFieldsOf({ id: "B1" })).toBe(null);
+    expect(proofFieldsOf({ id: "B1", customerUploadState: null })).toBe(null);
+    expect(proofFieldsOf(null)).toBe(null);
+  });
+
+  it("lists nothing where the booked offers have no upload field", () => {
+    expect(
+      proofFieldsOf({ customerUploadState: { state: null, fields: [] } })
+    ).toBe(null);
+  });
+
+  it("lists each field with its uploads, a file waiting for its check downloadable", () => {
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({
+          uploads: [
+            upload("submitted"),
+            upload("accepted"),
+            upload("rejected"),
+          ],
+        }),
+      ])
+    );
+
+    expect(field.label).toBe("Vereinsausweis");
+    expect(field.uploads.map((u) => u.downloadable)).toEqual([
+      true,
+      false,
+      false,
+    ]);
+  });
+
+  it("keeps the category of a field, so „besonders schutzwürdig“ can be marked", () => {
+    const [sensitive, normal] = proofFieldsOf(
+      withState([
+        proofField({ fieldId: "id-card", category: "sensitive" }),
+        proofField({ fieldId: "club", category: "normal" }),
+      ])
+    );
+
+    expect(sensitive.category).toBe("sensitive");
+    expect(normal.category).toBe("normal");
+  });
+
+  it("offers no download for an upload without a medium", () => {
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("submitted", { mediaId: null })] }),
+      ])
+    );
+
+    expect(field.uploads[0].downloadable).toBe(false);
+  });
+
+  it("lists the members of a series that carry proofs, in their order", () => {
+    const members = [
+      withState([proofField()], "B1"),
+      { id: "B2", customerUploadState: null },
+      withState([proofField({ state: "open" })], "B3"),
+    ];
+
+    expect(seriesProofsOf(members).map((m) => m.bookingId)).toEqual([
+      "B1",
+      "B3",
+    ]);
+    expect(seriesProofsOf([{ id: "B2" }])).toEqual([]);
+    expect(seriesProofsOf(undefined)).toEqual([]);
+  });
+});
+
