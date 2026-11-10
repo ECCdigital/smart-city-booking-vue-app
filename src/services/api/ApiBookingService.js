@@ -251,7 +251,8 @@ export default {
     fieldId,
     mediaId,
     result,
-    reason
+    reason,
+    alsoFor = null
   ) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
@@ -260,7 +261,9 @@ export default {
       )}/customer-uploads/${encodeURIComponent(fieldId)}/${encodeURIComponent(
         mediaId
       )}/review`,
-      { result, reason }
+      // An upload of a series: the other bookings the check counts for;
+      // the backend takes all without.
+      alsoFor ? { result, reason, alsoFor } : { result, reason }
     );
   },
   /** „Erneut anfordern“ of a checked upload field, with a reason. */

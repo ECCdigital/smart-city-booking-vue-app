@@ -1,5 +1,6 @@
 import {
   checkoutUploadParts,
+  groupCheckoutUploadParts,
   hasCheckoutUploads,
 } from "@/utils/customerUploads";
 
@@ -55,10 +56,21 @@ export default {
       MULTIPART
     );
   },
-  groupCheckout(tenantId, payload, simulate = true) {
+  /**
+   * The checkout of a series. With files of the upload fields "in the
+   * checkout" (each `{ key, fieldId, file,
+   * attempts }`) it goes as multipart: the payload with
+   * `customerUploadTargets` as JSON in `checkout`, each file under its key.
+   */
+  groupCheckout(tenantId, payload, simulate = true, uploads = []) {
+    const url = `api/${tenantId}/checkout/group?simulate=${simulate}`;
+    if (!uploads?.length) {
+      return ApiClient.post(url, payload);
+    }
     return ApiClient.post(
-      `api/${tenantId}/checkout/group?simulate=${simulate}`,
-      payload
+      url,
+      formOf(groupCheckoutUploadParts(payload, uploads)),
+      MULTIPART
     );
   },
   getCheckoutPermissions(tenantId, id) {

@@ -2353,13 +2353,24 @@
             "consequence": "Die bisherigen Vermerke bleiben bestehen. Der Buchende bekommt eine Mail mit dem Grund für die erneute Anforderung.",
             "submit": "Erneut anfordern",
             "done": "Nachweis erneut angefordert"
-          }
+          },
+          "also-for": "Der Nachweis gilt auch für:",
+          "also-for-booking": "Buchung #{id} · {time}",
+          "also-for-booking-field": "Buchung #{id} · {time} · {field}",
+          "also-for-note": {
+            "accepted": "Der Nachweis wird für alle markierten Buchungen akzeptiert.",
+            "rejected": "Der Nachweis wird für alle markierten Buchungen abgelehnt."
+          },
+          "also-for-own": "Buchung #{id} · {time} (diese Buchung)",
+          "also-for-open": "Buchung in neuem Tab öffnen",
+          "deletes-series": "Die Datei wird für die markierte Buchung gelöscht. | Die Datei wird für alle {count} markierten Buchungen gelöscht."
         },
         "download-progress": "Stelle Nachweis bereit...",
         "download-error": {
           "title": "Fehler beim Herunterladen",
           "message": "Der Nachweis konnte nicht heruntergeladen werden."
-        }
+        },
+        "also-for": "Gilt auch für {bookings}"
       },
       "details": {
         "title": "Details",
@@ -2625,11 +2636,22 @@
         "file-missing": "Bitte wählen Sie eine Datei aus.",
         "not-found": "Dieses Nachweisfeld gibt es nicht mehr. Bitte laden Sie die Seite neu.",
         "required-missing": "Bitte fügen Sie die verlangten Nachweise hinzu: {fields}.",
-        "generic": "Die Datei konnte nicht angenommen werden. Bitte versuchen Sie es erneut."
+        "generic": "Die Datei konnte nicht angenommen werden. Bitte versuchen Sie es erneut.",
+        "target-invalid": "Diese Datei kann nicht für die gewählten Termine gelten. Bitte wählen Sie die Termine erneut."
       },
       "refused": {
         "title": "Nachweis nicht angenommen",
         "message": "{message} Es wurde nichts gebucht."
+      },
+      "group": {
+        "intro": "Der Anbieter benötigt diese Nachweise zu jedem Termin der Serie. Eine Datei können Sie für mehrere Termine verwenden. Sie werden mit Ihrer Buchung gesendet.",
+        "intro-guest": "Der Anbieter benötigt diese Nachweise zu jedem Termin der Serie. Ohne Anmeldung laden Sie für jeden Termin eine eigene Datei hoch. Sie werden mit Ihrer Buchung gesendet.",
+        "for": "Gilt für die Termine",
+        "for-one": "Gilt für den Termin",
+        "member": "Termin {n} · {date}",
+        "member-undated": "Termin {n}",
+        "missing": "Fehlt noch für: {members}",
+        "max-files": "höchstens {count} Dateien je Termin"
       }
     },
     "error": {

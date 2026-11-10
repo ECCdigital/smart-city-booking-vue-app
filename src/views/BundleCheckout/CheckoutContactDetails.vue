@@ -203,8 +203,17 @@
       </h2>
 
       <!-- Directly above the agreements. -->
+      <checkout-group-customer-uploads
+        v-if="uploadFields.length > 0 && groupMembers"
+        class="mt-8"
+        :fields="uploadFields"
+        :members="groupMembers"
+        :uploads="groupCustomerUploads"
+        :guest="!me"
+        @update:uploads="$emit('update:group-customer-uploads', $event)"
+      ></checkout-group-customer-uploads>
       <checkout-customer-uploads
-        v-if="uploadFields.length > 0"
+        v-else-if="uploadFields.length > 0"
         :fields="uploadFields"
         :files="customerUploadFiles"
         @update:files="$emit('update:customer-upload-files', $event)"
@@ -235,6 +244,7 @@
 <script>
 import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
 import CheckoutCustomerUploads from "@/components/Checkout/CheckoutCustomerUploads.vue";
+import CheckoutGroupCustomerUploads from "@/components/Checkout/CheckoutGroupCustomerUploads.vue";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiAuthService from "@/services/api/ApiAuthService";
@@ -242,6 +252,7 @@ import { isBusinessBooking } from "@/utils/businessBooking";
 import {
   checkoutUploadFieldsOf,
   missingCheckoutUploads,
+  missingGroupCheckoutUploads,
 } from "@/utils/customerUploads";
 
 export default {
@@ -250,6 +261,7 @@ export default {
     LoginCard,
     CheckoutAgreements,
     CheckoutCustomerUploads,
+    CheckoutGroupCustomerUploads,
   },
 
   props: {
@@ -271,6 +283,19 @@ export default {
     customerUploadFiles: {
       type: Object,
       default: () => ({}),
+    },
+    /**
+     * The booking attempts of a series; null for
+     * a single booking. With them the files are the group's,
+     * `update:group-customer-uploads`.
+     */
+    groupMembers: {
+      type: Array,
+      default: null,
+    },
+    groupCustomerUploads: {
+      type: Array,
+      default: () => [],
     },
   },
 
@@ -364,7 +389,13 @@ export default {
     },
     /** The required upload fields still without a file. */
     missingUploads() {
-      return missingCheckoutUploads(this.uploadFields, this.customerUploadFiles);
+      return this.groupMembers
+        ? missingGroupCheckoutUploads(
+            this.uploadFields,
+            this.groupCustomerUploads,
+            this.groupMembers.length
+          )
+        : missingCheckoutUploads(this.uploadFields, this.customerUploadFiles);
     },
     uploadFields() {
       return checkoutUploadFieldsOf(this.leadItem.bookable);

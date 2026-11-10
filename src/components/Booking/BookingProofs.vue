@@ -105,6 +105,12 @@
               </template>
             </v-list-item-subtitle>
             <v-list-item-subtitle
+              v-if="alsoForLabel(upload)"
+              class="booking-proofs__also-for"
+            >
+              {{ alsoForLabel(upload) }}
+            </v-list-item-subtitle>
+            <v-list-item-subtitle
               v-if="noteReason(upload)"
               class="booking-proofs__reason"
             >
@@ -168,7 +174,7 @@
 
 <script>
 import FormatService from "@/services/FormatService";
-import { proofNoteOf } from "@/utils/customerUploads";
+import { alsoForOf, proofNoteOf } from "@/utils/customerUploads";
 
 /** The colour of a field's state chip; „offen“ stays neutral. */
 const STATE_COLORS = {
@@ -236,6 +242,14 @@ export default {
     },
     formatDateTime(value) {
       return FormatService.dateTime(value);
+    },
+    /** The other bookings of the group an upload counts for. */
+    alsoForLabel(upload) {
+      const others = alsoForOf(upload);
+      if (others.length === 0) return "";
+      return this.$t("booking.page.proofs.also-for", {
+        bookings: others.map((other) => `#${other.bookingId}`).join(", "),
+      });
     },
     /** A waiting upload by its file name; a note by its result. */
     titleOf(upload) {

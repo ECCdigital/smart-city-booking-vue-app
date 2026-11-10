@@ -49,3 +49,55 @@ describe("ApiCheckoutService.checkout", () => {
   });
 });
 
+/**
+ * The group checkout with the files of the series:
+ * without files JSON; with files multipart, the payload with the targets
+ * of each file as JSON in `checkout` and each file under its key.
+ */
+describe("ApiCheckoutService.groupCheckout", () => {
+  beforeEach(() => {
+    global.ApiClient = {
+      post: vi.fn().mockResolvedValue({ status: 200, data: {} }),
+    };
+  });
+
+  afterEach(() => {
+    delete global.ApiClient;
+  });
+
+  it("posts JSON without files", async () => {
+    const payload = { bookingAttempts: [] };
+
+    await ApiCheckoutService.groupCheckout("t1", payload, false, []);
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith(
+      "api/t1/checkout/group?simulate=false",
+      payload
+    );
+  });
+
+  it("posts multipart with the targets and each file under its key", async () => {
+    const payload = { bookingAttempts: [{}, {}] };
+    const file = new File(["%PDF-1.4"], "ausweis.pdf", {
+      type: "application/pdf",
+    });
+
+    await ApiCheckoutService.groupCheckout("t1", payload, false, [
+      { key: "file-1", fieldId: "card", file, attempts: [0, 1] },
+    ]);
+
+    const [url, form, config] = global.ApiClient.post.mock.calls[0];
+    expect(url).toBe("api/t1/checkout/group?simulate=false");
+    expect(config.headers["Content-Type"]).toBe("multipart/form-data");
+    expect(JSON.parse(form.get("checkout"))).toEqual({
+      ...payload,
+      customerUploadTargets: {
+        "file-1": [
+          { attempt: 0, fieldId: "card" },
+          { attempt: 1, fieldId: "card" },
+        ],
+      },
+    });
+    expect(form.get("customerUpload:file-1").name).toBe("ausweis.pdf");
+  });
+});

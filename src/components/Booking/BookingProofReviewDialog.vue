@@ -27,6 +27,51 @@
               })
             }}
           </p>
+          <div
+            v-if="deletesFile && alsoFor.length > 0"
+            class="booking-proof-review__also-for mb-2"
+          >
+            <p class="mb-1">
+              {{ $t("booking.page.proofs.dialog.also-for") }}
+            </p>
+            <v-checkbox
+              :input-value="true"
+              disabled
+              dense
+              hide-details
+              class="mt-0 booking-proof-review__own"
+              :label="memberLabel(ownBooking, true)"
+            />
+            <v-checkbox
+              v-for="other in alsoFor"
+              :key="other.bookingId"
+              v-model="selected"
+              :value="other.bookingId"
+              :disabled="loading"
+              dense
+              hide-details
+              class="mt-0 booking-proof-review__member"
+            >
+              <template #label>
+                <span>{{ memberLabel(other) }}</span>
+                <router-link
+                  :to="{
+                    name: 'booking-details',
+                    params: { bookingId: other.bookingId },
+                  }"
+                  target="_blank"
+                  class="ml-1"
+                  :title="$t('booking.page.proofs.dialog.also-for-open')"
+                  @click.native.stop
+                >
+                  <v-icon x-small>mdi-open-in-new</v-icon>
+                </router-link>
+              </template>
+            </v-checkbox>
+            <p class="mt-3 mb-0">
+              {{ $t(`booking.page.proofs.dialog.also-for-note.${action}`) }}
+            </p>
+          </div>
           <p v-if="$te(`${prefix}.consequence`)" class="mb-2">
             {{ $t(`${prefix}.consequence`) }}
           </p>
@@ -37,7 +82,15 @@
             outlined
             class="booking-proof-review__deletes"
           >
-            {{ $t("booking.page.proofs.dialog.deletes") }}
+            {{
+              alsoFor.length > 0
+                ? $tc(
+                    "booking.page.proofs.dialog.deletes-series",
+                    markedCount,
+                    { count: markedCount }
+                  )
+                : $t("booking.page.proofs.dialog.deletes")
+            }}
           </v-alert>
           <v-textarea
             v-if="needsReason"
@@ -78,7 +131,23 @@
 </template>
 
 <script>
-import { MAX_PROOF_REASON_LENGTH } from "@/utils/customerUploads";
+import FormatService from "@/services/FormatService";
+import { alsoForOf, MAX_PROOF_REASON_LENGTH } from "@/utils/customerUploads";
+
+/** "17.11.26, 10:00 – 12:00", the end with its date on another day. */
+function timeRangeOf(begin, end) {
+  if (!begin) return "";
+  const from = FormatService.dateTime(begin);
+  if (!end) return from;
+  const sameDay =
+    new Date(begin).toDateString() === new Date(end).toDateString();
+  const to = sameDay
+    ? new Intl.DateTimeFormat("de-DE", { timeStyle: "short" }).format(
+        new Date(end)
+      )
+    : FormatService.dateTime(end);
+  return `${from} – ${to}`;
+}
 
 const ICONS = {
   accepted: "mdi-check-circle-outline",
@@ -100,7 +169,10 @@ const COLORS = {
  * page sends it and closes the dialog.
  *
  * `target`: `{ action: "accepted" | "rejected" | "requestAgain", field,
- * upload }`, `upload` only for a check.
+ * upload }`, `upload` only for a check. An upload of a series that counts
+ * for other bookings lists them with their time, each to tick: the check
+ * counts for the booking of the dialog and the ones ticked, all at first.
+ * `submit` then carries their ids as well.
  */
 export default {
   name: "BookingProofReviewDialog",
@@ -126,6 +198,8 @@ export default {
     return {
       reason: "",
       valid: false,
+      // The other bookings of a series the check counts for.
+      selected: [],
       formId: `booking-proof-review-${this._uid}`,
       maxLength: MAX_PROOF_REASON_LENGTH,
     };
@@ -142,6 +216,23 @@ export default {
     },
     deletesFile() {
       return this.action === "accepted" || this.action === "rejected";
+    },
+    /** The other bookings of the series the upload counts for. */
+    alsoFor() {
+      return alsoForOf(this.target?.upload);
+    },
+    /** The booking of the dialog, always part of the check. */
+    ownBooking() {
+      return {
+        bookingId: this.target?.bookingId,
+        fieldLabel: this.target?.field?.label,
+        timeBegin: this.target?.timeBegin,
+        timeEnd: this.target?.timeEnd,
+      };
+    },
+    /** The bookings the check counts for: this one and the ones ticked. */
+    markedCount() {
+      return 1 + this.selected.length;
     },
     icon() {
       return ICONS[this.action];
@@ -164,6 +255,14 @@ export default {
     },
   },
   watch: {
+    target: {
+      immediate: true,
+      handler() {
+        this.selected = alsoForOf(this.target?.upload).map(
+          (other) => other.bookingId
+        );
+      },
+    },
     open(value) {
       if (!value) {
         this.reason = "";
@@ -175,18 +274,53 @@ export default {
     onInput(value) {
       if (!value) this.close();
     },
+    /** A booking of the series: number, time and field. */
+    /**
+     * A booking of the series: number and time. Its field only where it is
+     * not the one the dialog names - the file may count for another field
+     * of another booking.
+     */
+    memberLabel(member, own = false) {
+      const time = timeRangeOf(member.timeBegin, member.timeEnd);
+      const otherField =
+        !own &&
+        member.fieldLabel &&
+        member.fieldLabel !== this.target?.field?.label;
+      const key = own
+        ? "also-for-own"
+        : otherField
+        ? "also-for-booking-field"
+        : "also-for-booking";
+      return this.$t(`booking.page.proofs.dialog.${key}`, {
+        id: member.bookingId,
+        time,
+        field: member.fieldLabel || "",
+      });
+    },
     close() {
       if (!this.loading) this.$emit("close");
     },
     submit() {
       if (this.needsReason && !this.valid) return;
-      this.$emit("submit", this.needsReason ? this.reason.trim() : "");
+      this.$emit(
+        "submit",
+        this.needsReason ? this.reason.trim() : "",
+        this.alsoFor.length > 0 ? [...this.selected] : null
+      );
     },
   },
 };
 </script>
 
 <style scoped>
+/* The bookings of a series and the warning in the size of the dialog's
+   text (`.v-card__text`), not Vuetify's 16px of inputs and alerts. */
+.booking-proof-review__also-for ::v-deep .v-label,
+.booking-proof-review__deletes ::v-deep .v-alert__content {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
 /* Vuetify 2 breaks a card title anywhere; the title breaks between words. */
 .booking-proof-review__title {
   word-break: normal;

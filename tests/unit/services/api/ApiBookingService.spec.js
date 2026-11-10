@@ -83,4 +83,37 @@ describe("ApiBookingService", () => {
       name: "Alt",
     });
   });
+
+  // A check of an upload of a series names the
+  // other bookings ticked in the dialog; one of a single booking none.
+  it("posts a check with the other bookings of a series it counts for", async () => {
+    await ApiBookingService.reviewCustomerUpload(
+      "t1",
+      "B1",
+      "f1",
+      "m1",
+      "accepted",
+      "",
+      ["B2"]
+    );
+    await ApiBookingService.reviewCustomerUpload(
+      "t1",
+      "B1",
+      "f1",
+      "m1",
+      "accepted",
+      ""
+    );
+
+    expect(global.ApiClient.post.mock.calls).toEqual([
+      [
+        "api/v2/t1/bookings/B1/customer-uploads/f1/m1/review",
+        { result: "accepted", reason: "", alsoFor: ["B2"] },
+      ],
+      [
+        "api/v2/t1/bookings/B1/customer-uploads/f1/m1/review",
+        { result: "accepted", reason: "" },
+      ],
+    ]);
+  });
 });

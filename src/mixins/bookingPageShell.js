@@ -240,6 +240,9 @@ export default {
           action: result || "requestAgain",
           bookingId: booking.id,
           tenantId: booking.tenantId || this.tenantId,
+          // The booking's time, for the list of a series in the dialog.
+          timeBegin: booking.timeBegin ?? null,
+          timeEnd: booking.timeEnd ?? null,
           field,
           upload,
         },
@@ -258,9 +261,10 @@ export default {
     /**
      * Sends the check or „Erneut anfordern“, then reloads the page: the
      * note, the state and the chips are the backend's. A refusal stays in
-     * the dialog.
+     * the dialog. `alsoFor`: the other bookings of a series the check
+     * counts for, null for an upload of one.
      */
-    async submitProofReview(reason) {
+    async submitProofReview(reason, alsoFor = null) {
       const target = this.proofReview.target;
       if (!target) return;
       this.proofReview.loading = true;
@@ -280,7 +284,8 @@ export default {
             target.field.fieldId,
             target.upload.mediaId,
             target.action,
-            reason
+            reason,
+            alsoFor
           );
         }
         this.closeProofReview();
