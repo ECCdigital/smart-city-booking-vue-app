@@ -216,7 +216,8 @@
             <BookingProofs
               :fields="proofFields"
               :can-review="canReviewProofs()"
-              @download="downloadProof"
+              @view="viewProof"
+              @download="requestProofDownload"
               @review="openProofReview(booking, $event)"
               @request-again="openProofReview(booking, $event)"
             />
@@ -227,6 +228,28 @@
               :error="proofReview.error"
               @close="closeProofReview"
               @submit="submitProofReview"
+            />
+            <BookingProofViewer
+              :open="proofView.open"
+              :field="proofView.field"
+              :upload="proofView.upload"
+              @close="closeProofView"
+              @download="requestProofDownload"
+            />
+            <BookingProofDownloadNotice
+              :open="proofDownloadNotice.open"
+              :file-name="
+                proofDownloadNotice.upload
+                  ? proofDownloadNotice.upload.originalFileName
+                  : ''
+              "
+              :retention-days="
+                proofDownloadNotice.field
+                  ? proofDownloadNotice.field.retentionDays
+                  : null
+              "
+              @close="closeProofDownloadNotice"
+              @confirm="confirmProofDownload"
             />
           </v-card-text>
         </v-card>
@@ -468,6 +491,8 @@ import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
 import BookingProofs from "@/components/Booking/BookingProofs.vue";
 import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
+import BookingProofViewer from "@/components/Booking/BookingProofViewer.vue";
+import BookingProofDownloadNotice from "@/components/Booking/BookingProofDownloadNotice.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
@@ -526,6 +551,8 @@ export default {
     BookingDocumentActions,
     BookingProofs,
     BookingProofReviewDialog,
+    BookingProofViewer,
+    BookingProofDownloadNotice,
     BookingPageEmptyState,
     BookingPageToolbar,
     BookingPaymentLink,

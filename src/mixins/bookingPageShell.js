@@ -51,6 +51,10 @@ export default {
       // The dialog before a check of a customer upload or „Erneut
       // anfordern“.
       proofReview: { open: false, target: null, loading: false, error: null },
+      // A proof shown in the page, and the notice before a sensitive one is
+      // downloaded.
+      proofView: { open: false, field: null, upload: null },
+      proofDownloadNotice: { open: false, field: null, upload: null },
     };
   },
   computed: {
@@ -224,6 +228,32 @@ export default {
       } finally {
         ProcessingService.hide(operationId);
       }
+    },
+    /** Shows a proof (`{ field, upload }` of `BookingProofs`) in the page. */
+    viewProof({ field, upload }) {
+      this.proofView = { open: true, field, upload };
+    },
+    closeProofView() {
+      this.proofView = { open: false, field: null, upload: null };
+    },
+    /**
+     * „Herunterladen“ of a proof: a sensitive one first shows the notice
+     * that its data is to be deleted, a normal one downloads at once.
+     */
+    requestProofDownload({ field, upload }) {
+      if (checkDeletesFile(upload, field)) {
+        this.proofDownloadNotice = { open: true, field, upload };
+        return;
+      }
+      return this.downloadProof(upload);
+    },
+    closeProofDownloadNotice() {
+      this.proofDownloadNotice = { open: false, field: null, upload: null };
+    },
+    confirmProofDownload() {
+      const upload = this.proofDownloadNotice.upload;
+      this.closeProofDownloadNotice();
+      if (upload) return this.downloadProof(upload);
     },
     /** Whether the viewer may check customer uploads of this tenant. */
     canReviewProofs() {

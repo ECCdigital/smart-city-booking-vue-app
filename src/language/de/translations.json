@@ -2320,6 +2320,7 @@
         "none": "noch nichts eingereicht",
         "deadline": "Frist: {date}",
         "submitted-at": "Eingereicht am {date}, ungeprüft",
+        "view": "Ansehen",
         "download": "Herunterladen",
         "state": {
           "open": "Offen",
@@ -2386,6 +2387,17 @@
         "download-error": {
           "title": "Fehler beim Herunterladen",
           "message": "Der Nachweis konnte nicht heruntergeladen werden."
+        },
+        "viewer": {
+          "close": "Schließen",
+          "error": "Der Nachweis konnte nicht angezeigt werden."
+        },
+        "download-notice": {
+          "title": "Besonders schutzwürdige Daten",
+          "text": "Dieser Nachweis enthält sensible Daten, etwa personenbezogene Angaben. Wenn Sie ihn herunterladen, sind Sie für die Kopie auf Ihrem Gerät verantwortlich.",
+          "deletion": "Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist.",
+          "deletion-days": "Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist von einem Tag. | Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist von {days} Tagen.",
+          "confirm": "Verstanden, herunterladen"
         },
         "also-for": "Gilt auch für {bookings}"
       },

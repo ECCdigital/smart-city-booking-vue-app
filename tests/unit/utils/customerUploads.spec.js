@@ -10,6 +10,7 @@ import {
   precheckCheckoutUpload,
   customerUploadLimitsOf,
   checkDeletesFile,
+  previewKindOf,
   customerUploadSettingsIssues,
   customerUploadSettingsOf,
   customerUploadsEnabled,
@@ -251,6 +252,41 @@ describe("customerUploads - the section „Nachweise“ of a booking page", () =
       false,
       false,
     ]);
+  });
+
+  it("shows a stored PDF or image in the page, by type or by name", () => {
+    expect(previewKindOf({ mimeType: "application/pdf" })).toBe("pdf");
+    expect(previewKindOf({ mimeType: "image/png" })).toBe("image");
+    expect(previewKindOf({ originalFileName: "ausweis.JPG" })).toBe("image");
+    expect(previewKindOf({ mimeType: "application/zip" })).toBe(null);
+
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({
+          uploads: [
+            upload("submitted"),
+            upload("accepted", {
+              review: { status: "accepted", fileDeleted: true },
+            }),
+          ],
+        }),
+      ])
+    );
+    expect(field.uploads.map((u) => u.viewable)).toEqual([true, false]);
+  });
+
+  it("hands each field the tenant's deletion deadline, null where the backend names none", () => {
+    const [field] = proofFieldsOf({
+      customerUploadState: {
+        state: "toReview",
+        fields: [proofField()],
+        retentionDays: 14,
+      },
+    });
+    expect(field.retentionDays).toBe(14);
+    expect(proofFieldsOf(withState([proofField()]))[0].retentionDays).toBe(
+      null
+    );
   });
 
   it("deletes the file with the check of a sensitive upload alone", () => {

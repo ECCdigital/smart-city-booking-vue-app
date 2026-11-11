@@ -126,12 +126,24 @@
             class="booking-proofs__actions my-0 d-flex flex-row align-center"
           >
             <v-btn
+              v-if="upload.viewable"
+              icon
+              small
+              class="booking-proofs__view"
+              :title="$t('booking.page.proofs.view')"
+              :aria-label="$t('booking.page.proofs.view')"
+              @click="$emit('view', { field, upload })"
+            >
+              <v-icon small>mdi-eye-outline</v-icon>
+            </v-btn>
+            <v-btn
               v-if="upload.downloadable"
               icon
               small
               class="booking-proofs__download"
               :title="$t('booking.page.proofs.download')"
-              @click="$emit('download', upload)"
+              :aria-label="$t('booking.page.proofs.download')"
+              @click="$emit('download', { field, upload })"
             >
               <v-icon small>mdi-download</v-icon>
             </v-btn>
@@ -190,13 +202,14 @@ const STATE_COLORS = {
  * Serienbuchungsseite: per upload field of
  * the booked offers its label, Pflicht or optional, the derived state and
  * the deadline, and the customer uploads handed in for it. A field of the
- * category „besonders schutzwürdig“ carries a marker with its hint. A file that
- * waits for its check has a download icon and, with `canReview`, accept
- * and reject; a checked one is a note without content (result, reviewer,
- * time, reason, how the file went). A fulfilled field can be asked for
- * again. The block only lists and emits `download` with the upload,
- * `review` with `{ field, upload, result }` and `request-again` with
- * `{ field }`. The fields come from `proofFieldsOf`.
+ * category „besonders schutzwürdig“ carries a marker with its hint. A stored
+ * file has a download icon, a PDF or image also one to view it in the page;
+ * one that waits for its check, with `canReview`, accept and reject. A
+ * checked one is a note (result, reviewer, time, reason, how the file went).
+ * A fulfilled field can be asked for again. The block only lists and emits
+ * `view` and `download` with `{ field, upload }`, `review` with
+ * `{ field, upload, result }` and `request-again` with `{ field }`. The
+ * fields come from `proofFieldsOf`.
  */
 export default {
   name: "BookingProofs",

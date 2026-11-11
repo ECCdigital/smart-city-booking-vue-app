@@ -207,7 +207,8 @@
               <BookingProofs
                 :fields="member.fields"
                 :can-review="canReviewProofs()"
-                @download="downloadProof"
+                @view="viewProof"
+                @download="requestProofDownload"
                 @review="openProofReview(member.booking, $event)"
                 @request-again="openProofReview(member.booking, $event)"
               />
@@ -219,6 +220,28 @@
               :error="proofReview.error"
               @close="closeProofReview"
               @submit="submitProofReview"
+            />
+            <BookingProofViewer
+              :open="proofView.open"
+              :field="proofView.field"
+              :upload="proofView.upload"
+              @close="closeProofView"
+              @download="requestProofDownload"
+            />
+            <BookingProofDownloadNotice
+              :open="proofDownloadNotice.open"
+              :file-name="
+                proofDownloadNotice.upload
+                  ? proofDownloadNotice.upload.originalFileName
+                  : ''
+              "
+              :retention-days="
+                proofDownloadNotice.field
+                  ? proofDownloadNotice.field.retentionDays
+                  : null
+              "
+              @close="closeProofDownloadNotice"
+              @confirm="confirmProofDownload"
             />
           </v-card-text>
         </v-card>
@@ -432,6 +455,8 @@ import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import GroupBookingDocumentActions from "@/components/Booking/GroupBookingDocumentActions.vue";
 import BookingProofs from "@/components/Booking/BookingProofs.vue";
 import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
+import BookingProofViewer from "@/components/Booking/BookingProofViewer.vue";
+import BookingProofDownloadNotice from "@/components/Booking/BookingProofDownloadNotice.vue";
 import { seriesProofsOf } from "@/utils/customerUploads";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
@@ -493,6 +518,8 @@ export default {
     GroupBookingDocumentActions,
     BookingProofs,
     BookingProofReviewDialog,
+    BookingProofViewer,
+    BookingProofDownloadNotice,
   },
   mixins: [bookingPageShell],
   data() {

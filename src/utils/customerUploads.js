@@ -281,8 +281,9 @@ export function checkDeletesFile(upload, field) {
  * readable and what still waits can be checked.
  *
  * @param {Object} booking A booking answer with `customerUploadState`
- * @returns {Object[]|null} The fields, each with `canRequestAgain` and
- *   `uploads[].downloadable`, `uploads[].reviewable`
+ * @returns {Object[]|null} The fields, each with `canRequestAgain`,
+ *   `retentionDays` and
+ *   `uploads[].downloadable`, `uploads[].viewable`, `uploads[].reviewable`
  */
 export function proofFieldsOf(booking) {
   const state = booking?.customerUploadState;
@@ -299,12 +300,22 @@ export function proofFieldsOf(booking) {
     const uploads = (field.uploads || []).map((upload) => {
       const stored = Boolean(upload.mediaId) && !upload.review?.fileDeleted;
       const waiting = Boolean(upload.mediaId) && isWaiting(upload);
-      return { ...upload, downloadable: stored, reviewable: waiting };
+      return {
+        ...upload,
+        downloadable: stored,
+        // A PDF or image opens in the page as well.
+        viewable: stored && previewKindOf(upload) !== null,
+        reviewable: waiting,
+      };
     });
     return {
       ...field,
       requests: field.requests || [],
       reopen: field.reopen ?? null,
+      // The tenant's deletion deadline, for the notice before a download.
+      retentionDays: Number.isInteger(state.retentionDays)
+        ? state.retentionDays
+        : null,
       uploads,
       // Only a fulfilled field: one already open again asks for nothing new.
       canRequestAgain: !field.former && field.state === "fulfilled",
@@ -413,6 +424,23 @@ export function formatOfFile(file) {
     }
   }
   return null;
+}
+
+/**
+ * How a customer upload shows in the page: `pdf` in a frame, `image` as a
+ * picture, null for a file the page cannot show. By its type, by the
+ * extension of its name where it has none.
+ *
+ * @param {Object} upload
+ * @returns {"pdf"|"image"|null}
+ */
+export function previewKindOf(upload) {
+  const format = formatOfFile({
+    type: upload?.mimeType,
+    name: upload?.originalFileName,
+  });
+  if (format === "pdf") return "pdf";
+  return format ? "image" : null;
 }
 
 /**
