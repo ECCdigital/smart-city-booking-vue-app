@@ -461,18 +461,30 @@ describe("BookingEdit", () => {
     it("shows a conflict of the create at the Anfangszustand on a 409", async () => {
       const { wrapper, store } = await mountEdit({ booking: draft() });
       const CONFLICT = "Der Vorgang ist in diesem Zustand nicht möglich.";
-      saveFails(
-        lifecycleError(409, "compartments_unavailable", {
-          bookableId: "room-1",
-          capacity: 1,
-          occupied: 1,
-        })
-      );
+      saveFails(lifecycleError(409, "conflict"));
 
       await submit(wrapper);
 
       expect(inlineError(wrapper).text()).toBe(CONFLICT);
       expect(lastToast(store)).toMatchObject({ message: CONFLICT });
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
+    it("says „Kein Fach frei“ when the Vormerkung finds no free Fach for the manual booking", async () => {
+      const { wrapper, store } = await mountEdit({ booking: draft() });
+      saveFails(
+        lifecycleError(409, "compartments_unavailable", {
+          bookableId: "room-1",
+          accessPointId: "anlage-1",
+          needed: 1,
+          free: 0,
+        })
+      );
+
+      await submit(wrapper);
+
+      expect(inlineError(wrapper).text()).toBe("Kein Fach frei");
+      expect(lastToast(store)).toMatchObject({ message: "Kein Fach frei" });
       expect(wrapper.emitted("saved")).toBeUndefined();
     });
 
