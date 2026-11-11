@@ -97,7 +97,8 @@ function formatUnsupportedOpenAction(detail) {
  * An Open Locker compartment the tenant's technical account holds no
  * permission on - picked by a UUID typed in, or one whose permission Open
  * Locker took away since. The message names the compartment and the two
- * ways out: pick one from the list, or give the account the permission.
+ * ways out, both open while creating and while editing: give the account
+ * the permission, or point the access point at a compartment it may open.
  */
 function formatCompartmentNotAccessible(detail) {
   return i18n.t("accessPoint.management.errors.compartmentNotAccessible", {

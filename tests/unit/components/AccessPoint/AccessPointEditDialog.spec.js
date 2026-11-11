@@ -1585,7 +1585,40 @@ describe("AccessPointEditDialog - an Open Locker compartment from the list", () 
     await wrapper.vm.$nextTick();
 
     expect(dialogText(wrapper)).toContain(
-      `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${OTHER_UUID}“. Wählen Sie ein Fach aus der Liste oder geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach.`
+      `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${OTHER_UUID}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.`
+    );
+    expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+
+  it("says the same when a stored compartment lost its permission since", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      validationError([
+        {
+          field: "externalId",
+          code: "compartment_not_accessible",
+          params: { externalId: UUID },
+        },
+      ])
+    );
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: {
+        id: "ap-fach",
+        type: "door",
+        provider: "open-locker",
+        label: "Labor Fachbank 1 · Fach 1",
+        externalId: UUID,
+        mode: "remote",
+        validationRules: [],
+      },
+    });
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(dialogText(wrapper)).toContain(
+      `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${UUID}“. ${"Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat."}`
     );
     expect(wrapper.emitted("saved")).toBeUndefined();
   });
