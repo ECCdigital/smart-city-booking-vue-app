@@ -27,6 +27,32 @@ function apiError(status, data) {
 describe("formatAccessPointErrorMessage", () => {
   describe("on a 400 detail list", () => {
     /**
+     * An Anlage with its own Fächer belongs to one bookable only
+     * (ECCdigital/tickets#1038): the bookable save names the Anlage and the
+     * bookable that already links it.
+     */
+    it("names the Anlage and the bookable that already links it", () => {
+      const error = apiError(400, {
+        error: "ValidationError",
+        details: [
+          {
+            field: "accessPointDetails.accessPointIds",
+            code: "locker_system_in_other_bookable",
+            params: {
+              accessPointId: "ap-garage",
+              label: "Fahrradgarage",
+              bookableId: "b2",
+              bookableTitle: "Lastenrad",
+            },
+          },
+        ],
+      });
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Die Schließfachanlage „Fahrradgarage“ gehört schon zum Buchungsobjekt „Lastenrad“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen."
+      );
+    });
+
+    /**
      * The mode check of the PUT: a lock that cannot be put into the requested
      * mode answers a 400 detail on `mode`, read through the `fieldInvalid`
      * form like every other detail.

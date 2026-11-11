@@ -2,7 +2,9 @@
   <div class="bookable-amount" data-test="flow-amount">
     <div
       class="bookable-amount__box"
-      :class="{ 'bookable-amount__box--warning': warns }"
+      :class="{
+        'bookable-amount__box--warning': warns || compartmentHints.length,
+      }"
       data-test="flow-amount-box"
       data-field="amount"
     >
@@ -49,6 +51,20 @@
           <v-icon small color="warning">mdi-alert-outline</v-icon>
           {{ $t("bookable.amount.room-warning") }}
         </p>
+
+        <div
+          v-if="compartmentHints.length"
+          data-test="flow-amount-compartments"
+        >
+          <p
+            v-for="hint in compartmentHints"
+            :key="`compartments-${hint.id}`"
+            class="bookable-amount__warning"
+          >
+            <v-icon small color="warning">mdi-alert-outline</v-icon>
+            {{ hint.text }}
+          </p>
+        </div>
       </template>
     </div>
 
@@ -101,6 +117,7 @@ import {
   showsMaxAmount,
   warnsAboutAmount,
 } from "@/utils/bookableFlow";
+import { compartmentCountHints } from "@/utilities/locker-system-compartments";
 
 const isEmpty = (value) => value == null || String(value).trim() === "";
 
@@ -112,7 +129,9 @@ const isEmpty = (value) => value == null || String(value).trim() === "";
  * in the backend; the Höchstmenge shows unless the Anzahl is exactly 1 and
  * none is set. More than one unit of a room is questioned, not refused.
  * Where a provider handles the Anzahl only its note shows, with a jump to
- * its settings in Schließsysteme (`open-section`).
+ * its settings in Schließsysteme (`open-section`). An Anzahl unlimited or
+ * larger than the Fächer of a linked Open Locker Schließfachanlage is
+ * questioned too, not refused (ECCdigital/tickets#1038).
  *
  * The only state held: while an emptied field has focus it stays
  * „Begrenzt“, though the bookable already reads unlimited.
@@ -140,6 +159,12 @@ export default {
     },
     warns() {
       return warnsAboutAmount(this.bookable);
+    },
+    compartmentHints() {
+      return compartmentCountHints(
+        this.bookable,
+        this.bookableAccessPoints.list
+      );
     },
     showsMax() {
       return showsMaxAmount(this.bookable) || this.typing.max;
