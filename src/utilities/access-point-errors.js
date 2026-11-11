@@ -102,7 +102,24 @@ function formatUnsupportedOpenAction(detail) {
  */
 function formatCompartmentNotAccessible(detail) {
   return i18n.t("accessPoint.management.errors.compartmentNotAccessible", {
-    externalId: detail.params?.externalId,
+    externalId: detail.params?.externalId ?? detail.params?.compartmentId,
+  });
+}
+
+/**
+ * A Fach another access point already holds (ECCdigital/tickets#1037): one
+ * Fach stands in at most one Schließfachanlage and is then no fixed Fach.
+ * The message names the access point that holds it, by its label.
+ */
+const COMPARTMENT_CLAIM_KEYS = {
+  compartment_in_locker_system:
+    "accessPoint.management.errors.compartmentInLockerSystem",
+  compartment_is_fixed: "accessPoint.management.errors.compartmentIsFixed",
+};
+
+function formatCompartmentClaim(detail) {
+  return i18n.t(COMPARTMENT_CLAIM_KEYS[detail.code], {
+    label: detail.params?.label || detail.params?.accessPointId || "",
   });
 }
 
@@ -125,6 +142,10 @@ function formatDetail(detail) {
 
   if (detail.code === "compartment_not_accessible") {
     return formatCompartmentNotAccessible(detail);
+  }
+
+  if (COMPARTMENT_CLAIM_KEYS[detail.code]) {
+    return formatCompartmentClaim(detail);
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {
@@ -242,6 +263,49 @@ export function splitAccessPointFieldError(error, field, options) {
       elsewhere.length > 0
         ? formatDetails(elsewhere)
         : formatAccessPointErrorMessage(error, options),
+  };
+}
+
+const COMPARTMENT_FIELD = /^config\.compartments\.(\d+)(\..*)?$/;
+
+/**
+ * A failed save of a Schließfachanlage, split between its Fächer and the
+ * rest (ECCdigital/tickets#1037): a refusal at `config.compartments.<i>`
+ * belongs at the i-th Fach of the list that was sent.
+ *
+ * @param {Object} error The rejected axios error
+ * @returns {{byIndex: Object<number, string>, rest: Object|null}} The
+ *   message per index of the Fach, and the error with the other details -
+ *   `null` where the Fächer were all it refused
+ */
+export function splitCompartmentErrors(error) {
+  const response = error?.response;
+  const details =
+    response?.status === 400 && Array.isArray(response.data?.details)
+      ? response.data.details
+      : [];
+  const byIndex = {};
+  const others = [];
+
+  details.forEach((detail) => {
+    const match = COMPARTMENT_FIELD.exec(detail.field || "");
+    if (!match) {
+      others.push(detail);
+      return;
+    }
+    const index = Number(match[1]);
+    const text = formatDetail(detail);
+    byIndex[index] = byIndex[index] ? `${byIndex[index]} ${text}` : text;
+  });
+
+  if (Object.keys(byIndex).length === 0) return { byIndex, rest: error };
+  if (others.length === 0) return { byIndex, rest: null };
+  return {
+    byIndex,
+    rest: {
+      ...error,
+      response: { ...response, data: { ...response.data, details: others } },
+    },
   };
 }
 

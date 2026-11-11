@@ -38,6 +38,16 @@ const OPEN_LOCKER_COMPARTMENT = {
   externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
 };
 
+// An Open Locker Schließfachanlage: its Fächer are Biletado's to assign.
+const OPEN_LOCKER_SYSTEM = {
+  id: "ap-open-locker-system",
+  type: "locker",
+  provider: "open-locker",
+  label: "Fahrradgarage",
+  externalId: "",
+  config: { compartments: [] },
+};
+
 function store() {
   return new Vuex.Store({
     modules: {
@@ -174,6 +184,29 @@ describe("BookableEditAccessPoints", () => {
     expect(text).toMatch(/Labor Fachbank 1 · Fach 2/);
     expect(text).toMatch(/Das Fach, im Buchungszeitraum mit anderen geteilt/);
     expect(text).not.toMatch(/Tür/);
+  });
+
+  /**
+   * An Open Locker Schließfachanlage hands out a Fach per booked unit like
+   * any Anlage, but Biletado assigns it, not the provider
+   * (ECCdigital/tickets#1037).
+   */
+  it("says Biletado assigns the Fächer of an Open Locker Schließfachanlage", async () => {
+    const wrapper = await mountPoints({
+      accessPoints: [OPEN_LOCKER_SYSTEM],
+      bookable: {
+        accessPointDetails: {
+          active: true,
+          accessBuffer: { before: 0, after: 0 },
+          accessPointIds: [OPEN_LOCKER_SYSTEM.id],
+        },
+      },
+    });
+
+    const text = rows(wrapper).at(0).text();
+    expect(text).toMatch(/Schließfachanlage/);
+    expect(text).toMatch(/von Biletado aus den Fächern der Anlage zugeteilt/);
+    expect(text).not.toMatch(/vom Anbieter zugeteilt/);
   });
 
   it("offers only unassigned access points in the picker and assigns one", async () => {
