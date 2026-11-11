@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   carriesOwnCompartments,
+  compartmentCountMismatches,
   compartmentGroups,
+  lockerSystemIdsLinkedElsewhere,
   takenCompartmentIds,
 } from "@/utilities/locker-system-compartments";
 
@@ -158,5 +160,135 @@ describe("the Fächer to choose from", () => {
         compartments: [{ ...stored, selected: true, listed: false }],
       },
     ]);
+  });
+});
+
+/**
+ * An Anlage with its own Fächer belongs to one bookable only
+ * (ECCdigital/tickets#1038): the bookable form does not offer one another
+ * bookable already links.
+ */
+describe("lockerSystemIdsLinkedElsewhere", () => {
+  const SYSTEM = {
+    id: "ap-system",
+    type: "locker",
+    provider: "open-locker",
+    config: { compartments: [] },
+  };
+  const IFBS = { id: "ap-ifbs", type: "locker", provider: "ifbs" };
+  const DOOR = { id: "ap-door", type: "door", provider: "nuki" };
+  const linking = (id, ids, active = true) => ({
+    id,
+    accessPointDetails: { active, accessPointIds: ids },
+  });
+
+  it("names an Anlage with its own Fächer another bookable links", () => {
+    const linked = lockerSystemIdsLinkedElsewhere(
+      [SYSTEM, IFBS, DOOR],
+      [linking("b2", ["ap-system", "ap-ifbs", "ap-door"])],
+      "b1"
+    );
+
+    expect([...linked]).toEqual(["ap-system"]);
+  });
+
+  it("does not count the bookable's own link", () => {
+    const linked = lockerSystemIdsLinkedElsewhere(
+      [SYSTEM],
+      [linking("b1", ["ap-system"])],
+      "b1"
+    );
+
+    expect(linked.size).toBe(0);
+  });
+
+  it("counts the link of a bookable whose access is switched off", () => {
+    const linked = lockerSystemIdsLinkedElsewhere(
+      [SYSTEM],
+      [linking("b2", ["ap-system"], false)],
+      "b1"
+    );
+
+    expect([...linked]).toEqual(["ap-system"]);
+  });
+
+  it("names every other link of a new bookable, which has no id yet", () => {
+    const linked = lockerSystemIdsLinkedElsewhere(
+      [SYSTEM],
+      [linking("b2", ["ap-system"])],
+      undefined
+    );
+
+    expect([...linked]).toEqual(["ap-system"]);
+  });
+});
+
+/**
+ * `amount` stays independent of the Fächer, but the form says so when it
+ * is unlimited or larger than the Fächer of a linked Anlage
+ * (ECCdigital/tickets#1038).
+ */
+describe("compartmentCountMismatches", () => {
+  const system = (id, label, count) => ({
+    id,
+    type: "locker",
+    provider: "open-locker",
+    label,
+    config: {
+      compartments: Array.from({ length: count }, (_, i) => ({
+        id: `${id}-c${i}`,
+        number: i + 1,
+        outOfService: i === 0,
+      })),
+    },
+  });
+  const GARAGE = system("ap-garage", "Fahrradgarage", 4);
+  const KELLER = system("ap-keller", "Keller", 2);
+  const IFBS = { id: "ap-ifbs", type: "locker", provider: "ifbs", label: "B" };
+  const bookable = (amount, ids) => ({
+    amount,
+    accessPointDetails: { active: true, accessPointIds: ids },
+  });
+
+  it("names an Anlage with fewer Fächer than the amount, counting every Fach", () => {
+    expect(
+      compartmentCountMismatches(bookable(3, ["ap-garage", "ap-keller"]), [
+        GARAGE,
+        KELLER,
+      ])
+    ).toEqual([{ accessPointId: "ap-keller", label: "Keller", count: 2 }]);
+  });
+
+  it("names every linked Anlage while the amount is unlimited", () => {
+    expect(
+      compartmentCountMismatches(bookable(null, ["ap-garage", "ap-keller"]), [
+        GARAGE,
+        KELLER,
+      ])
+    ).toEqual([
+      { accessPointId: "ap-garage", label: "Fahrradgarage", count: 4 },
+      { accessPointId: "ap-keller", label: "Keller", count: 2 },
+    ]);
+  });
+
+  it("reads an amount of 0 as unlimited, as the backend does", () => {
+    expect(
+      compartmentCountMismatches(bookable(0, ["ap-keller"]), [KELLER])
+    ).toHaveLength(1);
+  });
+
+  it("names nothing when the amount fits or lies below the Fächer", () => {
+    expect(
+      compartmentCountMismatches(bookable(2, ["ap-garage", "ap-keller"]), [
+        GARAGE,
+        KELLER,
+      ])
+    ).toEqual([]);
+  });
+
+  it("ignores Anlagen whose provider assigns, and access points not linked", () => {
+    expect(
+      compartmentCountMismatches(bookable(null, ["ap-ifbs"]), [IFBS, GARAGE])
+    ).toEqual([]);
   });
 });

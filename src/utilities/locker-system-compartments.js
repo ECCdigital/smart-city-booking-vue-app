@@ -1,4 +1,10 @@
-import { LOCKER_TYPE, DOOR_TYPE } from "@/utilities/access-points";
+import {
+  LOCKER_TYPE,
+  DOOR_TYPE,
+  accessPointLabel,
+} from "@/utilities/access-points";
+import { isUnlimitedAmount } from "@/utils/bookableFlow";
+import i18n from "@/language/index";
 
 /**
  * The Fächer a Schließfachanlage carries itself - an Open Locker Anlage
@@ -138,4 +144,83 @@ export function compartmentGroups(listing, selected, taken) {
   });
 
   return [...groups.values()].filter((group) => group.compartments.length);
+}
+
+/**
+ * The Anlagen with their own Fächer that a bookable other than the one being
+ * edited already links - its access switched on or off, as the backend
+ * counts it. Such an Anlage belongs to one bookable only, so the form does
+ * not offer it (ECCdigital/tickets#1038). Doors and Anlagen whose provider
+ * assigns may hang at several bookables and are never named.
+ *
+ * @param {Object[]} accessPoints Every access point of the tenant
+ * @param {Object[]} bookables The bookables of the tenant the editor may read
+ * @param {string|undefined} exceptId The bookable being edited, none if new
+ * @returns {Set<string>} Ids of the Anlagen linked elsewhere
+ */
+export function lockerSystemIdsLinkedElsewhere(
+  accessPoints,
+  bookables,
+  exceptId
+) {
+  const linked = new Set(
+    (bookables || [])
+      .filter((bookable) => !exceptId || bookable.id !== exceptId)
+      .flatMap((bookable) => bookable.accessPointDetails?.accessPointIds || [])
+  );
+  return new Set(
+    (accessPoints || [])
+      .filter((point) => carriesOwnCompartments(point) && linked.has(point.id))
+      .map((point) => point.id)
+  );
+}
+
+/**
+ * The linked Anlagen with their own Fächer whose Fächer the bookable's
+ * `amount` does not fit: it is unlimited (empty or 0), or larger than their
+ * number. Every Fach counts, out of service or not. `amount` stays the
+ * editor's to set, so this is a hint, never a refusal
+ * (ECCdigital/tickets#1038).
+ *
+ * @param {Object} bookable The bookable as edited
+ * @param {Object[]} accessPoints Every access point of the tenant
+ * @returns {{accessPointId: string, label: string, count: number}[]} In the
+ *   order the bookable links them
+ */
+export function compartmentCountMismatches(bookable, accessPoints) {
+  const unlimited = isUnlimitedAmount(bookable);
+  const amount = Number(bookable?.amount);
+  return (bookable?.accessPointDetails?.accessPointIds || [])
+    .map((id) => (accessPoints || []).find((point) => point.id === id))
+    .filter(carriesOwnCompartments)
+    .map((point) => ({
+      accessPointId: point.id,
+      label: accessPointLabel(point),
+      count: point.config.compartments.length,
+    }))
+    .filter(({ count }) => unlimited || amount > count);
+}
+
+/**
+ * The hint of `compartmentCountMismatches`, one sentence per Anlage, for the
+ * amount card and the assignment alike.
+ *
+ * @param {Object} bookable The bookable as edited
+ * @param {Object[]} accessPoints Every access point of the tenant
+ * @returns {{id: string, text: string}[]}
+ */
+export function compartmentCountHints(bookable, accessPoints) {
+  const unlimited = isUnlimitedAmount(bookable);
+  return compartmentCountMismatches(bookable, accessPoints).map(
+    ({ accessPointId, label, count }) => ({
+      id: accessPointId,
+      text: i18n.tc(
+        `accessPoint.bookable.compartmentCount.${
+          unlimited ? "unlimited" : "larger"
+        }`,
+        count,
+        { label, count, amount: Number(bookable.amount) }
+      ),
+    })
+  );
 }

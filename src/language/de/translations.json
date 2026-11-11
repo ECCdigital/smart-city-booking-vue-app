@@ -3061,6 +3061,7 @@
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
         "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
         "compartmentIsFixed": "Das Fach ist schon als festes Fach „{label}“ angelegt.",
+        "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
@@ -3420,6 +3421,10 @@
         "compartment": "Das Fach, im Buchungszeitraum mit anderen geteilt",
         "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
         "lockerSystem": "Je gebuchter Einheit ein eigenes Fach, von Biletado aus den Fächern der Anlage zugeteilt"
+      },
+      "compartmentCount": {
+        "unlimited": "Die Anzahl ist unbegrenzt, gleichzeitig buchbar ist aber höchstens das eine Fach der Schließfachanlage „{label}“. | Die Anzahl ist unbegrenzt, gleichzeitig buchbar sind aber höchstens die {count} Fächer der Schließfachanlage „{label}“.",
+        "larger": "Die Anzahl ({amount}) ist größer als das eine Fach der Schließfachanlage „{label}“. Gleichzeitig buchbar ist höchstens 1. | Die Anzahl ({amount}) ist größer als die {count} Fächer der Schließfachanlage „{label}“. Gleichzeitig buchbar sind höchstens {count}."
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",

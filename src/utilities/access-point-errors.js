@@ -123,6 +123,18 @@ function formatCompartmentClaim(detail) {
   });
 }
 
+/**
+ * A Schließfachanlage with its own Fächer another bookable already links
+ * (ECCdigital/tickets#1038): it belongs to one bookable only. The message
+ * names both by their titles, the ids where a title is missing.
+ */
+function formatLockerSystemInOtherBookable(detail) {
+  return i18n.t("accessPoint.management.errors.lockerSystemInOtherBookable", {
+    label: detail.params?.label || detail.params?.accessPointId || "",
+    bookable: detail.params?.bookableTitle || detail.params?.bookableId || "",
+  });
+}
+
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
     return formatPrecondition(detail);
@@ -142,6 +154,10 @@ function formatDetail(detail) {
 
   if (detail.code === "compartment_not_accessible") {
     return formatCompartmentNotAccessible(detail);
+  }
+
+  if (detail.code === "locker_system_in_other_bookable") {
+    return formatLockerSystemInOtherBookable(detail);
   }
 
   if (COMPARTMENT_CLAIM_KEYS[detail.code]) {

@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
   default: { getAccessPoints: vi.fn() },
+}));
+
+vi.mock("@/services/api/ApiBookablesService", () => ({
+  default: { getBookables: vi.fn() },
 }));
 
 vi.mock("@/services/permissions/AccessPointPermissionService", () => ({
@@ -56,10 +61,15 @@ function store() {
   });
 }
 
-async function mountPoints({ accessPoints = [], bookable = {} } = {}) {
+async function mountPoints({
+  accessPoints = [],
+  bookable = {},
+  bookables = [],
+} = {}) {
   ApiAccessPointService.getAccessPoints.mockResolvedValue({
     data: accessPoints,
   });
+  ApiBookablesService.getBookables.mockResolvedValue({ data: bookables });
 
   const wrapper = mountComponent(BookableEditAccessPoints, {
     store: store(),
@@ -234,6 +244,140 @@ describe("BookableEditAccessPoints", () => {
       DOOR.id,
       LOCKER.id,
     ]);
+  });
+
+  /**
+   * An Anlage with its own Fächer belongs to one bookable only
+   * (ECCdigital/tickets#1038): one another bookable links is not offered.
+   * Doors and Anlagen whose provider assigns stay shareable.
+   */
+  describe("an Anlage with its own Fächer at one bookable only", () => {
+    const OTHER = {
+      id: "b2",
+      title: "Lastenrad",
+      accessPointDetails: {
+        active: false,
+        accessPointIds: [OPEN_LOCKER_SYSTEM.id, DOOR.id, LOCKER.id],
+      },
+    };
+
+    async function pickerOptions(wrapper) {
+      await wrapper.find("button.assign-button").trigger("click");
+      await wrapper.vm.$nextTick();
+      return wrapper.findAll(".assign-option").wrappers.map((o) => o.text());
+    }
+
+    it("does not offer an Anlage another bookable links, but its doors and provider Anlagen", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [DOOR, LOCKER, OPEN_LOCKER_SYSTEM],
+        bookables: [OTHER],
+      });
+
+      const options = await pickerOptions(wrapper);
+      expect(options).toHaveLength(2);
+      expect(options.join(" ")).toMatch(/Haupteingang/);
+      expect(options.join(" ")).toMatch(/Fahrradboxen Bahnhof/);
+      expect(options.join(" ")).not.toMatch(/Fahrradgarage/);
+    });
+
+    it("offers an Anlage that only this bookable links, once it is removed", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [OPEN_LOCKER_SYSTEM],
+        bookables: [
+          {
+            id: "b1",
+            accessPointDetails: { accessPointIds: [OPEN_LOCKER_SYSTEM.id] },
+          },
+        ],
+      });
+
+      expect(await pickerOptions(wrapper)).toHaveLength(1);
+    });
+
+    it("offers every Anlage when the other bookables cannot be read; the save decides", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [OPEN_LOCKER_SYSTEM],
+      });
+      ApiBookablesService.getBookables.mockRejectedValue({
+        response: { status: 403 },
+      });
+      const wrapper = mountComponent(BookableEditAccessPoints, {
+        store: store(),
+        propsData: {
+          bookable: {
+            id: "b1",
+            accessPointDetails: { active: true, accessPointIds: [] },
+          },
+        },
+      });
+      await flushPromises();
+
+      expect(await pickerOptions(wrapper)).toHaveLength(1);
+    });
+
+    it("reads no bookables while the tenant has no Anlage with its own Fächer", async () => {
+      await mountPoints({ accessPoints: [DOOR, LOCKER] });
+
+      expect(ApiBookablesService.getBookables).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * `amount` stays the editor's: a hint, never a refusal, when it is
+   * unlimited or larger than the Fächer of a linked Anlage
+   * (ECCdigital/tickets#1038).
+   */
+  describe("the hint on amount and Fächer", () => {
+    const GARAGE = {
+      ...OPEN_LOCKER_SYSTEM,
+      config: {
+        compartments: [
+          { id: "c-1", number: 1 },
+          { id: "c-2", number: 2 },
+        ],
+      },
+    };
+    const linked = (amount) => ({
+      amount,
+      accessPointDetails: {
+        active: true,
+        accessBuffer: { before: 0, after: 0 },
+        accessPointIds: [GARAGE.id],
+      },
+    });
+    const hint = (wrapper) =>
+      wrapper.find("[data-test='compartment-count-hint']");
+
+    it("says so when the amount is larger than the Fächer", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [GARAGE],
+        bookable: linked(3),
+      });
+
+      expect(hint(wrapper).text()).toMatch(
+        /Die Anzahl \(3\) ist größer als die 2 Fächer der Schließfachanlage „Fahrradgarage“/
+      );
+    });
+
+    it("says so when the amount is unlimited", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [GARAGE],
+        bookable: linked(null),
+      });
+
+      expect(hint(wrapper).text()).toMatch(
+        /Die Anzahl ist unbegrenzt.*2 Fächer der Schließfachanlage „Fahrradgarage“/
+      );
+    });
+
+    it("says nothing when the amount fits", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [GARAGE],
+        bookable: linked(2),
+      });
+
+      expect(hint(wrapper).exists()).toBe(false);
+    });
   });
 
   it("hands on only the access point details", async () => {
