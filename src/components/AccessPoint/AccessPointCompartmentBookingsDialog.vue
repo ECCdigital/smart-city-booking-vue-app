@@ -104,6 +104,15 @@ export default {
               : $t("accessPoint.management.compartments.leave.unmovedTitle")
           }}
         </span>
+        <v-spacer />
+        <v-btn
+          icon
+          data-test="close-compartments-leave"
+          :disabled="saving"
+          @click="$emit('close')"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
@@ -159,13 +168,8 @@ export default {
             {{ $t("accessPoint.management.compartments.leave.confirm") }}
           </v-btn>
         </template>
-        <v-btn
-          v-else
-          class="close-unmoved"
-          color="primary"
-          @click="$emit('close')"
-        >
-          {{ $t("accessPoint.management.compartments.leave.ok") }}
+        <v-btn v-else class="close-unmoved" outlined @click="$emit('close')">
+          {{ $t("accessPoint.management.compartments.leave.close") }}
         </v-btn>
       </v-card-actions>
     </v-card>

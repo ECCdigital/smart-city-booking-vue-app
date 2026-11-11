@@ -2970,7 +2970,7 @@
           "confirm": "Trotzdem speichern",
           "unmovedTitle": "Nicht alle Buchungen haben ein neues Fach",
           "unmovedText": "Die Anlage ist gespeichert. Kein freies Fach für diese künftigen Buchungen: Sie bleiben an ihrem alten Fach. Lösen Sie sie von Hand, etwa in den Details der Buchung.",
-          "ok": "OK"
+          "close": "Schließen"
         }
       },
       "picker": {

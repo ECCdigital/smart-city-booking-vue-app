@@ -2107,6 +2107,44 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
       expect(wrapper.emitted("saved")).toBeUndefined();
     });
 
+    it("cancels the question by the X in the title as well", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 1, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      await click(wrapper, "[data-test='close-compartments-leave']");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+    });
+
+    it("names the bookings left at their Fach with one outlined „Schließen“, the X closing it alike", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: {
+          id: "anlage-1",
+          unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      const buttons = leaveDialog(wrapper)
+        .findComponent({ name: "v-card-actions" })
+        .findAllComponents({ name: "v-btn" });
+      expect(buttons).toHaveLength(1);
+      expect(buttons.at(0).text()).toBe("Schließen");
+      expect(buttons.at(0).props("outlined")).toBe(true);
+
+      await click(wrapper, "[data-test='close-compartments-leave']");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
     it("counts the bookings the list leaves out", async () => {
       ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
         data: { total: 12, bookings: [booking("b-future", "future", FACH_1)] },
