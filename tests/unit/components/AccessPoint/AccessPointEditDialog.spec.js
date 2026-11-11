@@ -1472,6 +1472,159 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
 });
 
 /**
+ * Open Locker lists the compartments the tenant's technical account holds a
+ * permission on, named by locker bank and number (tickets#971): the
+ * compartment is picked from the list like a Nuki lock, not typed in by its
+ * UUID. The backend refuses a compartment the account holds no permission
+ * on, and the alert says what to do about it.
+ */
+describe("AccessPointEditDialog - an Open Locker compartment from the list", () => {
+  const OPEN_LOCKER = {
+    id: "open-locker",
+    title: "Open Locker",
+    providerCapabilities: [
+      "open",
+      "getOpenProgress",
+      "listAccessPoints",
+      "validateAccessPoint",
+    ],
+  };
+  const UUID = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
+  const OTHER_UUID = "1d2e3f4a-5b6c-4d7e-9f8a-0b1c2d3e4f5a";
+
+  function listedCompartment(id, lockerBank, number) {
+    return {
+      id,
+      type: "door",
+      provider: "open-locker",
+      externalId: id,
+      locationId: `bank-${number}`,
+      label: `${lockerBank} · Fach ${number}`,
+      capabilities: ["remote"],
+      supportedModes: ["remote"],
+      metadata: { id, number, lockerBank: { name: lockerBank } },
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+      data: [
+        listedCompartment(UUID, "Labor Fachbank 1", 1),
+        listedCompartment(OTHER_UUID, "Quartiersschrank Hafen", 3),
+      ],
+    });
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+    ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+    ApiGeoService.search.mockResolvedValue([]);
+    ApiGeoService.reverse.mockResolvedValue(null);
+  });
+
+  async function pick(wrapper, externalId) {
+    wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", externalId);
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".apply-lock").trigger("click");
+    await wrapper.vm.$nextTick();
+  }
+
+  it("offers the compartments the account may open, by locker bank and number", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+      "t1",
+      "open-locker"
+    );
+    const select = wrapper.findComponent({ ref: "lockSelect" });
+    expect(select.props("items").map(select.props("itemText"))).toEqual([
+      "Labor Fachbank 1 · Fach 1",
+      "Quartiersschrank Hafen · Fach 3",
+    ]);
+  });
+
+  it("takes a compartment over and saves it by its UUID, a door opened remotely", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    await pick(wrapper, UUID);
+
+    expect(wrapper.find(".label-field input").element.value).toBe(
+      "Labor Fachbank 1 · Fach 1"
+    );
+    expect(wrapper.find(".external-id-field input").element.value).toBe(UUID);
+    expect(labels(wrapper)).toContain("UUID des Fachs");
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+
+    const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      label: "Labor Fachbank 1 · Fach 1",
+      type: "door",
+      provider: "open-locker",
+      externalId: UUID,
+      providerLocationId: null,
+      mode: "remote",
+    });
+    expect(payload).not.toHaveProperty("validationRules");
+  });
+
+  it("says why the save failed when the account holds no permission on the compartment", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      validationError([
+        {
+          field: "externalId",
+          code: "compartment_not_accessible",
+          params: { externalId: OTHER_UUID },
+        },
+      ])
+    );
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await pick(wrapper, OTHER_UUID);
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(dialogText(wrapper)).toContain(
+      `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${OTHER_UUID}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.`
+    );
+    expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+
+  it("says the same when a stored compartment lost its permission since", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      validationError([
+        {
+          field: "externalId",
+          code: "compartment_not_accessible",
+          params: { externalId: UUID },
+        },
+      ])
+    );
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: {
+        id: "ap-fach",
+        type: "door",
+        provider: "open-locker",
+        label: "Labor Fachbank 1 · Fach 1",
+        externalId: UUID,
+        mode: "remote",
+        validationRules: [],
+      },
+    });
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(dialogText(wrapper)).toContain(
+      `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${UUID}“. ${"Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat."}`
+    );
+    expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+});
+
+/**
  * The location of a door is entered with the location input (map
  * ECCdigital/tickets#372): narrow, fields and map one under the other, right
  * in the dialog - no dialog in the dialog.

@@ -108,6 +108,23 @@ describe("formatAccessPointErrorMessage", () => {
       );
     });
 
+    it("names an Open Locker compartment the technical account may not open", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          {
+            field: "externalId",
+            code: "compartment_not_accessible",
+            params: { externalId: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d" },
+          },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat."
+      );
+    });
+
     /**
      * An older backend may name an Öffnungsart this UI has no label for; the
      * raw value is still something the admin can quote.

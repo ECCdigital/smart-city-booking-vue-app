@@ -93,6 +93,19 @@ function formatUnsupportedOpenAction(detail) {
   });
 }
 
+/**
+ * An Open Locker compartment the tenant's technical account holds no
+ * permission on - picked by a UUID typed in, or one whose permission Open
+ * Locker took away since. The message names the compartment and the two
+ * ways out, both open while creating and while editing: give the account
+ * the permission, or point the access point at a compartment it may open.
+ */
+function formatCompartmentNotAccessible(detail) {
+  return i18n.t("accessPoint.management.errors.compartmentNotAccessible", {
+    externalId: detail.params?.externalId,
+  });
+}
+
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
     return formatPrecondition(detail);
@@ -108,6 +121,10 @@ function formatDetail(detail) {
 
   if (detail.code === "unsupported_open_action") {
     return formatUnsupportedOpenAction(detail);
+  }
+
+  if (detail.code === "compartment_not_accessible") {
+    return formatCompartmentNotAccessible(detail);
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {

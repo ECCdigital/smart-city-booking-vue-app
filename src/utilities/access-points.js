@@ -154,7 +154,9 @@ export function hasProviderCapability(provider, capability) {
 
 /**
  * Whether the provider lists access points to take over - the backend's
- * `listAccessPoints` capability. Nuki, Salto KS and iFBS do; Pareva does
+ * `listAccessPoints` capability. Nuki, Salto KS, Open Locker and iFBS do -
+ * Open Locker the compartments the tenant's technical account holds a
+ * permission on, named by locker bank and number; Pareva does
  * not, because what it could list are size codes, not the products a Pareva
  * Anlage stands for. The picker offers only providers that do; the others
  * are entered by hand.
