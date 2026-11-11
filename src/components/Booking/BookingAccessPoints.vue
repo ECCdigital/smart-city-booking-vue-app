@@ -30,6 +30,7 @@ import {
   openProgressOf,
 } from "@/utilities/booking-access-points";
 import { isLockerAccessPoint } from "@/utilities/access-points";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 
 const WINDOW_TICK_MS = 30000;
@@ -147,16 +148,10 @@ export default {
         ? entry.assignedCompartment
         : null;
       if (assigned?.number != null) {
-        return assigned.lockerBankName
-          ? this.$t("accessPoint.booking.assignedCompartment", {
-              label,
-              lockerBank: assigned.lockerBankName,
-              number: assigned.number,
-            })
-          : this.$t("accessPoint.booking.compartment", {
-              label,
-              compartment: assigned.number,
-            });
+        return this.$t("accessPoint.booking.assignedCompartment", {
+          label,
+          compartment: compartmentTitle(assigned),
+        });
       }
       if (isLockerAccessPoint(entry) && entry.compartment) {
         return this.$t("accessPoint.booking.compartment", {

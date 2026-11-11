@@ -4,8 +4,9 @@ import {
   compartmentCountMismatches,
   compartmentGroups,
   leavingCompartmentIds,
+  compartmentTitle,
   lockerSystemIdsLinkedElsewhere,
-  takenCompartmentIds,
+  takenProviderIds,
 } from "@/utilities/locker-system-compartments";
 
 const UUID_1 = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
@@ -68,13 +69,25 @@ describe("the Fächer other access points hold", () => {
 
   it("names those in another Anlage and the fixed Fächer of the provider", () => {
     expect(
-      [...takenCompartmentIds(accessPoints, { provider: "open-locker" })].sort()
+      [...takenProviderIds(accessPoints, { provider: "open-locker" })].sort()
     ).toEqual([UUID_1, UUID_2].sort());
+  });
+
+  it("names what any other access point of the provider stands for, a Schließfachanlage of iFBS too", () => {
+    const ifbs = [
+      { id: "box-1", type: "locker", provider: "ifbs", externalId: "S" },
+      { id: "tuer-2", type: "door", provider: "ifbs", externalId: "T" },
+      { id: "anlage-ol", type: "locker", provider: "open-locker" },
+    ];
+    expect([...takenProviderIds(ifbs, { provider: "ifbs" })].sort()).toEqual([
+      "S",
+      "T",
+    ]);
   });
 
   it("leaves out the Anlage being edited", () => {
     expect([
-      ...takenCompartmentIds(accessPoints, {
+      ...takenProviderIds(accessPoints, {
         provider: "open-locker",
         exceptId: "anlage-1",
       }),
@@ -332,5 +345,26 @@ describe("leavingCompartmentIds", () => {
 
   it("names none for a new Anlage", () => {
     expect(leavingCompartmentIds(null, [fach(UUID_1, true)])).toEqual([]);
+  });
+});
+
+/**
+ * A Fach as the administration reads it - in the list of free Fächer, the
+ * bookings at a Fach and the title on the booking page alike.
+ */
+describe("the title of a Fach", () => {
+  it.each([
+    [
+      { number: 3, lockerBankName: "Labor Fachbank 1" },
+      "Schrank Labor Fachbank 1, Fach 3",
+    ],
+    [{ number: 3, lockerBankName: null }, "Fach 3"],
+    [
+      { number: null, lockerBankName: "Labor Fachbank 1" },
+      "Schrank Labor Fachbank 1",
+    ],
+    [null, ""],
+  ])("%o: %s", (compartment, title) => {
+    expect(compartmentTitle(compartment)).toBe(title);
   });
 });

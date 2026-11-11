@@ -1,5 +1,6 @@
 <script>
 import FormatService from "@/services/FormatService";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 
 /**
  * The bookings at the Fächer that leave a Schließfachanlage with a save -
@@ -58,23 +59,12 @@ export default {
       );
     },
     compartmentText(compartment) {
-      if (!compartment) return "";
-      const parts = [];
-      if (compartment.lockerBank?.name) {
-        parts.push(
-          this.$t("accessPoint.management.compartments.lockerBank", {
-            name: compartment.lockerBank.name,
-          })
-        );
-      }
-      if (compartment.number != null) {
-        parts.push(
-          this.$t("accessPoint.management.compartments.compartment", {
-            number: compartment.number,
-          })
-        );
-      }
-      return parts.join(", ");
+      return compartmentTitle(
+        compartment && {
+          number: compartment.number,
+          lockerBankName: compartment.lockerBank?.name,
+        }
+      );
     },
     periodOf(booking) {
       if (!booking.timeBegin || !booking.timeEnd) return "";

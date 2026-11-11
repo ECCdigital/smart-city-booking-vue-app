@@ -15,7 +15,7 @@ import {
   carriesOwnCompartments,
   leavingCompartmentIds,
   lockerCarriesCompartments,
-  takenCompartmentIds,
+  takenProviderIds,
 } from "@/utilities/locker-system-compartments";
 import {
   createLockAndAccessAppDefaults,
@@ -218,7 +218,7 @@ export default {
       return this.picksCompartments ? this.form.provider : "";
     },
     takenCompartments() {
-      return takenCompartmentIds(this.accessPoints, {
+      return takenProviderIds(this.accessPoints, {
         provider: this.form.provider,
         exceptId: this.form.id,
       });
@@ -417,28 +417,27 @@ export default {
     },
     // A Fach of an Anlage that carries its own is taken as well: it is no
     // fixed Fach once it stands in an Anlage.
-    takenLockKeys() {
-      return new Set(
-        this.accessPoints
-          .filter((point) => point.id !== this.form.id)
-          .flatMap((point) => [
-            `${point.provider}::${point.externalId}`,
-            ...(carriesOwnCompartments(point)
-              ? point.config.compartments.map(
-                  (c) => `${point.provider}::${c.id}`
-                )
-              : []),
-          ])
-      );
-    },
     pickerItems() {
+      const taken = new Map();
+      const takenAt = (provider) => {
+        if (!taken.has(provider)) {
+          taken.set(
+            provider,
+            takenProviderIds(this.accessPoints, {
+              provider,
+              exceptId: this.form.id,
+            })
+          );
+        }
+        return taken.get(provider);
+      };
       return this.providerLocks.map((lock) => {
         const externalId = lock.externalId || lock.id;
         return {
           ...lock,
           externalId,
-          alreadyCreated: this.takenLockKeys.has(
-            `${lock.provider || this.pickerProvider}::${externalId}`
+          alreadyCreated: takenAt(lock.provider || this.pickerProvider).has(
+            String(externalId)
           ),
         };
       });
