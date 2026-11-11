@@ -3452,6 +3452,7 @@
       "reload": "neu laden",
       "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
       "compartment": "{label} — Fach {compartment}",
+      "assignedCompartment": "{label} — Schrank {lockerBank}, Fach {number}",
       "process": "Vorgang:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",

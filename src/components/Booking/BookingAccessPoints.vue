@@ -103,7 +103,8 @@ export default {
     /**
      * What a read of the accesses depends on: the booking, and its state -
      * the Buchungsseite reloads a booking it released under the same id, and
-     * only a confirmed booking has accesses to show. One key
+     * only a confirmed booking has accesses to show - or one holding a Fach
+     * of an Open Locker Schließfachanlage, from the Vormerkung on. One key
      * rather than two watchers, so a swap of the shown booking reads once.
      */
     accessSource() {
@@ -131,8 +132,29 @@ export default {
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
     isLockerAccessPoint,
+    /**
+     * The name a person looks for: a Fach the platform assigned (Open Locker)
+     * by its Anlage, Schließfachschrank and number, a compartment the
+     * provider named by its number (iFBS), anything else by its label - the
+     * fixed Fach of Open Locker included.
+     */
     entryTitle(entry) {
       const label = entry.label || entry.id;
+      const assigned = isLockerAccessPoint(entry)
+        ? entry.assignedCompartment
+        : null;
+      if (assigned?.number != null) {
+        return assigned.lockerBankName
+          ? this.$t("accessPoint.booking.assignedCompartment", {
+              label,
+              lockerBank: assigned.lockerBankName,
+              number: assigned.number,
+            })
+          : this.$t("accessPoint.booking.compartment", {
+              label,
+              compartment: assigned.number,
+            });
+      }
       if (isLockerAccessPoint(entry) && entry.compartment) {
         return this.$t("accessPoint.booking.compartment", {
           label,
@@ -466,9 +488,10 @@ export default {
         );
         this.entries = accessEntriesOf(response.data);
       } catch (error) {
-        // The route answers 403 for every booking that is not confirmed and
-        // 404 for one outside the caller's reach: nothing to show, not a
-        // failure. The card stays away as it does on an empty list.
+        // The route answers 403 for every booking that is not confirmed (and
+        // holds no assigned Fach) and 404 for one outside the caller's
+        // reach: nothing to show, not a failure. The card stays away as it
+        // does on an empty list.
         this.entries = [];
         if (!isOutOfReach(error)) {
           console.error(error);
