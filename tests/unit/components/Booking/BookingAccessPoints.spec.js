@@ -70,6 +70,19 @@ function compartment(overrides = {}) {
   };
 }
 
+/** A Fach of an Open Locker Schließfachanlage, assigned by the platform. */
+function assignedFach(overrides = {}) {
+  return compartment({
+    id: "anlage-1:9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+    provider: "open-locker",
+    label: "Fächer Bahnhof",
+    externalBookingId: null,
+    compartment: null,
+    assignedCompartment: { number: 3, lockerBankName: "Quartiersschrank Hafen" },
+    ...overrides,
+  });
+}
+
 function store() {
   return new Vuex.Store({
     modules: {
@@ -159,6 +172,86 @@ describe("BookingAccessPoints", () => {
 
     expect(tiles(wrapper).at(0).find(".access-point-tile__title").text()).toBe(
       "Fahrradboxen Bahnhof — Fach 17"
+    );
+  });
+
+  describe("a Fach the platform assigned (Open Locker)", () => {
+    it("is named by Anlage, Schließfachschrank and number", async () => {
+      const wrapper = await mountList({ entries: [assignedFach()] });
+
+      expect(
+        tiles(wrapper).at(0).find(".access-point-tile__title").text()
+      ).toBe("Fächer Bahnhof — Schrank Quartiersschrank Hafen, Fach 3");
+    });
+
+    it("is named by Anlage and number where the Schließfachschrank is unknown", async () => {
+      const wrapper = await mountList({
+        entries: [
+          assignedFach({
+            assignedCompartment: { number: 3, lockerBankName: null },
+          }),
+        ],
+      });
+
+      expect(
+        tiles(wrapper).at(0).find(".access-point-tile__title").text()
+      ).toBe("Fächer Bahnhof — Fach 3");
+    });
+
+    it("opens with „Fach öffnen“ under the id it came with", async () => {
+      ApiAccessService.open.mockResolvedValue({
+        data: { success: true, data: { openProcessId: null } },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+      const button = openButton(tiles(wrapper).at(0));
+
+      expect(button.text()).toContain("Fach öffnen");
+      await button.trigger("click");
+      await flushPromises();
+
+      expect(ApiAccessService.open).toHaveBeenCalledWith(
+        "bk-1",
+        "anlage-1:9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+        "t1"
+      );
+    });
+
+    it("is listed as reserved before the payment, without an open", async () => {
+      const wrapper = await mountList({
+        entries: [assignedFach({ isProvisioned: false })],
+      });
+      const tile = tiles(wrapper).at(0);
+
+      expect(tile.find("[data-test='access-state']").text()).toContain(
+        "Vorgemerkt"
+      );
+      expect(openButton(tile).attributes("disabled")).toBeDefined();
+    });
+
+    it("shows no process id of the provider", async () => {
+      const wrapper = await mountList({ entries: [assignedFach()] });
+
+      const meta = tiles(wrapper).at(0).find(".access-point-tile__meta").text();
+      expect(meta).toContain("open-locker");
+      expect(meta).not.toContain("9b2f6c1e");
+    });
+  });
+
+  it("keeps the fixed Fach of Open Locker a door with its label", async () => {
+    const wrapper = await mountList({
+      entries: [
+        door({
+          id: "fixed-1",
+          provider: "open-locker",
+          mode: "remote",
+          label: "Quartiersschrank Hafen · Fach 3",
+          capabilities: ["open"],
+        }),
+      ],
+    });
+
+    expect(tiles(wrapper).at(0).find(".access-point-tile__title").text()).toBe(
+      "Quartiersschrank Hafen · Fach 3"
     );
   });
 

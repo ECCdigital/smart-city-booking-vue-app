@@ -6,11 +6,13 @@
  * (`access-point-projection.js`). An entry carries `id`, `type`, `provider`,
  * `label`, `mode`, `validationRuleTypes`, `capabilities`, `accessFrom`,
  * `accessTo`, `accessBuffer`, `isProvisioned` and - at a compartment alone -
- * `externalBookingId` and `compartment`.
+ * `externalBookingId`, `compartment` and `assignedCompartment` (`{ number,
+ * lockerBankName }` of a Fach the platform assigned at an Open Locker
+ * Schließfachanlage, listed from the Vormerkung on; `null` otherwise).
  *
- * The `id` of a compartment is opaque (`<accessPointId>:<authorizationId>`,
- * `<accessPointId>:hold` before the grant). It is passed on as it came: never
- * split, never assembled.
+ * The `id` of a compartment is opaque (`<accessPointId>:<Fach UUID>`,
+ * `<accessPointId>:<authorizationId>`, `<accessPointId>:hold` before the
+ * grant). It is passed on as it came: never split, never assembled.
  */
 import { isLockerAccessPoint } from "@/utilities/access-points";
 import { ACCESS_BLOCKING_REASON } from "@/utilities/access-blocking-reasons";
@@ -49,7 +51,8 @@ const STATE_CHIPS = Object.freeze({
  * (`access-service.js` `_compartmentContext`), so it is null exactly until the
  * grant exists and stays set once it did; `isProvisioned` is the grant that is
  * not revoked. A door never carries `externalBookingId` and is therefore held
- * or granted, never revoked.
+ * or granted, never revoked - and so is a Fach the platform assigned, which
+ * has no grant.
  *
  * @param {Object} entry One entry of the projection
  * @returns {string} One of `ACCESS_STATE`
