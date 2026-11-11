@@ -1815,6 +1815,16 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
     return ApiAccessPointService.storeAccessPoint.mock.calls[0]?.[0];
   }
 
+  it("edits a stored Anlage by its data: one stored without a list of its own gets no Fächer to choose", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: { ...STORED_ANLAGE, config: {} },
+    });
+
+    expect(shownCompartments(wrapper)).toEqual([]);
+    expect(dialogText(wrapper)).not.toContain("Fächer der Anlage");
+  });
+
   it("starts a new Open Locker access point as a Schließfachanlage, the Fach one choice away", async () => {
     const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
 

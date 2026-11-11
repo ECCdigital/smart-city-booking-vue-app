@@ -209,8 +209,12 @@ export default {
     },
     // A Schließfachanlage whose Fächer are chosen here and assigned by the
     // platform (ECCdigital/tickets#1037), rather than by its provider.
+    // A stored one by its data; a new one by its provider, as it has none.
     picksCompartments() {
-      return this.isLocker && lockerCarriesCompartments(this.form.provider);
+      if (!this.isLocker) return false;
+      return this.isEdit
+        ? carriesOwnCompartments(this.accessPoint)
+        : lockerCarriesCompartments(this.form.provider);
     },
     // The provider whose listing the Fächer are chosen from, while there is
     // one to choose for.

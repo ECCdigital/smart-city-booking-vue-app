@@ -19,14 +19,15 @@ import i18n from "@/language/index";
 
 /**
  * The providers whose Schließfachanlage carries its own Fächer: the backend
- * declares `resolveCompartments` for them. Asked of the provider, not of
- * the access point, where there is none yet - a new Anlage, or a provider
- * the tenant has not switched on and whose capabilities are unknown.
+ * declares `resolveCompartments` for them. Only for a NEW Anlage, which has
+ * no data yet to tell - a stored access point carries its own Fächer when
+ * its data has the list (`carriesOwnCompartments`), whatever its provider.
  */
 const PROVIDERS_WITH_OWN_COMPARTMENTS = ["open-locker"];
 
 /**
- * Whether a Schließfachanlage of the provider carries its own Fächer.
+ * Whether a new Schließfachanlage of the provider carries its own Fächer -
+ * which picker the dialog shows before anything is stored.
  *
  * @param {string} provider A provider id
  * @returns {boolean}
