@@ -1,8 +1,4 @@
-import {
-  LOCKER_TYPE,
-  DOOR_TYPE,
-  accessPointLabel,
-} from "@/utilities/access-points";
+import { LOCKER_TYPE, accessPointLabel } from "@/utilities/access-points";
 import { isUnlimitedAmount } from "@/utils/bookableFlow";
 import i18n from "@/language/index";
 
@@ -23,14 +19,15 @@ import i18n from "@/language/index";
 
 /**
  * The providers whose Schließfachanlage carries its own Fächer: the backend
- * declares `resolveCompartments` for them. Asked of the provider, not of
- * the access point, where there is none yet - a new Anlage, or a provider
- * the tenant has not switched on and whose capabilities are unknown.
+ * declares `resolveCompartments` for them. Only for a NEW Anlage, which has
+ * no data yet to tell - a stored access point carries its own Fächer when
+ * its data has the list (`carriesOwnCompartments`), whatever its provider.
  */
 const PROVIDERS_WITH_OWN_COMPARTMENTS = ["open-locker"];
 
 /**
- * Whether a Schließfachanlage of the provider carries its own Fächer.
+ * Whether a new Schließfachanlage of the provider carries its own Fächer -
+ * which picker the dialog shows before anything is stored.
  *
  * @param {string} provider A provider id
  * @returns {boolean}
@@ -76,29 +73,57 @@ export function leavingCompartmentIds(stored, compartments) {
 }
 
 /**
- * The UUIDs of the Fächer the other access points of the provider hold: the
- * Fächer of each Anlage that carries its own, and each fixed Fach (a door,
- * its UUID the `externalId`). A Fach stands in at most one Anlage and is then
- * no fixed Fach, so none of them is to be chosen.
+ * The ids at the provider the other access points of the tenant stand for:
+ * each one's `externalId` (a door, a fixed Fach, an iFBS Anlage) and the
+ * Fächer of each Anlage that carries its own. A lock of the provider's
+ * listing with one of them is created already; a Fach stands in at most one
+ * Anlage and is then no fixed Fach, so none of them is to be chosen.
  *
  * @param {Object[]} accessPoints Every access point of the tenant
  * @param {Object} options
- * @param {string} options.provider The provider whose Fächer count
+ * @param {string} options.provider The provider whose ids count
  * @param {string|null} [options.exceptId] The access point being edited
  * @returns {Set<string>}
  */
-export function takenCompartmentIds(accessPoints, { provider, exceptId }) {
+export function takenProviderIds(accessPoints, { provider, exceptId }) {
   const taken = new Set();
   (accessPoints || [])
     .filter((point) => point.provider === provider && point.id !== exceptId)
     .forEach((point) => {
+      if (point.externalId) taken.add(String(point.externalId));
       if (carriesOwnCompartments(point)) {
         point.config.compartments.forEach((c) => taken.add(String(c.id)));
-      } else if (point.type === DOOR_TYPE && point.externalId) {
-        taken.add(String(point.externalId));
       }
     });
   return taken;
+}
+
+/**
+ * A Fach as the administration reads it: „Schrank {name}, Fach {number}“,
+ * either part left out where it is unknown.
+ *
+ * @param {{number?: number|null, lockerBankName?: string|null}|null} compartment
+ *   The Fach in the shape the backend projects it
+ * @returns {string}
+ */
+export function compartmentTitle(compartment) {
+  if (!compartment) return "";
+  const parts = [];
+  if (compartment.lockerBankName) {
+    parts.push(
+      i18n.t("accessPoint.management.compartments.lockerBank", {
+        name: compartment.lockerBankName,
+      })
+    );
+  }
+  if (compartment.number != null) {
+    parts.push(
+      i18n.t("accessPoint.management.compartments.compartment", {
+        number: compartment.number,
+      })
+    );
+  }
+  return parts.join(", ");
 }
 
 /** A listed compartment in the shape the choice shows. */

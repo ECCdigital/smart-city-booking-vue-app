@@ -412,6 +412,36 @@ describe("BookingAccessPoints", () => {
       expect(reassignDialog(wrapper).props("open")).toBe(false);
     });
 
+    it("closes by the X in the title, moving nothing", async () => {
+      ApiAccessService.getFreeCompartments.mockResolvedValue({
+        data: { success: true, data: FREE },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+      await startReassign(wrapper);
+
+      await reassignDialog(wrapper)
+        .find("[data-test='reassign-close']")
+        .trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(reassignDialog(wrapper).props("open")).toBe(false);
+      expect(ApiAccessService.reassignCompartment).not.toHaveBeenCalled();
+    });
+
+    it("leads the confirm button with its icon", async () => {
+      ApiAccessService.getFreeCompartments.mockResolvedValue({
+        data: { success: true, data: FREE },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+      await startReassign(wrapper);
+
+      const icon = reassignDialog(wrapper)
+        .find("[data-test='reassign-confirm']")
+        .findComponent({ name: "v-icon" });
+      expect(icon.exists()).toBe(true);
+      expect(icon.html()).toContain("mdi-swap-horizontal");
+    });
+
     it("says so when no other Fach is free, and moves nothing", async () => {
       ApiAccessService.getFreeCompartments.mockResolvedValue({
         data: { success: true, data: [] },

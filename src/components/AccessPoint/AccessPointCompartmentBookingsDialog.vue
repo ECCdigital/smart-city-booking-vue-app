@@ -1,5 +1,6 @@
 <script>
 import FormatService from "@/services/FormatService";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 
 /**
  * The bookings at the Fächer that leave a Schließfachanlage with a save -
@@ -58,23 +59,12 @@ export default {
       );
     },
     compartmentText(compartment) {
-      if (!compartment) return "";
-      const parts = [];
-      if (compartment.lockerBank?.name) {
-        parts.push(
-          this.$t("accessPoint.management.compartments.lockerBank", {
-            name: compartment.lockerBank.name,
-          })
-        );
-      }
-      if (compartment.number != null) {
-        parts.push(
-          this.$t("accessPoint.management.compartments.compartment", {
-            number: compartment.number,
-          })
-        );
-      }
-      return parts.join(", ");
+      return compartmentTitle(
+        compartment && {
+          number: compartment.number,
+          lockerBankName: compartment.lockerBank?.name,
+        }
+      );
     },
     periodOf(booking) {
       if (!booking.timeBegin || !booking.timeEnd) return "";
@@ -104,6 +94,15 @@ export default {
               : $t("accessPoint.management.compartments.leave.unmovedTitle")
           }}
         </span>
+        <v-spacer />
+        <v-btn
+          icon
+          data-test="close-compartments-leave"
+          :disabled="saving"
+          @click="$emit('close')"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
@@ -159,13 +158,8 @@ export default {
             {{ $t("accessPoint.management.compartments.leave.confirm") }}
           </v-btn>
         </template>
-        <v-btn
-          v-else
-          class="close-unmoved"
-          color="primary"
-          @click="$emit('close')"
-        >
-          {{ $t("accessPoint.management.compartments.leave.ok") }}
+        <v-btn v-else class="close-unmoved" outlined @click="$emit('close')">
+          {{ $t("accessPoint.management.compartments.leave.close") }}
         </v-btn>
       </v-card-actions>
     </v-card>

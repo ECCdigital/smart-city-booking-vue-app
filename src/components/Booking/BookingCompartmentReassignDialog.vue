@@ -1,6 +1,7 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 
 /** The 409 of a Fach taken or put out of service since it was offered. */
 const COMPARTMENT_TAKEN = "compartment_taken";
@@ -47,16 +48,7 @@ export default {
     },
   },
   methods: {
-    optionText(compartment) {
-      return compartment.lockerBankName
-        ? this.$t("accessPoint.booking.reassign.option", {
-            lockerBank: compartment.lockerBankName,
-            number: compartment.number,
-          })
-        : this.$t("accessPoint.booking.reassign.optionWithoutBank", {
-            number: compartment.number,
-          });
-    },
+    compartmentTitle,
     async load() {
       if (!this.entry) return;
       this.loading = true;
@@ -121,6 +113,15 @@ export default {
         <span class="text-h5">{{
           $t("accessPoint.booking.reassign.title")
         }}</span>
+        <v-spacer />
+        <v-btn
+          icon
+          data-test="reassign-close"
+          :disabled="saving"
+          @click="$emit('close')"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
@@ -162,7 +163,7 @@ export default {
               </v-list-item-icon>
               <v-list-item-content>
                 <v-list-item-title>{{
-                  optionText(compartment)
+                  compartmentTitle(compartment)
                 }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
@@ -181,6 +182,7 @@ export default {
           :disabled="!chosen || loading"
           @click="confirm"
         >
+          <v-icon left small>mdi-swap-horizontal</v-icon>
           {{ $t("accessPoint.booking.reassign.confirm") }}
         </v-btn>
       </v-card-actions>
