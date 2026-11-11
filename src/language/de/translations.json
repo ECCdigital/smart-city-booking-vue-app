@@ -2954,7 +2954,21 @@
         "notListed": "Nicht in der Liste von {provider}",
         "empty": "Keine Fächer zur Wahl.",
         "selected": "Gewählte Fächer: {count}",
-        "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern."
+        "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern.",
+        "leave": {
+          "title": "Fächer mit Buchungen",
+          "question": "An diesen Fächern hängen Buchungen. Künftige Buchungen bekommen beim Speichern das erste freie Fach in Betrieb, auch unbezahlte. Laufende Buchungen behalten ihr Fach, weil schon Sachen darin liegen können.",
+          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach.",
+          "states": {
+            "running": "läuft – behält das Fach",
+            "future": "künftig – bekommt ein freies Fach"
+          },
+          "more": "… und {count} weitere.",
+          "confirm": "Trotzdem speichern",
+          "unmovedTitle": "Nicht alle Buchungen haben ein neues Fach",
+          "unmovedText": "Die Anlage ist gespeichert. Kein freies Fach für diese künftigen Buchungen: Sie bleiben an ihrem alten Fach. Lösen Sie sie von Hand, etwa in den Details der Buchung.",
+          "ok": "OK"
+        }
       },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",

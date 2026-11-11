@@ -22,6 +22,19 @@ export default {
     return ApiClient.put(`api/${t}/accesspoints`, accessPoint);
   },
 
+  /**
+   * The running and future bookings at Fächer of a Schließfachanlage, read
+   * before a save takes them out of service or out of the Anlage
+   * (ECCdigital/tickets#1043): `{ total, bookings }`, each booking with
+   * `state` (`running` | `future`) and the `compartment` it holds.
+   */
+  getCompartmentBookings(id, compartmentIds, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/accesspoints/${id}/compartment-bookings`, {
+      params: { compartmentIds: compartmentIds.join(",") },
+    });
+  },
+
   deleteAccessPoint(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.delete(`api/${t}/accesspoints/${id}`);

@@ -3,6 +3,7 @@ import {
   carriesOwnCompartments,
   compartmentCountMismatches,
   compartmentGroups,
+  leavingCompartmentIds,
   lockerSystemIdsLinkedElsewhere,
   takenCompartmentIds,
 } from "@/utilities/locker-system-compartments";
@@ -290,5 +291,46 @@ describe("compartmentCountMismatches", () => {
     expect(
       compartmentCountMismatches(bookable(null, ["ap-ifbs"]), [IFBS, GARAGE])
     ).toEqual([]);
+  });
+});
+
+describe("leavingCompartmentIds", () => {
+  const fach = (id, outOfService = false) => ({ id, outOfService });
+
+  it("names the Fächer taken out of the list and those newly out of service", () => {
+    const stored = {
+      type: "locker",
+      config: {
+        compartments: [
+          fach(UUID_1),
+          fach(UUID_2),
+          fach(UUID_3, true),
+          fach(UUID_4, true),
+        ],
+      },
+    };
+
+    expect(
+      leavingCompartmentIds(stored, [
+        fach(UUID_1),
+        fach(UUID_2, true),
+        fach(UUID_3, true),
+      ])
+    ).toEqual([UUID_2, UUID_4]);
+  });
+
+  it("names none when a Fach goes back into service or a new one comes", () => {
+    const stored = {
+      type: "locker",
+      config: { compartments: [fach(UUID_1, true)] },
+    };
+
+    expect(leavingCompartmentIds(stored, [fach(UUID_1), fach(UUID_2)])).toEqual(
+      []
+    );
+  });
+
+  it("names none for a new Anlage", () => {
+    expect(leavingCompartmentIds(null, [fach(UUID_1, true)])).toEqual([]);
   });
 });
