@@ -288,3 +288,56 @@ describe("AccessPoints asks before the identity of Salto KS changes", () => {
     expect(savedSalto().siteId).toBe("site-1");
   });
 });
+
+/**
+ * The Open Locker password travels like Pareva's (ECCdigital/tickets#970):
+ * the backend hands it back decrypted, the form holds it, and a save sends it
+ * along to be encrypted again - so a change elsewhere in the form keeps it.
+ */
+describe("AccessPoints saves Open Locker", () => {
+  const STORED = {
+    type: "access",
+    id: "open-locker",
+    title: "Open Locker",
+    serverUrl: "https://locker-labor.e-c-crew.dev",
+    email: "technik@example.org",
+    password: "geheim",
+    active: true,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiTenantService.getTenant.mockResolvedValue({
+      data: { id: "t1", name: "Mandant", applications: [STORED] },
+    });
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: [] });
+    ApiTenantService.submitTenant.mockResolvedValue({ data: {} });
+  });
+
+  it("keeps the stored password when the e-mail changes", async () => {
+    const wrapper = mountComponent(AccessPoints, {
+      store: store(),
+      mocks: {
+        $route: { query: { tab: "providers" } },
+        $router: { replace: vi.fn() },
+      },
+    });
+    await settle(wrapper);
+    const panel = wrapper
+      .findAll(".v-expansion-panel")
+      .wrappers.find((p) => p.text().includes("Open Locker"));
+    await panel.find(".v-expansion-panel-header").trigger("click");
+    await settle(wrapper);
+
+    const email = panel
+      .findAll("input")
+      .wrappers.find((input) => input.element.value === STORED.email);
+    await email.setValue("konto@example.org");
+    await save(wrapper);
+
+    const tenant = ApiTenantService.submitTenant.mock.calls.at(-1)[0];
+    expect(tenant.applications.find((app) => app.id === "open-locker")).toEqual(
+      { ...STORED, email: "konto@example.org" }
+    );
+  });
+});

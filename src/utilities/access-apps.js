@@ -6,11 +6,17 @@
  * through a save unchanged - which only works if both pages agree on their
  * shape.
  *
- * All four are of type `access`: the backend schema knows no other type for
+ * All five are of type `access`: the backend schema knows no other type for
  * them since the migration, and there is no fallback - a tenant whose
  * applications were not migrated reads as not configured.
  */
-export const LOCK_AND_ACCESS_APP_IDS = ["pareva", "ifbs", "nuki", "salto-ks"];
+export const LOCK_AND_ACCESS_APP_IDS = [
+  "pareva",
+  "ifbs",
+  "nuki",
+  "salto-ks",
+  "open-locker",
+];
 
 /** The id of Salto KS as a provider and as a tenant application. */
 export const SALTO_PROVIDER = "salto-ks";
@@ -94,6 +100,18 @@ export function createLockAndAccessAppDefaults() {
       password: "",
       siteId: "",
       environment: "production",
+      active: false,
+    },
+    // The tenant's technical account on its Open Locker instance. The
+    // password travels like Pareva's: the backend stores it encrypted and
+    // hands it back decrypted, so the form holds and sends it as it is.
+    "open-locker": {
+      type: "access",
+      id: "open-locker",
+      title: "Open Locker",
+      serverUrl: "",
+      email: "",
+      password: "",
       active: false,
     },
   };

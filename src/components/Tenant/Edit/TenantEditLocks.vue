@@ -2,12 +2,21 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
+import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
 import { emptyCustomerService } from "@/utilities/access-apps";
+import { runConnectionTest } from "@/utilities/access-connection-test";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+
+const OPEN_LOCKER = "open-locker";
 
 export default {
   name: "TenantEditLocks",
-  components: { AccessAppCustomerServiceFields, AppPanel, BaseSection },
+  components: {
+    AccessAppCustomerServiceFields,
+    AppPanel,
+    BaseSection,
+    ConnectionTestAlert,
+  },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -20,13 +29,16 @@ export default {
       showParevaPassword: false,
       showIfbsSecretPhrase: false,
       showIfbsApiKey: false,
+      showOpenLockerPassword: false,
       testingConnection: {
         pareva: false,
         ifbs: false,
+        [OPEN_LOCKER]: false,
       },
       testResults: {
         pareva: null,
         ifbs: null,
+        [OPEN_LOCKER]: null,
       },
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
@@ -150,6 +162,46 @@ export default {
       } finally {
         this.testingConnection.pareva = false;
       }
+    },
+    async testOpenLockerConnection() {
+      this.testingConnection[OPEN_LOCKER] = true;
+      this.testResults[OPEN_LOCKER] = null;
+
+      const app = this.localApps[OPEN_LOCKER];
+      const result = await runConnectionTest(
+        this.tenant.id,
+        {
+          serverUrl: app.serverUrl,
+          email: app.email,
+          password: app.password,
+        },
+        OPEN_LOCKER
+      );
+
+      this.testResults[OPEN_LOCKER] = {
+        success: result.success,
+        message: this.openLockerTestMessage(result),
+      };
+      this.testingConnection[OPEN_LOCKER] = false;
+    },
+    /**
+     * The test's answer in the admin's words. A wrong password and an
+     * account Open Locker blocks are different repairs, so the backend's
+     * `code` picks a sentence of its own; an answer without one - the server
+     * not found, refused - is shown as the backend worded it.
+     *
+     * @param {Object} result The result of `runConnectionTest`
+     * @returns {string}
+     */
+    openLockerTestMessage(result) {
+      if (result.success) {
+        return this.$t("accessPoint.tenant.connectionSuccess");
+      }
+      const key = `accessPoint.tenant.openLocker.testErrors.${result.code}`;
+      if (result.code && this.$te(key)) return this.$t(key);
+      return this.$t("accessPoint.tenant.openLocker.testFailed", {
+        message: result.message,
+      });
     },
   },
 };
@@ -481,6 +533,142 @@ export default {
                 >
                   <v-icon left>mdi-connection</v-icon>
                   Verbindung testen
+                </v-btn>
+              </v-col>
+            </v-row>
+          </AppPanel>
+
+          <!-- ============ OPEN LOCKER ============ -->
+          <AppPanel
+            v-if="localApps['open-locker']"
+            title="Open Locker"
+            icon="mdi-locker-multiple"
+            :active="localApps['open-locker'].active"
+            class="mt-2"
+          >
+            <!-- Beschreibung -->
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1"
+                  >mdi-locker-multiple</v-icon
+                >
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    {{ $t("accessPoint.tenant.openLocker.providerTitle") }}
+                  </div>
+                  <div class="text-body-2">
+                    {{
+                      $t("accessPoint.tenant.openLocker.providerDescription")
+                    }}
+                  </div>
+                </div>
+              </div>
+            </v-alert>
+
+            <!-- Aktivierung -->
+            <v-row dense>
+              <v-col cols="12">
+                <v-switch
+                  v-model="localApps['open-locker'].active"
+                  color="primary"
+                  hide-details
+                  :label="$t('accessPoint.tenant.openLocker.activate')"
+                  @change="emitApps()"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Serverkonfiguration -->
+            <div class="section-title mt-4 mb-2">
+              <v-icon small left>mdi-server-network</v-icon>
+              <span class="font-weight-medium">{{
+                $t("accessPoint.tenant.openLocker.server")
+              }}</span>
+            </div>
+            <v-row dense>
+              <v-col cols="12">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.openLocker.serverUrl')"
+                  :placeholder="
+                    $t('accessPoint.tenant.openLocker.serverUrlPlaceholder')
+                  "
+                  v-model="localApps['open-locker'].serverUrl"
+                  @input="emitApps()"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Technisches Konto -->
+            <div class="section-title mt-4 mb-2">
+              <v-icon small left>mdi-key-variant</v-icon>
+              <span class="font-weight-medium">{{
+                $t("accessPoint.tenant.openLocker.account")
+              }}</span>
+            </div>
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  type="email"
+                  :label="$t('accessPoint.tenant.openLocker.email')"
+                  v-model="localApps['open-locker'].email"
+                  @input="emitApps()"
+                  autocomplete="off"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.openLocker.password')"
+                  v-model="localApps['open-locker'].password"
+                  @input="emitApps()"
+                  :append-icon="
+                    showOpenLockerPassword ? 'mdi-eye' : 'mdi-eye-off'
+                  "
+                  @click:append="
+                    showOpenLockerPassword = !showOpenLockerPassword
+                  "
+                  :type="showOpenLockerPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-alert type="info" text dense class="mb-0">
+                  {{ $t("accessPoint.tenant.openLocker.accountHint") }}
+                </v-alert>
+              </v-col>
+            </v-row>
+
+            <!-- Testergebnis -->
+            <v-row v-if="testResults['open-locker']" dense>
+              <v-col cols="12">
+                <ConnectionTestAlert :result="testResults['open-locker']" />
+              </v-col>
+            </v-row>
+
+            <!-- Aktion -->
+            <v-row dense class="mt-2">
+              <v-col class="text-right">
+                <v-btn
+                  color="primary"
+                  :loading="testingConnection['open-locker']"
+                  :disabled="testingConnection['open-locker']"
+                  @click="testOpenLockerConnection"
+                >
+                  <v-icon left>mdi-connection</v-icon>
+                  {{ $t("accessPoint.tenant.testConnection") }}
                 </v-btn>
               </v-col>
             </v-row>

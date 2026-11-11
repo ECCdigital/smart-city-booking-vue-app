@@ -92,4 +92,25 @@ describe("AccessAuditExport", () => {
     expect(items).toContain("Tür öffnen (veraltete Route)");
     expect(items).not.toContain("Entriegeln");
   });
+
+  // An open of an Open Locker compartment is audited like any other, with
+  // Open Locker's command id (ECCdigital/tickets#970).
+  it("offers Open Locker in the provider filter", () => {
+    const wrapper = mountComponent(AccessAuditExport, {
+      store: store(),
+      propsData: { tenant: "t1" },
+    });
+
+    const providerSelect = wrapper
+      .findAllComponents({ name: "v-select" })
+      .wrappers.find(
+        (select) =>
+          select.props("label") === i18n.t("accessPoint.audit.provider")
+      );
+
+    expect(providerSelect.props("items")).toContainEqual({
+      value: "open-locker",
+      text: "Open Locker",
+    });
+  });
 });

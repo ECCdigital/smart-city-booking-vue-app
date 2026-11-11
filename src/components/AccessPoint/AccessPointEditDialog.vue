@@ -20,6 +20,8 @@ import {
   isLockerAccessPoint,
   providerAccessPointDefaults,
   providerIdFields,
+  providerModes,
+  providerRequiresScanByDefault,
   requiresQrScan,
   DOOR_TYPE,
   QR_SCAN_RULE,
@@ -41,7 +43,8 @@ const PREFILL_ORIGIN = "nuki";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
-const SALTO_MODES = ["remote"];
+const SALTO_MODES = providerModes(SALTO_PROVIDER);
+const DOOR_MODES = ["authorization", "remote", "both"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -101,6 +104,9 @@ export default {
       openActionError: "",
       configText: "{}",
       configError: "",
+      // The switch as the admin set it, or as a stored access point has it.
+      // A new one shows the provider's default until touched, see
+      // `qrScanShown`.
       qrScanRequired: true,
       // Only a switch the admin actually touched is sent on create - an
       // untouched switch leaves the field out so the server default applies.
@@ -213,6 +219,23 @@ export default {
         !this.validationRulesTouched
       );
     },
+    // A new access point starts with the rule the server would default to
+    // for its provider - a QR scan, except for an Open Locker compartment -
+    // so what the switch shows is what an untouched create produces. Once
+    // touched, and for a stored access point, it shows what is set.
+    qrScanShown() {
+      if (this.isEdit || this.validationRulesTouched) {
+        return this.qrScanRequired;
+      }
+      return providerRequiresScanByDefault(this.form.provider);
+    },
+    // The hint under the untouched switch of a new access point names the
+    // default it shows.
+    qrScanDefaultHint() {
+      return this.qrScanShown
+        ? this.$t("accessPoint.management.rules.defaultHint")
+        : this.$t("accessPoint.management.rules.defaultHintOff");
+    },
     // The picker is the way into an iFBS locker system and the shortcut for
     // a door - it is what reads `listAccessPoints`. Entering a door or a
     // Pareva Anlage by hand goes without it.
@@ -227,12 +250,10 @@ export default {
     // refuses `authorization` and `both` at every Salto lock (tickets#499), so
     // the dialog offers `remote` alone, without a „coming soon“ for the rest.
     // A Salto door stored on one of them opens on `remote`, and the hint
-    // names the stored mode (`reset()`).
+    // names the stored mode (`reset()`). An Open Locker compartment is opened
+    // remotely and in no other way, so it is offered `remote` alone as well.
     modeOptions() {
-      const modes =
-        this.form.provider === SALTO_PROVIDER
-          ? SALTO_MODES
-          : ["authorization", "remote", "both"];
+      const modes = providerModes(this.form.provider) || DOOR_MODES;
       return modes.map((value) => {
         const comingSoon = isComingSoonAccessPointMode(value);
         return {
@@ -501,8 +522,8 @@ export default {
       this.advancedPanel = [];
       this.validationRulesTouched = false;
       this.opening += 1;
-      // A new access point starts with the rule the server would default to,
-      // so what the switch shows is what an untouched create produces.
+      // A new access point shows the provider's default until the switch is
+      // touched (`qrScanShown`).
       this.qrScanRequired = source ? requiresQrScan(source) : true;
       // A stored access point is edited as it is; only a new one has a way
       // in to choose.
@@ -1064,7 +1085,7 @@ export default {
               </span>
             </div>
             <v-switch
-              :input-value="qrScanRequired"
+              :input-value="qrScanShown"
               color="primary"
               hide-details
               class="mt-0"
@@ -1085,7 +1106,7 @@ export default {
               v-if="!isEdit && !validationRulesTouched"
               class="text-caption text--secondary mt-2"
             >
-              {{ $t("accessPoint.management.rules.defaultHint") }}
+              {{ qrScanDefaultHint }}
             </div>
 
             <!-- Location -->
