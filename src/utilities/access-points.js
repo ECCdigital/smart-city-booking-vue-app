@@ -194,15 +194,46 @@ export function defaultAccessPointDetails() {
 }
 
 /**
- * What to call the kind of an access point on screen - a door or a locker.
- * An unknown type yields an empty string rather than a raw key, because the
- * kind is decoration next to the label, not information worth garbling.
+ * What a type is called where the provider calls it something of its own
+ * (ECCdigital/tickets#1036): an Open Locker door is a compartment on site, so
+ * it is a „Fach“, never a „Tür“. The doors of Nuki and Salto KS and the
+ * Anlagen of iFBS and Pareva keep the name of their type. The values name
+ * keys under `accessPoint.management.types` and `accessPoint.bookable.grants`.
+ *
+ * A provider that calls a type differently is one entry here, plus its copy.
+ */
+const PROVIDER_TYPE_NAMES = {
+  "open-locker": Object.freeze({ [DOOR_TYPE]: "compartment" }),
+};
+
+/**
+ * What the type of an access point is called, as the key the copy is filed
+ * under: the provider's own name for the type where it has one, else the type.
+ *
+ * @param {Object} accessPoint The access point to inspect, with `provider`
+ *   and `type`
+ * @returns {string} The key of the type's name, e.g. "door", "locker" or
+ *   "compartment" - "" without a type
+ */
+export function accessPointTypeName(accessPoint) {
+  const type = accessPoint?.type;
+  if (!type) return "";
+  return PROVIDER_TYPE_NAMES[accessPoint.provider]?.[type] || type;
+}
+
+/**
+ * What to call the kind of an access point on screen - by provider and type,
+ * see `accessPointTypeName`. An unknown type yields an empty string rather
+ * than a raw key, because the kind is decoration next to the label, not
+ * information worth garbling.
  *
  * @param {Object} accessPoint The access point to inspect
  * @returns {string} A translated type name, or "" when the type is unknown
  */
 export function accessPointTypeLabel(accessPoint) {
-  const key = `accessPoint.management.types.${accessPoint?.type}`;
+  const key = `accessPoint.management.types.${accessPointTypeName(
+    accessPoint
+  )}`;
   return i18n.te(key) ? i18n.t(key) : "";
 }
 

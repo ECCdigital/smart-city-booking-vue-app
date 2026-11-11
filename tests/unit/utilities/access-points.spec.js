@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  accessPointTypeLabel,
   canListAccessPoints,
   providerAccessPointDefaults,
   providerIdFields,
@@ -122,5 +123,38 @@ describe("whether a provider lists access points", () => {
   it("is false for a provider that reports no capabilities at all", () => {
     expect(canListAccessPoints({ id: "pareva" })).toBe(false);
     expect(canListAccessPoints(null)).toBe(false);
+  });
+});
+
+/**
+ * What the type of an access point is called follows provider and type
+ * (ECCdigital/tickets#1036): an Open Locker door is a compartment on site, so
+ * it reads „Fach“, never „Tür“ - the doors of Nuki and Salto KS stay „Tür“,
+ * the Anlagen of iFBS and Pareva stay „Anlage“. A compartment stored before
+ * reads „Fach“ as it is, without a migration.
+ */
+describe("what the type of a provider's access point is called", () => {
+  it.each([
+    ["nuki", "door", "Tür"],
+    ["salto-ks", "door", "Tür"],
+    ["open-locker", "door", "Fach"],
+    ["ifbs", "locker", "Anlage"],
+    ["pareva", "locker", "Anlage"],
+  ])("%s %s reads %s", (provider, type, name) => {
+    expect(accessPointTypeLabel({ provider, type })).toBe(name);
+  });
+
+  it("goes by the type alone for a provider it does not know", () => {
+    expect(
+      accessPointTypeLabel({ provider: "some-new-provider", type: "door" })
+    ).toBe("Tür");
+    expect(accessPointTypeLabel({ type: "locker" })).toBe("Anlage");
+  });
+
+  it("names no type it does not know", () => {
+    expect(accessPointTypeLabel({ provider: "open-locker", type: "x" })).toBe(
+      ""
+    );
+    expect(accessPointTypeLabel(null)).toBe("");
   });
 });

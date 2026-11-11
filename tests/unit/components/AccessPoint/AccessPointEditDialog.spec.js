@@ -1370,7 +1370,8 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
     expect(wrapper.find(".provider-field input").element.value).toBe(
       "open-locker"
     );
-    expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+    expect(wrapper.find(".access-point-type").text()).toContain("Fach");
+    expect(wrapper.find(".access-point-type").text()).not.toContain("Tür");
     expect(labels(wrapper)).toContain("UUID des Fachs");
     expect(labels(wrapper)).not.toContain("ID beim Anbieter");
     expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
@@ -1450,6 +1451,40 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
     expect(payload.validationRules).toEqual([]);
   });
 
+  /**
+   * A door by type, but a Fach on site (ECCdigital/tickets#1036): a
+   * compartment stored before keeps its type and label and reads „Fach“
+   * without a migration, and a door of another provider stays a „Tür“.
+   */
+  it("calls a stored compartment a Fach, by its label", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: {
+        id: "ap-fach",
+        type: "door",
+        provider: "open-locker",
+        label: "Labor Fachbank 1 · Fach 2",
+        externalId: UUID,
+        mode: "remote",
+        validationRules: [],
+      },
+    });
+
+    expect(wrapper.find(".access-point-type").text()).toContain("Fach");
+    expect(wrapper.find(".access-point-type").text()).not.toContain("Tür");
+    expect(wrapper.find(".label-field input").element.value).toBe(
+      "Labor Fachbank 1 · Fach 2"
+    );
+  });
+
+  it("calls the door a Tür again when the provider changes from Open Locker", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    await typeProvider(wrapper, "nuki");
+
+    expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+  });
+
   it("shows a stored compartment's scan as it is stored", async () => {
     const stored = {
       id: "ap-fach",
@@ -1526,6 +1561,15 @@ describe("AccessPointEditDialog - an Open Locker compartment from the list", () 
     await wrapper.find(".apply-lock").trigger("click");
     await wrapper.vm.$nextTick();
   }
+
+  // What the listing brings along names the Fach, too (ECCdigital/tickets#1036).
+  it("says the listing brings a Fach, not only a Tür or an Anlage", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(dialogText(wrapper)).toContain(
+      "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage."
+    );
+  });
 
   it("offers the compartments the account may open, by locker bank and number", async () => {
     const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
