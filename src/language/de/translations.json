@@ -2890,7 +2890,8 @@
       "types": {
         "door": "Tür",
         "locker": "Anlage",
-        "compartment": "Fach"
+        "compartment": "Fach",
+        "lockerSystem": "Schließfachanlage"
       },
       "modes": {
         "authorization": "PIN-Code",
@@ -2933,6 +2934,7 @@
         "location": "Standort",
         "validationRules": "Validierungsregeln",
         "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
+        "typeChoiceHint": "Bei einer Schließfachanlage teilt Biletado jeder Buchung ein freies Fach aus der Anlage zu. Ein einzelnes Fach teilen sich alle Buchungen des Buchungsobjekts.",
         "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
         "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
@@ -2941,6 +2943,17 @@
         "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
         "compartmentUuid": "UUID des Fachs",
         "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
+      },
+      "compartments": {
+        "title": "Fächer der Anlage",
+        "hint": "Wählen Sie die Fächer der Anlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Anlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
+        "lockerBank": "Schrank {name}",
+        "compartment": "Fach {number}",
+        "outOfService": "außer Betrieb",
+        "notListed": "Nicht in der Liste von {provider}",
+        "empty": "Keine Fächer zur Wahl.",
+        "selected": "Gewählte Fächer: {count}",
+        "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern."
       },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",
@@ -3038,12 +3051,16 @@
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet",
           "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
+          "duplicate_compartment": "Das Fach ist doppelt gewählt.",
+          "unsupported_by_provider": "Die Anlagen dieses Anbieters tragen keine eigenen Fächer.",
           "unknown_open_action": "Unzulässiger Wert"
         },
         "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
         "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
+        "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
+        "compartmentIsFixed": "Das Fach ist schon als festes Fach „{label}“ angelegt.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
@@ -3401,7 +3418,8 @@
       "grants": {
         "door": "Die Tür, im Buchungszeitraum mit anderen geteilt",
         "compartment": "Das Fach, im Buchungszeitraum mit anderen geteilt",
-        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
+        "lockerSystem": "Je gebuchter Einheit ein eigenes Fach, von Biletado aus den Fächern der Anlage zugeteilt"
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",

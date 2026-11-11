@@ -3,11 +3,18 @@ import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
+import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
 import {
   formatAccessPointErrorMessage,
   isProviderNotActiveError,
   splitAccessPointFieldError,
+  splitCompartmentErrors,
 } from "@/utilities/access-point-errors";
+import {
+  carriesOwnCompartments,
+  lockerCarriesCompartments,
+  takenCompartmentIds,
+} from "@/utilities/locker-system-compartments";
 import {
   createLockAndAccessAppDefaults,
   SALTO_PROVIDER,
@@ -22,6 +29,7 @@ import {
   providerIdFields,
   providerModes,
   providerRequiresScanByDefault,
+  providerTypes,
   requiresQrScan,
   DOOR_TYPE,
   QR_SCAN_RULE,
@@ -79,7 +87,7 @@ function emptyForm() {
 
 export default {
   name: "AccessPointEditDialog",
-  components: { LocationInput },
+  components: { AccessPointCompartmentPicker, LocationInput },
   props: {
     open: { type: Boolean, default: false },
     // The access point to edit; `null` opens the dialog in create mode.
@@ -102,6 +110,11 @@ export default {
       // back in on save.
       openAction: AUTO_OPEN_ACTION,
       openActionError: "",
+      // The Fächer of a Schließfachanlage that carries its own: like the
+      // Öffnungsart, chosen beside the JSON text, never in it.
+      compartments: [],
+      // Why the backend refused a Fach, by its UUID.
+      compartmentErrors: {},
       configText: "{}",
       configError: "",
       // The switch as the admin set it, or as a stored access point has it.
@@ -122,6 +135,8 @@ export default {
       // so that a preset does not count as something typed.
       presetProvider: "",
       providerLocks: [],
+      // The provider `providerLocks` were asked of.
+      locksProvider: "",
       loadingLocks: false,
       lockLoadError: "",
       // The provider whose listing answered that the tenant has not switched
@@ -156,11 +171,48 @@ export default {
     typeLabel() {
       return accessPointTypeLabel(this.form);
     },
+    // Asked only where the provider offers more than one type - Open Locker
+    // its Schließfachanlage and the fixed Fach - and only for a new access
+    // point: a stored one keeps the type its bookings were made with.
+    typeOptions() {
+      if (this.isEdit) return [];
+      const types = providerTypes(this.form.provider);
+      if (types.length < 2) return [];
+      return types.map((type) => ({
+        value: type,
+        text: accessPointTypeLabel({ provider: this.form.provider, type }),
+      }));
+    },
+    // A Schließfachanlage whose Fächer are chosen here and assigned by the
+    // platform (ECCdigital/tickets#1037), rather than by its provider.
+    picksCompartments() {
+      return this.isLocker && lockerCarriesCompartments(this.form.provider);
+    },
+    // The provider whose listing the Fächer are chosen from, while there is
+    // one to choose for.
+    compartmentSource() {
+      return this.picksCompartments ? this.form.provider : "";
+    },
+    takenCompartments() {
+      return takenCompartmentIds(this.accessPoints, {
+        provider: this.form.provider,
+        exceptId: this.form.id,
+      });
+    },
+    providerTitle() {
+      const provider = this.form.provider;
+      return (
+        this.providers.find((p) => p.id === provider)?.title ||
+        createLockAndAccessAppDefaults()[provider]?.title ||
+        provider
+      );
+    },
     // Which id fields the access point shows follows the provider, the same
     // way on create and on edit: a door and an unknown provider carry both,
-    // a locker system of iFBS or Pareva only the one its provider reads.
+    // a locker system of iFBS or Pareva only the one its provider reads, an
+    // Open Locker Schließfachanlage none.
     idFields() {
-      return providerIdFields(this.form.provider);
+      return providerIdFields(this.form.provider, this.form.type);
     },
     externalIdLabel() {
       return this.$t(`accessPoint.management.fields.${this.idFields.label}`);
@@ -216,6 +268,7 @@ export default {
         (this.form.provider === blank.provider ||
           this.form.provider === this.presetProvider) &&
         this.configText === "{}" &&
+        this.compartments.length === 0 &&
         !this.validationRulesTouched
       );
     },
@@ -241,6 +294,11 @@ export default {
     // Pareva Anlage by hand goes without it.
     showPicker() {
       return this.showModeToggle && this.mode === PROVIDER_MODE;
+    },
+    // A Schließfachanlage that carries its own Fächer is not one lock of the
+    // listing: its Fächer are chosen below, so the single pick is left out.
+    showLockSelect() {
+      return !this.picksCompartments;
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
     // dialog shows what is coming - but they cannot be chosen. A Nuki door
@@ -333,11 +391,20 @@ export default {
     requiredRule() {
       return [(v) => !!v || this.$t("accessPoint.management.required")];
     },
+    // A Fach of an Anlage that carries its own is taken as well: it is no
+    // fixed Fach once it stands in an Anlage.
     takenLockKeys() {
       return new Set(
         this.accessPoints
           .filter((point) => point.id !== this.form.id)
-          .map((point) => `${point.provider}::${point.externalId}`)
+          .flatMap((point) => [
+            `${point.provider}::${point.externalId}`,
+            ...(carriesOwnCompartments(point)
+              ? point.config.compartments.map(
+                  (c) => `${point.provider}::${c.id}`
+                )
+              : []),
+          ])
       );
     },
     pickerItems() {
@@ -438,6 +505,12 @@ export default {
       this.pickerLockId = "";
       this.inactiveProvider = "";
       if (provider) this.fetchProviderLocks(provider);
+      this.followPickerProvider();
+    },
+    // The listing a Schließfachanlage chooses its Fächer from, once the form
+    // is one: typed in, chosen as the type, or opened stored.
+    compartmentSource(provider) {
+      if (provider) this.loadCompartmentListing();
     },
     // The provider list may still be loading while the dialog opens: a dialog
     // that opened on the bare form for want of a listing chooses its way in
@@ -464,6 +537,34 @@ export default {
 
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
+    },
+    // A listing provider that offers a choice of type (Open Locker) puts the
+    // untouched form on itself at once, so the choice - and with it the
+    // Schließfachanlage the form starts as - is there before anything is
+    // taken over. A form with a provider of its own keeps it.
+    followPickerProvider() {
+      const provider = this.pickerProvider;
+      if (!provider || this.mode !== PROVIDER_MODE) return;
+      if (providerTypes(provider).length < 2) return;
+      if (this.form.provider && this.form.provider !== this.presetProvider) {
+        return;
+      }
+      this.form.provider = provider;
+      this.presetProvider = provider;
+      this.applyProviderDefaults(provider);
+    },
+    chooseType(type) {
+      this.form.type = type;
+      this.compartmentErrors = {};
+    },
+    // Asked of an active provider that lists, and of one that is not active,
+    // whose answer says so; never twice for the same provider.
+    loadCompartmentListing() {
+      const provider = this.compartmentSource;
+      if (!provider || this.locksProvider === provider) return;
+      const active = this.providers.find((p) => p.id === provider);
+      if (active && !canListAccessPoints(active)) return;
+      this.fetchProviderLocks(provider);
     },
     // A provider typed in that is not active for the tenant has its listing
     // asked all the same, so the dialog can say that lock and mode are
@@ -501,6 +602,14 @@ export default {
         this.form.mode = SALTO_MODES[0];
       }
       const { openAction, ...config } = source?.config || {};
+      // The Fächer of an Anlage that carries its own are chosen in a list of
+      // their own, so the JSON text leaves them out.
+      this.compartments = [];
+      if (carriesOwnCompartments(source)) {
+        this.compartments = config.compartments.map((c) => ({ ...c }));
+        delete config.compartments;
+      }
+      this.compartmentErrors = {};
       // A stored value outside the five - written into the JSON text past an
       // older backend - is kept and saved back unchanged, rather than being
       // read as "Automatisch", which would change the door behind the admin's
@@ -518,6 +627,7 @@ export default {
       this.lockLoadError = "";
       this.inactiveProvider = "";
       this.providerLocks = [];
+      this.locksProvider = "";
       this.pickerLockId = "";
       this.advancedPanel = [];
       this.validationRulesTouched = false;
@@ -534,6 +644,7 @@ export default {
         if (this.listsOnEdit(source)) this.fetchProviderLocks(source.provider);
       } else {
         this.chooseWayIn();
+        this.followPickerProvider();
       }
       this.$nextTick(() => this.$refs.form?.resetValidation());
     },
@@ -569,11 +680,15 @@ export default {
     // find. An active provider that lists nothing (Pareva) is not asked; a
     // provider that is not active is, and its answer says so.
     listsOnEdit(accessPoint) {
-      if (!accessPoint.provider || !accessPoint.externalId) return false;
+      if (!accessPoint.provider) return false;
+      if (!accessPoint.externalId && !carriesOwnCompartments(accessPoint)) {
+        return false;
+      }
       const active = this.providers.find((p) => p.id === accessPoint.provider);
       return !active || canListAccessPoints(active);
     },
     async fetchProviderLocks(provider) {
+      this.locksProvider = provider;
       this.loadingLocks = true;
       this.lockLoadError = "";
       this.inactiveProvider = "";
@@ -624,6 +739,12 @@ export default {
         this.form.mode = lock.supportedModes[0];
       }
       this.applyProviderDefaults(this.form.provider);
+      // A provider that offers several types lists one of them: an Open
+      // Locker compartment taken over is the fixed Fach, not the Anlage the
+      // provider starts with.
+      if (providerTypes(this.form.provider).includes(lock.type)) {
+        this.form.type = lock.type;
+      }
     },
     async prefillLocation() {
       this.prefilling = true;
@@ -674,10 +795,24 @@ export default {
     withOpenAction(config) {
       const merged = { ...config };
       delete merged.openAction;
+      if (this.picksCompartments) {
+        merged.compartments = this.compartments.map(
+          ({ id, number, lockerBank, outOfService }) => ({
+            id,
+            number,
+            lockerBank,
+            outOfService: outOfService === true,
+          })
+        );
+      }
       if (!this.showOpenAction || this.openAction === AUTO_OPEN_ACTION) {
         return merged;
       }
       return { ...merged, openAction: this.openAction };
+    },
+    onCompartmentsChange(compartments) {
+      this.compartments = compartments;
+      this.compartmentErrors = {};
     },
     parseConfig() {
       const text = (this.configText || "").trim();
@@ -708,7 +843,8 @@ export default {
         label: this.form.label,
         type: this.form.type,
         provider: this.form.provider,
-        externalId: this.form.externalId,
+        // An Anlage that carries its own Fächer has no id of its own.
+        externalId: this.picksCompartments ? "" : this.form.externalId,
         // Created without a location field, the access point is created
         // without a location id. Edited, the stored one passes through unseen
         // - an old Pareva row loses nothing.
@@ -756,6 +892,7 @@ export default {
       this.saving = true;
       this.saveError = "";
       this.openActionError = "";
+      this.compartmentErrors = {};
 
       try {
         const response = await ApiAccessPointService.storeAccessPoint(
@@ -769,16 +906,36 @@ export default {
         this.saving = false;
       }
     },
-    // The Öffnungsart's own faults belong at the select; everything else -
-    // another field, a provider that did not answer - in the alert below.
+    // The Öffnungsart's own faults belong at the select, a Fach's at the
+    // Fach; everything else - another field, a provider that did not answer
+    // - in the alert below, which names the refused Fächer as well, since
+    // the list may be scrolled away.
     applySaveError(error) {
+      const { byIndex, rest } = splitCompartmentErrors(error);
+      const atCompartments = Object.keys(byIndex).length > 0;
+      this.compartmentErrors = Object.fromEntries(
+        Object.entries(byIndex)
+          .filter(([index]) => this.compartments[index])
+          .map(([index, text]) => [this.compartments[index].id, text])
+      );
+      if (atCompartments && !rest) {
+        this.openActionError = "";
+        this.saveError = this.$t(
+          "accessPoint.management.compartments.saveRefused"
+        );
+        return;
+      }
       const { fieldMessage, message } = splitAccessPointFieldError(
-        error,
+        rest || error,
         OPEN_ACTION_FIELD,
         { fallbackKey: "accessPoint.management.errors.saveFailed" }
       );
       this.openActionError = fieldMessage;
-      this.saveError = message;
+      this.saveError = atCompartments
+        ? `${this.$t(
+            "accessPoint.management.compartments.saveRefused"
+          )} ${message}`
+        : message;
     },
     close() {
       this.$emit("close");
@@ -857,7 +1014,7 @@ export default {
                   hide-details
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col v-if="showLockSelect" cols="12" md="6">
                 <v-select
                   ref="lockSelect"
                   v-model="pickerLockId"
@@ -896,7 +1053,7 @@ export default {
                   </template>
                 </v-select>
               </v-col>
-              <v-col cols="12" md="2" class="text-right">
+              <v-col v-if="showLockSelect" cols="12" md="2" class="text-right">
                 <v-btn
                   class="apply-lock"
                   color="primary"
@@ -937,18 +1094,45 @@ export default {
                 <div class="text-caption text--secondary">
                   {{ $t("accessPoint.management.fields.type") }}
                 </div>
-                <v-chip
-                  small
-                  label
-                  :color="isLocker ? 'indigo' : 'primary'"
-                  dark
-                >
-                  <v-icon left small>{{ typeIcon }}</v-icon>
-                  {{ typeLabel }}
-                </v-chip>
-                <div class="text-caption text--secondary mt-1">
-                  {{ $t("accessPoint.management.fields.typeHint") }}
-                </div>
+                <template v-if="typeOptions.length">
+                  <v-btn-toggle
+                    ref="typeChoice"
+                    :value="form.type"
+                    mandatory
+                    dense
+                    color="primary"
+                    class="type-choice"
+                    @change="chooseType"
+                  >
+                    <v-btn
+                      v-for="option in typeOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      :class="`type-choice-${option.value}`"
+                      small
+                      text
+                    >
+                      {{ option.text }}
+                    </v-btn>
+                  </v-btn-toggle>
+                  <div class="text-caption text--secondary mt-1">
+                    {{ $t("accessPoint.management.fields.typeChoiceHint") }}
+                  </div>
+                </template>
+                <template v-else>
+                  <v-chip
+                    small
+                    label
+                    :color="isLocker ? 'indigo' : 'primary'"
+                    dark
+                  >
+                    <v-icon left small>{{ typeIcon }}</v-icon>
+                    {{ typeLabel }}
+                  </v-chip>
+                  <div class="text-caption text--secondary mt-1">
+                    {{ $t("accessPoint.management.fields.typeHint") }}
+                  </div>
+                </template>
               </div>
             </v-col>
             <v-col cols="12" md="6">
@@ -964,7 +1148,7 @@ export default {
                 :rules="requiredRule"
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="idFields.idField" cols="12" md="6">
               <v-text-field
                 class="external-id-field"
                 v-model="form.externalId"
@@ -1073,6 +1257,25 @@ export default {
           >
             {{ providerInactiveHint }}
           </v-alert>
+
+          <!-- The Fächer of a Schließfachanlage that carries its own -->
+          <template v-if="picksCompartments">
+            <div class="section-title mt-4 mb-2">
+              <v-icon small left>mdi-locker-multiple</v-icon>
+              <span class="font-weight-medium">
+                {{ $t("accessPoint.management.compartments.title") }}
+              </span>
+            </div>
+            <AccessPointCompartmentPicker
+              :value="compartments"
+              :listing="locksProvider === form.provider ? providerLocks : []"
+              :taken="takenCompartments"
+              :errors="compartmentErrors"
+              :loading="loadingLocks"
+              :provider-title="providerTitle"
+              @input="onCompartmentsChange"
+            />
+          </template>
 
           <!-- Mode, QR rules and address describe a door; a locker system has
                none of them -->
