@@ -1,5 +1,5 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
+import SubSection from "@/components/commons/SubSection.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import {
   CUSTOMER_UPLOAD_FORMATS,
@@ -13,7 +13,7 @@ import {
 const COPY = "tenant.customerUploads";
 
 /**
- * „Nachweise von Buchenden“, a section of the tab „Buchung“: whether bookers
+ * „Nachweise von Buchenden“, a sub-section of the tab „Buchungsobjekte“: whether bookers
  * may hand in customer uploads at bookings of the tenant, which formats, how
  * long they are kept, which mails go out and to the members of which
  * roles. Only the settings - the
@@ -22,7 +22,7 @@ const COPY = "tenant.customerUploads";
  */
 export default {
   name: "TenantEditCustomerUploads",
-  components: { BaseSection },
+  components: { SubSection },
   props: {
     tenant: { type: Object, required: true },
   },
@@ -100,13 +100,12 @@ export default {
 </script>
 
 <template>
-  <BaseSection
+  <SubSection
     :title="$t('tenant.customerUploads.title')"
     icon="mdi-file-upload-outline"
+    :description="$t('tenant.customerUploads.intro')"
+    no-margin
   >
-    <p class="text-body-2 text--secondary">
-      {{ $t("tenant.customerUploads.intro") }}
-    </p>
     <v-alert
       v-if="!instanceCleared"
       data-test="customer-uploads-instance-off"
@@ -265,5 +264,5 @@ export default {
         {{ $t("tenant.customerUploads.notifyRoles-missing") }}
       </v-alert>
     </template>
-  </BaseSection>
+  </SubSection>
 </template>

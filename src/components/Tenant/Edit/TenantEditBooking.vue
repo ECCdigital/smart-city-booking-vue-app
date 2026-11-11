@@ -1,13 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import TenantCancellationRefundTiersEditor from "@/components/Tenant/Edit/TenantCancellationRefundTiersEditor.vue";
-import TenantEditCustomerUploads from "@/components/Tenant/Edit/TenantEditCustomerUploads.vue";
 
 export default {
   name: "TenantEditBooking",
   components: {
     TenantCancellationRefundTiersEditor,
-    TenantEditCustomerUploads,
     BaseSection,
   },
   props: {
@@ -130,11 +128,6 @@ export default {
       "
       @update:tiers="updateRefundTiers"
       @update:withoutTimeSpanPercentage="updateWithoutTimeSpanPercentage"
-    />
-
-    <TenantEditCustomerUploads
-      :tenant="tenant"
-      @update:tenant="$emit('update:tenant', $event)"
     />
   </v-form>
 </template>

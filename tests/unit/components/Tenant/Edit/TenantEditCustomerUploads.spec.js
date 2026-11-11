@@ -9,6 +9,7 @@ import Vuex from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import { mountComponent } from "@tests/unit/support/mount";
 import TenantEditCustomerUploads from "@/components/Tenant/Edit/TenantEditCustomerUploads.vue";
+import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 
 /** A store whose public instance has cleared customer uploads (or not). */
@@ -115,8 +116,8 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
     expect(lastUpdate(wrapper).customerUploads.retentionDays).toBe(14);
   });
 
-  it("is a section of the tab „Buchung“, whose form refuses a retention over 30 days", async () => {
-    const wrapper = mountComponent(TenantEditBooking, {
+  it("is a section of the tab „Buchungsobjekte“, whose form refuses a retention over 30 days", async () => {
+    const wrapper = mountComponent(TenantEditBookables, {
       store: instanceStore(),
       propsData: {
         tenant: {
@@ -130,6 +131,17 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
     expect(wrapper.text()).toContain("Nachweise von Buchenden");
     expect(await wrapper.vm.validate()).toBe(false);
     expect(wrapper.text()).toContain("Geben Sie 0 bis 30 Tage an.");
+  });
+
+  it("is no longer a section of the tab „Buchung“", () => {
+    const wrapper = mountComponent(TenantEditBooking, {
+      store: instanceStore(),
+      propsData: {
+        tenant: { id: "t", name: "Stadt", customerUploads: ENABLED },
+      },
+    });
+
+    expect(wrapper.text()).not.toContain("Nachweise von Buchenden");
   });
 
   it("sets the reminder to the admins before the deletion", async () => {
