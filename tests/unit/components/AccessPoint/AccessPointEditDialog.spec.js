@@ -11,7 +11,11 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: { getAccessPoints: vi.fn() },
 }));
 vi.mock("@/services/api/ApiAccessPointService", () => ({
-  default: { storeAccessPoint: vi.fn(), getLocationPrefill: vi.fn() },
+  default: {
+    storeAccessPoint: vi.fn(),
+    getLocationPrefill: vi.fn(),
+    getCompartmentBookings: vi.fn(),
+  },
 }));
 vi.mock("@/services/api/ApiGeoService", () => ({
   default: { search: vi.fn(), reverse: vi.fn(), start: vi.fn() },
@@ -1763,6 +1767,9 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
       ],
     });
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+      data: { total: 0, bookings: [] },
+    });
     ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
     ApiGeoService.search.mockResolvedValue([]);
     ApiGeoService.reverse.mockResolvedValue(null);
@@ -1982,6 +1989,203 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
       "Nicht alle gewählten Fächer lassen sich speichern."
     );
     expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+
+  /**
+   * A Fach that leaves the Zuteilung - out of service, or out of the
+   * Anlage - moves the future bookings at it on the save
+   * (ECCdigital/tickets#1043). The dialog names the bookings at it and
+   * asks first, and names after the save the ones that could not move.
+   */
+  describe("when a Fach leaves the Anlage", () => {
+    const BEGIN = Date.UTC(2026, 10, 20, 9, 0);
+    const END = Date.UTC(2026, 10, 20, 11, 0);
+
+    function booking(id, state, compartment, extra = {}) {
+      return {
+        id,
+        name: `Person ${id}`,
+        mail: `${id}@example.test`,
+        timeBegin: BEGIN,
+        timeEnd: END,
+        state,
+        compartment,
+        ...extra,
+      };
+    }
+
+    const FACH_1 = { id: UUID_1, number: 1, lockerBank: LABOR };
+
+    function leaveDialog(wrapper) {
+      return wrapper.findComponent({
+        name: "AccessPointCompartmentBookingsDialog",
+      });
+    }
+
+    function leaveText(wrapper) {
+      return leaveDialog(wrapper).findComponent({ name: "v-card" }).text();
+    }
+
+    async function openStored() {
+      return mountDialog({
+        providers: [OPEN_LOCKER],
+        accessPoint: STORED_ANLAGE,
+      });
+    }
+
+    async function click(wrapper, selector) {
+      await leaveDialog(wrapper).find(selector).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("names the running and future bookings at a Fach going out of service and saves only once confirmed", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: {
+          total: 2,
+          bookings: [
+            booking("b-running", "running", FACH_1),
+            booking("b-future", "future", FACH_1),
+          ],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
+        "anlage-1",
+        [UUID_1],
+        "t1"
+      );
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(leaveDialog(wrapper).props("open")).toBe(true);
+      const text = leaveText(wrapper);
+      expect(text).toContain("b-running");
+      expect(text).toContain("Person b-running");
+      expect(text).toContain("läuft – behält das Fach");
+      expect(text).toContain("b-future");
+      expect(text).toContain("künftig – bekommt ein freies Fach");
+      expect(text).toContain("Schrank Labor Fachbank 1, Fach 1");
+
+      await click(wrapper, ".confirm-compartments-leave");
+
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+      expect(
+        ApiAccessPointService.storeAccessPoint.mock.calls[0][0].config
+          .compartments[0].outOfService
+      ).toBe(true);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("asks about a Fach taken out of the Anlage too", async () => {
+      const wrapper = await openStored();
+      await check(wrapper, UUID_1, false);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
+        "anlage-1",
+        [UUID_1],
+        "t1"
+      );
+    });
+
+    it("saves nothing when the question is cancelled", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 1, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      await click(wrapper, ".cancel-compartments-leave");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
+    it("counts the bookings the list leaves out", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 12, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(leaveText(wrapper)).toContain("… und 11 weitere.");
+    });
+
+    it("saves without asking when no booking hangs at the Fach", async () => {
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("asks nothing when no Fach leaves - a Fach back in service included", async () => {
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_4, false);
+
+      await save(wrapper);
+
+      expect(
+        ApiAccessPointService.getCompartmentBookings
+      ).not.toHaveBeenCalled();
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    });
+
+    it("still asks when the bookings cannot be read, and says so", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockRejectedValue(
+        lifecycleError(403, "forbidden")
+      );
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(leaveText(wrapper)).toContain(
+        "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen."
+      );
+    });
+
+    it("names after the save the future bookings that could not move, and closes on „OK“", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: {
+          id: "anlage-1",
+          unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(wrapper.emitted("saved")).toBeUndefined();
+      expect(leaveDialog(wrapper).props("open")).toBe(true);
+      const text = leaveText(wrapper);
+      expect(text).toContain("Kein freies Fach für diese künftigen Buchungen");
+      expect(text).toContain("b-stuck");
+      expect(text).toContain("Schrank Labor Fachbank 1, Fach 1");
+
+      await click(wrapper, ".close-unmoved");
+
+      expect(wrapper.emitted("saved")).toEqual([
+        [
+          {
+            id: "anlage-1",
+            unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+          },
+        ],
+      ]);
+    });
   });
 
   it("takes a fixed Fach over from the list once „Fach“ is chosen", async () => {

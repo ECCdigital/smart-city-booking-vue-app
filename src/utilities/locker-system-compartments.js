@@ -54,6 +54,28 @@ export function carriesOwnCompartments(accessPoint) {
 }
 
 /**
+ * The Fächer that leave the Zuteilung of a stored Anlage with a save
+ * (ECCdigital/tickets#1043): taken out of its list, or out of service now
+ * and in service before. The backend moves the future bookings at them on
+ * the save, so the dialog asks first. Mirrors the backend's
+ * `LockerSystemRedistribution.leavingCompartmentIds`.
+ *
+ * @param {Object|null} stored The Anlage as stored, `null` for a new one
+ * @param {Object[]} compartments The Fächer as the save would leave them
+ * @returns {string[]} Their UUIDs
+ */
+export function leavingCompartmentIds(stored, compartments) {
+  if (!carriesOwnCompartments(stored)) return [];
+  const remaining = new Map((compartments || []).map((c) => [String(c.id), c]));
+  return stored.config.compartments
+    .filter((c) => {
+      const kept = remaining.get(String(c.id));
+      return !kept || (c.outOfService !== true && kept.outOfService === true);
+    })
+    .map((c) => String(c.id));
+}
+
+/**
  * The UUIDs of the Fächer the other access points of the provider hold: the
  * Fächer of each Anlage that carries its own, and each fixed Fach (a door,
  * its UUID the `externalId`). A Fach stands in at most one Anlage and is then
