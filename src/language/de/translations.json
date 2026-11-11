@@ -134,6 +134,7 @@
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
       "compartments_unavailable": "Kein Fach frei",
+      "compartment_taken": "Das Fach ist inzwischen belegt oder außer Betrieb. Bitte ein anderes wählen.",
       "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
       "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
       "not_cancelled": "Die Buchung ist nicht storniert.",
@@ -150,6 +151,7 @@
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
+      "compartment_not_in_booking": "Die Buchung hat dieses Fach nicht mehr. Bitte laden Sie die Zugänge neu.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
@@ -176,6 +178,7 @@
     },
     "unavailable-codes": {
       "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
+      "locker_system_busy": "Die Schließfachanlage ist gerade mit einer anderen Zuteilung beschäftigt. Bitte kurz warten und erneut versuchen.",
       "access_provider_unreachable": "{provider} ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen.",
       "store_front_url_missing": "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL), der QR-Code lässt sich deshalb nicht erzeugen. Bitte wenden Sie sich an den Betrieb."
     },
@@ -3390,6 +3393,7 @@
         "scan": "QR-Scan",
         "provision": "Provisionierung",
         "revoke": "Entzug",
+        "reassign": "Fach umgesetzt",
         "status": "Status",
         "webhook": "Webhook"
       },
@@ -3472,6 +3476,23 @@
       "close": "Schließen",
       "open": "Öffnen",
       "openCompartment": "Fach öffnen",
+      "reassignCompartment": "Fach umsetzen",
+      "reassign": {
+        "title": "Fach umsetzen",
+        "current": "Bisher:",
+        "hint": "Zur Wahl stehen die Fächer derselben Schließfachanlage, die im Zeitraum der Buchung samt Puffer frei und in Betrieb sind. Danach öffnen „Fach öffnen“ und der Mobile Key das neue Fach. Es geht keine Mail raus.",
+        "option": "Schrank {lockerBank}, Fach {number}",
+        "optionWithoutBank": "Fach {number}",
+        "none": "Kein anderes Fach frei.",
+        "confirm": "Umsetzen",
+        "cancel": "Abbrechen",
+        "success": {
+          "title": "Fach umgesetzt",
+          "message": "Die Buchung öffnet ab jetzt das neue Fach."
+        },
+        "loadError": "Die freien Fächer ließen sich nicht laden.",
+        "error": "Das Fach ließ sich nicht umsetzen."
+      },
       "state": {
         "held": "Vorgemerkt",
         "granted": "Erteilt",

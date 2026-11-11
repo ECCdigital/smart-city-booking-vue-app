@@ -39,6 +39,26 @@ export default {
     );
   },
 
+  /**
+   * The Fächer a Fach the platform assigned can be moved to (Umsetzen):
+   * `[{ id, number, lockerBankName }]`, free and in service.
+   */
+  getFreeCompartments(bookingId, accessPointId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/access/${accessPointId}/free-compartments?bookingId=${bookingId}`
+    );
+  },
+
+  /** Moves the Fach to `to`, an `id` `getFreeCompartments` named. */
+  reassignCompartment(bookingId, accessPointId, to, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/access/${accessPointId}/reassign?bookingId=${bookingId}`,
+      { to }
+    );
+  },
+
   exportAudit(filters = {}, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const params = new URLSearchParams();

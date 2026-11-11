@@ -7,6 +7,7 @@ import { mountComponent } from "@tests/unit/support/mount";
 import {
   flushPromises,
   forbiddenError,
+  lifecycleError,
   lockBusyError,
   serverError,
 } from "@tests/unit/support/api";
@@ -18,6 +19,8 @@ vi.mock("@/services/api/ApiAccessService", () => ({
     close: vi.fn(),
     getStatus: vi.fn(),
     getOpenStatus: vi.fn(),
+    getFreeCompartments: vi.fn(),
+    reassignCompartment: vi.fn(),
   },
 }));
 
@@ -78,7 +81,10 @@ function assignedFach(overrides = {}) {
     label: "Fächer Bahnhof",
     externalBookingId: null,
     compartment: null,
-    assignedCompartment: { number: 3, lockerBankName: "Quartiersschrank Hafen" },
+    assignedCompartment: {
+      number: 3,
+      lockerBankName: "Quartiersschrank Hafen",
+    },
     ...overrides,
   });
 }
@@ -267,6 +273,181 @@ describe("BookingAccessPoints", () => {
     const wrapper = await mountList({ entries: [] });
 
     expect(wrapper.find(".access-point-grid").exists()).toBe(false);
+  });
+
+  /**
+   * Umsetzen (ECCdigital/tickets#1044): the administration moves a Fach the
+   * platform assigned to another free Fach in service of the same Anlage.
+   */
+  describe("„Fach umsetzen“", () => {
+    const FACH_ID = "anlage-1:9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
+    const FREE = [
+      {
+        id: "anlage-1:1d2e3f4a-5b6c-4d7e-9f8a-0b1c2d3e4f5a",
+        number: 4,
+        lockerBankName: "Quartiersschrank Hafen",
+      },
+      {
+        id: "anlage-1:2e3f4a5b-6c7d-4e8f-a0b1-c2d3e4f5a6b7",
+        number: 7,
+        lockerBankName: "Labor Fachbank 1",
+      },
+    ];
+
+    function reassignButton(tile) {
+      return tile.find("[data-test='access-reassign']");
+    }
+
+    function reassignDialog(wrapper) {
+      return wrapper.findComponent({
+        name: "BookingCompartmentReassignDialog",
+      });
+    }
+
+    function dialogText(wrapper) {
+      return reassignDialog(wrapper).findComponent({ name: "v-card" }).text();
+    }
+
+    async function startReassign(wrapper) {
+      await reassignButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    async function choose(wrapper, index) {
+      await reassignDialog(wrapper)
+        .findAll("[data-test='reassign-option']")
+        .at(index)
+        .trigger("click");
+      await wrapper.vm.$nextTick();
+    }
+
+    async function confirm(wrapper) {
+      await reassignDialog(wrapper)
+        .find("[data-test='reassign-confirm']")
+        .trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("is offered at a Fach the platform assigned, beside „Fach öffnen“", async () => {
+      const wrapper = await mountList({
+        entries: [assignedFach(), compartment(), door()],
+      });
+
+      const button = reassignButton(tiles(wrapper).at(0));
+      expect(button.exists()).toBe(true);
+      expect(button.text()).toContain("Fach umsetzen");
+      expect(button.attributes("disabled")).toBeUndefined();
+      expect(reassignButton(tiles(wrapper).at(1)).exists()).toBe(false);
+      expect(reassignButton(tiles(wrapper).at(2)).exists()).toBe(false);
+    });
+
+    it("is offered before the payment too, while the Fach is only reserved", async () => {
+      const wrapper = await mountList({
+        entries: [assignedFach({ isProvisioned: false })],
+      });
+
+      expect(
+        reassignButton(tiles(wrapper).at(0)).attributes("disabled")
+      ).toBeUndefined();
+    });
+
+    it("is dead for whoever may not change the booking", async () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+      const wrapper = await mountList({ entries: [assignedFach()] });
+
+      expect(
+        reassignButton(tiles(wrapper).at(0)).attributes("disabled")
+      ).toBeDefined();
+    });
+
+    it("offers the free Fächer of the Anlage by Schließfachschrank and number", async () => {
+      ApiAccessService.getFreeCompartments.mockResolvedValue({
+        data: { success: true, data: FREE },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+
+      await startReassign(wrapper);
+
+      expect(ApiAccessService.getFreeCompartments).toHaveBeenCalledWith(
+        "bk-1",
+        FACH_ID,
+        "t1"
+      );
+      expect(reassignDialog(wrapper).props("open")).toBe(true);
+      const text = dialogText(wrapper);
+      expect(text).toContain(
+        "Fächer Bahnhof — Schrank Quartiersschrank Hafen, Fach 3"
+      );
+      expect(text).toContain("Schrank Quartiersschrank Hafen, Fach 4");
+      expect(text).toContain("Schrank Labor Fachbank 1, Fach 7");
+    });
+
+    it("moves the Fach to the one chosen and reads the accesses anew", async () => {
+      ApiAccessService.getFreeCompartments.mockResolvedValue({
+        data: { success: true, data: FREE },
+      });
+      ApiAccessService.reassignCompartment.mockResolvedValue({
+        data: { success: true, data: { id: FREE[1].id } },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+      await startReassign(wrapper);
+
+      expect(
+        reassignDialog(wrapper)
+          .find("[data-test='reassign-confirm']")
+          .attributes("disabled")
+      ).toBeDefined();
+      await choose(wrapper, 1);
+      await confirm(wrapper);
+
+      expect(ApiAccessService.reassignCompartment).toHaveBeenCalledWith(
+        "bk-1",
+        FACH_ID,
+        FREE[1].id,
+        "t1"
+      );
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(2);
+      expect(reassignDialog(wrapper).props("open")).toBe(false);
+    });
+
+    it("says so when no other Fach is free, and moves nothing", async () => {
+      ApiAccessService.getFreeCompartments.mockResolvedValue({
+        data: { success: true, data: [] },
+      });
+      const wrapper = await mountList({ entries: [assignedFach()] });
+
+      await startReassign(wrapper);
+
+      expect(dialogText(wrapper)).toContain("Kein anderes Fach frei");
+      expect(
+        reassignDialog(wrapper)
+          .find("[data-test='reassign-confirm']")
+          .attributes("disabled")
+      ).toBeDefined();
+    });
+
+    it("keeps the dialog open and offers the free Fächer anew when the chosen one was taken in between", async () => {
+      ApiAccessService.getFreeCompartments
+        .mockResolvedValueOnce({ data: { success: true, data: FREE } })
+        .mockResolvedValueOnce({ data: { success: true, data: [FREE[0]] } });
+      ApiAccessService.reassignCompartment.mockRejectedValue(
+        lifecycleError(409, "compartment_taken", {})
+      );
+      const wrapper = await mountList({ entries: [assignedFach()] });
+      await startReassign(wrapper);
+      await choose(wrapper, 1);
+
+      await confirm(wrapper);
+
+      expect(reassignDialog(wrapper).props("open")).toBe(true);
+      const text = dialogText(wrapper);
+      expect(text).toContain("inzwischen belegt");
+      expect(text).not.toContain("Schrank Labor Fachbank 1, Fach 7");
+      expect(ApiAccessService.getFreeCompartments).toHaveBeenCalledTimes(2);
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("state", () => {

@@ -1,5 +1,6 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
+import BookingCompartmentReassignDialog from "@/components/Booking/BookingCompartmentReassignDialog.vue";
 import {
   isForbiddenError,
   isLockBusyError,
@@ -78,6 +79,7 @@ const LOCK_BUSY = "accessPoint.booking.lockBusy";
  */
 export default {
   name: "BookingAccessPoints",
+  components: { BookingCompartmentReassignDialog },
   props: {
     booking: {
       type: Object,
@@ -94,6 +96,7 @@ export default {
       loadFailed: false,
       now: Date.now(),
       windowTimer: null,
+      reassigning: null,
     };
   },
   computed: {
@@ -168,6 +171,33 @@ export default {
     },
     stateChip(entry) {
       return accessStateChip(accessState(entry));
+    },
+    /**
+     * Whether „Fach umsetzen“ is offered: at a Fach the platform assigned
+     * (Open Locker), from the Vormerkung on, a running booking too
+     * (ECCdigital/tickets#1044). Not at a compartment the provider chose
+     * (iFBS, Pareva) nor at a door.
+     */
+    canReassign(entry) {
+      return isLockerAccessPoint(entry) && Boolean(entry.assignedCompartment);
+    },
+    startReassign(entry) {
+      if (!this.canControl) return;
+      this.reassigning = entry;
+    },
+    /**
+     * The Fach moved: its id changed with it, so the accesses are read anew
+     * - an open under the old id would be refused.
+     */
+    async onReassigned() {
+      this.reassigning = null;
+      await this.addToast(
+        ToastService.createToast(
+          "accessPoint.booking.reassign.success",
+          "success"
+        )
+      );
+      await this.fetchEntries();
     },
     openLabel(entry) {
       return isLockerAccessPoint(entry)
@@ -939,6 +969,21 @@ export default {
 
             <div class="access-point-tile__action-group">
               <v-btn
+                v-if="canReassign(entry)"
+                small
+                outlined
+                color="primary"
+                data-test="access-reassign"
+                :title="
+                  canControl ? '' : $t('accessPoint.booking.blocked.forbidden')
+                "
+                :disabled="!canControl || isBusy(entry)"
+                @click="startReassign(entry)"
+              >
+                <v-icon left small>mdi-swap-horizontal</v-icon>
+                {{ $t("accessPoint.booking.reassignCompartment") }}
+              </v-btn>
+              <v-btn
                 v-if="canClose(entry)"
                 small
                 outlined
@@ -981,6 +1026,14 @@ export default {
         </div>
       </div>
     </v-card-text>
+    <BookingCompartmentReassignDialog
+      :open="Boolean(reassigning)"
+      :booking="booking"
+      :entry="reassigning"
+      :current-title="reassigning ? entryTitle(reassigning) : ''"
+      @moved="onReassigned"
+      @close="reassigning = null"
+    />
   </v-card>
 </template>
 
