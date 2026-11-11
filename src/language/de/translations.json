@@ -3040,6 +3040,7 @@
         "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
         "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
+        "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Wählen Sie ein Fach aus der Liste oder geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
@@ -3108,7 +3109,7 @@
       },
       "openLocker": {
         "providerTitle": "Fächer per App öffnen",
-        "providerDescription": "Mit Open Locker öffnen Buchende ein Fach während ihres Buchungszeitraums per App. Biletado meldet sich dafür mit einem technischen Konto bei Ihrer Open-Locker-Instanz an. Jedes Fach legen Sie als Zugangspunkt mit seiner UUID an.",
+        "providerDescription": "Mit Open Locker öffnen Buchende ein Fach während ihres Buchungszeitraums per App. Biletado meldet sich dafür mit einem technischen Konto bei Ihrer Open-Locker-Instanz an. Jedes Fach wählen Sie beim Anlegen eines Zugangspunkts aus der Liste der Fächer, auf die das Konto Zugriff hat.",
         "activate": "Open Locker aktivieren",
         "server": "Serverkonfiguration",
         "serverUrl": "Server-URL",
