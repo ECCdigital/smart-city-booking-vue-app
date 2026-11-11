@@ -31,6 +31,15 @@ function apps() {
       active: true,
       customerService: { name: "", email: "", phone: "" },
     },
+    "open-locker": {
+      type: "access",
+      id: "open-locker",
+      title: "Open Locker",
+      serverUrl: "https://locker-labor.e-c-crew.dev",
+      email: "technik@example.org",
+      password: "geheim",
+      active: true,
+    },
   };
 }
 
@@ -52,7 +61,7 @@ async function mountLocks() {
   return wrapper;
 }
 
-/** Panel 0 is Pareva, panel 1 the bike boxes. */
+/** Panel 0 is Pareva, panel 1 the bike boxes, panel 2 Open Locker. */
 function testButton(wrapper, panelIndex) {
   const buttons = wrapper
     .findAll("button")
@@ -140,5 +149,152 @@ describe("TenantEditLocks connection test", () => {
       errMsg: "Nicht berechtigt",
       errNo: 403,
     });
+  });
+});
+
+/**
+ * Open Locker is the fifth provider (ECCdigital/tickets#970). The tenant
+ * stores its technical account - server, e-mail, password - and the test
+ * signs in with it. A wrong password and an account Open Locker blocks are
+ * different repairs, so each is said in words of its own; what the backend
+ * names without a code (an unreachable server) is shown as it came.
+ */
+describe("TenantEditLocks Open Locker", () => {
+  const OPEN_LOCKER_PANEL = 2;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function panel(wrapper) {
+    return wrapper.findAll(".v-expansion-panel").at(OPEN_LOCKER_PANEL);
+  }
+
+  function testAlert(wrapper) {
+    return panel(wrapper).findComponent({ name: "ConnectionTestAlert" });
+  }
+
+  function input(wrapper, label) {
+    const field = panel(wrapper)
+      .findAll(".v-text-field")
+      .wrappers.find((f) => f.find("label").text() === label);
+    return field.find("input");
+  }
+
+  async function testWith(answer) {
+    ApiAccessAppsService.testConnection.mockResolvedValue({ data: answer });
+    const wrapper = await mountLocks();
+    await testButton(wrapper, OPEN_LOCKER_PANEL).trigger("click");
+    await settle(wrapper);
+    return wrapper;
+  }
+
+  it("shows a panel with the technical account's credentials", async () => {
+    const wrapper = await mountLocks();
+
+    expect(panel(wrapper).text()).toContain("Open Locker");
+    expect(input(wrapper, "Server-URL").element.value).toBe(
+      "https://locker-labor.e-c-crew.dev"
+    );
+    expect(input(wrapper, "E-Mail des technischen Kontos").element.value).toBe(
+      "technik@example.org"
+    );
+    const password = input(wrapper, "Passwort");
+    expect(password.element.value).toBe("geheim");
+    expect(password.attributes("type")).toBe("password");
+  });
+
+  it("hands a changed password on like the other fields", async () => {
+    const wrapper = await mountLocks();
+
+    await input(wrapper, "Passwort").setValue("neu");
+
+    const emitted = wrapper.emitted("update:apps");
+    expect(emitted[emitted.length - 1][0]["open-locker"]).toMatchObject({
+      type: "access",
+      id: "open-locker",
+      email: "technik@example.org",
+      password: "neu",
+    });
+  });
+
+  it("tests Open Locker through the access apps route", async () => {
+    const wrapper = await testWith({
+      success: true,
+      message: "Connection successful",
+    });
+
+    expect(ApiAccessAppsService.testConnection).toHaveBeenCalledWith(
+      "t1",
+      {
+        serverUrl: "https://locker-labor.e-c-crew.dev",
+        email: "technik@example.org",
+        password: "geheim",
+      },
+      "open-locker"
+    );
+    expect(testAlert(wrapper).text()).toBe("Verbindung erfolgreich!");
+  });
+
+  it("says that e-mail or password are wrong", async () => {
+    const wrapper = await testWith({
+      success: false,
+      code: "invalid_credentials",
+      message: "Invalid credentials",
+    });
+
+    expect(testAlert(wrapper).text()).toBe(
+      "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht."
+    );
+  });
+
+  it("says that the account is blocked for terms not accepted", async () => {
+    const wrapper = await testWith({
+      success: false,
+      code: "terms_not_accepted",
+      message:
+        "Account blocked: the technical account has not accepted the current terms of Open Locker",
+    });
+
+    expect(testAlert(wrapper).text()).toContain(
+      "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert."
+    );
+  });
+
+  it("says that the account is blocked for an unverified address", async () => {
+    const wrapper = await testWith({
+      success: false,
+      code: "email_not_verified",
+      message:
+        "Account blocked: the technical account has not verified its e-mail address",
+    });
+
+    expect(testAlert(wrapper).text()).toContain(
+      "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt."
+    );
+  });
+
+  it("shows the backend's message where it names no code", async () => {
+    const wrapper = await testWith({
+      success: false,
+      message: "Server not found",
+    });
+
+    expect(testAlert(wrapper).text()).toContain(
+      "Verbindung fehlgeschlagen: Server not found"
+    );
+  });
+
+  it("says so when the request itself failed", async () => {
+    ApiAccessAppsService.testConnection.mockRejectedValue(
+      new Error("Network Error")
+    );
+    const wrapper = await mountLocks();
+    await testButton(wrapper, OPEN_LOCKER_PANEL).trigger("click");
+    await settle(wrapper);
+
+    expect(testAlert(wrapper).text()).toContain(
+      "Die Verbindung konnte nicht hergestellt werden."
+    );
   });
 });

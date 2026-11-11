@@ -3,6 +3,7 @@ import {
   createLockAndAccessAppDefaults,
   findTenantApp,
   LOCK_AND_ACCESS_APP_IDS,
+  withoutUnchangedSecrets,
 } from "@/utilities/access-apps";
 
 /**
@@ -37,11 +38,29 @@ describe("lock and access app defaults", () => {
   });
 
   /**
+   * Open Locker is the fifth provider (ECCdigital/tickets#970): the tenant's
+   * technical account on its Open Locker instance - server, e-mail and
+   * password, the password stored encrypted by the backend like Pareva's.
+   */
+  it("knows Open Locker with the technical account's fields", () => {
+    expect(LOCK_AND_ACCESS_APP_IDS).toContain("open-locker");
+    expect(createLockAndAccessAppDefaults()["open-locker"]).toEqual({
+      type: "access",
+      id: "open-locker",
+      title: "Open Locker",
+      serverUrl: "",
+      email: "",
+      password: "",
+      active: false,
+    });
+  });
+
+  /**
    * The storefront shows the provider's customer service below the open
    * button of a door. The backend keeps `customerService` on every access
    * application, but the admin form only writes it for the providers whose
-   * defaults carry it - iFBS and Nuki. Pareva and Salto KS deliberately stay
-   * without one.
+   * defaults carry it - iFBS and Nuki. Pareva, Salto KS and Open Locker
+   * deliberately stay without one.
    */
   it("gives iFBS and Nuki an empty customer service, the others none", () => {
     const defaults = createLockAndAccessAppDefaults();
@@ -51,6 +70,7 @@ describe("lock and access app defaults", () => {
     expect(defaults.nuki.customerService).toEqual(empty);
     expect(defaults.pareva).not.toHaveProperty("customerService");
     expect(defaults["salto-ks"]).not.toHaveProperty("customerService");
+    expect(defaults["open-locker"]).not.toHaveProperty("customerService");
   });
 
   // A tenant that sets Salto KS up anew starts on the real installation,
@@ -80,6 +100,16 @@ describe("finding a stored tenant application", () => {
     });
   });
 
+  it("finds the Open Locker application", () => {
+    const stored = [
+      { id: "open-locker", type: "access", email: "technik@example.org" },
+    ];
+
+    expect(findTenantApp(stored, "open-locker")).toMatchObject({
+      email: "technik@example.org",
+    });
+  });
+
   it("does not count an unmigrated locker application as stored", () => {
     const stored = [{ id: "pareva", type: "locker", serverUrl: "https://p" }];
 
@@ -94,5 +124,23 @@ describe("finding a stored tenant application", () => {
 
   it("answers undefined when the tenant has no applications", () => {
     expect(findTenantApp(undefined, "pareva")).toBeUndefined();
+  });
+});
+
+/**
+ * The Open Locker password travels like Pareva's: the backend hands it back
+ * decrypted and the form holds it, so a save sends what the field shows and
+ * the backend encrypts it again. Only the secrets the backend withholds -
+ * Nuki's token, Salto KS's client secret and password - are left out when
+ * empty.
+ */
+describe("the secrets of a save", () => {
+  it("sends the Open Locker password as the form holds it", () => {
+    const app = {
+      ...createLockAndAccessAppDefaults()["open-locker"],
+      password: "geheim",
+    };
+
+    expect(withoutUnchangedSecrets(app)).toEqual(app);
   });
 });

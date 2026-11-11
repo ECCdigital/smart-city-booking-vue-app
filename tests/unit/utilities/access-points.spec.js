@@ -1,8 +1,68 @@
 import { describe, expect, it } from "vitest";
 import {
   canListAccessPoints,
+  providerAccessPointDefaults,
   providerIdFields,
+  providerModes,
+  providerRequiresScanByDefault,
 } from "@/utilities/access-points";
+
+/**
+ * What each provider hands out. Open Locker (ECCdigital/tickets#970) hands
+ * out compartments, each a door opened remotely - not an Anlage, because
+ * every compartment is one access point of its own.
+ */
+describe("what a provider's access points are", () => {
+  it.each([
+    ["nuki", { type: "door" }],
+    ["salto-ks", { type: "door" }],
+    ["open-locker", { type: "door", mode: "remote" }],
+    ["ifbs", { type: "locker", mode: "remote" }],
+    ["pareva", { type: "locker", mode: "authorization" }],
+  ])("%s hands out %o", (provider, defaults) => {
+    expect(providerAccessPointDefaults(provider)).toEqual(defaults);
+  });
+
+  it("says nothing for a provider it does not know", () => {
+    expect(providerAccessPointDefaults("some-new-provider")).toBeNull();
+  });
+});
+
+/**
+ * The modes a door of the provider can be set to. Salto KS and Open Locker
+ * open remotely or not at all; the other providers leave the choice open.
+ */
+describe("the modes of a provider's door", () => {
+  it.each([
+    ["salto-ks", ["remote"]],
+    ["open-locker", ["remote"]],
+    ["nuki", null],
+    ["some-new-provider", null],
+  ])("%s offers %o", (provider, modes) => {
+    expect(providerModes(provider)).toEqual(modes);
+  });
+});
+
+/**
+ * Whether a new access point demands a QR scan when it is created without
+ * rules - the backend's `requiresScanByDefault`. An Open Locker compartment
+ * is opened from the list, so it starts without one; every other provider,
+ * and one this UI does not know, starts with the scan the server sets.
+ */
+describe("whether a provider's access point starts with a QR scan", () => {
+  it.each([
+    ["nuki", true],
+    ["salto-ks", true],
+    ["ifbs", true],
+    ["pareva", true],
+    ["open-locker", false],
+    ["some-new-provider", true],
+    ["", true],
+    [undefined, true],
+  ])("%s: %s", (provider, scan) => {
+    expect(providerRequiresScanByDefault(provider)).toBe(scan);
+  });
+});
 
 /**
  * The id fields the dialog shows follow the provider, not the type: a locker
@@ -10,7 +70,9 @@ import {
  * second field - `providerLocationId` - is read by no provider. A door keeps
  * both fields, and so does a locker system of a provider this UI has no table
  * row for. Only the Pareva product id carries a placeholder, because the
- * 24-hex id is nothing an admin would guess the shape of.
+ * 24-hex id is nothing an admin would guess the shape of. An Open Locker
+ * compartment is a door, but Open Locker knows it by its UUID alone, so it
+ * shows that one field.
  */
 describe("the id fields of a provider's access point", () => {
   it.each([
@@ -18,6 +80,7 @@ describe("the id fields of a provider's access point", () => {
     ["salto-ks", "externalId", null, null, true],
     ["ifbs", "locationId", "locationIdHint", null, false],
     ["pareva", "productId", "productIdHint", "productIdPlaceholder", false],
+    ["open-locker", "compartmentUuid", "compartmentUuidHint", null, false],
     ["some-new-provider", "externalId", null, null, true],
     ["", "externalId", null, null, true],
     [undefined, "externalId", null, null, true],

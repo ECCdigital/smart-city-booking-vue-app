@@ -2935,7 +2935,9 @@
         "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
         "productId": "Produkt-ID",
         "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
-        "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746"
+        "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
+        "compartmentUuid": "UUID des Fachs",
+        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
       },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",
@@ -2954,6 +2956,7 @@
         "qrScanShort": "QR-Scan",
         "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
         "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
+        "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen.",
         "required": "erforderlich",
         "notRequired": "nicht nötig",
         "notApplicable": "entfällt"
@@ -3102,6 +3105,24 @@
         "phone": "Telefon",
         "invalidEmail": "Muss eine gültige Email-Adresse sein.",
         "invalidPhone": "Muss eine gültige Telefonnummer sein."
+      },
+      "openLocker": {
+        "providerTitle": "Fächer per App öffnen",
+        "providerDescription": "Mit Open Locker öffnen Buchende ein Fach während ihres Buchungszeitraums per App. Biletado meldet sich dafür mit einem technischen Konto bei Ihrer Open-Locker-Instanz an. Jedes Fach legen Sie als Zugangspunkt mit seiner UUID an.",
+        "activate": "Open Locker aktivieren",
+        "server": "Serverkonfiguration",
+        "serverUrl": "Server-URL",
+        "serverUrlPlaceholder": "z. B. https://locker.example.org",
+        "account": "Technisches Konto",
+        "email": "E-Mail des technischen Kontos",
+        "password": "Passwort",
+        "accountHint": "Das technische Konto muss in Open Locker seine E-Mail-Adresse bestätigt und die aktuellen Nutzungsbedingungen akzeptiert haben, sonst ist es gesperrt. Es braucht Zugriff auf die Fächer, die Sie als Zugangspunkte anlegen.",
+        "testFailed": "Verbindung fehlgeschlagen: {message}",
+        "testErrors": {
+          "invalid_credentials": "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht.",
+          "terms_not_accepted": "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert. Melden Sie sich mit dem Konto bei Open Locker an und akzeptieren Sie sie.",
+          "email_not_verified": "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt. Bestätigen Sie sie über den Link in der Mail von Open Locker."
+        }
       },
       "salto": {
         "providerTitle": "Salto KS – Cloud-Schließanlage",

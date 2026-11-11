@@ -37,6 +37,7 @@ export default {
         { value: "nuki", text: "Nuki" },
         { value: "salto-ks", text: "Salto KS" },
         { value: "ifbs", text: "IFBS" },
+        { value: "open-locker", text: "Open Locker" },
       ];
     },
     actionOptions() {

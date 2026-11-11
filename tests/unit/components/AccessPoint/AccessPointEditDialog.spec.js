@@ -1321,6 +1321,157 @@ describe("AccessPointEditDialog", () => {
 });
 
 /**
+ * Open Locker (ECCdigital/tickets#970) hands out compartments, each a door of
+ * its own: opened remotely and in no other way, known to Open Locker by its
+ * UUID alone. A compartment is opened from the list, not in front of a
+ * sticker, so the backend creates it without a QR scan unless the request
+ * names one - and the switch shows exactly that until the admin touches it.
+ */
+describe("AccessPointEditDialog - an Open Locker compartment", () => {
+  const OPEN_LOCKER = {
+    id: "open-locker",
+    title: "Open Locker",
+    providerCapabilities: ["open", "getOpenProgress"],
+  };
+  const UUID = "9b2f6c1e-5d4a-4c3b-8e7f-1a2b3c4d5e6f";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+    ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+    ApiGeoService.search.mockResolvedValue([]);
+    ApiGeoService.reverse.mockResolvedValue(null);
+  });
+
+  function qrSwitch(wrapper) {
+    return wrapper
+      .findAllComponents({ name: "v-switch" })
+      .wrappers.find((s) => s.text().includes("QR-Scan erforderlich"));
+  }
+
+  async function typeProvider(wrapper, provider) {
+    const providerInput = wrapper.find(".provider-field input");
+    providerInput.setValue(provider);
+    await providerInput.trigger("keydown.enter");
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+  }
+
+  async function save(wrapper) {
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+    return ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+  }
+
+  it("is a door known by the UUID of the compartment alone", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(wrapper.find(".provider-field input").element.value).toBe(
+      "open-locker"
+    );
+    expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+    expect(labels(wrapper)).toContain("UUID des Fachs");
+    expect(labels(wrapper)).not.toContain("ID beim Anbieter");
+    expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
+    expect(dialogText(wrapper)).toContain(
+      "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
+    );
+  });
+
+  it("offers the mode remote alone", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    const items = modeSelect(wrapper).props("items");
+    expect(items.map((item) => item.value)).toEqual(["remote"]);
+    expect(items[0].disabled).toBe(false);
+  });
+
+  it("starts without a QR scan and says that the server sets none", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
+    expect(dialogText(wrapper)).toContain(
+      "Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an."
+    );
+    expect(dialogText(wrapper)).not.toContain(
+      "Beim Anlegen setzt der Server die Regel"
+    );
+  });
+
+  it("creates the compartment as the untouched form shows it", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await wrapper.find(".external-id-field input").setValue(UUID);
+
+    const payload = await save(wrapper);
+
+    expect(payload).toMatchObject({
+      type: "door",
+      provider: "open-locker",
+      externalId: UUID,
+      providerLocationId: null,
+      mode: "remote",
+    });
+    // Left out, so the backend applies its default for Open Locker: none.
+    expect(payload).not.toHaveProperty("validationRules");
+  });
+
+  it("demands the scan where the admin switches it on", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await wrapper.find(".external-id-field input").setValue(UUID);
+    qrSwitch(wrapper).vm.$emit("change", true);
+    await wrapper.vm.$nextTick();
+
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+    const payload = await save(wrapper);
+    expect(payload.validationRules).toEqual([{ type: "qrScan" }]);
+  });
+
+  it("lets the untouched switch follow the provider typed in", async () => {
+    const wrapper = await mountDialog({ providers: [] });
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+
+    await typeProvider(wrapper, "open-locker");
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
+
+    await typeProvider(wrapper, "nuki");
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+  });
+
+  it("keeps a switch the admin touched when the provider changes", async () => {
+    const wrapper = await mountDialog({ providers: [] });
+    qrSwitch(wrapper).vm.$emit("change", false);
+    await wrapper.vm.$nextTick();
+
+    await typeProvider(wrapper, "nuki");
+
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
+    const payload = await save(wrapper);
+    expect(payload.validationRules).toEqual([]);
+  });
+
+  it("shows a stored compartment's scan as it is stored", async () => {
+    const stored = {
+      id: "ap-fach",
+      type: "door",
+      provider: "open-locker",
+      label: "Fach 3",
+      externalId: UUID,
+      mode: "remote",
+      validationRules: [{ type: "qrScan" }],
+    };
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: stored,
+    });
+
+    expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+    const payload = await save(wrapper);
+    expect(payload.validationRules).toEqual([{ type: "qrScan" }]);
+  });
+});
+
+/**
  * The location of a door is entered with the location input (map
  * ECCdigital/tickets#372): narrow, fields and map one under the other, right
  * in the dialog - no dialog in the dialog.

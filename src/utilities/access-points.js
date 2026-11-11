@@ -6,12 +6,13 @@ export const LOCKER_TYPE = "locker";
 export const DOOR_TYPE = "door";
 
 /**
- * What each access provider hands out: Nuki and Salto KS doors, iFBS and
- * Pareva locker systems. The mode of a locker system follows from the
- * provider as well - iFBS opens a compartment remotely, Pareva hands out a
- * code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
- * Whether the provider also lists them is a capability of its own, see
- * `canListAccessPoints`.
+ * What each access provider hands out: Nuki, Salto KS and Open Locker doors,
+ * iFBS and Pareva locker systems. The mode of a locker system follows from
+ * the provider as well - iFBS opens a compartment remotely, Pareva hands out
+ * a code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
+ * An Open Locker compartment is a door of its own, opened remotely and in no
+ * other way. Whether the provider also lists them is a capability of its own,
+ * see `canListAccessPoints`.
  *
  * A provider outside this table says nothing about the type; the access point
  * keeps the one it has.
@@ -19,20 +20,62 @@ export const DOOR_TYPE = "door";
 const PROVIDER_ACCESS_POINTS = {
   nuki: { type: DOOR_TYPE },
   "salto-ks": { type: DOOR_TYPE },
+  "open-locker": { type: DOOR_TYPE, mode: "remote" },
   ifbs: { type: LOCKER_TYPE, mode: "remote" },
   pareva: { type: LOCKER_TYPE, mode: "authorization" },
 };
+
+/**
+ * The modes a door of the provider can be set to, where the provider rules
+ * out the rest: Salto KS (the backend refuses the PIN modes, tickets#499) and
+ * Open Locker open remotely or not at all.
+ */
+const PROVIDER_MODES = {
+  "salto-ks": Object.freeze(["remote"]),
+  "open-locker": Object.freeze(["remote"]),
+};
+
+/**
+ * The providers whose new access points start without a QR scan - the
+ * backend's `requiresScanByDefault`. An Open Locker compartment is opened
+ * from the list, not in front of a sticker; the scan is switched on per
+ * compartment where it is wanted.
+ */
+const PROVIDERS_WITHOUT_SCAN_BY_DEFAULT = ["open-locker"];
 
 /**
  * What a provider's access points are, as far as the provider decides it.
  *
  * @param {string} provider A provider id, e.g. "nuki" or "ifbs"
  * @returns {{type: string, mode?: string}|null} The type the provider hands
- *   out and, for a locker system, the mode it works in - or `null` for a
- *   provider this UI knows nothing about
+ *   out and the mode it works in where the provider settles it - or `null`
+ *   for a provider this UI knows nothing about
  */
 export function providerAccessPointDefaults(provider) {
   return PROVIDER_ACCESS_POINTS[provider] || null;
+}
+
+/**
+ * The modes a door of the provider can be set to.
+ *
+ * @param {string} provider A provider id, e.g. "salto-ks"
+ * @returns {string[]|null} The modes, or `null` where the provider rules
+ *   none out
+ */
+export function providerModes(provider) {
+  return PROVIDER_MODES[provider] || null;
+}
+
+/**
+ * Whether a new access point of the provider demands a QR scan when it is
+ * created without `validationRules` - what the server then sets. A provider
+ * this UI does not know gets the server's schema default, the scan.
+ *
+ * @param {string} provider A provider id, e.g. "nuki" or "open-locker"
+ * @returns {boolean}
+ */
+export function providerRequiresScanByDefault(provider) {
+  return !PROVIDERS_WITHOUT_SCAN_BY_DEFAULT.includes(provider);
 }
 
 /**
@@ -45,6 +88,9 @@ export function providerAccessPointDefaults(provider) {
  * the id is the product's 24-hex id from Pareva's administration - both stored
  * in `externalId`. `providerLocationId` is read by no provider and stays out
  * of sight for them.
+ *
+ * An Open Locker compartment is a door, but Open Locker knows it by its UUID
+ * alone, so it shows that one field, „UUID des Fachs“, and no location.
  *
  * `label`, `hint` and `placeholder` name keys under
  * `accessPoint.management.fields`; a `null` hint leaves the dialog's own hint
@@ -69,6 +115,12 @@ const PROVIDER_ID_FIELDS = {
     label: "productId",
     hint: "productIdHint",
     placeholder: "productIdPlaceholder",
+    locationField: false,
+  }),
+  "open-locker": Object.freeze({
+    label: "compartmentUuid",
+    hint: "compartmentUuidHint",
+    placeholder: null,
     locationField: false,
   }),
 };
