@@ -24,6 +24,8 @@ const GENERIC_CONFLICT_KEY = `${CONFLICT_CODE_PREFIX}.conflict`;
 const INVALID_TRANSITION_CODE = "invalid_transition";
 const INVALID_TRANSITION_UNKNOWN_STATUS_KEY = `${CONFLICT_CODE_PREFIX}.invalid_transition-unknown-status`;
 const DIVERGING_BOOKINGS_KEY = `${CONFLICT_CODE_PREFIX}.diverging-bookings`;
+/** The 409 of an Anlage without a free Fach („Kein Fach frei“). */
+const COMPARTMENTS_UNAVAILABLE_CODE = "compartments_unavailable";
 
 /**
  * The lifecycle's codes on the two other statuses. A 404 `booking_not_found`
@@ -235,9 +237,19 @@ export function getReinstatementConflicts(error) {
  * It overlaps `isOutOfReach` on the 404 only and answers a different
  * question: not "may this be shown at all?" but "is what is shown still
  * current?" - a 403 leaves the screen as it was, a 409 does not.
+ *
+ * One 409 is not a moved state: `compartments_unavailable`, an Änderung or
+ * Wiederherstellung that found no free Fach. The stored booking is as it
+ * was, and the form keeps what was entered for another try.
  */
 export function shouldRefetch(error) {
   const status = error?.response?.status;
+  if (
+    status === 409 &&
+    getErrorCode(error.response.data, 409) === COMPARTMENTS_UNAVAILABLE_CODE
+  ) {
+    return false;
+  }
   return status === 409 || status === 404;
 }
 
