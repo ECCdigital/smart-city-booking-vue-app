@@ -481,7 +481,8 @@ export default {
         shown: this.expertOptionShown,
         accessPoints: this.accessPoints.list,
         customerUploadsEnabled: customerUploadsEnabled(
-          this.$store.getters["tenants/currentTenant"]
+          this.$store.getters["tenants/currentTenant"],
+          this.$store.getters["instance/instance"]
         ),
       };
     },

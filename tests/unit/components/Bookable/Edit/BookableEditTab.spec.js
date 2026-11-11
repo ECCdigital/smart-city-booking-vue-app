@@ -65,10 +65,19 @@ const mountTab = (
     stubs,
   });
 
-/** A store whose current tenant has customer uploads on or off. */
-const tenantStore = (enabled) =>
+/**
+ * A store whose current tenant has customer uploads on or off, under an
+ * instance that has cleared them (or not).
+ */
+const tenantStore = (enabled, cleared = true) =>
   new Vuex.Store({
     modules: {
+      instance: {
+        namespaced: true,
+        getters: {
+          instance: () => ({ customerUploads: { enabled: cleared } }),
+        },
+      },
       tenants: {
         namespaced: true,
         getters: {
@@ -198,6 +207,14 @@ describe("BookableEditTab - Upload-Felder", () => {
     expect(
       wrapper.find("[data-test='area-BookableEditUploadFields']").exists()
     ).toBe(false);
+  });
+
+  it("shows no upload fields while the instance has not cleared customer uploads", () => {
+    const { wrapper } = mountTab("customFields", {
+      store: tenantStore(true, false),
+    });
+
+    expect(cardTitles(wrapper)).toEqual(["Eigene Felder"]);
   });
 });
 

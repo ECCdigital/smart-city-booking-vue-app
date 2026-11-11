@@ -12,6 +12,10 @@ import {
   customerUploadSettingsIssues,
   customerUploadSettingsOf,
   customerUploadsEnabled,
+  customerUploadCeilingsOf,
+  instanceCustomerUploadsEnabled,
+  instanceCustomerUploadsIssues,
+  instanceCustomerUploadsOf,
   newUploadField,
   orderedFormats,
   proofFieldsOf,
@@ -58,10 +62,14 @@ describe("customerUploads - the tenant's settings", () => {
     expect(customerUploadsEnabled(null)).toBe(false);
   });
 
-  it("is enabled only by the tenant's switch", () => {
-    expect(customerUploadsEnabled({ customerUploads: { enabled: true } })).toBe(
-      true
-    );
+  it("holds only with the tenant's switch on and the instance's clearance", () => {
+    const tenantOn = { customerUploads: { enabled: true } };
+    const cleared = { customerUploads: { enabled: true } };
+
+    expect(customerUploadsEnabled(tenantOn, cleared)).toBe(true);
+    expect(customerUploadsEnabled(tenantOn, {})).toBe(false);
+    expect(customerUploadsEnabled(tenantOn, null)).toBe(false);
+    expect(customerUploadsEnabled({}, cleared)).toBe(false);
   });
 
   it("refuses a retention over 30 days and enabling without a format", () => {
@@ -739,5 +747,62 @@ describe("customerUploads - the files of a group checkout (ECCdigital/tickets#83
     expect(checkoutUploadErrorKey("customer_upload_target_invalid")).toBe(
       "checkout.customer-uploads.errors.target-invalid"
     );
+  });
+});
+
+describe("customerUploads - the instance's settings", () => {
+  const CEILINGS = {
+    maxFileSizeMb: 10,
+    maxFilesPerBooking: 20,
+    maxTotalSizeMbPerBooking: 100,
+  };
+
+  it("reads an instance without settings as not cleared, without limits of its own", () => {
+    expect(instanceCustomerUploadsOf({})).toEqual({
+      enabled: false,
+      maxFileSizeMb: null,
+      maxFilesPerBooking: null,
+      maxTotalSizeMbPerBooking: null,
+    });
+    expect(instanceCustomerUploadsEnabled({})).toBe(false);
+    expect(instanceCustomerUploadsEnabled(null)).toBe(false);
+  });
+
+  it("reads the ceilings of the server, the defaults without them", () => {
+    expect(customerUploadCeilingsOf({})).toEqual(CEILINGS);
+    expect(
+      customerUploadCeilingsOf({
+        customerUploadCeilings: { ...CEILINGS, maxFileSizeMb: 25 },
+      }).maxFileSizeMb
+    ).toBe(25);
+  });
+
+  it("takes an empty limit and whole numbers from 1 up to the ceiling", () => {
+    expect(
+      instanceCustomerUploadsIssues(
+        { enabled: true, maxFileSizeMb: "", maxFilesPerBooking: 20 },
+        CEILINGS
+      )
+    ).toEqual({});
+  });
+
+  it("refuses 0, a fraction and a limit above the ceiling", () => {
+    expect(
+      Object.keys(
+        instanceCustomerUploadsIssues(
+          {
+            enabled: true,
+            maxFileSizeMb: 11,
+            maxFilesPerBooking: 0,
+            maxTotalSizeMbPerBooking: 1.5,
+          },
+          CEILINGS
+        )
+      )
+    ).toEqual([
+      "maxFileSizeMb",
+      "maxFilesPerBooking",
+      "maxTotalSizeMbPerBooking",
+    ]);
   });
 });

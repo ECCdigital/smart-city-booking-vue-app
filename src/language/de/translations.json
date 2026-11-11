@@ -160,6 +160,7 @@
     },
     "bad-request-codes": {
       "customer_upload_settings_invalid": "Die Einstellungen zu Nachweisen sind ungültig.",
+      "customer_upload_limit_out_of_range": "Eine Grenze für Nachweise muss eine ganze Zahl von 1 bis {max} sein.",
       "customer_upload_reason_missing": "Bitte nennen Sie einen Grund.",
       "customer_upload_reason_too_long": "Der Grund ist zu lang.",
       "customer_upload_review_result_invalid": "Das Ergebnis der Prüfung ist ungültig.",
@@ -1389,6 +1390,21 @@
       },
       "cards": {
         "title": "Karten"
+      },
+      "customerUploads": {
+        "title": "Nachweise von Buchenden",
+        "intro": "Geben Sie frei, dass bei einer Buchung oder nach Freigabe der Buchung von den Buchenden Nachweise hochgeladen werden können. Nach Aktivierung der Funktion kann jeder Mandant die Nachweise für sich freischalten und für seine Buchungsobjekte Upload-Felder definieren.",
+        "enabled": "Funktion zum Upload von Nachweisen für Mandanten freigeben",
+        "enabled-hint": "Ohne Freigabe nimmt kein Mandant Nachweise an, auch wenn er sie freigeschaltet hat. Bereits hochgeladene Nachweise werden weiter fristgerecht gelöscht.",
+        "limits": "Grenzen",
+        "limits-hint": "Legen Sie Begrenzungen für alle Mandanten fest. Ohne Angabe wird die angegebene Maximalgrenze genutzt.",
+        "maxFileSizeMb": "Maximale Dateigröße",
+        "maxFilesPerBooking": "Max. Anzahl je Buchung",
+        "maxTotalSizeMbPerBooking": "Max. Gesamtgröße je Buchung",
+        "limit-hint": "Maximalgrenze: {max}",
+        "validation": {
+          "limit": "Geben Sie eine ganze Zahl von 1 bis {max} an oder lassen Sie das Feld leer."
+        }
       }
     }
   },
@@ -1398,6 +1414,8 @@
       "intro": "Ermöglichen Sie Buchenden, bei einer Buchung oder im Anschluss Nachweise hochzuladen. Dazu kann ein Vereinsausweis, ein Sozialpass oder auch eine unterzeichnete Nutzungsvereinbarung gehören. Welche Nachweise ein Buchungsobjekt verlangt, legen Sie jeweils im Buchungsobjekt unter „Upload-Felder“ fest.",
       "enabled": "Nachweise freischalten",
       "enabled-hint": "Erst dann zeigen die Buchungsobjekte die Upload-Felder.",
+      "instance-off": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Erst nach der Freigabe unter „Instanz verwalten“ können Sie Nachweise freischalten.",
+      "instance-off-enabled": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Bis zur Freigabe nimmt dieser Mandant keine Nachweise an.",
       "formats": {
         "label": "Erlaubte Formate",
         "hint": "Ein Upload-Feld kann nur diese Formate verlangen.",

@@ -29,7 +29,8 @@ export default {
         shown: this.expertOptionShown,
         accessPoints: this.bookableAccessPoints.list,
         customerUploadsEnabled: customerUploadsEnabled(
-          this.$store?.getters["tenants/currentTenant"]
+          this.$store?.getters["tenants/currentTenant"],
+          this.$store?.getters["instance/instance"]
         ),
       }).map((section) => section.id);
     },

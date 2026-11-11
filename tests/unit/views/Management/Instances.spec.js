@@ -18,7 +18,11 @@ vi.mock("@/layouts/Admin.vue", () => ({
   },
 }));
 vi.mock("@/services/api/ApiInstanceService", () => ({
-  default: { getInstance: vi.fn(), updateInstance: vi.fn() },
+  default: {
+    getInstance: vi.fn(),
+    updateInstance: vi.fn(),
+    getPublicInstance: vi.fn(),
+  },
 }));
 vi.mock("@/services/api/ApiCatalogService", () => ({
   default: { getCatalog: vi.fn(), updateCatalog: vi.fn() },
@@ -147,10 +151,34 @@ async function mountView(query = {}, instance = {}) {
   ApiRolesService.getRoles.mockResolvedValue({ data: [] });
   ApiTenantService.getTenants.mockResolvedValue({ data: [] });
 
+  ApiInstanceService.getPublicInstance.mockResolvedValue({
+    customerUploadCeilings: {
+      maxFileSizeMb: 10,
+      maxFilesPerBooking: 20,
+      maxTotalSizeMbPerBooking: 100,
+    },
+  });
+
   const replace = vi.fn();
   const addToast = vi.fn();
+  const updatePublicInstance = vi.fn();
   const store = new Vuex.Store({
-    modules: { toasts: { namespaced: true, actions: { add: addToast } } },
+    modules: {
+      toasts: { namespaced: true, actions: { add: addToast } },
+      instance: {
+        namespaced: true,
+        actions: { update: updatePublicInstance },
+        getters: {
+          instance: () => ({
+            customerUploadCeilings: {
+              maxFileSizeMb: 10,
+              maxFilesPerBooking: 20,
+              maxTotalSizeMbPerBooking: 100,
+            },
+          }),
+        },
+      },
+    },
   });
   const wrapper = mountComponent(Instances, {
     store,
@@ -161,7 +189,7 @@ async function mountView(query = {}, instance = {}) {
   });
   await flushPromises();
   await wrapper.vm.$nextTick();
-  return { wrapper, replace, addToast };
+  return { wrapper, replace, addToast, updatePublicInstance };
 }
 
 const tabLabels = (wrapper) =>
@@ -293,5 +321,87 @@ describe("Instances save in „Admin“", () => {
       message: "Instanz muss mindestens einen Admin haben",
       type: "error",
     });
+  });
+});
+
+describe("Instances: Nachweise von Buchenden in „Buchungsobjekte“", () => {
+  const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
+
+  async function save(wrapper) {
+    await wrapper.find(".save-bar-btn--primary").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+  }
+
+  it("clears customer uploads for the tenants and saves the switch", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper, updatePublicInstance } = await mountView({
+      tab: "bookables",
+    });
+
+    expect(
+      find(wrapper, "instance-customer-uploads-maxFileSizeMb").exists()
+    ).toBe(false);
+    await find(wrapper, "instance-customer-uploads-enabled")
+      .find("input")
+      .trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(
+      find(wrapper, "instance-customer-uploads-maxFileSizeMb").exists()
+    ).toBe(true);
+
+    await save(wrapper);
+
+    expect(ApiInstanceService.updateInstance).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerUploads: {
+          enabled: true,
+          maxFileSizeMb: null,
+          maxFilesPerBooking: null,
+          maxTotalSizeMbPerBooking: null,
+        },
+      })
+    );
+    // The rest of the Admin UI sees the clearance at once.
+    expect(ApiInstanceService.getPublicInstance).toHaveBeenCalled();
+    expect(updatePublicInstance).toHaveBeenCalled();
+  });
+
+  it("saves a limit below the ceiling as a number", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper } = await mountView(
+      { tab: "bookables" },
+      { customerUploads: { enabled: true } }
+    );
+
+    await find(wrapper, "instance-customer-uploads-maxFilesPerBooking")
+      .find("input")
+      .setValue("5");
+    await save(wrapper);
+
+    expect(
+      ApiInstanceService.updateInstance.mock.calls.at(-1)[0].customerUploads
+    ).toMatchObject({ enabled: true, maxFilesPerBooking: 5 });
+  });
+
+  it("refuses a limit above the ceiling of the server before saving", async () => {
+    ApiInstanceService.updateInstance.mockReset();
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    const { wrapper } = await mountView(
+      { tab: "bookables" },
+      { customerUploads: { enabled: true } }
+    );
+
+    await find(wrapper, "instance-customer-uploads-maxFileSizeMb")
+      .find("input")
+      .setValue("11");
+    await save(wrapper);
+
+    expect(ApiInstanceService.updateInstance).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain(
+      "Geben Sie eine ganze Zahl von 1 bis 10 an oder lassen Sie das Feld leer."
+    );
   });
 });

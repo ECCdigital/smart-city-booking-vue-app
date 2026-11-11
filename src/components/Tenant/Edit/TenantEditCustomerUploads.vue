@@ -6,6 +6,7 @@ import {
   MAX_RETENTION_DAYS,
   customerUploadSettingsIssues,
   customerUploadSettingsOf,
+  instanceCustomerUploadsEnabled,
   orderedFormats,
 } from "@/utils/customerUploads";
 
@@ -37,6 +38,12 @@ export default {
   computed: {
     settings() {
       return customerUploadSettingsOf(this.tenant);
+    },
+    /** Whether the instance has cleared customer uploads for the tenants. */
+    instanceCleared() {
+      return instanceCustomerUploadsEnabled(
+        this.$store?.getters["instance/instance"]
+      );
     },
     formatOptions() {
       return CUSTOMER_UPLOAD_FORMATS.map((format) => ({
@@ -100,9 +107,24 @@ export default {
     <p class="text-body-2 text--secondary">
       {{ $t("tenant.customerUploads.intro") }}
     </p>
+    <v-alert
+      v-if="!instanceCleared"
+      data-test="customer-uploads-instance-off"
+      type="info"
+      text
+      dense
+      class="mt-2 mb-0"
+    >
+      {{
+        settings.enabled
+          ? $t("tenant.customerUploads.instance-off-enabled")
+          : $t("tenant.customerUploads.instance-off")
+      }}
+    </v-alert>
     <v-switch
       data-test="customer-uploads-enabled"
       :input-value="settings.enabled"
+      :disabled="!instanceCleared && !settings.enabled"
       color="primary"
       :label="$t('tenant.customerUploads.enabled')"
       :hint="$t('tenant.customerUploads.enabled-hint')"

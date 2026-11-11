@@ -5,13 +5,28 @@ vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn() },
 }));
 
+import Vuex from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import { mountComponent } from "@tests/unit/support/mount";
 import TenantEditCustomerUploads from "@/components/Tenant/Edit/TenantEditCustomerUploads.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 
-const mountTab = (customerUploads) =>
+/** A store whose public instance has cleared customer uploads (or not). */
+const instanceStore = (cleared = true) =>
+  new Vuex.Store({
+    modules: {
+      instance: {
+        namespaced: true,
+        getters: {
+          instance: () => ({ customerUploads: { enabled: cleared } }),
+        },
+      },
+    },
+  });
+
+const mountTab = (customerUploads, { cleared = true } = {}) =>
   mountComponent(TenantEditCustomerUploads, {
+    store: instanceStore(cleared),
     propsData: {
       tenant: {
         id: "t",
@@ -49,6 +64,34 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
     ApiRolesService.getTenantRoles.mockResolvedValue({ data: ROLES });
   });
 
+  it("locks the switch and says why while the instance has not cleared customer uploads", () => {
+    const wrapper = mountTab(undefined, { cleared: false });
+
+    expect(find(wrapper, "customer-uploads-instance-off").text()).toContain(
+      "Die Instanz hat Nachweise von Buchenden nicht freigegeben."
+    );
+    expect(
+      find(wrapper, "customer-uploads-enabled").find("input").attributes()
+    ).toHaveProperty("disabled");
+  });
+
+  it("lets a tenant switch customer uploads off while the instance has not cleared them", () => {
+    const wrapper = mountTab(ENABLED, { cleared: false });
+
+    expect(find(wrapper, "customer-uploads-instance-off").text()).toContain(
+      "Bis zur Freigabe nimmt dieser Mandant keine Nachweise an."
+    );
+    expect(
+      find(wrapper, "customer-uploads-enabled").find("input").attributes()
+    ).not.toHaveProperty("disabled");
+  });
+
+  it("says nothing of the instance once it has cleared customer uploads", () => {
+    const wrapper = mountTab();
+
+    expect(find(wrapper, "customer-uploads-instance-off").exists()).toBe(false);
+  });
+
   it("shows only the switch while customer uploads are off", () => {
     const wrapper = mountTab();
 
@@ -74,6 +117,7 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
 
   it("is a section of the tab „Buchung“, whose form refuses a retention over 30 days", async () => {
     const wrapper = mountComponent(TenantEditBooking, {
+      store: instanceStore(),
       propsData: {
         tenant: {
           id: "t",

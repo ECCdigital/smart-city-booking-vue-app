@@ -251,7 +251,8 @@ function isSectionVisible(
  *   `BookableEdit.expertOptionShown`); without it every option shows.
  *   `accessPoints` are the tenant's: what ParkraumService takes over and
  *   where its settings show depend on its assigned locker system.
- *   `customerUploadsEnabled` is the tenant's switch for customer uploads.
+ *   `customerUploadsEnabled`: customer uploads hold for the tenant, switched
+ *   on by it and cleared by the instance.
  * @returns {Array<object>}
  */
 export function getVisibleBookableEditSections(tabKey, ctx) {

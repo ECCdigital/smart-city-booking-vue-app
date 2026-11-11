@@ -52,17 +52,76 @@ export function customerUploadSettingsOf(tenant) {
   };
 }
 
-/** Whether the tenant has customer uploads enabled. */
-export function customerUploadsEnabled(tenant) {
-  return tenant?.customerUploads?.enabled === true;
+/** Whether the instance has cleared customer uploads for the tenants. */
+export function instanceCustomerUploadsEnabled(instance) {
+  return instance?.customerUploads?.enabled === true;
 }
 
-/** The instance limits, from the public instance. */
+/**
+ * Whether customer uploads hold for the tenant: switched on by the tenant
+ * and cleared by the instance.
+ */
+export function customerUploadsEnabled(tenant, instance) {
+  return (
+    tenant?.customerUploads?.enabled === true &&
+    instanceCustomerUploadsEnabled(instance)
+  );
+}
+
+/** The instance limits as they hold, from the public instance. */
 export function customerUploadLimitsOf(instance) {
   return {
     ...DEFAULT_CUSTOMER_UPLOAD_LIMITS,
     ...(instance?.customerUploadLimits || {}),
   };
+}
+
+/**
+ * The ceilings of the server (environment variables), from the public
+ * instance: the instance sets its limits below them, never above.
+ */
+export function customerUploadCeilingsOf(instance) {
+  return {
+    ...DEFAULT_CUSTOMER_UPLOAD_LIMITS,
+    ...(instance?.customerUploadCeilings || {}),
+  };
+}
+
+/** The limits the instance may set, in the order of the form. */
+export const INSTANCE_CUSTOMER_UPLOAD_LIMITS = Object.freeze([
+  "maxFileSizeMb",
+  "maxFilesPerBooking",
+  "maxTotalSizeMbPerBooking",
+]);
+
+/**
+ * The instance's settings, complete: what it stores over the defaults -
+ * off, and no limit of its own (`null`: the ceiling).
+ */
+export function instanceCustomerUploadsOf(instance) {
+  return {
+    enabled: false,
+    maxFileSizeMb: null,
+    maxFilesPerBooking: null,
+    maxTotalSizeMbPerBooking: null,
+    ...(instance?.customerUploads || {}),
+  };
+}
+
+/**
+ * Why the instance's settings would be refused, as keys of the German
+ * catalogue by limit; empty while they are fine. A limit is empty or a
+ * whole number from 1 up to its ceiling.
+ */
+export function instanceCustomerUploadsIssues(settings, ceilings) {
+  const issues = {};
+  for (const name of INSTANCE_CUSTOMER_UPLOAD_LIMITS) {
+    const value = settings[name];
+    if (isFilled(value) && !isWholeNumberIn(value, 1, ceilings[name])) {
+      issues[name] = "instance.edit.customerUploads.validation.limit";
+    }
+  }
+  return issues;
 }
 
 /** `formats` in the order of `CUSTOMER_UPLOAD_FORMATS`, without doubles. */

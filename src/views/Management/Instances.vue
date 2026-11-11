@@ -440,6 +440,18 @@ export default {
         child.showApiErrors([{ field: data.params.field, code: data.code }]);
       }
     },
+    /**
+     * The public instance in the store anew, so the rest of the Admin UI
+     * sees what was saved (the clearance of customer uploads, its limits).
+     */
+    async refreshPublicInstance() {
+      try {
+        const publicInstance = await ApiInstanceService.getPublicInstance();
+        await this.$store.dispatch("instance/update", publicInstance);
+      } catch (error) {
+        console.error("Could not reload the public instance", error);
+      }
+    },
     /** Tells the open tab that its values are saved, if it wants to know. */
     notifySaved() {
       const child = this.$refs.activeChild;
@@ -468,6 +480,7 @@ export default {
           catalog: this.catalog,
         });
         this.notifySaved();
+        await this.refreshPublicInstance();
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",
           type: "success",
