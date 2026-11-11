@@ -121,6 +121,15 @@ export default {
         <span class="text-h5">{{
           $t("accessPoint.booking.reassign.title")
         }}</span>
+        <v-spacer />
+        <v-btn
+          icon
+          data-test="reassign-close"
+          :disabled="saving"
+          @click="$emit('close')"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
@@ -181,6 +190,7 @@ export default {
           :disabled="!chosen || loading"
           @click="confirm"
         >
+          <v-icon left small>mdi-swap-horizontal</v-icon>
           {{ $t("accessPoint.booking.reassign.confirm") }}
         </v-btn>
       </v-card-actions>
