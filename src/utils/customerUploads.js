@@ -17,7 +17,6 @@ export const UPLOAD_FIELD_TIMINGS = Object.freeze([
 /** Biletado keeps a customer upload at most this long after the booking. */
 export const MAX_RETENTION_DAYS = 30;
 export const MIN_FILES_PER_FIELD = 1;
-export const MAX_FILES_PER_FIELD = 5;
 
 /** The instance limits when the instance does not name them. */
 export const DEFAULT_CUSTOMER_UPLOAD_LIMITS = Object.freeze({
@@ -141,12 +140,10 @@ function newId() {
 
 /**
  * A new upload field: its stable id, one file, every format the tenant
- * allows, the size limit of the instance, uploaded in the checkout.
+ * allows, no size of its own (the instance's limit holds), uploaded in the
+ * checkout.
  */
-export function newUploadField(
-  tenantFormats = CUSTOMER_UPLOAD_FORMATS,
-  maxFileSizeMb = null
-) {
+export function newUploadField(tenantFormats = CUSTOMER_UPLOAD_FORMATS) {
   return {
     id: newId(),
     label: "",
@@ -155,7 +152,7 @@ export function newUploadField(
     required: false,
     maxFiles: MIN_FILES_PER_FIELD,
     formats: orderedFormats(tenantFormats),
-    maxFileSizeMb,
+    maxFileSizeMb: null,
     category: "normal",
     timing: "checkout",
     deadlineDaysBeforeStart: null,
@@ -202,36 +199,25 @@ export function customerUploadSettingsIssues(settings) {
 
 /**
  * Why an upload field would be refused, as keys of the German catalogue by
- * property; empty while it is fine.
+ * property; empty while it is fine. The number of files and the size per
+ * file are not set in the dialog: a field takes one file, under the
+ * instance's limits.
  *
  * @param {Object} field
- * @param {{tenantFormats: string[], maxFileSizeMb: number}} context
+ * @param {{tenantFormats: string[]}} context
  */
-export function uploadFieldIssues(field, { tenantFormats, maxFileSizeMb }) {
+export function uploadFieldIssues(field, { tenantFormats }) {
   const issues = {};
   const key = (name) => `bookable.uploadFields.validation.${name}`;
 
   if (!String(field.label ?? "").trim()) {
     issues.label = key("label");
   }
-  if (
-    !isWholeNumberIn(field.maxFiles, MIN_FILES_PER_FIELD, MAX_FILES_PER_FIELD)
-  ) {
-    issues.maxFiles = key("maxFiles");
-  }
   const formats = field.formats || [];
   if (!formats.length) {
     issues.formats = key("formatsEmpty");
   } else if (formats.some((format) => !tenantFormats.includes(format))) {
     issues.formats = key("formatsOutsideTenant");
-  }
-  if (isFilled(field.maxFileSizeMb)) {
-    const size = Number(field.maxFileSizeMb);
-    if (!Number.isFinite(size) || size <= 0) {
-      issues.maxFileSizeMb = key("maxFileSize");
-    } else if (size > maxFileSizeMb) {
-      issues.maxFileSizeMb = key("maxFileSizeAboveInstance");
-    }
   }
   if (
     field.timing === "afterConfirmation" &&

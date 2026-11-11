@@ -1,8 +1,6 @@
 <script>
 import AppDialog from "@/components/commons/AppDialog.vue";
 import {
-  MAX_FILES_PER_FIELD,
-  MIN_FILES_PER_FIELD,
   UPLOAD_FIELD_CATEGORIES,
   UPLOAD_FIELD_TIMINGS,
   newUploadField,
@@ -26,11 +24,10 @@ export default {
     /** The field to edit, or null for a new one. */
     field: { type: Object, default: null },
     tenantFormats: { type: Array, required: true },
-    limits: { type: Object, required: true },
   },
   data() {
     return {
-      local: newUploadField(this.tenantFormats, this.limits.maxFileSizeMb),
+      local: newUploadField(this.tenantFormats),
       sensitiveHint: false,
     };
   },
@@ -41,7 +38,6 @@ export default {
     issues() {
       return uploadFieldIssues(this.local, {
         tenantFormats: this.tenantFormats,
-        maxFileSizeMb: this.limits.maxFileSizeMb,
       });
     },
     canSave() {
@@ -68,12 +64,6 @@ export default {
     sensitiveHintShown() {
       return this.sensitiveHint || this.local.category === "sensitive";
     },
-    minFiles() {
-      return MIN_FILES_PER_FIELD;
-    },
-    maxFiles() {
-      return MAX_FILES_PER_FIELD;
-    },
   },
   watch: {
     open: {
@@ -82,7 +72,7 @@ export default {
         if (!open) return;
         this.local = this.field
           ? JSON.parse(JSON.stringify(this.field))
-          : newUploadField(this.tenantFormats, this.limits.maxFileSizeMb);
+          : newUploadField(this.tenantFormats);
         this.sensitiveHint = false;
       },
     },
@@ -92,13 +82,7 @@ export default {
       return [
         () => {
           const key = this.issues[name];
-          return key
-            ? this.$t(key, {
-                min: MIN_FILES_PER_FIELD,
-                max: MAX_FILES_PER_FIELD,
-                maxSize: this.limits.maxFileSizeMb,
-              })
-            : true;
+          return key ? this.$t(key) : true;
         },
       ];
     },
@@ -182,54 +166,6 @@ export default {
         </div>
       </template>
     </v-switch>
-
-    <v-row class="mt-3">
-      <v-col cols="12" sm="6">
-        <v-text-field
-          data-test="upload-field-max-files"
-          :value="local.maxFiles"
-          :label="$t('bookable.uploadFields.maxFiles')"
-          :hint="
-            $t('bookable.uploadFields.maxFiles-hint', {
-              min: minFiles,
-              max: maxFiles,
-            })
-          "
-          persistent-hint
-          type="number"
-          :min="minFiles"
-          :max="maxFiles"
-          :rules="rule('maxFiles')"
-          background-color="accent"
-          filled
-          dense
-          @input="setNumber('maxFiles', $event)"
-        />
-      </v-col>
-      <v-col cols="12" sm="6">
-        <v-text-field
-          data-test="upload-field-max-size"
-          :value="local.maxFileSizeMb"
-          :label="$t('bookable.uploadFields.maxFileSize')"
-          :hint="
-            $t('bookable.uploadFields.maxFileSize-hint', {
-              max: limits.maxFileSizeMb,
-            })
-          "
-          :placeholder="String(limits.maxFileSizeMb)"
-          persistent-hint
-          suffix="MB"
-          type="number"
-          min="0"
-          :max="limits.maxFileSizeMb"
-          :rules="rule('maxFileSizeMb')"
-          background-color="accent"
-          filled
-          dense
-          @input="setNumber('maxFileSizeMb', $event)"
-        />
-      </v-col>
-    </v-row>
 
     <div class="text-subtitle-2 mt-4 mb-1">
       {{ $t("bookable.uploadFields.formats") }}

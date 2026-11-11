@@ -231,14 +231,10 @@
       "remove-text": "Das Upload-Feld „{label}“ wird entfernt. Vermerke zu bereits eingereichten Nachweisen an Buchungen bleiben lesbar.",
       "label": "Bezeichnung",
       "hint": "Beschreibung",
-      "hint-hint": "Beschreiben Sie für Buchende, was sie hochladen sollen.",
+      "hint-hint": "Beschreiben Sie für Buchende, was sie hochladen sollen. Der Hinweis erscheint unter dem Titel am Upload-Feld.",
       "required": "Pflicht",
       "required-label": "Pflicht-Nachweis",
       "required-hint": "Ein Pflicht-Nachweis gilt als Voraussetzung für die Buchung. Nur in dem Fall werden Nachweise als „fehlend“ oder „überfällig“ markiert.",
-      "maxFiles": "Maximale Datei-Anzahl",
-      "maxFiles-hint": "{min} bis {max}, z.B. 2 für Vorder- und Rückseite eines Dokuments",
-      "maxFileSize": "Maximale Größe pro Datei",
-      "maxFileSize-hint": "maximal {max} MB",
       "formats": "Zulässige Formate",
       "category": "Kategorie",
       "categories": {
@@ -256,11 +252,8 @@
       "deadline-hint": "Legen Sie fest, bis wann der Nachweis eingereicht werden soll. Ohne Angabe gilt der Buchungsbeginn als Frist.",
       "validation": {
         "label": "Geben Sie eine Bezeichnung an.",
-        "maxFiles": "Geben Sie {min} bis {max} Dateien an.",
         "formatsEmpty": "Wählen Sie mindestens ein Format.",
         "formatsOutsideTenant": "Der Mandant erlaubt nicht alle gewählten Formate.",
-        "maxFileSize": "Geben Sie eine Größe über 0 MB an.",
-        "maxFileSizeAboveInstance": "Höchstens {maxSize} MB, die Grenze der Instanz.",
         "deadline": "Geben Sie eine ganze Zahl von Tagen ab 0 an."
       }
     },

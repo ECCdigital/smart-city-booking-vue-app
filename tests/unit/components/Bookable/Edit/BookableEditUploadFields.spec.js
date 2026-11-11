@@ -108,7 +108,7 @@ describe("BookableEditUploadFields (Upload-Felder)", () => {
     expect(added).toMatchObject({
       label: "Sozialpass",
       maxFiles: 1,
-      maxFileSizeMb: 10,
+      maxFileSizeMb: null,
       formats: ["pdf", "jpeg"],
       category: "normal",
       timing: "checkout",
@@ -117,18 +117,19 @@ describe("BookableEditUploadFields (Upload-Felder)", () => {
     expect(bookable).toEqual(stored);
   });
 
-  it("fills in the size limit of the instance for a new field", async () => {
-    const { wrapper } = mountArea([], {
-      limits: {
-        maxFileSizeMb: 8,
-        maxFilesPerBooking: 20,
-        maxTotalSizeMbPerBooking: 100,
-      },
-    });
+  it("asks neither the number of files nor the size per file", async () => {
+    const { wrapper } = mountArea();
 
     await find(wrapper, "upload-field-add").trigger("click");
 
-    expect(inDialog("upload-field-max-size").value).toBe("8");
+    expect(
+      activeDialog().querySelector("[data-test='upload-field-max-files']")
+    ).toBe(null);
+    expect(
+      activeDialog().querySelector("[data-test='upload-field-max-size']")
+    ).toBe(null);
+    expect(activeDialogText()).not.toContain("Maximale Datei-Anzahl");
+    expect(activeDialogText()).not.toContain("Maximale Größe pro Datei");
   });
 
   it("names what a required upload means right under the label of its switch", async () => {

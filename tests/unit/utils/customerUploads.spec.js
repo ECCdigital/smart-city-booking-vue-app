@@ -39,7 +39,7 @@ import {
   precheckGroupCheckoutUpload,
 } from "@/utils/customerUploads";
 
-const CONTEXT = { tenantFormats: ["pdf", "png"], maxFileSizeMb: 10 };
+const CONTEXT = { tenantFormats: ["pdf", "png"] };
 const field = (overrides = {}) => ({
   ...newUploadField(["pdf"]),
   label: "Vereinsausweis",
@@ -130,9 +130,7 @@ describe("customerUploads - an upload field", () => {
       uploadFieldIssues(
         field({
           required: true,
-          maxFiles: 5,
           formats: ["pdf", "png"],
-          maxFileSizeMb: 10,
           category: "sensitive",
           timing: "afterConfirmation",
           deadlineDaysBeforeStart: 3,
@@ -147,9 +145,7 @@ describe("customerUploads - an upload field", () => {
       uploadFieldIssues(
         field({
           label: " ",
-          maxFiles: 6,
           formats: ["jpeg"],
-          maxFileSizeMb: 11,
           timing: "afterConfirmation",
           deadlineDaysBeforeStart: -1,
         }),
@@ -157,21 +153,28 @@ describe("customerUploads - an upload field", () => {
       )
     ).toEqual({
       label: "bookable.uploadFields.validation.label",
-      maxFiles: "bookable.uploadFields.validation.maxFiles",
       formats: "bookable.uploadFields.validation.formatsOutsideTenant",
-      maxFileSizeMb:
-        "bookable.uploadFields.validation.maxFileSizeAboveInstance",
       deadlineDaysBeforeStart: "bookable.uploadFields.validation.deadline",
     });
   });
 
-  it("needs a format and at least one file", () => {
-    expect(
-      uploadFieldIssues(field({ formats: [], maxFiles: 0 }), CONTEXT)
-    ).toEqual({
+  it("needs a format", () => {
+    expect(uploadFieldIssues(field({ formats: [] }), CONTEXT)).toEqual({
       formats: "bookable.uploadFields.validation.formatsEmpty",
-      maxFiles: "bookable.uploadFields.validation.maxFiles",
     });
+  });
+
+  it("starts with one file and no size of its own: the instance's limit holds", () => {
+    expect(newUploadField()).toMatchObject({
+      maxFiles: 1,
+      maxFileSizeMb: null,
+    });
+  });
+
+  it("asks neither number of files nor size per file", () => {
+    expect(
+      uploadFieldIssues(field({ maxFiles: 0, maxFileSizeMb: 999 }), CONTEXT)
+    ).toEqual({});
   });
 });
 

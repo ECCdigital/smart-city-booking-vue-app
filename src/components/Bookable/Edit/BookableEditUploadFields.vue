@@ -226,7 +226,6 @@ export default {
       :open="dialogOpen"
       :field="editingField"
       :tenant-formats="tenantFormats"
-      :limits="limits"
       @save="onSave"
       @close="closeDialog"
     />
