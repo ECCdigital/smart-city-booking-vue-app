@@ -501,6 +501,28 @@ describe("BookingEdit", () => {
       expect(wrapper.emitted("saved")).toHaveLength(1);
     });
 
+    it("says „Kein Fach frei“ when the change finds no free Fach, and keeps the form as entered without a reload", async () => {
+      const { wrapper, store } = await mountEdit();
+      saveFails(
+        lifecycleError(409, "compartments_unavailable", {
+          bookableId: "room-1",
+          accessPointId: "anlage-1",
+          needed: 1,
+          free: 0,
+        })
+      );
+
+      await submit(wrapper);
+
+      expect(lastToast(store)).toMatchObject({
+        type: "error",
+        title: "Fehler beim Bearbeiten",
+        message: "Kein Fach frei",
+      });
+      expect(wrapper.emitted("reload")).toBeUndefined();
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
     it("names a refused update as a toast only and asks for a reload on a 409", async () => {
       const { wrapper, store } = await mountEdit();
       saveFails(

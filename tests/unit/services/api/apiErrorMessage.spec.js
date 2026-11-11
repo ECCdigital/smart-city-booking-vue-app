@@ -698,6 +698,12 @@ describe("shouldRefetch", () => {
     expect(shouldRefetch({ response: { status: 409 } })).toBe(true);
   });
 
+  it("is false after a 409 compartments_unavailable: no Fach was free, the stored booking is as it was", () => {
+    expect(shouldRefetch(lifecycleError(409, "compartments_unavailable"))).toBe(
+      false
+    );
+  });
+
   it("is true after a 404", () => {
     expect(shouldRefetch(lifecycleError(404, "booking_not_found"))).toBe(true);
   });
