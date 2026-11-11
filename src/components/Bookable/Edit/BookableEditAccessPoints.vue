@@ -4,6 +4,7 @@ import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  accessPointTypeName,
   isLockerAccessPoint,
 } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
@@ -28,6 +29,7 @@ function toRow(accessPoint) {
     externalId: accessPoint.externalId || "",
     provider: accessPoint.provider || "",
     isLocker: isLockerAccessPoint(accessPoint),
+    typeName: accessPointTypeName(accessPoint),
     typeLabel,
     subtitle: [typeLabel, accessPoint.provider, accessPoint.externalId]
       .filter(Boolean)
@@ -170,9 +172,13 @@ export default {
      * compartment per unit the booking books (`bookableItem.amount`) - never
      * the bookable's `amount`, which is the capacity the concurrent bookings
      * are counted against. A door is not handed out at all; it is shared for
-     * the booking period.
+     * the booking period - and so is a fixed Open Locker compartment, which
+     * the sentence calls by its own name, a „Fach“ (ECCdigital/tickets#1036).
+     * A type name without a sentence of its own takes that of its type.
      */
     grantText(row) {
+      const key = `accessPoint.bookable.grants.${row.typeName}`;
+      if (this.$te(key)) return this.$t(key);
       return row.isLocker
         ? this.$t("accessPoint.bookable.grants.locker")
         : this.$t("accessPoint.bookable.grants.door");

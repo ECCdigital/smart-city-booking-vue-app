@@ -2882,12 +2882,15 @@
         "typeFilter": "Typ",
         "filterAll": "Alle",
         "filterDoors": "Türen",
+        "filterCompartments": "Fächer",
+        "filterDoorsAndCompartments": "Türen & Fächer",
         "filterLockers": "Anlagen",
         "emptyFiltered": "Kein Zugangspunkt dieses Typs."
       },
       "types": {
         "door": "Tür",
-        "locker": "Anlage"
+        "locker": "Anlage",
+        "compartment": "Fach"
       },
       "modes": {
         "authorization": "PIN-Code",
@@ -2945,7 +2948,7 @@
         "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
+        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -3397,6 +3400,7 @@
       },
       "grants": {
         "door": "Die Tür, im Buchungszeitraum mit anderen geteilt",
+        "compartment": "Das Fach, im Buchungszeitraum mit anderen geteilt",
         "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",

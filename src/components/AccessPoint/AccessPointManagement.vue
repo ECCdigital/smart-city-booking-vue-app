@@ -16,6 +16,7 @@ import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  accessPointTypeName,
   canListAccessPoints,
   isLockerAccessPoint,
   requiresQrScan,
@@ -113,6 +114,7 @@ export default {
           ...accessPoint,
           displayLabel: accessPointLabel(accessPoint),
           typeLabel: accessPointTypeLabel(accessPoint),
+          typeName: accessPointTypeName(accessPoint),
           isLocker,
           // Where the row comes from - derived, since nothing stores it: a
           // locker system of a provider that lists access points is taken
@@ -147,6 +149,21 @@ export default {
       }
       return this.items;
     },
+    // The filter for doors holds every access point that is not a locker
+    // system - an Open Locker compartment too, which is a door by type but a
+    // Fach on site (ECCdigital/tickets#1036). So it is named by what it
+    // holds: „Türen“, „Fächer“ or both, and „Türen“ while it holds nothing.
+    doorFilterLabel() {
+      const names = new Set(
+        this.items.filter((item) => !item.isLocker).map((item) => item.typeName)
+      );
+      if (!names.delete("compartment")) {
+        return this.$t("accessPoint.management.table.filterDoors");
+      }
+      return names.size
+        ? this.$t("accessPoint.management.table.filterDoorsAndCompartments")
+        : this.$t("accessPoint.management.table.filterCompartments");
+    },
     /** The type behind the funnel: all, doors or lockers. */
     filterSections() {
       return [
@@ -164,7 +181,7 @@ export default {
             },
             {
               value: TYPE_FILTER.door,
-              label: this.$t("accessPoint.management.table.filterDoors"),
+              label: this.doorFilterLabel,
             },
             {
               value: TYPE_FILTER.locker,
