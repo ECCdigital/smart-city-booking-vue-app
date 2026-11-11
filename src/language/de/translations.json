@@ -169,7 +169,6 @@
       "customer_upload_formats_empty": "Wählen Sie für Nachweise mindestens ein Format.",
       "customer_upload_retention_out_of_range": "Die Löschfrist für Nachweise ist höchstens {max} Tage.",
       "customer_upload_reminder_out_of_range": "Die Erinnerung an Buchende vor der Einreichfrist muss eine ganze Zahl von Tagen ab 0 sein.",
-      "customer_upload_review_reminder_out_of_range": "Die Erinnerung an Admins vor dem Löschen ist höchstens {max} Tage.",
       "upload_field_invalid": "Ein Upload-Feld ist ungültig.",
       "upload_field_duplicate_id": "Zwei Upload-Felder haben dieselbe Id.",
       "upload_field_label_required": "Jedes Upload-Feld braucht eine Bezeichnung.",
@@ -1388,13 +1387,23 @@
         "title": "Nachweise von Buchenden",
         "intro": "Geben Sie frei, dass bei einer Buchung oder nach Freigabe der Buchung von den Buchenden Nachweise hochgeladen werden können. Nach Aktivierung der Funktion kann jeder Mandant die Nachweise für sich freischalten und für seine Buchungsobjekte Upload-Felder definieren.",
         "enabled": "Funktion zum Upload von Nachweisen für Mandanten freigeben",
-        "enabled-hint": "Ohne Freigabe nimmt kein Mandant Nachweise an, auch wenn er sie freigeschaltet hat. Bereits hochgeladene Nachweise werden weiter fristgerecht gelöscht.",
+        "enabled-hint": "Ohne Freigabe nimmt kein Mandant Nachweise an, auch wenn er sie freigeschaltet hat. Bereits hochgeladene, besonders schutzwürdige Nachweise werden weiter fristgerecht gelöscht.",
         "limits": "Grenzen",
         "limits-hint": "Legen Sie Begrenzungen für alle Mandanten fest. Ohne Angabe wird die angegebene Maximalgrenze genutzt.",
         "maxFileSizeMb": "Maximale Dateigröße",
         "maxFilesPerBooking": "Max. Anzahl je Buchung",
         "maxTotalSizeMbPerBooking": "Max. Gesamtgröße je Buchung",
         "limit-hint": "Maximalgrenze: {max}",
+        "deletion": {
+          "title": "So werden Nachweise gelöscht",
+          "normal": "Normale Nachweise bleiben auch nach der Prüfung bei der Buchung gespeichert und können heruntergeladen werden. Sie werden erst mit der Buchung gelöscht.",
+          "sensitive": "Besonders schutzwürdige Nachweise, etwa Ausweise oder Gesundheitsdaten, werden sofort gelöscht, sobald sie akzeptiert oder abgelehnt sind. Ungeprüfte löscht das System nach der Löschfrist, die jeder Mandant festlegt (höchstens {max} Tage).",
+          "start": "Die Löschfrist beginnt:",
+          "start-ticket": "bei Tickets mit dem Ende der Veranstaltung,",
+          "start-booking": "sonst mit dem Ende der Buchungszeit,",
+          "start-upload": "bei Buchungen ohne Buchungszeit mit dem Upload.",
+          "cancelled": "Wird eine Buchung vorher storniert, zurückgezogen oder abgelehnt, beginnt die Frist schon dann."
+        },
         "validation": {
           "limit": "Geben Sie eine ganze Zahl von 1 bis {max} an oder lassen Sie das Feld leer."
         }
@@ -1416,11 +1425,9 @@
         "jpeg": "JPEG",
         "png": "PNG"
       },
-      "retentionDays": "Löschfrist nach Buchungsende",
-      "retentionDays-hint": "Spätestens dann löscht das System jeden Nachweis. Höchstens {max} Tage, Sie können die Frist nur verkürzen.",
+      "retentionDays": "Löschfrist für besonders schutzwürdige Nachweise",
+      "retentionDays-hint": "So viele Tage nach dem Ende der Buchung löscht das System ungeprüfte, besonders schutzwürdige Nachweise. Bei Tickets zählt das Ende der Veranstaltung, ohne Buchungszeit der Upload. Höchstens {max} Tage. Normale Nachweise bleiben bei der Buchung.",
       "days": "Tage",
-      "reviewReminderDays": "Erinnerung an Admins vor dem Löschen",
-      "reviewReminderDays-hint": "So viele Tage vor dem automatischen Löschen erinnert eine E-Mail die Admins an Nachweise, die noch nicht geprüft sind.",
       "reminderDays": "Erinnerung an Buchende vor der Einreichfrist",
       "reminderDays-hint": "So viele Tage vor der Einreichfrist erinnert eine E-Mail die Buchenden an einen fehlenden Pflicht-Nachweis.",
       "notifyOnSubmitted": "E-Mail „Nachweis eingereicht“",
@@ -1433,8 +1440,7 @@
       "validation": {
         "formats": "Wählen Sie mindestens ein Format.",
         "retentionDays": "Geben Sie 0 bis 30 Tage an.",
-        "reminderDays": "Geben Sie eine ganze Zahl von Tagen ab 0 an.",
-        "reviewReminderDays": "Geben Sie 0 bis 30 Tage an."
+        "reminderDays": "Geben Sie eine ganze Zahl von Tagen ab 0 an."
       }
     },
     "reports": {
@@ -2327,8 +2333,6 @@
           "accepted": "Akzeptiert",
           "rejected": "Abgelehnt",
           "submitted": "Nicht geprüft",
-          "by": "{name} · {date} · {deleted}",
-          "at": "{date} · {deleted}",
           "deleted": "Datei gelöscht",
           "deleted-auto": "Datei automatisch gelöscht",
           "reason": "Grund: {reason}"
@@ -2349,14 +2353,16 @@
             "title": "Nachweis akzeptieren",
             "text": "„{file}“ als Nachweis für „{field}“ akzeptieren?",
             "submit": "Akzeptieren",
-            "done": "Nachweis akzeptiert, Datei gelöscht"
+            "done": "Nachweis akzeptiert",
+            "done-deleted": "Nachweis akzeptiert, Datei gelöscht"
           },
           "rejected": {
             "title": "Nachweis ablehnen",
             "text": "„{file}“ als Nachweis für „{field}“ ablehnen?",
             "consequence": "Eine E-Mail mit der Begründung wird an den Buchenden gesendet. Danach ist ein erneuter Upload möglich.",
             "submit": "Ablehnen",
-            "done": "Nachweis abgelehnt, Datei gelöscht"
+            "done": "Nachweis abgelehnt",
+            "done-deleted": "Nachweis abgelehnt, Datei gelöscht"
           },
           "requestAgain": {
             "title": "Nachweis erneut anfordern",

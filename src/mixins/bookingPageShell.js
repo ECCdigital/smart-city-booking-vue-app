@@ -9,6 +9,7 @@ import {
   getApiErrorMessage,
   unpackBlobErrorBody,
 } from "@/services/api/apiErrorMessage";
+import { checkDeletesFile } from "@/utils/customerUploads";
 import { saveBlob } from "@/utils/fileDownload";
 import { isTenantMember } from "@/utils/tenantMembership";
 
@@ -289,8 +290,15 @@ export default {
           );
         }
         this.closeProofReview();
+        const deleted =
+          target.action !== "requestAgain" &&
+          checkDeletesFile(target.upload, target.field);
         await this.addToast({
-          title: this.$t(`booking.page.proofs.dialog.${target.action}.done`),
+          title: this.$t(
+            `booking.page.proofs.dialog.${target.action}.${
+              deleted ? "done-deleted" : "done"
+            }`
+          ),
           type: "success",
         });
         await this.reload();

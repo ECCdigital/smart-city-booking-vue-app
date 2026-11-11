@@ -9,6 +9,7 @@ import {
   missingCheckoutUploads,
   precheckCheckoutUpload,
   customerUploadLimitsOf,
+  checkDeletesFile,
   customerUploadSettingsIssues,
   customerUploadSettingsOf,
   customerUploadsEnabled,
@@ -53,7 +54,6 @@ describe("customerUploads - the tenant's settings", () => {
       formats: ["pdf", "jpeg", "png"],
       retentionDays: 30,
       reminderDaysBeforeDeadline: 3,
-      reviewReminderDaysBeforeDeletion: 3,
       notifyOnSubmitted: true,
       notifyOnOverdue: true,
       notifyRoleIds: [],
@@ -78,15 +78,20 @@ describe("customerUploads - the tenant's settings", () => {
       enabled: true,
       formats: [],
       retentionDays: 31,
-      reviewReminderDaysBeforeDeletion: 31,
     };
 
     expect(customerUploadSettingsIssues(settings)).toEqual({
       formats: "tenant.customerUploads.validation.formats",
       retentionDays: "tenant.customerUploads.validation.retentionDays",
-      reviewReminderDaysBeforeDeletion:
-        "tenant.customerUploads.validation.reviewReminderDays",
     });
+  });
+
+  it("drops the reminder before the deletion: nobody is reminded any more", () => {
+    expect(
+      customerUploadSettingsOf({
+        customerUploads: { reviewReminderDaysBeforeDeletion: 3 },
+      })
+    ).not.toHaveProperty("reviewReminderDaysBeforeDeletion");
   });
 
   it("takes a shorter retention", () => {
@@ -213,14 +218,21 @@ describe("customerUploads - the section „Nachweise“ of a booking page", () =
     ).toBe(null);
   });
 
-  it("lists each field with its uploads, a file waiting for its check downloadable", () => {
+  it("lists each field with its uploads, a file downloadable while it is stored", () => {
+    const deleted = (status) =>
+      upload(status, { review: { status, fileDeleted: true } });
     const [field] = proofFieldsOf(
       withState([
         proofField({
           uploads: [
             upload("submitted"),
-            upload("accepted"),
-            upload("rejected"),
+            // A normal file stays with the booking after its check.
+            upload("accepted", {
+              category: "normal",
+              review: { status: "accepted", fileDeleted: false },
+            }),
+            deleted("accepted"),
+            deleted("rejected"),
           ],
         }),
       ])
@@ -229,9 +241,25 @@ describe("customerUploads - the section „Nachweise“ of a booking page", () =
     expect(field.label).toBe("Vereinsausweis");
     expect(field.uploads.map((u) => u.downloadable)).toEqual([
       true,
+      true,
       false,
       false,
     ]);
+    expect(field.uploads.map((u) => u.reviewable)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("deletes the file with the check of a sensitive upload alone", () => {
+    expect(checkDeletesFile({ category: "sensitive" })).toBe(true);
+    expect(checkDeletesFile({ category: "normal" })).toBe(false);
+    expect(checkDeletesFile({}, { category: "sensitive" })).toBe(true);
+    expect(
+      checkDeletesFile({ category: "normal" }, { category: "sensitive" })
+    ).toBe(false);
   });
 
   it("keeps the category of a field, so „besonders schutzwürdig“ can be marked", () => {
@@ -342,6 +370,7 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
             reviewedAt: 5,
             reviewedByName: "Sabine Sachbearbeiterin",
             autoDeleted: false,
+            fileDeleted: true,
           },
         })
       )
@@ -351,6 +380,7 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
       reviewedAt: 5,
       reason: "Unleserlich",
       autoDeleted: false,
+      fileDeleted: true,
     });
   });
 
@@ -378,6 +408,7 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
       reviewedAt: null,
       reason: "",
       autoDeleted: true,
+      fileDeleted: true,
     });
   });
 

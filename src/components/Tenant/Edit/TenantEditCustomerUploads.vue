@@ -180,24 +180,6 @@ export default {
         </v-col>
         <v-col cols="12" md="6">
           <v-text-field
-            data-test="customer-uploads-review-reminder"
-            :value="settings.reviewReminderDaysBeforeDeletion"
-            :label="$t('tenant.customerUploads.reviewReminderDays')"
-            :hint="$t('tenant.customerUploads.reviewReminderDays-hint')"
-            persistent-hint
-            :suffix="$t('tenant.customerUploads.days')"
-            type="number"
-            min="0"
-            :max="maxRetentionDays"
-            :rules="rule('reviewReminderDaysBeforeDeletion')"
-            background-color="accent"
-            filled
-            dense
-            @input="changeNumber('reviewReminderDaysBeforeDeletion', $event)"
-          />
-        </v-col>
-        <v-col cols="12" md="6">
-          <v-text-field
             data-test="customer-uploads-reminder"
             :value="settings.reminderDaysBeforeDeadline"
             :label="$t('tenant.customerUploads.reminderDays')"

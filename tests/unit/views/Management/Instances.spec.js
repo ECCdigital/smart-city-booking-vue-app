@@ -333,6 +333,20 @@ describe("Instances: Nachweise von Buchenden in „Buchungsobjekte“", () => {
     await wrapper.vm.$nextTick();
   }
 
+  it("explains how proofs are deleted, and where the deadline starts", async () => {
+    const { wrapper } = await mountView({ tab: "bookables" });
+    const text = find(wrapper, "instance-customer-uploads-deletion").text();
+
+    expect(text).toContain("So werden Nachweise gelöscht");
+    expect(text).toContain("Normale Nachweise bleiben auch nach der Prüfung");
+    expect(text).toContain("höchstens 30 Tage");
+    expect(
+      find(wrapper, "instance-customer-uploads-deletion").findAll("li")
+    ).toHaveLength(3);
+    expect(text).toContain("bei Tickets mit dem Ende der Veranstaltung");
+    expect(text).toContain("bei Buchungen ohne Buchungszeit mit dem Upload");
+  });
+
   it("clears customer uploads for the tenants and saves the switch", async () => {
     ApiInstanceService.updateInstance.mockResolvedValue({});
     ApiCatalogService.updateCatalog.mockResolvedValue({});

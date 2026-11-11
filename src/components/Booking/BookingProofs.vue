@@ -265,22 +265,16 @@ export default {
         });
       }
       const when = note.reviewedAt ? this.formatDateTime(note.reviewedAt) : "";
-      const deleted = this.$t(
-        note.autoDeleted
-          ? "booking.page.proofs.note.deleted-auto"
-          : "booking.page.proofs.note.deleted"
-      );
-      if (note.reviewedByName) {
-        return this.$t("booking.page.proofs.note.by", {
-          name: note.reviewedByName,
-          date: when,
-          deleted,
-        });
-      }
+      // A normal file stays with the booking after its check.
+      const deleted = note.fileDeleted
+        ? this.$t(
+            note.autoDeleted
+              ? "booking.page.proofs.note.deleted-auto"
+              : "booking.page.proofs.note.deleted"
+          )
+        : "";
       // Deleted unchecked by the deletion deadline: no check, no time of it.
-      return when
-        ? this.$t("booking.page.proofs.note.at", { date: when, deleted })
-        : deleted;
+      return [note.reviewedByName, when, deleted].filter(Boolean).join(" · ");
     },
     noteReason(upload) {
       return proofNoteOf(upload)?.reason || "";

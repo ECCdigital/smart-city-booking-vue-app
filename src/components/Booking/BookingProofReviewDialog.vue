@@ -28,7 +28,7 @@
             }}
           </p>
           <div
-            v-if="deletesFile && alsoFor.length > 0"
+            v-if="isCheck && alsoFor.length > 0"
             class="booking-proof-review__also-for mb-2"
           >
             <p class="mb-1">
@@ -132,7 +132,11 @@
 
 <script>
 import FormatService from "@/services/FormatService";
-import { alsoForOf, MAX_PROOF_REASON_LENGTH } from "@/utils/customerUploads";
+import {
+  alsoForOf,
+  checkDeletesFile,
+  MAX_PROOF_REASON_LENGTH,
+} from "@/utils/customerUploads";
 
 /** "17.11.26, 10:00 – 12:00", the end with its date on another day. */
 function timeRangeOf(begin, end) {
@@ -163,8 +167,8 @@ const COLORS = {
 
 /**
  * The dialog before a check of a customer upload or „Erneut anfordern“.
- * Accepting and rejecting say „Die Datei wird
- * danach gelöscht.“; a rejection and a new request need a reason, which
+ * Accepting and rejecting a sensitive upload say „Die Datei wird
+ * danach gelöscht.“ - a normal file stays; a rejection and a new request need a reason, which
  * the customer reads in their mail. Emits `submit` with the reason; the
  * page sends it and closes the dialog.
  *
@@ -214,8 +218,15 @@ export default {
     needsReason() {
       return this.action === "rejected" || this.action === "requestAgain";
     },
-    deletesFile() {
+    isCheck() {
       return this.action === "accepted" || this.action === "rejected";
+    },
+    /** Only the check of a sensitive upload deletes its file. */
+    deletesFile() {
+      return (
+        this.isCheck &&
+        checkDeletesFile(this.target?.upload, this.target?.field)
+      );
     },
     /** The other bookings of the series the upload counts for. */
     alsoFor() {

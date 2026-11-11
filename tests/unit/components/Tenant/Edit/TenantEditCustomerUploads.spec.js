@@ -42,7 +42,6 @@ const ENABLED = {
   formats: ["pdf", "jpeg", "png"],
   retentionDays: 30,
   reminderDaysBeforeDeadline: 3,
-  reviewReminderDaysBeforeDeletion: 3,
   notifyOnSubmitted: true,
   notifyOnOverdue: true,
   notifyRoleIds: [],
@@ -144,14 +143,24 @@ describe("TenantEditCustomerUploads (Nachweise von Buchenden)", () => {
     expect(wrapper.text()).not.toContain("Nachweise von Buchenden");
   });
 
-  it("sets the reminder to the admins before the deletion", async () => {
+  it("asks no reminder to the admins before the deletion any more", () => {
     const wrapper = mountTab(ENABLED);
 
-    await find(wrapper, "customer-uploads-review-reminder").setValue("5");
-
     expect(
-      lastUpdate(wrapper).customerUploads.reviewReminderDaysBeforeDeletion
-    ).toBe(5);
+      wrapper.find("[data-test='customer-uploads-review-reminder']").exists()
+    ).toBe(false);
+    expect(wrapper.text()).not.toContain("Erinnerung an Admins");
+  });
+
+  it("names the deletion deadline as one of sensitive proofs, and where it starts", () => {
+    const wrapper = mountTab(ENABLED);
+
+    expect(wrapper.text()).toContain(
+      "Löschfrist für besonders schutzwürdige Nachweise"
+    );
+    expect(wrapper.text()).toContain(
+      "Bei Tickets zählt das Ende der Veranstaltung"
+    );
   });
 
   it("drops a format, keeping the order PDF, JPEG, PNG", async () => {

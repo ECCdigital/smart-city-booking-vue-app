@@ -33,8 +33,6 @@ export function defaultCustomerUploadSettings() {
     retentionDays: MAX_RETENTION_DAYS,
     // To the booker, before the upload deadline of a missing required upload.
     reminderDaysBeforeDeadline: 3,
-    // To the staff, before the automatic deletion of an unchecked upload.
-    reviewReminderDaysBeforeDeletion: 3,
     notifyOnSubmitted: true,
     notifyOnOverdue: true,
     // The roles whose members get „Nachweis eingereicht“ and „Nachweis
@@ -45,10 +43,13 @@ export function defaultCustomerUploadSettings() {
 
 /** The tenant's settings, complete: what it stores over the defaults. */
 export function customerUploadSettingsOf(tenant) {
-  return {
+  const settings = {
     ...defaultCustomerUploadSettings(),
     ...(tenant?.customerUploads || {}),
   };
+  // No setting any more: nobody is reminded before the deletion.
+  delete settings.reviewReminderDaysBeforeDeletion;
+  return settings;
 }
 
 /** Whether the instance has cleared customer uploads for the tenants. */
@@ -184,16 +185,6 @@ export function customerUploadSettingsIssues(settings) {
     issues.reminderDaysBeforeDeadline =
       "tenant.customerUploads.validation.reminderDays";
   }
-  if (
-    !isWholeNumberIn(
-      settings.reviewReminderDaysBeforeDeletion,
-      0,
-      MAX_RETENTION_DAYS
-    )
-  ) {
-    issues.reviewReminderDaysBeforeDeletion =
-      "tenant.customerUploads.validation.reviewReminderDays";
-  }
   return issues;
 }
 
@@ -252,11 +243,24 @@ const reviewOf = (upload) => upload.review?.status ?? "submitted";
 
 /**
  * Whether a customer upload waits for its check: not checked, and its file
- * still stored - the deletion deadline deletes an unchecked file too and
- * leaves a note.
+ * still stored - the deletion deadline deletes an unchecked sensitive file
+ * too and leaves a note.
  */
 const isWaiting = (upload) =>
   reviewOf(upload) === "submitted" && !upload.review?.fileDeleted;
+
+/**
+ * Whether the check deletes the file of a customer upload: one of a field
+ * „besonders schutzwürdig“. A normal file stays with the booking. The
+ * upload's own category counts, the field's where the backend names none.
+ *
+ * @param {Object} upload
+ * @param {Object} [field]
+ * @returns {boolean}
+ */
+export function checkDeletesFile(upload, field) {
+  return (upload?.category ?? field?.category) === "sensitive";
+}
 
 /**
  * The upload fields of a booking with their customer uploads, as the
@@ -266,8 +270,10 @@ const isWaiting = (upload) =>
  * instance owner by the special position), so a missing state is the one
  * rule here - the page asks no right of its own.
  *
- * A customer upload can be downloaded and checked while it waits for its
- * check: the check deletes the file and leaves a note at the booking.
+ * A customer upload can be checked while it waits for its check, and
+ * downloaded while its file is stored: the check leaves a note at the
+ * booking and deletes the file of a sensitive upload alone - a normal one
+ * stays with the booking.
  * A fulfilled field can be asked for again
  * („Erneut anfordern“). The fields
  * the booking no longer shows - renamed away, deleted at the offer, closed
@@ -291,8 +297,9 @@ export function proofFieldsOf(booking) {
   }
   return fields.map((field) => {
     const uploads = (field.uploads || []).map((upload) => {
+      const stored = Boolean(upload.mediaId) && !upload.review?.fileDeleted;
       const waiting = Boolean(upload.mediaId) && isWaiting(upload);
-      return { ...upload, downloadable: waiting, reviewable: waiting };
+      return { ...upload, downloadable: stored, reviewable: waiting };
     });
     return {
       ...field,
@@ -311,7 +318,8 @@ export function proofFieldsOf(booking) {
  *
  * @param {Object} upload An upload of `proofFieldsOf`
  * @returns {{result: string, reviewedByName: string, reviewedAt:
- *   number|null, reason: string, autoDeleted: boolean}|null} Null while the
+ *   number|null, reason: string, autoDeleted: boolean, fileDeleted:
+ *   boolean}|null} Null while the
  *   upload waits for its check; the result stays `submitted` for an upload
  *   the deletion deadline deleted unchecked
  */
@@ -326,6 +334,7 @@ export function proofNoteOf(upload) {
     reviewedAt: upload.review?.reviewedAt ?? null,
     reason: upload.review?.reason || "",
     autoDeleted: Boolean(upload.review?.autoDeleted),
+    fileDeleted: Boolean(upload.review?.fileDeleted),
   };
 }
 

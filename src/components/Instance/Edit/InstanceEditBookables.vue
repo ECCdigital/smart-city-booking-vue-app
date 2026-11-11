@@ -33,6 +33,42 @@
           @change="changeUploads({ enabled: !!$event })"
         />
 
+        <div
+          data-test="instance-customer-uploads-deletion"
+          class="instance-customer-uploads-deletion text-body-2 mt-6"
+        >
+          <div class="text-subtitle-2 mb-1">
+            {{ $t("instance.edit.customerUploads.deletion.title") }}
+          </div>
+          <p class="text--secondary mb-2">
+            {{ $t("instance.edit.customerUploads.deletion.normal") }}
+          </p>
+          <p class="text--secondary mb-2">
+            {{
+              $t("instance.edit.customerUploads.deletion.sensitive", {
+                max: maxRetentionDays,
+              })
+            }}
+          </p>
+          <p class="text--secondary mb-1">
+            {{ $t("instance.edit.customerUploads.deletion.start") }}
+          </p>
+          <ul class="text--secondary mb-2">
+            <li>
+              {{ $t("instance.edit.customerUploads.deletion.start-ticket") }}
+            </li>
+            <li>
+              {{ $t("instance.edit.customerUploads.deletion.start-booking") }}
+            </li>
+            <li>
+              {{ $t("instance.edit.customerUploads.deletion.start-upload") }}
+            </li>
+          </ul>
+          <p class="text--secondary mb-0">
+            {{ $t("instance.edit.customerUploads.deletion.cancelled") }}
+          </p>
+        </div>
+
         <template v-if="customerUploads.enabled">
           <div class="text-subtitle-2 mt-6 mb-1">
             {{ $t("instance.edit.customerUploads.limits") }}
@@ -82,6 +118,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import SubSection from "@/components/commons/SubSection.vue";
 import CustomFieldList from "@/components/CustomFields/CustomFieldList.vue";
 import {
+  MAX_RETENTION_DAYS,
   customerUploadCeilingsOf,
   instanceCustomerUploadsIssues,
   instanceCustomerUploadsOf,
@@ -108,6 +145,9 @@ export default {
     },
     issues() {
       return instanceCustomerUploadsIssues(this.customerUploads, this.ceilings);
+    },
+    maxRetentionDays() {
+      return MAX_RETENTION_DAYS;
     },
     limitFields() {
       return [
