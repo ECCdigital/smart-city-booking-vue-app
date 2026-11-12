@@ -3026,6 +3026,20 @@
         "reprint": "Neuen QR-Code drucken:",
         "error": "Der Scan-Code konnte nicht rotiert werden."
       },
+      "compartmentQr": {
+        "action": "QR-Codes der Fächer",
+        "menu": "QR-Codes der Fächer …",
+        "title": "QR-Codes der Fächer",
+        "subtitle": "{label} · 1 Fach | {label} · {count} Fächer",
+        "columns": {
+          "compartment": "Fach",
+          "state": "Zustand",
+          "qr": "QR-Code"
+        },
+        "inService": "in Betrieb",
+        "pdfTitle": "QR-Code drucken (PDF, A4)",
+        "empty": "Diese Schließfachanlage hat noch keine Fächer."
+      },
       "delete": {
         "action": "Löschen",
         "title": "Zugangspunkt löschen",
