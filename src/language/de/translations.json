@@ -2989,11 +2989,13 @@
         "qrScan": "QR-Scan erforderlich",
         "qrScanShort": "QR-Scan",
         "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
+        "qrScanHintAnlage": "Gilt für alle Fächer der Anlage: Ein Fach öffnet sich nur, wenn sein eigener QR-Code vor Ort gescannt wurde.",
         "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
         "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen.",
         "required": "erforderlich",
         "notRequired": "nicht nötig",
-        "notApplicable": "entfällt"
+        "notApplicable": "entfällt",
+        "forAllCompartments": "für alle Fächer"
       },
       "location": {
         "title": "Standort",
