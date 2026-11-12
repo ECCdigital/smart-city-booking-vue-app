@@ -1,8 +1,8 @@
 <script>
 import { mapGetters } from "vuex";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import accessPointRequest from "@/mixins/accessPointRequest";
 import { downloadCompartmentQrSheet } from "@/utilities/access-point-qr";
-import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { accessPointLabel, requiresQrScan } from "@/utilities/access-points";
 
 /**
@@ -16,6 +16,7 @@ import { accessPointLabel, requiresQrScan } from "@/utilities/access-points";
  */
 export default {
   name: "AccessPointCompartmentRotateAllDialog",
+  mixins: [accessPointRequest],
   props: {
     open: { type: Boolean, default: false },
     accessPoint: { type: Object, default: null },
@@ -26,7 +27,6 @@ export default {
       rotating: false,
       rotated: false,
       downloading: false,
-      error: "",
     };
   },
   computed: {
@@ -55,38 +55,28 @@ export default {
     },
   },
   methods: {
-    async rotate() {
-      this.rotating = true;
-      this.error = "";
-
-      try {
-        await ApiAccessPointService.rotateAllCompartmentScanCodes(
-          this.accessPoint.id,
-          this.tenantId
-        );
-        this.rotated = true;
-        this.$emit("rotated", this.accessPoint);
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.rotate.allError",
-        });
-      } finally {
-        this.rotating = false;
-      }
+    rotate() {
+      return this.runRequest(
+        "rotating",
+        true,
+        "accessPoint.management.rotate.allError",
+        async () => {
+          await ApiAccessPointService.rotateAllCompartmentScanCodes(
+            this.accessPoint.id,
+            this.tenantId
+          );
+          this.rotated = true;
+          this.$emit("rotated", this.accessPoint);
+        }
+      );
     },
-    async downloadSheet() {
-      this.downloading = true;
-      this.error = "";
-
-      try {
-        await downloadCompartmentQrSheet(this.accessPoint, this.tenantId);
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.qr.error",
-        });
-      } finally {
-        this.downloading = false;
-      }
+    downloadSheet() {
+      return this.runRequest(
+        "downloading",
+        true,
+        "accessPoint.management.qr.error",
+        () => downloadCompartmentQrSheet(this.accessPoint, this.tenantId)
+      );
     },
   },
 };

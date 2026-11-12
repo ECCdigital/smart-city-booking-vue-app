@@ -239,8 +239,6 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
-    // An Open Locker Anlage, whose rules apply to all its Fächer.
-    carriesOwnCompartments,
     async fetchAll() {
       if (!this.tenantId) return;
 
@@ -505,7 +503,7 @@ export default {
              the QR question does not arise for it. An Open Locker Anlage
              carries them for all its Fächer (ECCdigital/tickets#1060). -->
         <span
-          v-if="item.isLocker && !carriesOwnCompartments(item)"
+          v-if="item.isLocker && !item.hasCompartmentQr"
           class="text-caption text--secondary"
         >
           {{ $t("accessPoint.management.rules.notApplicable") }}
