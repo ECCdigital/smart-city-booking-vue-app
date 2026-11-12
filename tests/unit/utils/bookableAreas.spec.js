@@ -29,6 +29,7 @@ describe("BOOKABLE_AREAS", () => {
       "cancellation",
       "attachments",
       "customFields",
+      "uploadFields",
       "requiredFields",
       "bookingNotes",
     ]);
@@ -50,6 +51,9 @@ const USED = {
   cancellation: { cancellationPolicy: { userCancellable: false } },
   attachments: { attachments: [{ id: "a1", title: "AGB" }] },
   customFields: { customFieldValues: [{ fieldId: "f1", value: "Bühne" }] },
+  uploadFields: {
+    uploadFieldDefinitions: [{ id: "u1", label: "Vereinsausweis" }],
+  },
   requiredFields: { requiredFields: ["address", "zipCode", "city", "phone"] },
   bookingNotes: { bookingNotes: "<p>Schlüssel beim Hausmeister</p>" },
 };
@@ -113,6 +117,18 @@ describe("areaSummary", () => {
     type: "word",
     key: `bookable.areas.${key}`,
     params: undefined,
+  });
+
+  it("counts the Upload-Felder", () => {
+    const bookable = fresh({
+      uploadFieldDefinitions: [
+        { id: "u1", label: "Vereinsausweis" },
+        { id: "u2", label: "Sozialpass" },
+      ],
+    });
+    expect(areaSummary("uploadFields", bookable)).toEqual([
+      plural("uploadFields.summary", 2),
+    ]);
   });
 
   it("says nothing for an unused area", () => {
@@ -224,6 +240,16 @@ describe("areaShown", () => {
       expect(areaShown(key, () => false)).toBe(true);
     }
   );
+
+  it("shows the Upload-Felder only while the tenant has customer uploads", () => {
+    expect(areaShown("uploadFields", () => true)).toBe(false);
+    expect(
+      areaShown("uploadFields", () => true, { customerUploadsEnabled: false })
+    ).toBe(false);
+    expect(
+      areaShown("uploadFields", () => false, { customerUploadsEnabled: true })
+    ).toBe(true);
+  });
 });
 
 describe("shownAreas", () => {
@@ -231,6 +257,11 @@ describe("shownAreas", () => {
     const keys = (shown) => shownAreas(shown).map((area) => area.key);
 
     expect(keys(() => true)).toHaveLength(9);
+    expect(
+      shownAreas(() => true, { customerUploadsEnabled: true }).map(
+        (area) => area.key
+      )
+    ).toHaveLength(10);
     expect(keys((option) => option === "cancellation")).toEqual([
       "groupBooking",
       "cancellation",
@@ -248,6 +279,18 @@ describe("areaAt", () => {
     ).toBe("cancellation");
     expect(areaAt({ tabKey: "attachments", sectionId: null })).toBe(
       "attachments"
+    );
+  });
+
+  it("tells the Upload-Felder from Eigene Felder in their tab", () => {
+    expect(
+      areaAt({ tabKey: "customFields", sectionId: "customFields-uploads" })
+    ).toBe("uploadFields");
+    expect(
+      areaAt({ tabKey: "customFields", sectionId: "customFields-definitions" })
+    ).toBe("customFields");
+    expect(areaAt({ tabKey: "customFields", sectionId: null })).toBe(
+      "customFields"
     );
   });
 

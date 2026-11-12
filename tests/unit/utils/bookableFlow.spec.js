@@ -848,6 +848,18 @@ describe("overview", () => {
     ]);
   });
 
+  it("lists the Upload-Felder only while the tenant has customer uploads", () => {
+    const item = bookable({
+      requiredFields: ["address", "zipCode", "city"],
+      uploadFieldDefinitions: [{ id: "u1", label: "Vereinsausweis" }],
+    });
+
+    expect(
+      shown(blockOf("more", item, { customerUploadsEnabled: true }))
+    ).toEqual([["Upload-Felder", "1 Upload-Feld"]]);
+    expect(shown(blockOf("more", item))).toEqual([[null, "Nicht festgelegt"]]);
+  });
+
   it("says „Nicht festgelegt“ alone while no area is in use", () => {
     const item = bookable({ requiredFields: ["address", "zipCode", "city"] });
 

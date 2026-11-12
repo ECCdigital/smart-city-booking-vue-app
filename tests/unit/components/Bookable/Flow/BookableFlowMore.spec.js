@@ -30,6 +30,7 @@ const stubs = Object.fromEntries(
     "BookableEditCancellation",
     "BookableEditAttachments",
     "BookableEditCustomFields",
+    "BookableEditUploadFields",
     "BookableEditRequiredFields",
     "BookableEditBookingNotes",
   ].map((name) => [name, area(name)])
@@ -46,12 +47,21 @@ const bookable = (overrides = {}) =>
     ...overrides,
   }).toPlain();
 
-const mountMore = ({ overrides, expertMode, saved } = {}) =>
+// A tenant with customer uploads on, cleared by the instance.
+const uploadsStore = () =>
+  new Vuex.Store({
+    getters: {
+      "tenants/currentTenant": () => ({ customerUploads: { enabled: true } }),
+      "instance/instance": () => ({ customerUploads: { enabled: true } }),
+    },
+  });
+
+const mountMore = ({ overrides, expertMode, saved, uploads = false } = {}) =>
   mountEditing(BookableFlowMore, {
     bookable: bookable(overrides),
     expertMode,
     saved,
-    store: new Vuex.Store({}),
+    store: uploads ? uploadsStore() : new Vuex.Store({}),
     stubs,
   });
 
@@ -77,6 +87,31 @@ describe("BookableFlowMore - the step „Weitere Einstellungen“", () => {
       "requiredFields",
       "bookingNotes",
     ]);
+  });
+
+  it("adds Upload-Felder after Eigene Felder while the tenant has customer uploads", () => {
+    const { wrapper } = mountMore({ expertMode: true, uploads: true });
+    const keys = rowKeys(wrapper);
+
+    expect(keys.indexOf("uploadFields")).toBe(keys.indexOf("customFields") + 1);
+    expect(find(wrapper, "more-area-uploadFields").text()).toContain(
+      "Upload-Felder"
+    );
+  });
+
+  it("opens the Upload-Felder in use, summed up", () => {
+    const { wrapper } = mountMore({
+      expertMode: false,
+      uploads: true,
+      overrides: {
+        uploadFieldDefinitions: [{ id: "u1", label: "Vereinsausweis" }],
+      },
+    });
+
+    expect(find(wrapper, "more-area-uploadFields-state").text()).toBe(
+      "1 Upload-Feld"
+    );
+    expect(shows(wrapper, "BookableEditUploadFields")).toBe(true);
   });
 
   it("names each row by its area, with its hint and „Nicht genutzt“ while unused", () => {

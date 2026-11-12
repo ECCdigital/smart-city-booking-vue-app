@@ -686,7 +686,10 @@ export default {
     async openSection({ tabKey, sectionId }) {
       if (this.flowMode) {
         const area = areaAt({ tabKey, sectionId });
-        if (area && areaShown(area, this.expertOptionShown)) {
+        if (
+          area &&
+          areaShown(area, this.expertOptionShown, this.sectionContext)
+        ) {
           this.$refs.flow.openStep("more", area);
           return;
         }

@@ -64,22 +64,32 @@ import { areaSummary, areaUsed, shownAreas } from "@/utils/bookableAreas";
  * areas in use are open. Nothing here is required: „Weiter“ goes on.
  *
  * Without expert mode an expert area shows by the expert-mode rule, so an
- * unused one is left out (`shownAreas`).
+ * unused one is left out (`shownAreas`); the Upload-Felder show only while
+ * the tenant has customer uploads enabled.
  */
 export default {
   name: "BookableFlowMore",
   mixins: [bookableEditing],
   data() {
-    return { open: this.usedKeys() };
+    return { open: [] };
   },
   computed: {
     areas() {
-      return shownAreas(this.expertOptionShown).map((area) => ({
-        ...area,
-        ...AREA_COMPONENTS[area.key],
-        summary: areaSummary(area.key, this.bookable),
-      }));
+      return shownAreas(this.expertOptionShown, this.areaContext).map(
+        (area) => ({
+          ...area,
+          ...AREA_COMPONENTS[area.key],
+          summary: areaSummary(area.key, this.bookable),
+        })
+      );
     },
+    areaContext() {
+      return { customerUploadsEnabled: this.customerUploadsEnabled };
+    },
+  },
+  // Computed values exist only from here on, not yet in `data`.
+  created() {
+    this.open = this.usedKeys();
   },
   // Kept alive by the flow: opening the step again starts over from what
   // is in use.
@@ -88,7 +98,7 @@ export default {
   },
   methods: {
     usedKeys() {
-      return shownAreas(this.expertOptionShown)
+      return shownAreas(this.expertOptionShown, this.areaContext)
         .map((area) => area.key)
         .filter((key) => areaUsed(key, this.bookable));
     },

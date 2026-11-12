@@ -21,6 +21,7 @@ import {
 import { bookingModeNameKey, bookingModeOf } from "@/utils/bookableBookingMode";
 import {
   BOOKABLE_AREAS,
+  areaShown,
   areaSummary,
   areaUsed,
   shownAreas,
@@ -821,18 +822,19 @@ const target = (
  * on the editing page to the first area that shows, in the order of the
  * tabs, and in the flow to the step.
  */
-function moreRows(bookable, { shown }) {
-  const rows = BOOKABLE_AREAS.filter(({ key }) => areaUsed(key, bookable)).map(
-    ({ key, titleKey, tabKey, sectionId }) => ({
-      key,
-      label: titleKey,
-      value: areaSummary(key, bookable),
-      fields: AREA_FIELDS[key] || [],
-      target: target("more", { tab: tabKey, section: sectionId, area: key }),
-    })
-  );
+function moreRows(bookable, { shown, customerUploadsEnabled }) {
+  const ctx = { customerUploadsEnabled };
+  const rows = BOOKABLE_AREAS.filter(
+    ({ key }) => areaShown(key, shown, ctx) && areaUsed(key, bookable)
+  ).map(({ key, titleKey, tabKey, sectionId }) => ({
+    key,
+    label: titleKey,
+    value: areaSummary(key, bookable),
+    fields: AREA_FIELDS[key] || [],
+    target: target("more", { tab: tabKey, section: sectionId, area: key }),
+  }));
   if (rows.length) return rows;
-  const [first] = shownAreas(shown);
+  const [first] = shownAreas(shown, ctx);
   return [
     {
       key: "more",
@@ -896,7 +898,8 @@ const everyOption = () => true;
  *
  * Expert options show by `shown(option)`, the expert-mode rule as the caller
  * asks it - every option by default. What ParkraumService takes over reads
- * from the tenant's `accessPoints` (none by default: nothing). In the flow a step not `visited` yet is
+ * from the tenant's `accessPoints` (none by default: nothing). The
+ * Upload-Felder show while `customerUploadsEnabled` (off by default). In the flow a step not `visited` yet is
  * `open` and shows no rows; by default every step was. `stored` is the
  * bookable as stored (`null` for a new one), against which the location is
  * checked.
@@ -908,10 +911,16 @@ export function overviewBlocks(
     shown = everyOption,
     eventTitlesById = {},
     accessPoints = [],
+    customerUploadsEnabled = false,
     stored = null,
   } = {}
 ) {
-  const options = { shown, eventTitlesById, accessPoints };
+  const options = {
+    shown,
+    eventTitlesById,
+    accessPoints,
+    customerUploadsEnabled,
+  };
   const issues = bookableIssues(bookable, { shown, accessPoints, stored });
   const blocks = FLOW_STEPS.map((step) => {
     const rows = stepRows(step, bookable, options).map((row) => ({

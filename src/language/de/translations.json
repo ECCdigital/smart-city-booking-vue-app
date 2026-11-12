@@ -933,6 +933,11 @@
         "summaryValues": "{count} Wert gesetzt | {count} Werte gesetzt",
         "summaryDefinitions": "{count} Feld definiert | {count} Felder definiert"
       },
+      "uploadFields": {
+        "title": "Upload-Felder",
+        "hint": "Welche Nachweise Buchende zu einer Buchung hochladen.",
+        "summary": "{count} Upload-Feld | {count} Upload-Felder"
+      },
       "requiredFields": {
         "title": "Pflichtfelder",
         "hint": "Welche Kontaktangaben Buchende im Checkout machen müssen.",

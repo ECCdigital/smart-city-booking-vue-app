@@ -43,6 +43,10 @@ export const AREA_COMPONENTS = Object.freeze({
   },
   attachments: { comp: BookableEditAttachments, icon: "mdi-paperclip" },
   customFields: { comp: BookableEditCustomFields, icon: "mdi-form-textbox" },
+  uploadFields: {
+    comp: BookableEditUploadFields,
+    icon: "mdi-file-upload-outline",
+  },
   requiredFields: { comp: BookableEditRequiredFields, icon: "mdi-form-select" },
   bookingNotes: {
     comp: BookableEditBookingNotes,
@@ -202,13 +206,7 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
         sectionTarget: true,
         section: "customFields-own",
       }),
-      {
-        key: "uploadFields",
-        comp: BookableEditUploadFields,
-        titleKey: "bookable.uploadFields.title",
-        icon: "mdi-file-upload-outline",
-        section: "customFields-uploads",
-      },
+      areaCard("uploadFields"),
     ],
   },
   {
