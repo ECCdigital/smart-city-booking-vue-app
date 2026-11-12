@@ -239,6 +239,8 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    // An Open Locker Anlage, whose rules apply to all its Fächer.
+    carriesOwnCompartments,
     async fetchAll() {
       if (!this.tenantId) return;
 
@@ -499,17 +501,26 @@ export default {
       </template>
 
       <template v-slot:item.qrScanRequired="{ item }">
-        <!-- A locker system carries no validation rules, so the QR question
-             does not arise for it. -->
-        <span v-if="item.isLocker" class="text-caption text--secondary">
+        <!-- An iFBS or Pareva locker system carries no validation rules, so
+             the QR question does not arise for it. An Open Locker Anlage
+             carries them for all its Fächer (ECCdigital/tickets#1060). -->
+        <span
+          v-if="item.isLocker && !carriesOwnCompartments(item)"
+          class="text-caption text--secondary"
+        >
           {{ $t("accessPoint.management.rules.notApplicable") }}
         </span>
-        <v-chip v-else-if="item.qrScanRequired" x-small label color="primary">
-          {{ $t("accessPoint.management.rules.required") }}
-        </v-chip>
-        <v-chip v-else x-small label color="grey lighten-1">
-          {{ $t("accessPoint.management.rules.notRequired") }}
-        </v-chip>
+        <template v-else>
+          <v-chip v-if="item.qrScanRequired" x-small label color="primary">
+            {{ $t("accessPoint.management.rules.required") }}
+          </v-chip>
+          <v-chip v-else x-small label color="grey lighten-1">
+            {{ $t("accessPoint.management.rules.notRequired") }}
+          </v-chip>
+          <div v-if="item.isLocker" class="text-caption text--secondary">
+            {{ $t("accessPoint.management.rules.forAllCompartments") }}
+          </div>
+        </template>
       </template>
 
       <template v-slot:item.controls="{ item }">

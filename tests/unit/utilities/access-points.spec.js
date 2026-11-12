@@ -7,6 +7,7 @@ import {
   providerModes,
   providerRequiresScanByDefault,
   providerTypes,
+  requiresQrScan,
 } from "@/utilities/access-points";
 
 /**
@@ -68,8 +69,8 @@ describe("the modes of a provider's door", () => {
 
 /**
  * Whether a new access point demands a QR scan when it is created without
- * rules - the backend's `requiresScanByDefault`. An Open Locker compartment
- * is opened from the list, so it starts without one; every other provider,
+ * rules - the backend's `requiresScanByDefault`. An Open Locker Fach or
+ * Anlage is opened from the list, so it starts without one; every other provider,
  * and one this UI does not know, starts with the scan the server sets.
  */
 describe("whether a provider's access point starts with a QR scan", () => {
@@ -84,6 +85,46 @@ describe("whether a provider's access point starts with a QR scan", () => {
     [undefined, true],
   ])("%s: %s", (provider, scan) => {
     expect(providerRequiresScanByDefault(provider)).toBe(scan);
+  });
+});
+
+/**
+ * Whether an access point demands a QR scan, by its `qrScan` rule. An Open
+ * Locker Anlage carries the rule for all its Fächer
+ * (ECCdigital/tickets#1060); an iFBS or Pareva Anlage carries none.
+ */
+describe("whether an access point demands a QR scan", () => {
+  const ANLAGE = {
+    type: "locker",
+    provider: "open-locker",
+    config: { compartments: [] },
+  };
+
+  it.each([
+    [
+      "a door with the rule",
+      { type: "door", validationRules: [{ type: "qrScan" }] },
+      true,
+    ],
+    ["a door without", { type: "door", validationRules: [] }, false],
+    [
+      "an Open Locker Anlage with the rule",
+      { ...ANLAGE, validationRules: [{ type: "qrScan" }] },
+      true,
+    ],
+    [
+      "an Open Locker Anlage without",
+      { ...ANLAGE, validationRules: [] },
+      false,
+    ],
+    [
+      "an iFBS Anlage",
+      { type: "locker", provider: "ifbs", validationRules: [] },
+      false,
+    ],
+    ["nothing", null, false],
+  ])("%s", (_, accessPoint, scan) => {
+    expect(requiresQrScan(accessPoint)).toBe(scan);
   });
 });
 
