@@ -93,3 +93,22 @@ export function downloadCompartmentQrCode(
     `qr-${accessPoint.id}-fach-${compartment.id}.${format}`
   );
 }
+
+/**
+ * Download the Sammel-PDF of a Schließfachanlage that carries its own Fächer
+ * (ECCdigital/tickets#1062): the QR codes of all its Fächer on an
+ * Etikettenbogen, every Schrank on a new page. The server names the file
+ * `qr-<anlage>-alle-faecher.pdf`.
+ *
+ * @param {Object} accessPoint The Anlage
+ * @param {string} [tenant] Tenant id, defaults to the selected tenant
+ * @returns {Promise<void>} Resolves once the download has been triggered
+ * @throws The request's error, its body unpacked, as `downloadQrCode`
+ */
+export function downloadCompartmentQrSheet(accessPoint, tenant) {
+  return downloadRendered(
+    () => ApiAccessPointService.getCompartmentQrSheet(accessPoint.id, tenant),
+    "pdf",
+    `qr-${accessPoint.id}-alle-faecher.pdf`
+  );
+}

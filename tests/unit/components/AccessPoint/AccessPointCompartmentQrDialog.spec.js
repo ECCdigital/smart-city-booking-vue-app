@@ -4,7 +4,7 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
-  default: { getCompartmentQrCode: vi.fn() },
+  default: { getCompartmentQrCode: vi.fn(), getCompartmentQrSheet: vi.fn() },
 }));
 
 import AccessPointCompartmentQrDialog from "@/components/AccessPoint/AccessPointCompartmentQrDialog.vue";
@@ -168,6 +168,69 @@ describe("AccessPointCompartmentQrDialog", () => {
     const wrapper = await mountDialog();
 
     expect(card(wrapper).find("input[type='checkbox']").exists()).toBe(false);
+  });
+
+  /** „Alle drucken (Sammel-PDF)“ over the list (ECCdigital/tickets#1062). */
+  function sheetButton(wrapper) {
+    return card(wrapper).find(
+      ".compartment-qr-actions .download-compartment-qr-sheet"
+    );
+  }
+
+  it("offers „Alle drucken (Sammel-PDF)“ above the list", async () => {
+    const wrapper = await mountDialog();
+
+    expect(sheetButton(wrapper).text()).toBe("Alle drucken (Sammel-PDF)");
+    expect(sheetButton(wrapper).attributes("disabled")).toBeUndefined();
+  });
+
+  it("downloads the Sammel-PDF of all Fächer under the name the server gives", async () => {
+    ApiAccessPointService.getCompartmentQrSheet.mockResolvedValue({
+      data: "%PDF",
+      headers: {
+        "content-disposition":
+          'inline; filename="qr-fahrradgarage-sued-alle-faecher.pdf"',
+      },
+    });
+    const wrapper = await mountDialog();
+
+    await sheetButton(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(ApiAccessPointService.getCompartmentQrSheet).toHaveBeenCalledWith(
+      "ap-anlage",
+      "t1"
+    );
+    expect(saved).toEqual(["qr-fahrradgarage-sued-alle-faecher.pdf"]);
+  });
+
+  it("names the failure of the Sammel-PDF in the dialog", async () => {
+    ApiAccessPointService.getCompartmentQrSheet.mockRejectedValue(
+      blobError(500, {
+        error: "InternalError",
+        code: "internal_error",
+        statusCode: 500,
+      })
+    );
+    const wrapper = await mountDialog();
+
+    await sheetButton(wrapper).trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(saved).toEqual([]);
+    expect(card(wrapper).text()).toContain(
+      "Der QR-Code konnte nicht erzeugt werden."
+    );
+  });
+
+  it("offers no Sammel-PDF for an Anlage without Fächer", async () => {
+    const wrapper = await mountDialog({
+      ...ANLAGE,
+      config: { compartments: [] },
+    });
+
+    expect(sheetButton(wrapper).attributes("disabled")).toBe("disabled");
   });
 
   it("downloads the QR code of one Fach under the name the server gives", async () => {

@@ -3,6 +3,7 @@ import { mapGetters } from "vuex";
 import AppList from "@/components/commons/AppList.vue";
 import {
   downloadCompartmentQrCode,
+  downloadCompartmentQrSheet,
   QR_FORMATS,
 } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
@@ -30,7 +31,8 @@ export default {
   },
   data() {
     return {
-      // `<compartmentId>-<format>` of the download running
+      // `<compartmentId>-<format>` of the download running, `sheet` for the
+      // Sammel-PDF
       downloading: "",
       error: "",
     };
@@ -86,17 +88,28 @@ export default {
     downloadKey(compartment, format) {
       return `${compartment.id}-${format}`;
     },
-    async download(compartment, format) {
-      this.downloading = this.downloadKey(compartment, format);
-      this.error = "";
-
-      try {
-        await downloadCompartmentQrCode(
+    download(compartment, format) {
+      return this.runDownload(this.downloadKey(compartment, format), () =>
+        downloadCompartmentQrCode(
           this.accessPoint,
           compartment,
           format,
           this.tenantId
-        );
+        )
+      );
+    },
+    /** „Alle drucken (Sammel-PDF)“: all Fächer on an Etikettenbogen. */
+    downloadSheet() {
+      return this.runDownload("sheet", () =>
+        downloadCompartmentQrSheet(this.accessPoint, this.tenantId)
+      );
+    },
+    async runDownload(key, request) {
+      this.downloading = key;
+      this.error = "";
+
+      try {
+        await request();
       } catch (error) {
         this.error = formatAccessPointErrorMessage(error, {
           fallbackKey: "accessPoint.management.qr.error",
@@ -144,7 +157,20 @@ export default {
       <v-card-text class="pa-6">
         <!-- The actions for all Fächer: „Alle drucken (Sammel-PDF)“
              (tickets#1062), „Alle rotieren …“ (tickets#1063). -->
-        <div class="compartment-qr-actions d-flex align-center flex-wrap"></div>
+        <div class="compartment-qr-actions d-flex align-center flex-wrap">
+          <v-btn
+            class="download-compartment-qr-sheet"
+            color="primary"
+            depressed
+            :title="$t('accessPoint.management.compartmentQr.printAllTitle')"
+            :loading="downloading === 'sheet'"
+            :disabled="!compartments.length || !!downloading"
+            @click="downloadSheet"
+          >
+            <v-icon left>mdi-file-pdf-box</v-icon>
+            {{ $t("accessPoint.management.compartmentQr.printAll") }}
+          </v-btn>
+        </div>
 
         <v-alert v-if="error" color="error" text dense class="mb-4">
           <v-icon left>mdi-alert-circle</v-icon>
