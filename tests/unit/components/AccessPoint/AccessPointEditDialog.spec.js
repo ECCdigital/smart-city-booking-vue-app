@@ -183,6 +183,22 @@ describe("AccessPointEditDialog", () => {
   it.each([
     ["iFBS", LOCKER, PROVIDERS],
     ["Pareva", { ...LOCKER, provider: "pareva" }, [PAREVA]],
+    [
+      "Open Locker",
+      {
+        ...LOCKER,
+        provider: "open-locker",
+        externalId: "",
+        config: { compartments: [] },
+      },
+      [
+        {
+          id: "open-locker",
+          title: "Open Locker",
+          providerCapabilities: LISTS,
+        },
+      ],
+    ],
   ])(
     "shows the location of a locker system of %s",
     async (_, ap, providers) => {
@@ -2299,9 +2315,9 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
 });
 
 /**
- * The location of a door is entered with the location input (map
- * ECCdigital/tickets#372): narrow, fields and map one under the other, right
- * in the dialog - no dialog in the dialog.
+ * The location of a door, and of a locker system (ECCdigital/tickets#1045), is
+ * entered with the location input (map ECCdigital/tickets#372): narrow, fields
+ * and map one under the other, right in the dialog - no dialog in the dialog.
  */
 describe("AccessPointEditDialog - location", () => {
   const STORED = {
