@@ -44,6 +44,8 @@ export function stripBasePath(pathname = "") {
  * are absent (cold /auth/me 401 during bootstrap).
  */
 const PUBLIC_AUTH_PATH_PATTERNS = [
+  // PROTOTYPE (tickets#1049): runs without a session, branch-only.
+  /^\/prototype(?:\/|$)/,
   /^\/login(?:\/|$)/,
   /^\/register(?:\/|$)/,
   /^\/welcome(?:\/|$)/,

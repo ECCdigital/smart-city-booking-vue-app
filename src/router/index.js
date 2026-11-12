@@ -657,6 +657,18 @@ const routes = [
     },
     props: true,
   },
+  // PROTOTYPE — QR-Code je Fach (ECCdigital/tickets#1049). Throwaway route on
+  // branch `prototype/1049-qr-je-fach`, never merged. Public so it runs
+  // without a backend.
+  {
+    path: "/prototype/qr-je-fach",
+    name: "prototype-qr-je-fach",
+    component: () => import("@/views/Prototype/QrJeFachPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — QR-Code je Fach",
+      requiresAuth: false,
+    },
+  },
 ];
 
 const routerConfig = {
