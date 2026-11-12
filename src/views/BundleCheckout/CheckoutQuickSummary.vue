@@ -649,8 +649,9 @@ export default {
     },
 
     async processPayment(booking) {
+      // `POST /payments` takes a list of booking ids, a single one too.
       const response = await ApiPaymentService.payments(
-        booking.id,
+        [booking.id],
         booking.tenantId
       );
       if (response.status !== 200) throw new Error("Payment processing failed");

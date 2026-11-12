@@ -124,6 +124,8 @@ describe("CheckoutQuickSummary - completion refused for want of a sign-in", () =
     await submit(wrapper);
 
     expect(ApiPaymentService.payments).toHaveBeenCalledTimes(1);
+    // The route takes a list of ids; a bare id is refused with a 400.
+    expect(ApiPaymentService.payments).toHaveBeenCalledWith(["bk1"], "t1");
     expect(wrapper.emitted("login-required")).toBeUndefined();
     expect(addToast).toHaveBeenCalledTimes(1);
     expect(addToast.mock.calls[0][1].title).not.toBe("Anmeldung erforderlich");
