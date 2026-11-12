@@ -1,8 +1,11 @@
 <script>
 import { mapGetters } from "vuex";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
-import { downloadCompartmentQrCode } from "@/utilities/access-point-qr";
-import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import accessPointRequest from "@/mixins/accessPointRequest";
+import {
+  downloadCompartmentQrCode,
+  QR_FORMATS,
+} from "@/utilities/access-point-qr";
 import { accessPointLabel } from "@/utilities/access-points";
 import { compartmentTitle } from "@/utilities/locker-system-compartments";
 
@@ -14,6 +17,7 @@ import { compartmentTitle } from "@/utilities/locker-system-compartments";
  */
 export default {
   name: "AccessPointCompartmentRotateDialog",
+  mixins: [accessPointRequest],
   props: {
     open: { type: Boolean, default: false },
     accessPoint: { type: Object, default: null },
@@ -25,7 +29,6 @@ export default {
       rotating: false,
       rotated: false,
       downloading: "",
-      error: "",
     };
   },
   computed: {
@@ -41,6 +44,9 @@ export default {
         lockerBankName: this.compartment?.lockerBank?.name,
       });
     },
+    qrFormats() {
+      return QR_FORMATS;
+    },
   },
   watch: {
     open(isOpen) {
@@ -53,44 +59,35 @@ export default {
     },
   },
   methods: {
-    async rotate() {
-      this.rotating = true;
-      this.error = "";
-
-      try {
-        await ApiAccessPointService.rotateCompartmentScanCode(
-          this.accessPoint.id,
-          this.compartment.id,
-          this.tenantId
-        );
-        this.rotated = true;
-        this.$emit("rotated", this.accessPoint, this.compartment);
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.rotate.error",
-        });
-      } finally {
-        this.rotating = false;
-      }
+    rotate() {
+      return this.runRequest(
+        "rotating",
+        true,
+        "accessPoint.management.rotate.error",
+        async () => {
+          await ApiAccessPointService.rotateCompartmentScanCode(
+            this.accessPoint.id,
+            this.compartment.id,
+            this.tenantId
+          );
+          this.rotated = true;
+          this.$emit("rotated", this.accessPoint, this.compartment);
+        }
+      );
     },
-    async download(format) {
-      this.downloading = format;
-      this.error = "";
-
-      try {
-        await downloadCompartmentQrCode(
-          this.accessPoint,
-          this.compartment,
-          format,
-          this.tenantId
-        );
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.qr.error",
-        });
-      } finally {
-        this.downloading = "";
-      }
+    download(format) {
+      return this.runRequest(
+        "downloading",
+        format,
+        "accessPoint.management.qr.error",
+        () =>
+          downloadCompartmentQrCode(
+            this.accessPoint,
+            this.compartment,
+            format,
+            this.tenantId
+          )
+      );
     },
   },
 };
@@ -139,33 +136,22 @@ export default {
             {{ $t("accessPoint.management.rotate.compartmentDone") }}
           </v-alert>
           <p class="mb-2">{{ $t("accessPoint.management.rotate.reprint") }}</p>
-          <div class="d-flex align-center flex-wrap" style="gap: 8px">
+          <div
+            class="compartment-rotate-downloads d-flex align-center flex-wrap"
+          >
+            <!-- The PDF first and prominent, SVG and PNG as plain text. -->
             <v-btn
-              color="primary"
-              :loading="downloading === 'pdf'"
+              v-for="format in qrFormats"
+              :key="format"
+              :color="format === 'pdf' ? 'primary' : undefined"
+              :text="format !== 'pdf'"
+              :small="format !== 'pdf'"
+              :loading="downloading === format"
               :disabled="!!downloading"
-              @click="download('pdf')"
+              @click="download(format)"
             >
-              <v-icon left>mdi-file-pdf-box</v-icon>
-              {{ $t("accessPoint.management.qr.pdf") }}
-            </v-btn>
-            <v-btn
-              text
-              small
-              :loading="downloading === 'svg'"
-              :disabled="!!downloading"
-              @click="download('svg')"
-            >
-              {{ $t("accessPoint.management.qr.svg") }}
-            </v-btn>
-            <v-btn
-              text
-              small
-              :loading="downloading === 'png'"
-              :disabled="!!downloading"
-              @click="download('png')"
-            >
-              {{ $t("accessPoint.management.qr.png") }}
+              <v-icon v-if="format === 'pdf'" left>mdi-file-pdf-box</v-icon>
+              {{ $t(`accessPoint.management.qr.${format}`) }}
             </v-btn>
           </div>
         </template>
@@ -198,3 +184,9 @@ export default {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.compartment-rotate-downloads {
+  gap: var(--scb-space-2);
+}
+</style>

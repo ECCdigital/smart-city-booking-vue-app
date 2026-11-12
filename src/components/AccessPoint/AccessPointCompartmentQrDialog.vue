@@ -8,7 +8,7 @@ import {
   downloadCompartmentQrSheet,
   QR_FORMATS,
 } from "@/utilities/access-point-qr";
-import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import accessPointRequest from "@/mixins/accessPointRequest";
 import { accessPointLabel } from "@/utilities/access-points";
 import { compartmentsByLockerBank } from "@/utilities/locker-system-compartments";
 
@@ -19,13 +19,13 @@ import { compartmentsByLockerBank } from "@/utilities/locker-system-compartments
  * Fach never reaches the client.
  *
  * One Fach or all of them, never a subset: no selection here (spec #1046).
- * Two fixed places are left for what follows: the actions over the list
- * (`.compartment-qr-actions`: „Alle drucken (Sammel-PDF)“, „Alle rotieren …“)
- * and the actions of a row (`.compartment-qr-row-actions`: „Rotieren“ after
- * PNG).
+ * Over the list the actions for all Fächer (`.compartment-qr-actions`:
+ * „Alle drucken (Sammel-PDF)“, „Alle rotieren …“), in each row those of
+ * one Fach (`.compartment-qr-row-actions`: the downloads, then „Rotieren“).
  */
 export default {
   name: "AccessPointCompartmentQrDialog",
+  mixins: [accessPointRequest],
   components: {
     AppList,
     AccessPointCompartmentRotateDialog,
@@ -40,7 +40,6 @@ export default {
       // `<compartmentId>-<format>` of the download running, `sheet` for the
       // Sammel-PDF
       downloading: "",
-      error: "",
       // The Fach whose „Rotieren“ asks (tickets#1061), null while none does
       rotateCompartment: null,
       rotateDialog: false,
@@ -121,19 +120,13 @@ export default {
         downloadCompartmentQrSheet(this.accessPoint, this.tenantId)
       );
     },
-    async runDownload(key, request) {
-      this.downloading = key;
-      this.error = "";
-
-      try {
-        await request();
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.qr.error",
-        });
-      } finally {
-        this.downloading = "";
-      }
+    runDownload(key, request) {
+      return this.runRequest(
+        "downloading",
+        key,
+        "accessPoint.management.qr.error",
+        request
+      );
     },
   },
 };
@@ -322,8 +315,8 @@ export default {
   margin-top: var(--scb-space-5);
 }
 .compartment-qr-group__title {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--scb-font-size-md);
+  font-weight: var(--scb-font-weight-semibold);
   margin: 0 0 var(--scb-space-2);
 }
 </style>
