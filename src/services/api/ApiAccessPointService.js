@@ -50,6 +50,19 @@ export default {
     );
   },
 
+  /**
+   * The QR code of one Fach of a Schließfachanlage that carries its own
+   * Fächer (ECCdigital/tickets#1056), addressed by the Anlage and the Fach's
+   * UUID, rendered by the server like the door's.
+   */
+  getCompartmentQrCode(id, compartmentId, format = "pdf", tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/accesspoints/${id}/compartments/${compartmentId}/qrcode?format=${format}`,
+      { responseType: "blob" }
+    );
+  },
+
   rotateScanCode(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(`api/${t}/accesspoints/${id}/rotate-scan-code`, {});

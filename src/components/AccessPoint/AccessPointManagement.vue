@@ -11,6 +11,7 @@ import SearchBar from "@/components/commons/SearchBar.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
+import AccessPointCompartmentQrDialog from "@/components/AccessPoint/AccessPointCompartmentQrDialog.vue";
 import { downloadQrCode, QR_FORMATS } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
@@ -36,6 +37,7 @@ export default {
     AccessPointEditDialog,
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
+    AccessPointCompartmentQrDialog,
     SearchBar,
   },
   data() {
@@ -58,6 +60,7 @@ export default {
       bookingsUnreadable: false,
       loadingBookings: false,
       rotateDialog: false,
+      compartmentQrDialog: false,
       downloadingId: "",
     };
   },
@@ -130,6 +133,9 @@ export default {
             ? assigned.map((bookable) => bookable.title).join(", ")
             : this.assignmentUnknownLabel,
           qrScanRequired: requiresQrScan(accessPoint),
+          // An Anlage that carries its own Fächer prints a QR code per Fach
+          // (ECCdigital/tickets#1056); iFBS and Pareva Anlagen carry none.
+          hasCompartmentQr: carriesOwnCompartments(accessPoint),
         };
       });
     },
@@ -298,6 +304,10 @@ export default {
     openRotate(accessPoint) {
       this.selectedAccessPoint = accessPoint;
       this.rotateDialog = true;
+    },
+    openCompartmentQr(accessPoint) {
+      this.selectedAccessPoint = accessPoint;
+      this.compartmentQrDialog = true;
     },
     async openDelete(accessPoint) {
       this.selectedAccessPoint = accessPoint;
@@ -514,6 +524,17 @@ export default {
       </template>
 
       <template v-slot:item.controls="{ item }">
+        <v-btn
+          v-if="item.hasCompartmentQr"
+          class="compartment-qr mr-1"
+          small
+          text
+          color="primary"
+          @click="openCompartmentQr(item)"
+        >
+          <v-icon left small>mdi-qrcode</v-icon>
+          {{ $t("accessPoint.management.compartmentQr.action") }}
+        </v-btn>
         <v-menu offset-y>
           <template v-slot:activator="{ on, attrs }">
             <v-btn class="row-menu" icon small v-bind="attrs" v-on="on">
@@ -525,6 +546,19 @@ export default {
               <v-list-item-icon><v-icon>mdi-pencil</v-icon></v-list-item-icon>
               <v-list-item-title>
                 {{ $t("accessPoint.management.edit") }}
+              </v-list-item-title>
+            </v-list-item>
+            <!-- The QR codes of the Fächer, the way the door's QR code sits
+                 in this menu (ECCdigital/tickets#1056). -->
+            <v-list-item
+              v-if="item.hasCompartmentQr"
+              class="open-compartment-qr"
+              link
+              @click="openCompartmentQr(item)"
+            >
+              <v-list-item-icon><v-icon>mdi-qrcode</v-icon></v-list-item-icon>
+              <v-list-item-title>
+                {{ $t("accessPoint.management.compartmentQr.menu") }}
               </v-list-item-title>
             </v-list-item>
             <!-- The QR code and its scan code belong to a door: what they
@@ -589,6 +623,11 @@ export default {
       :access-point="selectedAccessPoint"
       @close="rotateDialog = false"
       @rotated="onRotated"
+    />
+    <AccessPointCompartmentQrDialog
+      :open="compartmentQrDialog"
+      :access-point="selectedAccessPoint"
+      @close="compartmentQrDialog = false"
     />
     <AccessPointDeleteDialog
       :open="deleteDialog"

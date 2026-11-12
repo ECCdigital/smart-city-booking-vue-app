@@ -3,6 +3,7 @@ import {
   carriesOwnCompartments,
   compartmentCountMismatches,
   compartmentGroups,
+  compartmentsByLockerBank,
   leavingCompartmentIds,
   compartmentTitle,
   lockerSystemIdsLinkedElsewhere,
@@ -366,5 +367,49 @@ describe("the title of a Fach", () => {
     [null, ""],
   ])("%o: %s", (compartment, title) => {
     expect(compartmentTitle(compartment)).toBe(title);
+  });
+});
+
+/**
+ * The Fächer of an Anlage as the dialog „QR-Codes der Fächer“ lists them
+ * (ECCdigital/tickets#1056): grouped by Schrank, in the order the backend
+ * assigns them - Schrank by name, the same name by its id, then the number
+ * numerically.
+ */
+describe("the Fächer of an Anlage by Schrank", () => {
+  const ZENTRUM_B = { id: "bank-b", name: "Zentrum" };
+  const ZENTRUM_A = { id: "bank-a", name: "Zentrum" };
+
+  it("groups by Schrank, sorted like the Zuteilung", () => {
+    const groups = compartmentsByLockerBank([
+      { id: UUID_1, number: 10, lockerBank: LABOR, outOfService: false },
+      { id: UUID_2, number: 2, lockerBank: ZENTRUM_B, outOfService: false },
+      { id: UUID_3, number: 9, lockerBank: LABOR, outOfService: true },
+      { id: UUID_4, number: 1, lockerBank: ZENTRUM_A, outOfService: false },
+      { id: "u5", number: 1, lockerBank: HAFEN, outOfService: false },
+    ]);
+
+    expect(
+      groups.map((group) => [
+        group.lockerBank.id,
+        group.compartments.map((c) => c.number),
+      ])
+    ).toEqual([
+      ["bank-labor", [9, 10]],
+      ["bank-hafen", [1]],
+      ["bank-a", [1]],
+      ["bank-b", [2]],
+    ]);
+    expect(groups[0].compartments[0]).toEqual({
+      id: UUID_3,
+      number: 9,
+      lockerBank: LABOR,
+      outOfService: true,
+    });
+  });
+
+  it("has no group for an Anlage without Fächer", () => {
+    expect(compartmentsByLockerBank([])).toEqual([]);
+    expect(compartmentsByLockerBank(undefined)).toEqual([]);
   });
 });
