@@ -165,16 +165,24 @@ describe("AccessPointEditDialog", () => {
   });
 
   /**
-   * Mode and QR rules describe a door. A locker system has neither - the
-   * migration creates it with `validationRules: []`, and the compartment is
-   * opened through the provider, not at a QR code.
+   * Mode and QR rules describe a door. An iFBS or Pareva locker system has
+   * neither - the migration creates it with `validationRules: []`, and the
+   * compartment is opened through the provider, not at a QR code. An Open
+   * Locker Anlage has the rules (see its describe below).
    */
-  it("hides the door fields for a locker system", async () => {
-    const wrapper = await mountDialog({ accessPoint: LOCKER });
+  it.each([
+    ["iFBS", LOCKER, PROVIDERS],
+    ["Pareva", { ...LOCKER, provider: "pareva" }, [PAREVA]],
+  ])(
+    "hides the door fields for a locker system of %s",
+    async (_, ap, providers) => {
+      const wrapper = await mountDialog({ accessPoint: ap, providers });
 
-    expect(labels(wrapper)).not.toContain("Modus");
-    expect(dialogText(wrapper)).not.toContain("QR-Scan erforderlich");
-  });
+      expect(labels(wrapper)).not.toContain("Modus");
+      expect(sectionTitles(wrapper)).not.toContain("Validierungsregeln");
+      expect(dialogText(wrapper)).not.toContain("QR-Scan erforderlich");
+    }
+  );
 
   /**
    * A locker system has a location all the same, the one of the whole Anlage
@@ -1852,6 +1860,86 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
     return ApiAccessPointService.storeAccessPoint.mock.calls[0]?.[0];
   }
 
+  function qrSwitch(wrapper) {
+    return wrapper
+      .findAllComponents({ name: "v-switch" })
+      .wrappers.find((s) => s.text().includes("QR-Scan erforderlich"));
+  }
+
+  /**
+   * The scan is switched on for the whole Anlage, for all its Fächer at
+   * once (ECCdigital/tickets#1060) - a Fach inherits the Anlage's rules.
+   */
+  describe("the switch „QR-Scan erforderlich“", () => {
+    it("is offered for the Anlage, as one for all its Fächer", async () => {
+      const wrapper = await mountDialog({
+        providers: [OPEN_LOCKER],
+        accessPoint: STORED_ANLAGE,
+      });
+
+      expect(sectionTitles(wrapper)).toContain("Validierungsregeln");
+      expect(qrSwitch(wrapper).text()).toContain(
+        "Gilt für alle Fächer der Anlage"
+      );
+      expect(labels(wrapper)).not.toContain("Modus");
+    });
+
+    it("is off for a new Anlage, which then saves without a scan", async () => {
+      const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+      await wrapper.find(".label-field input").setValue("Fahrradgarage");
+      await check(wrapper, UUID_1);
+
+      expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
+      const payload = await save(wrapper);
+      // Left out, so the backend applies its default for Open Locker: none.
+      expect(payload).not.toHaveProperty("validationRules");
+    });
+
+    it("demands the scan at all Fächer of a new Anlage where the admin switches it on", async () => {
+      const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+      await wrapper.find(".label-field input").setValue("Fahrradgarage");
+      await check(wrapper, UUID_1);
+
+      qrSwitch(wrapper).vm.$emit("change", true);
+      await wrapper.vm.$nextTick();
+
+      expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+      const payload = await save(wrapper);
+      expect(payload.validationRules).toEqual([{ type: "qrScan" }]);
+    });
+
+    it("shows a stored Anlage's scan as stored and saves it switched off", async () => {
+      const wrapper = await mountDialog({
+        providers: [OPEN_LOCKER],
+        accessPoint: {
+          ...STORED_ANLAGE,
+          validationRules: [{ type: "qrScan" }],
+        },
+      });
+      expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
+
+      qrSwitch(wrapper).vm.$emit("change", false);
+      await wrapper.vm.$nextTick();
+
+      const payload = await save(wrapper);
+      expect(payload.validationRules).toEqual([]);
+    });
+
+    it("keeps a stored Anlage's scan on a save that does not touch it", async () => {
+      const wrapper = await mountDialog({
+        providers: [OPEN_LOCKER],
+        accessPoint: {
+          ...STORED_ANLAGE,
+          validationRules: [{ type: "qrScan" }],
+        },
+      });
+
+      await check(wrapper, UUID_1, false);
+      const payload = await save(wrapper);
+      expect(payload.validationRules).toEqual([{ type: "qrScan" }]);
+    });
+  });
+
   it("edits a stored Anlage by its data: one stored without a list of its own gets no Fächer to choose", async () => {
     const wrapper = await mountDialog({
       providers: [OPEN_LOCKER],
@@ -1938,7 +2026,6 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
       provider: "open-locker",
       externalId: "",
       mode: "remote",
-      validationRules: [],
     });
     expect(payload.config.compartments).toEqual([
       { id: UUID_1, number: 1, lockerBank: LABOR, outOfService: false },

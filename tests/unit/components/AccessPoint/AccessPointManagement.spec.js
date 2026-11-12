@@ -248,6 +248,57 @@ describe("AccessPointManagement", () => {
       );
     });
 
+    /**
+     * An Open Locker Anlage carries the rules for all its Fächer
+     * (ECCdigital/tickets#1060); iFBS and Pareva stay without.
+     */
+    describe("of an Open Locker Schließfachanlage", () => {
+      function anlage(label, validationRules) {
+        return {
+          id: `ap-${label}`,
+          type: "locker",
+          provider: "open-locker",
+          label,
+          externalId: "",
+          mode: "remote",
+          validationRules,
+          config: {
+            compartments: [
+              {
+                id: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+                number: 1,
+                lockerBank: { id: "bank-labor", name: "Labor Fachbank 1" },
+                outOfService: false,
+              },
+            ],
+          },
+        };
+      }
+
+      it("says whether the scan is required, for all Fächer", async () => {
+        ApiAccessPointService.getAccessPoints.mockResolvedValue({
+          data: [
+            anlage("Fahrradgarage", [{ type: "qrScan" }]),
+            anlage("Werkzeugschrank", []),
+            PAREVA_LOCKER,
+          ],
+        });
+
+        const wrapper = await mountManagement();
+
+        const required = rowFor(wrapper, "Fahrradgarage").text();
+        expect(required).toContain("erforderlich");
+        expect(required).toContain("für alle Fächer");
+        expect(required).not.toContain("entfällt");
+        const notRequired = rowFor(wrapper, "Werkzeugschrank").text();
+        expect(notRequired).toContain("nicht nötig");
+        expect(notRequired).toContain("für alle Fächer");
+        const pareva = rowFor(wrapper, "Schließfächer Rathaus").text();
+        expect(pareva).toContain("entfällt");
+        expect(pareva).not.toContain("für alle Fächer");
+      });
+    });
+
     it("says where the capacity of a locker system is set", async () => {
       ApiAccessPointService.getAccessPoints.mockResolvedValue({
         data: [LOCKER],
