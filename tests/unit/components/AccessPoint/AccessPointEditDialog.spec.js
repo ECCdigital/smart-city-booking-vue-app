@@ -130,6 +130,11 @@ function labels(wrapper) {
   return wrapper.findAll("label").wrappers.map((label) => label.text());
 }
 
+/** The headings of the dialog's sections (Prüfregeln, Standort, ...). */
+function sectionTitles(wrapper) {
+  return wrapper.findAll(".section-title").wrappers.map((t) => t.text());
+}
+
 /**
  * One dialog carries doors and locker systems. The type follows the provider -
  * Nuki and Salto KS hand out doors, iFBS and Pareva locker systems - so it is
@@ -160,17 +165,49 @@ describe("AccessPointEditDialog", () => {
   });
 
   /**
-   * Mode, QR rules and address describe a door. A locker system has none of
-   * them - the migration creates it with `validationRules: []`, and the
-   * compartment is opened through the provider, not at an address.
+   * Mode and QR rules describe a door. A locker system has neither - the
+   * migration creates it with `validationRules: []`, and the compartment is
+   * opened through the provider, not at a QR code.
    */
   it("hides the door fields for a locker system", async () => {
     const wrapper = await mountDialog({ accessPoint: LOCKER });
 
     expect(labels(wrapper)).not.toContain("Modus");
-    expect(locationInput(wrapper).exists()).toBe(false);
     expect(dialogText(wrapper)).not.toContain("QR-Scan erforderlich");
   });
+
+  /**
+   * A locker system has a location all the same, the one of the whole Anlage
+   * (ECCdigital/tickets#1045) - whichever provider runs it.
+   */
+  it.each([
+    ["iFBS", LOCKER, PROVIDERS],
+    ["Pareva", { ...LOCKER, provider: "pareva" }, [PAREVA]],
+    [
+      "Open Locker",
+      {
+        ...LOCKER,
+        provider: "open-locker",
+        externalId: "",
+        config: { compartments: [] },
+      },
+      [
+        {
+          id: "open-locker",
+          title: "Open Locker",
+          providerCapabilities: LISTS,
+        },
+      ],
+    ],
+  ])(
+    "shows the location of a locker system of %s",
+    async (_, ap, providers) => {
+      const wrapper = await mountDialog({ accessPoint: ap, providers });
+
+      expect(sectionTitles(wrapper)).toContain("Standort");
+      expect(locationInput(wrapper).exists()).toBe(true);
+    }
+  );
 
   it("keeps the door fields for a door", async () => {
     const wrapper = await mountDialog({ accessPoint: DOOR });
@@ -1945,6 +1982,24 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
     expect(wrapper.find(".config-field textarea").element.value).toBe("{}");
   });
 
+  // ECCdigital/tickets#1045: the location is the Anlage's, one for all its
+  // Fächer.
+  it("places a new Anlage on the map and saves its location", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await chooseType(wrapper, "locker");
+    await check(wrapper, UUID_1);
+
+    expect(sectionTitles(wrapper)).toContain("Standort");
+    wrapper
+      .findComponent({ name: "LocationMap" })
+      .vm.$emit("point-set", { lat: 51.951, lon: 14.716 });
+    await flushPromises();
+
+    const payload = await save(wrapper);
+    expect(payload.type).toBe("locker");
+    expect(payload.location.coordinates.points).toEqual([14.716, 51.951]);
+  });
+
   it("takes a Fach out of a stored Anlage", async () => {
     const wrapper = await mountDialog({
       providers: [OPEN_LOCKER],
@@ -2260,9 +2315,9 @@ describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
 });
 
 /**
- * The location of a door is entered with the location input (map
- * ECCdigital/tickets#372): narrow, fields and map one under the other, right
- * in the dialog - no dialog in the dialog.
+ * The location of a door, and of a locker system (ECCdigital/tickets#1045), is
+ * entered with the location input (map ECCdigital/tickets#372): narrow, fields
+ * and map one under the other, right in the dialog - no dialog in the dialog.
  */
 describe("AccessPointEditDialog - location", () => {
   const STORED = {
@@ -2360,6 +2415,66 @@ describe("AccessPointEditDialog - location", () => {
 
     const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
     expect(payload.location).toBe(OLD);
+  });
+
+  /**
+   * A locker system keeps its location like a door (ECCdigital/tickets#1045):
+   * shown again when the dialog opens anew, and removable.
+   */
+  describe("of a locker system", () => {
+    async function save(wrapper) {
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+      return ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+    }
+
+    it("shows the stored location again when the dialog opens anew", async () => {
+      const wrapper = await mountDialog({
+        accessPoint: { ...LOCKER, location: STORED },
+      });
+
+      await wrapper.setProps({ open: false });
+      await wrapper.setProps({ open: true });
+      await flushPromises();
+
+      expect(locationInput(wrapper).props("value")).toBe(STORED);
+      expect(locationField(wrapper, "city").element.value).toBe("Guben");
+      expect((await save(wrapper)).location).toBe(STORED);
+    });
+
+    // Only NUKI hands out a location; a locker system is never asked for one,
+    // whatever its provider reports.
+    it("offers no location from the provider", async () => {
+      const ifbsLocating = {
+        ...PROVIDERS[1],
+        providerCapabilities: [...LISTS, "getLocation"],
+      };
+      const stored = await mountDialog({
+        accessPoint: LOCKER,
+        providers: [ifbsLocating],
+      });
+      expect(dialogText(stored)).not.toContain("Standort vom Anbieter");
+
+      const created = await mountDialog({
+        accessPoint: { ...LOCKER, id: undefined },
+        providers: [ifbsLocating],
+      });
+      expect(dialogText(created)).not.toContain("erst vorschlagen");
+    });
+
+    it("saves a locker system without a location", async () => {
+      const wrapper = await mountDialog({
+        accessPoint: { ...LOCKER, location: STORED },
+      });
+
+      await locationInput(wrapper)
+        .find("[data-test='location-clear']")
+        .trigger("click");
+      await flushPromises();
+
+      expect(wrapper.find(".save-refusal").exists()).toBe(false);
+      expect((await save(wrapper)).location).toBeNull();
+    });
   });
 
   /**
