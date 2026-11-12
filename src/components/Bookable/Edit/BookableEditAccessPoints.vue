@@ -1,11 +1,18 @@
 <script>
 import AccessPointPermissionService from "@/services/permissions/AccessPointPermissionService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  accessPointTypeName,
   isLockerAccessPoint,
 } from "@/utilities/access-points";
+import {
+  carriesOwnCompartments,
+  compartmentCountHints,
+  lockerSystemIdsLinkedElsewhere,
+} from "@/utilities/locker-system-compartments";
 import { mapGetters } from "vuex";
 import bookableEditing from "@/mixins/bookableEditing";
 import {
@@ -28,6 +35,7 @@ function toRow(accessPoint) {
     externalId: accessPoint.externalId || "",
     provider: accessPoint.provider || "",
     isLocker: isLockerAccessPoint(accessPoint),
+    typeName: accessPointTypeName(accessPoint),
     typeLabel,
     subtitle: [typeLabel, accessPoint.provider, accessPoint.externalId]
       .filter(Boolean)
@@ -54,6 +62,12 @@ function toRow(accessPoint) {
  * `accessPointAmounts` before that field was retired is passed through
  * untouched here and dropped by `ApiBookablesService` on the way out.
  *
+ * An Anlage that carries its own Fächer (Open Locker) belongs to one bookable
+ * only (ECCdigital/tickets#1038): the picker leaves out one another bookable
+ * links, read from the tenant's bookables once such an Anlage exists - what
+ * the editor may not read, the save refuses. A hint names an Anlage whose
+ * Fächer the bookable's `amount` does not fit; saving stays possible.
+ *
  * The list is read through the access point management API, which grants
  * reading to everyone who may read bookables. Editors without tenant owner
  * rights can therefore assign access points although they may not create them.
@@ -64,6 +78,10 @@ export default {
   data() {
     return {
       pickerOpen: false,
+      // The tenant's bookables, read once an Anlage with its own Fächer
+      // exists, to see which of them another bookable links.
+      otherBookables: [],
+      otherBookablesTenantId: null,
     };
   },
   computed: {
@@ -112,13 +130,30 @@ export default {
         .filter(Boolean)
         .map(toRow);
     },
-    // The picker lists what the tenant has and this bookable does not use yet.
-    // It says nothing about whether the provider is active - that question
-    // belongs to the access point, not to the assignment.
+    // The picker lists what the tenant has and this bookable does not use yet,
+    // but no Anlage with its own Fächer another bookable links. It says
+    // nothing about whether the provider is active - that question belongs to
+    // the access point, not to the assignment.
     assignableAccessPoints() {
+      const linkedElsewhere = lockerSystemIdsLinkedElsewhere(
+        this.accessPoints,
+        this.otherBookables,
+        this.bookable.id
+      );
       return this.accessPoints
-        .filter((point) => !this.selectedIds.includes(point.id))
+        .filter(
+          (point) =>
+            !this.selectedIds.includes(point.id) &&
+            !linkedElsewhere.has(point.id)
+        )
         .map(toRow);
+    },
+    hasLockerSystems() {
+      return this.accessPoints.some(carriesOwnCompartments);
+    },
+    // An Anlage whose Fächer the `amount` does not fit, one sentence each.
+    compartmentCountHints() {
+      return compartmentCountHints(this.bookable, this.accessPoints);
     },
     // Access points are created and edited in the tenant's management area,
     // which is owner-only - so the pointer there is only shown to those who
@@ -155,12 +190,37 @@ export default {
         this.bookableAccessPoints.load(tenantId);
       },
     },
+    hasLockerSystems: {
+      immediate: true,
+      handler(has) {
+        if (has) this.loadOtherBookables();
+      },
+    },
   },
   methods: {
     patchDetails(changes) {
       this.patch({
         accessPointDetails: { ...this.accessPointDetails, ...changes },
       });
+    },
+    /**
+     * Reads the tenant's bookables once per tenant. A failure - the editor
+     * may not read them - offers every Anlage; the save refuses a second
+     * link either way.
+     */
+    async loadOtherBookables() {
+      const tenantId = this.tenantId;
+      if (!tenantId || this.otherBookablesTenantId === tenantId) return;
+      this.otherBookablesTenantId = tenantId;
+      try {
+        const response = await ApiBookablesService.getBookables(
+          tenantId,
+          false
+        );
+        this.otherBookables = response.data || [];
+      } catch (error) {
+        this.otherBookables = [];
+      }
     },
     reloadAccessPoints() {
       this.bookableAccessPoints.load(this.tenantId, { force: true });
@@ -170,9 +230,13 @@ export default {
      * compartment per unit the booking books (`bookableItem.amount`) - never
      * the bookable's `amount`, which is the capacity the concurrent bookings
      * are counted against. A door is not handed out at all; it is shared for
-     * the booking period.
+     * the booking period - and so is a fixed Open Locker compartment, which
+     * the sentence calls by its own name, a „Fach“ (ECCdigital/tickets#1036).
+     * A type name without a sentence of its own takes that of its type.
      */
     grantText(row) {
+      const key = `accessPoint.bookable.grants.${row.typeName}`;
+      if (this.$te(key)) return this.$t(key);
       return row.isLocker
         ? this.$t("accessPoint.bookable.grants.locker")
         : this.$t("accessPoint.bookable.grants.door");
@@ -389,6 +453,23 @@ export default {
           >
             {{ id }}
           </v-chip>
+        </v-alert>
+
+        <v-alert
+          v-if="compartmentCountHints.length > 0"
+          color="warning"
+          dense
+          text
+          class="mb-4"
+          data-test="compartment-count-hint"
+        >
+          <div
+            v-for="hint in compartmentCountHints"
+            :key="`compartment-count-${hint.id}`"
+            class="text-caption"
+          >
+            {{ hint.text }}
+          </div>
         </v-alert>
 
         <v-simple-table class="assignment-table">

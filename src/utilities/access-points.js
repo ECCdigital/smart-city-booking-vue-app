@@ -6,13 +6,15 @@ export const LOCKER_TYPE = "locker";
 export const DOOR_TYPE = "door";
 
 /**
- * What each access provider hands out: Nuki, Salto KS and Open Locker doors,
- * iFBS and Pareva locker systems. The mode of a locker system follows from
- * the provider as well - iFBS opens a compartment remotely, Pareva hands out
- * a code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
- * An Open Locker compartment is a door of its own, opened remotely and in no
- * other way. Whether the provider also lists them is a capability of its own,
- * see `canListAccessPoints`.
+ * What each access provider hands out: Nuki and Salto KS doors, iFBS and
+ * Pareva locker systems. The mode of a locker system follows from the
+ * provider as well - iFBS opens a compartment remotely, Pareva hands out a
+ * code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
+ * Open Locker hands out both, each opened remotely and in no other way: a
+ * Schließfachanlage that carries its own Fächer, which the platform assigns -
+ * the type a new one starts with - and a fixed Fach, a door
+ * (ECCdigital/tickets#1037). Whether the provider also lists them is a
+ * capability of its own, see `canListAccessPoints`.
  *
  * A provider outside this table says nothing about the type; the access point
  * keeps the one it has.
@@ -20,9 +22,17 @@ export const DOOR_TYPE = "door";
 const PROVIDER_ACCESS_POINTS = {
   nuki: { type: DOOR_TYPE },
   "salto-ks": { type: DOOR_TYPE },
-  "open-locker": { type: DOOR_TYPE, mode: "remote" },
+  "open-locker": { type: LOCKER_TYPE, mode: "remote" },
   ifbs: { type: LOCKER_TYPE, mode: "remote" },
   pareva: { type: LOCKER_TYPE, mode: "authorization" },
+};
+
+/**
+ * The providers that offer more than the one type they start with, in the
+ * order the choice shows them, the starting type first.
+ */
+const PROVIDER_TYPES = {
+  "open-locker": Object.freeze([LOCKER_TYPE, DOOR_TYPE]),
 };
 
 /**
@@ -53,6 +63,20 @@ const PROVIDERS_WITHOUT_SCAN_BY_DEFAULT = ["open-locker"];
  */
 export function providerAccessPointDefaults(provider) {
   return PROVIDER_ACCESS_POINTS[provider] || null;
+}
+
+/**
+ * The types an admin chooses between for an access point of the provider:
+ * several where the provider offers several (Open Locker), else the one it
+ * hands out - none for a provider this UI knows nothing about.
+ *
+ * @param {string} provider A provider id, e.g. "open-locker"
+ * @returns {string[]} The types, the one a new access point starts with first
+ */
+export function providerTypes(provider) {
+  if (PROVIDER_TYPES[provider]) return [...PROVIDER_TYPES[provider]];
+  const defaults = providerAccessPointDefaults(provider);
+  return defaults ? [defaults.type] : [];
 }
 
 /**
@@ -90,7 +114,9 @@ export function providerRequiresScanByDefault(provider) {
  * of sight for them.
  *
  * An Open Locker compartment is a door, but Open Locker knows it by its UUID
- * alone, so it shows that one field, „UUID des Fachs“, and no location.
+ * alone, so it shows that one field, „UUID des Fachs“, and no location. An
+ * Open Locker Schließfachanlage carries its Fächer instead of an id of its
+ * own, so it shows no id field at all (`idField: false`).
  *
  * `label`, `hint` and `placeholder` name keys under
  * `accessPoint.management.fields`; a `null` hint leaves the dialog's own hint
@@ -99,6 +125,7 @@ export function providerRequiresScanByDefault(provider) {
  * would guess the shape of.
  */
 const DEFAULT_ID_FIELDS = Object.freeze({
+  idField: true,
   label: "externalId",
   hint: null,
   placeholder: null,
@@ -106,18 +133,21 @@ const DEFAULT_ID_FIELDS = Object.freeze({
 });
 const PROVIDER_ID_FIELDS = {
   ifbs: Object.freeze({
+    idField: true,
     label: "locationId",
     hint: "locationIdHint",
     placeholder: null,
     locationField: false,
   }),
   pareva: Object.freeze({
+    idField: true,
     label: "productId",
     hint: "productIdHint",
     placeholder: "productIdPlaceholder",
     locationField: false,
   }),
   "open-locker": Object.freeze({
+    idField: true,
     label: "compartmentUuid",
     hint: "compartmentUuidHint",
     placeholder: null,
@@ -125,17 +155,36 @@ const PROVIDER_ID_FIELDS = {
   }),
 };
 
+// Where the type changes the fields: by provider, then type.
+const PROVIDER_TYPE_ID_FIELDS = {
+  "open-locker": {
+    [LOCKER_TYPE]: Object.freeze({
+      idField: false,
+      label: null,
+      hint: null,
+      placeholder: null,
+      locationField: false,
+    }),
+  },
+};
+
 /**
- * Which id fields an access point of the provider shows.
+ * Which id fields an access point of the provider and type shows.
  *
  * @param {string} provider A provider id, e.g. "nuki" or "ifbs"
- * @returns {{label: string, hint: string|null, placeholder: string|null, locationField: boolean}}
- *   The translation key of the `externalId` label, that of its hint (or
- *   `null` for the hint by type), that of its placeholder (or `null` for
- *   none), and whether the `providerLocationId` field is shown
+ * @param {string} [type] The access point's type, where it matters
+ * @returns {{idField: boolean, label: string|null, hint: string|null, placeholder: string|null, locationField: boolean}}
+ *   Whether the `externalId` field is shown, the translation key of its
+ *   label, that of its hint (or `null` for the hint by type), that of its
+ *   placeholder (or `null` for none), and whether the `providerLocationId`
+ *   field is shown
  */
-export function providerIdFields(provider) {
-  return PROVIDER_ID_FIELDS[provider] || DEFAULT_ID_FIELDS;
+export function providerIdFields(provider, type) {
+  return (
+    PROVIDER_TYPE_ID_FIELDS[provider]?.[type] ||
+    PROVIDER_ID_FIELDS[provider] ||
+    DEFAULT_ID_FIELDS
+  );
 }
 
 const LIST_ACCESS_POINTS_CAPABILITY = "listAccessPoints";
@@ -194,15 +243,51 @@ export function defaultAccessPointDetails() {
 }
 
 /**
- * What to call the kind of an access point on screen - a door or a locker.
- * An unknown type yields an empty string rather than a raw key, because the
- * kind is decoration next to the label, not information worth garbling.
+ * What a type is called where the provider calls it something of its own
+ * (ECCdigital/tickets#1036): an Open Locker door is a compartment on site, so
+ * it is a „Fach“, never a „Tür“, and its locker is the „Schließfachanlage“
+ * whose Fächer the platform assigns (ECCdigital/tickets#1037). The doors of
+ * Nuki and Salto KS and the Anlagen of iFBS and Pareva keep the name of their
+ * type. The values name keys under `accessPoint.management.types` and
+ * `accessPoint.bookable.grants`.
+ *
+ * A provider that calls a type differently is one entry here, plus its copy.
+ */
+const PROVIDER_TYPE_NAMES = {
+  "open-locker": Object.freeze({
+    [DOOR_TYPE]: "compartment",
+    [LOCKER_TYPE]: "lockerSystem",
+  }),
+};
+
+/**
+ * What the type of an access point is called, as the key the copy is filed
+ * under: the provider's own name for the type where it has one, else the type.
+ *
+ * @param {Object} accessPoint The access point to inspect, with `provider`
+ *   and `type`
+ * @returns {string} The key of the type's name, e.g. "door", "locker" or
+ *   "compartment" - "" without a type
+ */
+export function accessPointTypeName(accessPoint) {
+  const type = accessPoint?.type;
+  if (!type) return "";
+  return PROVIDER_TYPE_NAMES[accessPoint.provider]?.[type] || type;
+}
+
+/**
+ * What to call the kind of an access point on screen - by provider and type,
+ * see `accessPointTypeName`. An unknown type yields an empty string rather
+ * than a raw key, because the kind is decoration next to the label, not
+ * information worth garbling.
  *
  * @param {Object} accessPoint The access point to inspect
  * @returns {string} A translated type name, or "" when the type is unknown
  */
 export function accessPointTypeLabel(accessPoint) {
-  const key = `accessPoint.management.types.${accessPoint?.type}`;
+  const key = `accessPoint.management.types.${accessPointTypeName(
+    accessPoint
+  )}`;
   return i18n.te(key) ? i18n.t(key) : "";
 }
 

@@ -1,5 +1,6 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
+import BookingCompartmentReassignDialog from "@/components/Booking/BookingCompartmentReassignDialog.vue";
 import {
   isForbiddenError,
   isLockBusyError,
@@ -29,6 +30,7 @@ import {
   openProgressOf,
 } from "@/utilities/booking-access-points";
 import { isLockerAccessPoint } from "@/utilities/access-points";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 
 const WINDOW_TICK_MS = 30000;
@@ -78,6 +80,7 @@ const LOCK_BUSY = "accessPoint.booking.lockBusy";
  */
 export default {
   name: "BookingAccessPoints",
+  components: { BookingCompartmentReassignDialog },
   props: {
     booking: {
       type: Object,
@@ -94,6 +97,7 @@ export default {
       loadFailed: false,
       now: Date.now(),
       windowTimer: null,
+      reassigning: null,
     };
   },
   computed: {
@@ -103,7 +107,8 @@ export default {
     /**
      * What a read of the accesses depends on: the booking, and its state -
      * the Buchungsseite reloads a booking it released under the same id, and
-     * only a confirmed booking has accesses to show. One key
+     * only a confirmed booking has accesses to show - or one holding a Fach
+     * of an Open Locker Schließfachanlage, from the Vormerkung on. One key
      * rather than two watchers, so a swap of the shown booking reads once.
      */
     accessSource() {
@@ -131,8 +136,23 @@ export default {
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
     isLockerAccessPoint,
+    /**
+     * The name a person looks for: a Fach the platform assigned (Open Locker)
+     * by its Anlage, Schließfachschrank and number, a compartment the
+     * provider named by its number (iFBS), anything else by its label - the
+     * fixed Fach of Open Locker included.
+     */
     entryTitle(entry) {
       const label = entry.label || entry.id;
+      const assigned = isLockerAccessPoint(entry)
+        ? entry.assignedCompartment
+        : null;
+      if (assigned?.number != null) {
+        return this.$t("accessPoint.booking.assignedCompartment", {
+          label,
+          compartment: compartmentTitle(assigned),
+        });
+      }
       if (isLockerAccessPoint(entry) && entry.compartment) {
         return this.$t("accessPoint.booking.compartment", {
           label,
@@ -146,6 +166,33 @@ export default {
     },
     stateChip(entry) {
       return accessStateChip(accessState(entry));
+    },
+    /**
+     * Whether „Fach umsetzen“ is offered: at a Fach the platform assigned
+     * (Open Locker), from the Vormerkung on, a running booking too
+     * (ECCdigital/tickets#1044). Not at a compartment the provider chose
+     * (iFBS, Pareva) nor at a door.
+     */
+    canReassign(entry) {
+      return isLockerAccessPoint(entry) && Boolean(entry.assignedCompartment);
+    },
+    startReassign(entry) {
+      if (!this.canControl) return;
+      this.reassigning = entry;
+    },
+    /**
+     * The Fach moved: its id changed with it, so the accesses are read anew
+     * - an open under the old id would be refused.
+     */
+    async onReassigned() {
+      this.reassigning = null;
+      await this.addToast(
+        ToastService.createToast(
+          "accessPoint.booking.reassign.success",
+          "success"
+        )
+      );
+      await this.fetchEntries();
     },
     openLabel(entry) {
       return isLockerAccessPoint(entry)
@@ -466,9 +513,10 @@ export default {
         );
         this.entries = accessEntriesOf(response.data);
       } catch (error) {
-        // The route answers 403 for every booking that is not confirmed and
-        // 404 for one outside the caller's reach: nothing to show, not a
-        // failure. The card stays away as it does on an empty list.
+        // The route answers 403 for every booking that is not confirmed (and
+        // holds no assigned Fach) and 404 for one outside the caller's
+        // reach: nothing to show, not a failure. The card stays away as it
+        // does on an empty list.
         this.entries = [];
         if (!isOutOfReach(error)) {
           console.error(error);
@@ -916,6 +964,21 @@ export default {
 
             <div class="access-point-tile__action-group">
               <v-btn
+                v-if="canReassign(entry)"
+                small
+                outlined
+                color="primary"
+                data-test="access-reassign"
+                :title="
+                  canControl ? '' : $t('accessPoint.booking.blocked.forbidden')
+                "
+                :disabled="!canControl || isBusy(entry)"
+                @click="startReassign(entry)"
+              >
+                <v-icon left small>mdi-swap-horizontal</v-icon>
+                {{ $t("accessPoint.booking.reassignCompartment") }}
+              </v-btn>
+              <v-btn
                 v-if="canClose(entry)"
                 small
                 outlined
@@ -958,6 +1021,14 @@ export default {
         </div>
       </div>
     </v-card-text>
+    <BookingCompartmentReassignDialog
+      :open="Boolean(reassigning)"
+      :booking="booking"
+      :entry="reassigning"
+      :current-title="reassigning ? entryTitle(reassigning) : ''"
+      @moved="onReassigned"
+      @close="reassigning = null"
+    />
   </v-card>
 </template>
 

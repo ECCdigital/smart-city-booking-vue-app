@@ -11,7 +11,11 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: { getAccessPoints: vi.fn() },
 }));
 vi.mock("@/services/api/ApiAccessPointService", () => ({
-  default: { storeAccessPoint: vi.fn(), getLocationPrefill: vi.fn() },
+  default: {
+    storeAccessPoint: vi.fn(),
+    getLocationPrefill: vi.fn(),
+    getCompartmentBookings: vi.fn(),
+  },
 }));
 vi.mock("@/services/api/ApiGeoService", () => ({
   default: { search: vi.fn(), reverse: vi.fn(), start: vi.fn() },
@@ -1364,13 +1368,32 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
     return ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
   }
 
-  it("is a door known by the UUID of the compartment alone", async () => {
-    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+  /**
+   * A new Open Locker access point starts as the Schließfachanlage
+   * (ECCdigital/tickets#1037); the fixed Fach is the other choice.
+   */
+  async function mountFach(propsData = {}) {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      ...propsData,
+    });
+    await chooseFach(wrapper);
+    return wrapper;
+  }
+
+  async function chooseFach(wrapper) {
+    wrapper.findComponent({ ref: "typeChoice" }).vm.$emit("change", "door");
+    await flushPromises();
+  }
+
+  it("is, once „Fach“ is chosen, a door known by the UUID of the compartment alone", async () => {
+    const wrapper = await mountFach();
 
     expect(wrapper.find(".provider-field input").element.value).toBe(
       "open-locker"
     );
-    expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+    expect(wrapper.find(".access-point-type").text()).toContain("Fach");
+    expect(wrapper.find(".access-point-type").text()).not.toContain("Tür");
     expect(labels(wrapper)).toContain("UUID des Fachs");
     expect(labels(wrapper)).not.toContain("ID beim Anbieter");
     expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
@@ -1380,7 +1403,7 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
   });
 
   it("offers the mode remote alone", async () => {
-    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    const wrapper = await mountFach();
 
     const items = modeSelect(wrapper).props("items");
     expect(items.map((item) => item.value)).toEqual(["remote"]);
@@ -1388,7 +1411,7 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
   });
 
   it("starts without a QR scan and says that the server sets none", async () => {
-    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    const wrapper = await mountFach();
 
     expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
     expect(dialogText(wrapper)).toContain(
@@ -1400,7 +1423,7 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
   });
 
   it("creates the compartment as the untouched form shows it", async () => {
-    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    const wrapper = await mountFach();
     await wrapper.find(".external-id-field input").setValue(UUID);
 
     const payload = await save(wrapper);
@@ -1417,7 +1440,7 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
   });
 
   it("demands the scan where the admin switches it on", async () => {
-    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    const wrapper = await mountFach();
     await wrapper.find(".external-id-field input").setValue(UUID);
     qrSwitch(wrapper).vm.$emit("change", true);
     await wrapper.vm.$nextTick();
@@ -1432,6 +1455,7 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
     expect(qrSwitch(wrapper).props("inputValue")).toBe(true);
 
     await typeProvider(wrapper, "open-locker");
+    await chooseFach(wrapper);
     expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
 
     await typeProvider(wrapper, "nuki");
@@ -1448,6 +1472,40 @@ describe("AccessPointEditDialog - an Open Locker compartment", () => {
     expect(qrSwitch(wrapper).props("inputValue")).toBe(false);
     const payload = await save(wrapper);
     expect(payload.validationRules).toEqual([]);
+  });
+
+  /**
+   * A door by type, but a Fach on site (ECCdigital/tickets#1036): a
+   * compartment stored before keeps its type and label and reads „Fach“
+   * without a migration, and a door of another provider stays a „Tür“.
+   */
+  it("calls a stored compartment a Fach, by its label", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: {
+        id: "ap-fach",
+        type: "door",
+        provider: "open-locker",
+        label: "Labor Fachbank 1 · Fach 2",
+        externalId: UUID,
+        mode: "remote",
+        validationRules: [],
+      },
+    });
+
+    expect(wrapper.find(".access-point-type").text()).toContain("Fach");
+    expect(wrapper.find(".access-point-type").text()).not.toContain("Tür");
+    expect(wrapper.find(".label-field input").element.value).toBe(
+      "Labor Fachbank 1 · Fach 2"
+    );
+  });
+
+  it("calls the door a Tür again when the provider changes from Open Locker", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    await typeProvider(wrapper, "nuki");
+
+    expect(wrapper.find(".access-point-type").text()).toContain("Tür");
   });
 
   it("shows a stored compartment's scan as it is stored", async () => {
@@ -1520,12 +1578,29 @@ describe("AccessPointEditDialog - an Open Locker compartment from the list", () 
     ApiGeoService.reverse.mockResolvedValue(null);
   });
 
+  // A new Open Locker access point starts as the Schließfachanlage
+  // (ECCdigital/tickets#1037); one compartment is taken over as the Fach.
+  async function chooseFach(wrapper) {
+    wrapper.findComponent({ ref: "typeChoice" }).vm.$emit("change", "door");
+    await flushPromises();
+  }
+
   async function pick(wrapper, externalId) {
+    await chooseFach(wrapper);
     wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", externalId);
     await wrapper.vm.$nextTick();
     await wrapper.find(".apply-lock").trigger("click");
     await wrapper.vm.$nextTick();
   }
+
+  // What the listing brings along names the Fach, too (ECCdigital/tickets#1036).
+  it("says the listing brings a Fach, not only a Tür or an Anlage", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(dialogText(wrapper)).toContain(
+      "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage."
+    );
+  });
 
   it("offers the compartments the account may open, by locker bank and number", async () => {
     const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
@@ -1534,6 +1609,7 @@ describe("AccessPointEditDialog - an Open Locker compartment from the list", () 
       "t1",
       "open-locker"
     );
+    await chooseFach(wrapper);
     const select = wrapper.findComponent({ ref: "lockSelect" });
     expect(select.props("items").map(select.props("itemText"))).toEqual([
       "Labor Fachbank 1 · Fach 1",
@@ -1621,6 +1697,565 @@ describe("AccessPointEditDialog - an Open Locker compartment from the list", () 
       `Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „${UUID}“. ${"Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat."}`
     );
     expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+});
+
+/**
+ * An Open Locker Schließfachanlage carries its own Fächer, picked from Open
+ * Locker's list, grouped by Schließfachschrank (ECCdigital/tickets#1037).
+ * Open Locker offers it next to the fixed Fach, and a new access point starts
+ * as the Anlage. A Fach another access point holds is not to be chosen, and
+ * each chosen one has a switch „außer Betrieb“.
+ */
+describe("AccessPointEditDialog - an Open Locker Schließfachanlage", () => {
+  const OPEN_LOCKER = {
+    id: "open-locker",
+    title: "Open Locker",
+    providerCapabilities: [
+      "open",
+      "getOpenProgress",
+      "listAccessPoints",
+      "validateAccessPoint",
+      "resolveCompartments",
+    ],
+  };
+  const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
+  const HAFEN = { id: "bank-hafen", name: "Quartiersschrank Hafen" };
+  const UUID_1 = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
+  const UUID_2 = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+  const UUID_3 = "1d2e3f4a-5b6c-4d7e-9f8a-0b1c2d3e4f5a";
+  const UUID_4 = "2e3f4a5b-6c7d-4e8f-a09b-1c2d3e4f5a6b";
+
+  function listedCompartment(id, lockerBank, number) {
+    return {
+      id,
+      type: "door",
+      provider: "open-locker",
+      externalId: id,
+      locationId: lockerBank.id,
+      label: `${lockerBank.name} · Fach ${number}`,
+      capabilities: ["remote"],
+      supportedModes: ["remote"],
+      metadata: { id, number, lockerBank },
+    };
+  }
+
+  const STORED_ANLAGE = {
+    id: "anlage-1",
+    type: "locker",
+    provider: "open-locker",
+    label: "Fahrradgarage",
+    externalId: "",
+    mode: "remote",
+    validationRules: [],
+    config: {
+      compartments: [
+        { id: UUID_1, number: 1, lockerBank: LABOR, outOfService: false },
+        { id: UUID_4, number: 4, lockerBank: HAFEN, outOfService: true },
+      ],
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+      data: [
+        listedCompartment(UUID_1, LABOR, 1),
+        listedCompartment(UUID_2, LABOR, 2),
+        listedCompartment(UUID_3, HAFEN, 3),
+        listedCompartment(UUID_4, HAFEN, 4),
+      ],
+    });
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+      data: { total: 0, bookings: [] },
+    });
+    ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+    ApiGeoService.search.mockResolvedValue([]);
+    ApiGeoService.reverse.mockResolvedValue(null);
+  });
+
+  function typeChoice(wrapper) {
+    return wrapper.findComponent({ ref: "typeChoice" });
+  }
+
+  async function chooseType(wrapper, type) {
+    typeChoice(wrapper).vm.$emit("change", type);
+    await flushPromises();
+  }
+
+  function row(wrapper, id) {
+    return wrapper.find(`.compartment-row[data-compartment-id='${id}']`);
+  }
+
+  function shownCompartments(wrapper) {
+    return wrapper
+      .findAll(".compartment-row")
+      .wrappers.map((r) => r.attributes("data-compartment-id"));
+  }
+
+  async function check(wrapper, id, value = true) {
+    row(wrapper, id)
+      .findComponent({ name: "v-checkbox" })
+      .vm.$emit("change", value);
+    await wrapper.vm.$nextTick();
+  }
+
+  async function outOfService(wrapper, id, value = true) {
+    row(wrapper, id)
+      .findComponent({ name: "v-switch" })
+      .vm.$emit("change", value);
+    await wrapper.vm.$nextTick();
+  }
+
+  async function save(wrapper) {
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    return ApiAccessPointService.storeAccessPoint.mock.calls[0]?.[0];
+  }
+
+  it("edits a stored Anlage by its data: one stored without a list of its own gets no Fächer to choose", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: { ...STORED_ANLAGE, config: {} },
+    });
+
+    expect(shownCompartments(wrapper)).toEqual([]);
+    expect(dialogText(wrapper)).not.toContain("Fächer der Anlage");
+  });
+
+  it("starts a new Open Locker access point as a Schließfachanlage, the Fach one choice away", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(typeChoice(wrapper).props("value")).toBe("locker");
+    expect(
+      typeChoice(wrapper)
+        .findAll(".v-btn")
+        .wrappers.map((b) => b.text())
+    ).toEqual(["Schließfachanlage", "Fach"]);
+    expect(dialogText(wrapper)).not.toContain("Der Typ ergibt sich");
+    expect(labels(wrapper)).not.toContain("UUID des Fachs");
+    expect(wrapper.findComponent({ ref: "lockSelect" }).exists()).toBe(false);
+  });
+
+  it("starts as a Schließfachanlage when Open Locker is typed in by hand", async () => {
+    const wrapper = await mountDialog({ providers: [] });
+
+    const providerInput = wrapper.find(".provider-field input");
+    providerInput.setValue("open-locker");
+    await providerInput.trigger("keydown.enter");
+    await flushPromises();
+
+    expect(typeChoice(wrapper).props("value")).toBe("locker");
+  });
+
+  it("shows the Fächer of Open Locker's list grouped by Schließfachschrank", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+      "t1",
+      "open-locker"
+    );
+    const groups = wrapper.findAll(".compartment-group").wrappers;
+    expect(
+      groups.map((g) => g.find(".compartment-group-title").text())
+    ).toEqual(["Schrank Labor Fachbank 1", "Schrank Quartiersschrank Hafen"]);
+    expect(row(wrapper, UUID_3).text()).toContain("Fach 3");
+  });
+
+  it("does not offer a Fach that stands in another Anlage or is a fixed Fach", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoints: [
+        {
+          id: "anlage-2",
+          type: "locker",
+          provider: "open-locker",
+          config: { compartments: [{ id: UUID_2 }] },
+        },
+        {
+          id: "fach-1",
+          type: "door",
+          provider: "open-locker",
+          externalId: UUID_3,
+        },
+      ],
+    });
+
+    expect(shownCompartments(wrapper)).toEqual([UUID_1, UUID_4]);
+  });
+
+  it("saves the chosen Fächer from several Schränke, one of them out of service", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await wrapper.find(".label-field input").setValue("Fahrradgarage");
+
+    await check(wrapper, UUID_1);
+    await check(wrapper, UUID_3);
+    await outOfService(wrapper, UUID_3);
+
+    const payload = await save(wrapper);
+    expect(payload).toMatchObject({
+      label: "Fahrradgarage",
+      type: "locker",
+      provider: "open-locker",
+      externalId: "",
+      mode: "remote",
+      validationRules: [],
+    });
+    expect(payload.config.compartments).toEqual([
+      { id: UUID_1, number: 1, lockerBank: LABOR, outOfService: false },
+      { id: UUID_3, number: 3, lockerBank: HAFEN, outOfService: true },
+    ]);
+  });
+
+  it("offers the switch „außer Betrieb“ only at a chosen Fach", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    expect(row(wrapper, UUID_1).text()).not.toContain("außer Betrieb");
+    await check(wrapper, UUID_1);
+    expect(row(wrapper, UUID_1).text()).toContain("außer Betrieb");
+  });
+
+  it("opens a stored Anlage with its Fächer chosen, out of the JSON text", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: STORED_ANLAGE,
+    });
+
+    expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+      "t1",
+      "open-locker"
+    );
+    expect(
+      row(wrapper, UUID_1)
+        .findComponent({ name: "v-checkbox" })
+        .props("inputValue")
+    ).toBe(true);
+    expect(
+      row(wrapper, UUID_4)
+        .findComponent({ name: "v-switch" })
+        .props("inputValue")
+    ).toBe(true);
+    expect(wrapper.find(".access-point-type").text()).toContain(
+      "Schließfachanlage"
+    );
+    await wrapper.find(".v-expansion-panel-header").trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".config-field textarea").element.value).toBe("{}");
+  });
+
+  it("takes a Fach out of a stored Anlage", async () => {
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: STORED_ANLAGE,
+    });
+
+    await check(wrapper, UUID_1, false);
+
+    const payload = await save(wrapper);
+    expect(payload.id).toBe("anlage-1");
+    expect(payload.config.compartments).toEqual([
+      { id: UUID_4, number: 4, lockerBank: HAFEN, outOfService: true },
+    ]);
+  });
+
+  it("keeps a stored Fach the list no longer names, so it can be taken out", async () => {
+    ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+    const wrapper = await mountDialog({
+      providers: [OPEN_LOCKER],
+      accessPoint: STORED_ANLAGE,
+    });
+
+    expect(shownCompartments(wrapper)).toEqual([UUID_1, UUID_4]);
+    expect(row(wrapper, UUID_4).text()).toContain(
+      "Nicht in der Liste von Open Locker"
+    );
+  });
+
+  it("says at the Fach why the backend refused it", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      validationError([
+        {
+          field: "config.compartments.0",
+          code: "compartment_in_locker_system",
+          params: {
+            compartmentId: UUID_1,
+            accessPointId: "anlage-2",
+            label: "Paketstation",
+          },
+        },
+      ])
+    );
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+    await check(wrapper, UUID_1);
+
+    await save(wrapper);
+
+    expect(row(wrapper, UUID_1).find(".compartment-error").text()).toBe(
+      "Das Fach steht schon in der Schließfachanlage „Paketstation“."
+    );
+    expect(dialogText(wrapper)).toContain(
+      "Nicht alle gewählten Fächer lassen sich speichern."
+    );
+    expect(wrapper.emitted("saved")).toBeUndefined();
+  });
+
+  /**
+   * A Fach that leaves the Zuteilung - out of service, or out of the
+   * Anlage - moves the future bookings at it on the save
+   * (ECCdigital/tickets#1043). The dialog names the bookings at it and
+   * asks first, and names after the save the ones that could not move.
+   */
+  describe("when a Fach leaves the Anlage", () => {
+    const BEGIN = Date.UTC(2026, 10, 20, 9, 0);
+    const END = Date.UTC(2026, 10, 20, 11, 0);
+
+    function booking(id, state, compartment, extra = {}) {
+      return {
+        id,
+        name: `Person ${id}`,
+        mail: `${id}@example.test`,
+        timeBegin: BEGIN,
+        timeEnd: END,
+        state,
+        compartment,
+        ...extra,
+      };
+    }
+
+    const FACH_1 = { id: UUID_1, number: 1, lockerBank: LABOR };
+
+    function leaveDialog(wrapper) {
+      return wrapper.findComponent({
+        name: "AccessPointCompartmentBookingsDialog",
+      });
+    }
+
+    function leaveText(wrapper) {
+      return leaveDialog(wrapper).findComponent({ name: "v-card" }).text();
+    }
+
+    async function openStored() {
+      return mountDialog({
+        providers: [OPEN_LOCKER],
+        accessPoint: STORED_ANLAGE,
+      });
+    }
+
+    async function click(wrapper, selector) {
+      await leaveDialog(wrapper).find(selector).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("names the running and future bookings at a Fach going out of service and saves only once confirmed", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: {
+          total: 2,
+          bookings: [
+            booking("b-running", "running", FACH_1),
+            booking("b-future", "future", FACH_1),
+          ],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
+        "anlage-1",
+        [UUID_1],
+        "t1"
+      );
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(leaveDialog(wrapper).props("open")).toBe(true);
+      const text = leaveText(wrapper);
+      expect(text).toContain("b-running");
+      expect(text).toContain("Person b-running");
+      expect(text).toContain("läuft – behält das Fach");
+      expect(text).toContain("b-future");
+      expect(text).toContain("künftig – bekommt ein freies Fach");
+      expect(text).toContain("Schrank Labor Fachbank 1, Fach 1");
+
+      await click(wrapper, ".confirm-compartments-leave");
+
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+      expect(
+        ApiAccessPointService.storeAccessPoint.mock.calls[0][0].config
+          .compartments[0].outOfService
+      ).toBe(true);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("asks about a Fach taken out of the Anlage too", async () => {
+      const wrapper = await openStored();
+      await check(wrapper, UUID_1, false);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
+        "anlage-1",
+        [UUID_1],
+        "t1"
+      );
+    });
+
+    it("saves nothing when the question is cancelled", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 1, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      await click(wrapper, ".cancel-compartments-leave");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
+    it("cancels the question by the X in the title as well", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 1, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      await click(wrapper, "[data-test='close-compartments-leave']");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+    });
+
+    it("names the bookings left at their Fach with one outlined „Schließen“, the X closing it alike", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: {
+          id: "anlage-1",
+          unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+      await save(wrapper);
+
+      const buttons = leaveDialog(wrapper)
+        .findComponent({ name: "v-card-actions" })
+        .findAllComponents({ name: "v-btn" });
+      expect(buttons).toHaveLength(1);
+      expect(buttons.at(0).text()).toBe("Schließen");
+      expect(buttons.at(0).props("outlined")).toBe(true);
+
+      await click(wrapper, "[data-test='close-compartments-leave']");
+
+      expect(leaveDialog(wrapper).props("open")).toBe(false);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("counts the bookings the list leaves out", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+        data: { total: 12, bookings: [booking("b-future", "future", FACH_1)] },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(leaveText(wrapper)).toContain("… und 11 weitere.");
+    });
+
+    it("saves without asking when no booking hangs at the Fach", async () => {
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("asks nothing when no Fach leaves - a Fach back in service included", async () => {
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_4, false);
+
+      await save(wrapper);
+
+      expect(
+        ApiAccessPointService.getCompartmentBookings
+      ).not.toHaveBeenCalled();
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    });
+
+    it("still asks when the bookings cannot be read, and says so", async () => {
+      ApiAccessPointService.getCompartmentBookings.mockRejectedValue(
+        lifecycleError(403, "forbidden")
+      );
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+      expect(leaveText(wrapper)).toContain(
+        "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen."
+      );
+    });
+
+    it("names after the save the future bookings that could not move, and closes on „OK“", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: {
+          id: "anlage-1",
+          unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+        },
+      });
+      const wrapper = await openStored();
+      await outOfService(wrapper, UUID_1);
+
+      await save(wrapper);
+
+      expect(wrapper.emitted("saved")).toBeUndefined();
+      expect(leaveDialog(wrapper).props("open")).toBe(true);
+      const text = leaveText(wrapper);
+      expect(text).toContain("Kein freies Fach für diese künftigen Buchungen");
+      expect(text).toContain("b-stuck");
+      expect(text).toContain("Schrank Labor Fachbank 1, Fach 1");
+
+      await click(wrapper, ".close-unmoved");
+
+      expect(wrapper.emitted("saved")).toEqual([
+        [
+          {
+            id: "anlage-1",
+            unmovedBookings: [booking("b-stuck", undefined, FACH_1)],
+          },
+        ],
+      ]);
+    });
+  });
+
+  it("takes a fixed Fach over from the list once „Fach“ is chosen", async () => {
+    const wrapper = await mountDialog({ providers: [OPEN_LOCKER] });
+
+    await chooseType(wrapper, "door");
+    expect(wrapper.findAll(".compartment-row").length).toBe(0);
+    wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", UUID_2);
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".apply-lock").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(typeChoice(wrapper).props("value")).toBe("door");
+    expect(labels(wrapper)).toContain("UUID des Fachs");
+    const payload = await save(wrapper);
+    expect(payload).toMatchObject({
+      type: "door",
+      provider: "open-locker",
+      externalId: UUID_2,
+      mode: "remote",
+    });
+    expect(payload.config).not.toHaveProperty("compartments");
   });
 });
 

@@ -49,6 +49,8 @@ export default {
         "scan",
         "provision",
         "revoke",
+        // A Fach of a booking moved by hand (Umsetzen).
+        "reassign",
         "status",
         "webhook",
       ].map((value) => ({

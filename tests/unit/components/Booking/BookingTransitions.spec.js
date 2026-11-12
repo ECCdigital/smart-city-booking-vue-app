@@ -1083,6 +1083,61 @@ describe("BookingTransitions", () => {
       });
     });
 
+    it("says „Kein Fach frei“ in the open dialog when no Fach is free, without a reload and without reinstating anyway", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiBookingService.reinstateBooking.mockRejectedValue(
+        lifecycleError(409, "compartments_unavailable", {
+          bookableId: "room-1",
+          accessPointId: "anlage-1",
+          needed: 1,
+          free: 0,
+        })
+      );
+
+      await start(wrapper, "reinstate", {
+        booking: booking({ status: "cancelled" }),
+      });
+      await clickDialogButton(wrapper, "Wiederherstellen");
+
+      expect(document.querySelector(".v-dialog--active").textContent).toContain(
+        "Kein Fach frei"
+      );
+      expect(toastMessages(store)).toContain("Kein Fach frei");
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "reinstate",
+        message: "Kein Fach frei",
+        refetch: false,
+      });
+      expect(dialogButton("Trotzdem wiederherstellen")).toBeUndefined();
+    });
+
+    it("says „Kein Fach frei“ for a series whose member finds no free Fach", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiGroupBookingService.reinstateGroupBooking.mockRejectedValue(
+        lifecycleError(409, "compartments_unavailable", {
+          needed: 1,
+          free: 0,
+        })
+      );
+
+      await start(
+        wrapper,
+        "reinstate",
+        series([{ status: "cancelled" }, { id: "bk-2", status: "cancelled" }])
+      );
+      await clickDialogButton(
+        wrapper,
+        "Alle stornierten Buchungen der Serie wiederherstellen"
+      );
+
+      expect(toastMessages(store)).toContain("Kein Fach frei");
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "reinstate",
+        message: "Kein Fach frei",
+        refetch: false,
+      });
+    });
+
     it("keeps the dialog open with the conflict and asks for a reload on a 409", async () => {
       const { wrapper, store } = mountTransitions();
       ApiBookingService.reinstateBooking.mockRejectedValue(

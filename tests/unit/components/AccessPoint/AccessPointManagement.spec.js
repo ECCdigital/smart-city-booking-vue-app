@@ -3,6 +3,7 @@ import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, forbiddenError } from "@tests/unit/support/api";
 import {
+  filterSegmentLabels,
   openFilterCard,
   pickFilterOption,
   typeSearch,
@@ -89,6 +90,18 @@ const PAREVA_LOCKER = {
   provider: "pareva",
   label: "Schließfächer Rathaus",
   externalId: "66570d1a1f9b6357ed971746",
+  validationRules: [],
+};
+
+// An Open Locker compartment as #970 and #971 stored it: a door of its own,
+// opened remotely, named by locker bank and number.
+const OPEN_LOCKER_COMPARTMENT = {
+  id: "ap-open-locker",
+  type: "door",
+  mode: "remote",
+  provider: "open-locker",
+  label: "Labor Fachbank 1 · Fach 2",
+  externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
   validationRules: [],
 };
 
@@ -275,6 +288,59 @@ describe("AccessPointManagement", () => {
 
       await pickFilterOption("Alle");
       expect(rows(wrapper)).toHaveLength(2);
+    });
+
+    /**
+     * An Open Locker compartment is a door by type but a Fach on site
+     * (ECCdigital/tickets#1036), so neither its type column nor the filter
+     * that holds it calls it a „Tür“. A tenant without one sees the list as
+     * before.
+     */
+    it("calls an Open Locker compartment a Fach, not a Tür", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [OPEN_LOCKER_COMPARTMENT],
+      });
+
+      const wrapper = await mountManagement();
+
+      const row = rowFor(wrapper, "Labor Fachbank 1 · Fach 2");
+      expect(row.text()).toContain("Fach");
+      expect(row.text()).not.toContain("Tür");
+      await openFilterCard(wrapper);
+      expect(filterSegmentLabels()).toEqual(["Alle", "Fächer", "Anlagen"]);
+    });
+
+    it.each([
+      [[DOOR, LOCKER], "Türen"],
+      [[DOOR, OPEN_LOCKER_COMPARTMENT], "Türen & Fächer"],
+      [[OPEN_LOCKER_COMPARTMENT, LOCKER], "Fächer"],
+      [[], "Türen"],
+    ])(
+      "names the filter for doors by what it holds",
+      async (accessPoints, label) => {
+        ApiAccessPointService.getAccessPoints.mockResolvedValue({
+          data: accessPoints,
+        });
+
+        const wrapper = await mountManagement();
+        await openFilterCard(wrapper);
+
+        expect(filterSegmentLabels()[1]).toBe(label);
+      }
+    );
+
+    it("filters an Open Locker compartment with the doors", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [DOOR, OPEN_LOCKER_COMPARTMENT, LOCKER],
+      });
+
+      const wrapper = await mountManagement();
+      await openFilterCard(wrapper);
+      await pickFilterOption("Türen & Fächer");
+
+      expect(rows(wrapper)).toHaveLength(2);
+      expect(rowFor(wrapper, "Haupteingang")).toBeTruthy();
+      expect(rowFor(wrapper, "Labor Fachbank 1 · Fach 2")).toBeTruthy();
     });
 
     it("narrows the table to what the search matches", async () => {

@@ -301,3 +301,57 @@ describe("BookableEditAmount - Anzahl from a provider", () => {
     expect(find(wrapper, "flow-amount-input").element.value).toBe("4");
   });
 });
+
+/**
+ * `amount` stays independent of the Fächer of an Open Locker
+ * Schließfachanlage (ECCdigital/tickets#1038): the card says so when it is
+ * unlimited or larger than their number, and changes nothing.
+ */
+describe("BookableEditAmount - the Fächer of a linked Anlage", () => {
+  const GARAGE = {
+    id: "ap-garage",
+    type: "locker",
+    provider: "open-locker",
+    label: "Fahrradgarage",
+    config: {
+      compartments: [
+        { id: "c-1", number: 1 },
+        { id: "c-2", number: 2 },
+      ],
+    },
+  };
+  const mountLinked = (amount) =>
+    mountEditing(BookableEditAmount, {
+      bookable: bookable({
+        amount,
+        accessPointDetails: { active: true, accessPointIds: [GARAGE.id] },
+      }),
+      accessPoints: [GARAGE],
+    });
+
+  it("names the Fächer when the Anzahl is larger", () => {
+    const { wrapper, patches } = mountLinked(3);
+
+    expect(text(wrapper, "flow-amount-compartments")).toContain(
+      "Die Anzahl (3) ist größer als die 2 Fächer der Schließfachanlage „Fahrradgarage“."
+    );
+    expect(find(wrapper, "flow-amount-box").classes()).toContain(
+      "bookable-amount__box--warning"
+    );
+    expect(patches).toEqual([]);
+  });
+
+  it("names the Fächer when the Anzahl is unlimited", () => {
+    const { wrapper } = mountLinked(null);
+
+    expect(text(wrapper, "flow-amount-compartments")).toContain(
+      "Die Anzahl ist unbegrenzt"
+    );
+  });
+
+  it("says nothing when the Anzahl fits", () => {
+    const { wrapper } = mountLinked(2);
+
+    expect(find(wrapper, "flow-amount-compartments").exists()).toBe(false);
+  });
+});

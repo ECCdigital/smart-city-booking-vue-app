@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
+  accessPointTypeLabel,
   canListAccessPoints,
   providerAccessPointDefaults,
   providerIdFields,
   providerModes,
   providerRequiresScanByDefault,
+  providerTypes,
 } from "@/utilities/access-points";
 
 /**
- * What each provider hands out. Open Locker (ECCdigital/tickets#970) hands
- * out compartments, each a door opened remotely - not an Anlage, because
- * every compartment is one access point of its own.
+ * What each provider hands out. Open Locker hands out both a
+ * Schließfachanlage, whose Fächer the platform assigns, and a fixed Fach, a
+ * door - both opened remotely, and a new one starts as the Anlage
+ * (ECCdigital/tickets#1037).
  */
 describe("what a provider's access points are", () => {
   it.each([
     ["nuki", { type: "door" }],
     ["salto-ks", { type: "door" }],
-    ["open-locker", { type: "door", mode: "remote" }],
+    ["open-locker", { type: "locker", mode: "remote" }],
     ["ifbs", { type: "locker", mode: "remote" }],
     ["pareva", { type: "locker", mode: "authorization" }],
   ])("%s hands out %o", (provider, defaults) => {
@@ -25,6 +28,26 @@ describe("what a provider's access points are", () => {
 
   it("says nothing for a provider it does not know", () => {
     expect(providerAccessPointDefaults("some-new-provider")).toBeNull();
+  });
+});
+
+/**
+ * The types an admin chooses between for a provider's access point: Open
+ * Locker offers the Schließfachanlage first and the fixed Fach next; every
+ * other provider hands out one type, and one this UI does not know none it
+ * could name.
+ */
+describe("the types a provider offers", () => {
+  it.each([
+    ["open-locker", ["locker", "door"]],
+    ["nuki", ["door"]],
+    ["salto-ks", ["door"]],
+    ["ifbs", ["locker"]],
+    ["pareva", ["locker"]],
+    ["some-new-provider", []],
+    ["", []],
+  ])("%s offers %o", (provider, types) => {
+    expect(providerTypes(provider)).toEqual(types);
   });
 });
 
@@ -87,7 +110,8 @@ describe("the id fields of a provider's access point", () => {
   ])(
     "shows %s the field %s with hint %s, placeholder %s, the location field: %s",
     (provider, label, hint, placeholder, locationField) => {
-      expect(providerIdFields(provider)).toEqual({
+      expect(providerIdFields(provider, "door")).toEqual({
+        idField: true,
         label,
         hint,
         placeholder,
@@ -95,6 +119,21 @@ describe("the id fields of a provider's access point", () => {
       });
     }
   );
+
+  // An Open Locker Schließfachanlage carries its Fächer, not an id of its
+  // own (ECCdigital/tickets#1037): it shows no id field at all.
+  it("shows an Open Locker Schließfachanlage no id field", () => {
+    expect(providerIdFields("open-locker", "locker")).toMatchObject({
+      idField: false,
+      locationField: false,
+    });
+  });
+
+  it("goes by the provider alone where the type changes nothing", () => {
+    expect(providerIdFields("ifbs", "locker")).toEqual(
+      providerIdFields("ifbs")
+    );
+  });
 });
 
 /**
@@ -122,5 +161,39 @@ describe("whether a provider lists access points", () => {
   it("is false for a provider that reports no capabilities at all", () => {
     expect(canListAccessPoints({ id: "pareva" })).toBe(false);
     expect(canListAccessPoints(null)).toBe(false);
+  });
+});
+
+/**
+ * What the type of an access point is called follows provider and type
+ * (ECCdigital/tickets#1036): an Open Locker door is a compartment on site, so
+ * it reads „Fach“, never „Tür“ - the doors of Nuki and Salto KS stay „Tür“,
+ * the Anlagen of iFBS and Pareva stay „Anlage“. A compartment stored before
+ * reads „Fach“ as it is, without a migration.
+ */
+describe("what the type of a provider's access point is called", () => {
+  it.each([
+    ["nuki", "door", "Tür"],
+    ["salto-ks", "door", "Tür"],
+    ["open-locker", "door", "Fach"],
+    ["open-locker", "locker", "Schließfachanlage"],
+    ["ifbs", "locker", "Anlage"],
+    ["pareva", "locker", "Anlage"],
+  ])("%s %s reads %s", (provider, type, name) => {
+    expect(accessPointTypeLabel({ provider, type })).toBe(name);
+  });
+
+  it("goes by the type alone for a provider it does not know", () => {
+    expect(
+      accessPointTypeLabel({ provider: "some-new-provider", type: "door" })
+    ).toBe("Tür");
+    expect(accessPointTypeLabel({ type: "locker" })).toBe("Anlage");
+  });
+
+  it("names no type it does not know", () => {
+    expect(accessPointTypeLabel({ provider: "open-locker", type: "x" })).toBe(
+      ""
+    );
+    expect(accessPointTypeLabel(null)).toBe("");
   });
 });

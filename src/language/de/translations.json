@@ -133,6 +133,8 @@
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
+      "compartments_unavailable": "Kein Fach frei",
+      "compartment_taken": "Das Fach ist inzwischen belegt oder außer Betrieb. Bitte ein anderes wählen.",
       "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
       "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
       "not_cancelled": "Die Buchung ist nicht storniert.",
@@ -149,6 +151,7 @@
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
+      "compartment_not_in_booking": "Die Buchung hat dieses Fach nicht mehr. Bitte laden Sie die Zugänge neu.",
       "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
@@ -175,6 +178,7 @@
     },
     "unavailable-codes": {
       "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
+      "locker_system_busy": "Die Schließfachanlage ist gerade mit einer anderen Zuteilung beschäftigt. Bitte kurz warten und erneut versuchen.",
       "access_provider_unreachable": "{provider} ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen.",
       "store_front_url_missing": "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL), der QR-Code lässt sich deshalb nicht erzeugen. Bitte wenden Sie sich an den Betrieb."
     },
@@ -2882,12 +2886,16 @@
         "typeFilter": "Typ",
         "filterAll": "Alle",
         "filterDoors": "Türen",
+        "filterCompartments": "Fächer",
+        "filterDoorsAndCompartments": "Türen & Fächer",
         "filterLockers": "Anlagen",
         "emptyFiltered": "Kein Zugangspunkt dieses Typs."
       },
       "types": {
         "door": "Tür",
-        "locker": "Anlage"
+        "locker": "Anlage",
+        "compartment": "Fach",
+        "lockerSystem": "Schließfachanlage"
       },
       "modes": {
         "authorization": "PIN-Code",
@@ -2930,6 +2938,7 @@
         "location": "Standort",
         "validationRules": "Validierungsregeln",
         "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
+        "typeChoiceHint": "Bei einer Schließfachanlage teilt Biletado jeder Buchung ein freies Fach aus der Anlage zu. Ein einzelnes Fach teilen sich alle Buchungen des Buchungsobjekts.",
         "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
         "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
@@ -2939,13 +2948,38 @@
         "compartmentUuid": "UUID des Fachs",
         "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
       },
+      "compartments": {
+        "title": "Fächer der Anlage",
+        "hint": "Wählen Sie die Fächer der Anlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Anlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
+        "lockerBank": "Schrank {name}",
+        "compartment": "Fach {number}",
+        "outOfService": "außer Betrieb",
+        "notListed": "Nicht in der Liste von {provider}",
+        "empty": "Keine Fächer zur Wahl.",
+        "selected": "Gewählte Fächer: {count}",
+        "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern.",
+        "leave": {
+          "title": "Fächer mit Buchungen",
+          "question": "An diesen Fächern hängen Buchungen. Künftige Buchungen bekommen beim Speichern das erste freie Fach in Betrieb, auch unbezahlte. Laufende Buchungen behalten ihr Fach, weil schon Sachen darin liegen können.",
+          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach.",
+          "states": {
+            "running": "läuft – behält das Fach",
+            "future": "künftig – bekommt ein freies Fach"
+          },
+          "more": "… und {count} weitere.",
+          "confirm": "Trotzdem speichern",
+          "unmovedTitle": "Nicht alle Buchungen haben ein neues Fach",
+          "unmovedText": "Die Anlage ist gespeichert. Kein freies Fach für diese künftigen Buchungen: Sie bleiben an ihrem alten Fach. Lösen Sie sie von Hand, etwa in den Details der Buchung.",
+          "close": "Schließen"
+        }
+      },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",
         "provider": "Anbieter",
         "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
+        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -3035,12 +3069,17 @@
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet",
           "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
+          "duplicate_compartment": "Das Fach ist doppelt gewählt.",
+          "unsupported_by_provider": "Die Anlagen dieses Anbieters tragen keine eigenen Fächer.",
           "unknown_open_action": "Unzulässiger Wert"
         },
         "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
         "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
+        "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
+        "compartmentIsFixed": "Das Fach ist schon als festes Fach „{label}“ angelegt.",
+        "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
@@ -3354,6 +3393,7 @@
         "scan": "QR-Scan",
         "provision": "Provisionierung",
         "revoke": "Entzug",
+        "reassign": "Fach umgesetzt",
         "status": "Status",
         "webhook": "Webhook"
       },
@@ -3397,7 +3437,13 @@
       },
       "grants": {
         "door": "Die Tür, im Buchungszeitraum mit anderen geteilt",
-        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
+        "compartment": "Das Fach, im Buchungszeitraum mit anderen geteilt",
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
+        "lockerSystem": "Je gebuchter Einheit ein eigenes Fach, von Biletado aus den Fächern der Anlage zugeteilt"
+      },
+      "compartmentCount": {
+        "unlimited": "Die Anzahl ist unbegrenzt, gleichzeitig buchbar ist aber höchstens das eine Fach der Schließfachanlage „{label}“. | Die Anzahl ist unbegrenzt, gleichzeitig buchbar sind aber höchstens die {count} Fächer der Schließfachanlage „{label}“.",
+        "larger": "Die Anzahl ({amount}) ist größer als das eine Fach der Schließfachanlage „{label}“. Gleichzeitig buchbar ist höchstens 1. | Die Anzahl ({amount}) ist größer als die {count} Fächer der Schließfachanlage „{label}“. Gleichzeitig buchbar sind höchstens {count}."
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
@@ -3424,11 +3470,27 @@
       "reload": "neu laden",
       "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
       "compartment": "{label} — Fach {compartment}",
+      "assignedCompartment": "{label} — {compartment}",
       "process": "Vorgang:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",
       "open": "Öffnen",
       "openCompartment": "Fach öffnen",
+      "reassignCompartment": "Fach umsetzen",
+      "reassign": {
+        "title": "Fach umsetzen",
+        "current": "Bisher:",
+        "hint": "Zur Wahl stehen die Fächer derselben Schließfachanlage, die im Zeitraum der Buchung samt Puffer frei und in Betrieb sind. Danach öffnen „Fach öffnen“ und der Mobile Key das neue Fach. Es geht keine Mail raus.",
+        "none": "Kein anderes Fach frei.",
+        "confirm": "Umsetzen",
+        "cancel": "Abbrechen",
+        "success": {
+          "title": "Fach umgesetzt",
+          "message": "Die Buchung öffnet ab jetzt das neue Fach."
+        },
+        "loadError": "Die freien Fächer ließen sich nicht laden.",
+        "error": "Das Fach ließ sich nicht umsetzen."
+      },
       "state": {
         "held": "Vorgemerkt",
         "granted": "Erteilt",
