@@ -3033,6 +3033,8 @@
         "menu": "QR-Codes der Fächer …",
         "title": "QR-Codes der Fächer",
         "subtitle": "{label} · 1 Fach | {label} · {count} Fächer",
+        "printAll": "Alle drucken (Sammel-PDF)",
+        "printAllTitle": "QR-Codes aller Fächer als Etikettenbogen (2×4 je A4, 105 × 74 mm), jeder Schrank auf einer neuen Seite",
         "columns": {
           "compartment": "Fach",
           "state": "Zustand",

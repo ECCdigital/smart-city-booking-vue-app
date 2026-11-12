@@ -63,6 +63,18 @@ export default {
     );
   },
 
+  /**
+   * The Sammel-PDF of a Schließfachanlage that carries its own Fächer
+   * (ECCdigital/tickets#1062): the QR codes of all its Fächer on an
+   * Etikettenbogen, rendered by the server.
+   */
+  getCompartmentQrSheet(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/accesspoints/${id}/compartments/qrcodes`, {
+      responseType: "blob",
+    });
+  },
+
   rotateScanCode(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(`api/${t}/accesspoints/${id}/rotate-scan-code`, {});
