@@ -11,6 +11,7 @@ export const CUSTOMER_UPLOAD_FORMATS = Object.freeze(["pdf", "jpeg", "png"]);
 export const UPLOAD_FIELD_CATEGORIES = Object.freeze(["normal", "sensitive"]);
 export const UPLOAD_FIELD_TIMINGS = Object.freeze([
   "checkout",
+  "beforeRelease",
   "afterConfirmation",
 ]);
 
@@ -679,6 +680,22 @@ export function openProofCountOf(booking) {
       field.state === "submitted" ||
       (field.required && MISSING_FIELD_STATES.has(field.state))
   ).length;
+}
+
+/**
+ * The labels of the required proofs still missing at a booking (open,
+ * rejected or overdue), for the hint at its release and „Nachweise
+ * anfordern“.
+ *
+ * @param {Object} booking A booking answer with `customerUploadState`
+ * @returns {string[]}
+ */
+export function missingProofLabelsOf(booking) {
+  const fields = booking?.customerUploadState?.fields;
+  if (!Array.isArray(fields)) return [];
+  return fields
+    .filter((field) => field.required && MISSING_FIELD_STATES.has(field.state))
+    .map((field) => field.label);
 }
 
 /** {@link openProofCountOf} over the bookings of a series. */

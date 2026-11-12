@@ -40,12 +40,13 @@ const FIELD = {
   deadlineDaysBeforeStart: null,
 };
 
-const mountArea = (uploadFieldDefinitions = [], storeOptions) =>
+const mountArea = (uploadFieldDefinitions = [], storeOptions, bookable = {}) =>
   mountEditing(BookableEditUploadFields, {
     bookable: new Bookable({
       tenantId: "t1",
       title: "Saal",
       uploadFieldDefinitions,
+      ...bookable,
     }).toPlain(),
     store: store(storeOptions),
   });
@@ -239,6 +240,57 @@ describe("BookableEditUploadFields (Upload-Felder)", () => {
       timing: "afterConfirmation",
       deadlineDaysBeforeStart: 7,
     });
+  });
+
+  it("explains each timing below its title", async () => {
+    const { wrapper } = mountArea([FIELD]);
+    await find(wrapper, "upload-field-edit").trigger("click");
+
+    expect(activeDialog().textContent).toContain("Während des Checkouts");
+    expect(activeDialog().textContent).toContain("Vor Freigabe der Buchung");
+    expect(activeDialog().textContent).toContain("Nach Freigabe der Buchung");
+    expect(
+      inDialog("upload-field-timing-hint-checkout").textContent.trim()
+    ).toBe(
+      "Der Pflicht-Nachweis muss hochgeladen werden, bevor die Buchung abgeschlossen werden kann. Optionale Nachweise können auch nach dem Checkout hochgeladen werden."
+    );
+    expect(
+      inDialog("upload-field-timing-hint-beforeRelease").textContent
+    ).toContain(
+      "Ein Pflicht-Nachweis ist Voraussetzung für die manuelle Freigabe. (Funktioniert nicht bei automatischer Freigabe)"
+    );
+    expect(
+      inDialog("upload-field-timing-hint-afterConfirmation").textContent
+    ).toContain("Bis zu Beginn der Buchung muss der Nachweis erfolgt sein.");
+  });
+
+  it("stores a field before the release without a deadline of its own", async () => {
+    const { wrapper, patches } = mountArea([
+      { ...FIELD, timing: "afterConfirmation", deadlineDaysBeforeStart: 7 },
+    ]);
+    await find(wrapper, "upload-field-edit").trigger("click");
+
+    await click(wrapper, "upload-field-timing-beforeRelease");
+    expect(inDialog("upload-field-deadline")).toBeNull();
+    expect(inDialog("upload-field-timing-auto-commit")).toBeNull();
+    await click(wrapper, "upload-field-save");
+
+    expect(lastPatch(patches).uploadFieldDefinitions[0]).toMatchObject({
+      timing: "beforeRelease",
+      deadlineDaysBeforeStart: null,
+    });
+  });
+
+  it("warns before the release where the bookable releases by itself", async () => {
+    const { wrapper } = mountArea([FIELD], undefined, {
+      autoCommitBooking: true,
+    });
+    await find(wrapper, "upload-field-edit").trigger("click");
+
+    await click(wrapper, "upload-field-timing-beforeRelease");
+    expect(inDialog("upload-field-timing-auto-commit").textContent).toContain(
+      "gibt Buchungen automatisch frei"
+    );
   });
 
   it("drops the deadline when the field moves back to the checkout", async () => {

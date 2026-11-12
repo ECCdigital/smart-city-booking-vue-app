@@ -24,6 +24,8 @@ export default {
     /** The field to edit, or null for a new one. */
     field: { type: Object, default: null },
     tenantFormats: { type: Array, required: true },
+    /** Whether the bookable releases its bookings by itself. */
+    autoCommit: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -59,6 +61,7 @@ export default {
       return UPLOAD_FIELD_TIMINGS.map((value) => ({
         value,
         text: this.$t(`${COPY}.timings.${value}`),
+        hint: this.$t(`${COPY}.timing-hints.${value}`),
       }));
     },
     sensitiveHintShown() {
@@ -94,8 +97,10 @@ export default {
       this.local = {
         ...this.local,
         timing,
-        // A field of the checkout has no deadline.
-        ...(timing === "checkout" && { deadlineDaysBeforeStart: null }),
+        // Only a field after the release has a deadline of its own.
+        ...(timing !== "afterConfirmation" && {
+          deadlineDaysBeforeStart: null,
+        }),
       };
     },
     setFormats(formats) {
@@ -236,10 +241,9 @@ export default {
     </div>
     <v-radio-group
       :value="local.timing"
-      row
       dense
       hide-details
-      class="mt-0"
+      class="mt-0 upload-field-timings"
       @change="setTiming"
     >
       <v-radio
@@ -247,9 +251,31 @@ export default {
         :key="option.value"
         :data-test="`upload-field-timing-${option.value}`"
         :value="option.value"
-        :label="option.text"
-      />
+        class="align-start"
+      >
+        <template #label>
+          <div class="upload-field-timing">
+            <div class="text-body-2">{{ option.text }}</div>
+            <div
+              class="text-caption text--secondary"
+              :data-test="`upload-field-timing-hint-${option.value}`"
+            >
+              {{ option.hint }}
+            </div>
+          </div>
+        </template>
+      </v-radio>
     </v-radio-group>
+    <v-alert
+      v-if="local.timing === 'beforeRelease' && autoCommit"
+      type="warning"
+      dense
+      text
+      class="mt-3 mb-0 text-caption"
+      data-test="upload-field-timing-auto-commit"
+    >
+      {{ $t("bookable.uploadFields.timing-auto-commit") }}
+    </v-alert>
     <v-text-field
       v-if="local.timing === 'afterConfirmation'"
       data-test="upload-field-deadline"
@@ -296,5 +322,15 @@ export default {
 /* The switch sits on the first line of its label, the hint below it. */
 .upload-field-required >>> .v-input__slot {
   align-items: flex-start;
+}
+
+/* Each timing below the other, its hint under its title. */
+.upload-field-timings >>> .v-radio {
+  align-items: flex-start;
+  margin-bottom: var(--scb-space-2);
+}
+
+.upload-field-timings >>> .v-radio .v-input--selection-controls__input {
+  margin-top: 0;
 }
 </style>

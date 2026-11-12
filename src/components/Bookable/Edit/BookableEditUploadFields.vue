@@ -226,6 +226,7 @@ export default {
       :open="dialogOpen"
       :field="editingField"
       :tenant-formats="tenantFormats"
+      :auto-commit="!!bookable.autoCommitBooking"
       @save="onSave"
       @close="closeDialog"
     />

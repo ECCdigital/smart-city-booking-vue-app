@@ -147,7 +147,8 @@
       "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
       "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung.",
       "customer_upload_already_reviewed": "Dieser Nachweis wurde inzwischen schon geprüft. Bitte laden Sie die Seite neu.",
-      "customer_upload_field_not_reviewed": "Dieses Feld ist nicht geprüft oder hat noch ungeprüfte Nachweise."
+      "customer_upload_field_not_reviewed": "Dieses Feld ist nicht geprüft oder hat noch ungeprüfte Nachweise.",
+      "customer_upload_nothing_missing": "Für diese Buchung fehlt kein Pflicht-Nachweis mehr."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
@@ -244,9 +245,16 @@
       "sensitive-warning": "Besonders schutzwürdig sind etwa Ausweise oder Gesundheitsdaten. Die Datei wird sofort nach der Prüfung automatisch gelöscht. Wägen Sie ab, ob eine Sichtprüfung vor Ort zum Zeitpunkt der Buchung ausreichend wäre.",
       "timing": "Zeitpunkt des Uploads",
       "timings": {
-        "checkout": "Beim Checkout",
-        "afterConfirmation": "Nach der Freigabe der Buchung"
+        "checkout": "Während des Checkouts",
+        "beforeRelease": "Vor Freigabe der Buchung",
+        "afterConfirmation": "Nach Freigabe der Buchung"
       },
+      "timing-hints": {
+        "checkout": "Der Pflicht-Nachweis muss hochgeladen werden, bevor die Buchung abgeschlossen werden kann. Optionale Nachweise können auch nach dem Checkout hochgeladen werden.",
+        "beforeRelease": "Der Nachweis kann nach Abschluss der Buchung hochgeladen werden. Ein Pflicht-Nachweis ist Voraussetzung für die manuelle Freigabe. (Funktioniert nicht bei automatischer Freigabe)",
+        "afterConfirmation": "Der Nachweis kann erst hochgeladen werden, sobald die Buchung freigegeben wurde. Bis zu Beginn der Buchung muss der Nachweis erfolgt sein."
+      },
+      "timing-auto-commit": "Dieses Buchungsobjekt gibt Buchungen automatisch frei. Der Nachweis kann dann erst nach der Freigabe hochgeladen werden.",
       "deadline": "Frist vor Buchungsbeginn",
       "deadline-hint": "Legen Sie fest, bis wann der Nachweis eingereicht werden soll. Ohne Angabe gilt der Buchungsbeginn als Frist.",
       "validation": {
@@ -1925,6 +1933,12 @@
       },
       "release-hint": "Es ist {count} Nachweis offen bzw. ungeprüft. | Es sind {count} Nachweise offen bzw. ungeprüft.",
       "release-hint-series": "In der Serie ist {count} Nachweis offen bzw. ungeprüft. Freigeben ist trotzdem möglich. | In der Serie sind {count} Nachweise offen bzw. ungeprüft. Freigeben ist trotzdem möglich.",
+      "release-missing": "Es fehlt noch: {labels}.",
+      "release-missing-series": "Es fehlen noch:",
+      "release-missing-booking": "Buchung #{id}: {labels}",
+      "remind": "Nachweis anfordern | Nachweise anfordern",
+      "remind-sent": "Die Buchenden wurden per E-Mail an die fehlenden Nachweise erinnert.",
+      "remind-error": "Die Erinnerung konnte nicht gesendet werden.",
       "release-title": "Buchung freigeben",
       "release-question": "Buchung {id} trotzdem freigeben?"
     },

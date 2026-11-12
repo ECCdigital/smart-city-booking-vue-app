@@ -28,19 +28,11 @@
           {{ statusText }}
         </v-chip>
 
-        <v-alert
-          v-if="openProofCount > 0"
-          type="warning"
-          border="left"
-          text
+        <BookingProofReleaseHint
+          v-if="proofBooking"
+          :bookings="[proofBooking]"
           class="mt-4 mb-0"
-        >
-          {{
-            $tc("booking.proofState.release-hint", openProofCount, {
-              count: openProofCount,
-            })
-          }}
-        </v-alert>
+        />
 
         <v-divider class="my-4"></v-divider>
         <v-checkbox
@@ -66,9 +58,11 @@
 
 <script>
 import { mapActions } from "vuex";
+import BookingProofReleaseHint from "@/components/Booking/BookingProofReleaseHint.vue";
 
 export default {
   name: "BookingConfirmStatusChangeDialog",
+  components: { BookingProofReleaseHint },
   props: {
     open: {
       type: Boolean,
@@ -86,10 +80,13 @@ export default {
       type: String,
       required: true,
     },
-    /** Proofs open or unchecked at a booking the move releases: a hint only. */
-    openProofCount: {
-      type: Number,
-      default: 0,
+    /**
+     * The booking the move releases, for the hint of its open or unchecked
+     * proofs; null where the move releases nothing.
+     */
+    proofBooking: {
+      type: Object,
+      default: null,
     },
   },
   data() {

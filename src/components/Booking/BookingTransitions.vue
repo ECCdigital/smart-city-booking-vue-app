@@ -19,13 +19,7 @@
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-6">
-          <v-alert type="warning" border="left" text class="mb-4 text-body-2">
-            {{
-              $tc("booking.proofState.release-hint", openProofCount, {
-                count: openProofCount,
-              })
-            }}
-          </v-alert>
+          <BookingProofReleaseHint :bookings="[booking]" class="mb-4" />
           <p class="mb-0">
             {{ $t("booking.proofState.release-question", { id: booking.id }) }}
           </p>
@@ -250,6 +244,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
 import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
+import BookingProofReleaseHint from "@/components/Booking/BookingProofReleaseHint.vue";
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import GroupBookingReinstateDialog from "@/components/Booking/GroupBookingReinstateDialog.vue";
@@ -291,6 +286,7 @@ import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 export default {
   name: "BookingTransitions",
   components: {
+    BookingProofReleaseHint,
     GroupBookingCommitDialog,
     BookingPayDialog,
     BookingRejectConformationDialog,
@@ -318,10 +314,6 @@ export default {
     },
     members() {
       return this.target?.bookings || [];
-    },
-    /** The proofs open or unchecked at the booking, for the release hint. */
-    openProofCount() {
-      return openProofCountOf(this.booking);
     },
     /** The host acts on the series as a whole; the dialogs offer no "Nur diese Buchung". */
     seriesOnly() {

@@ -76,7 +76,7 @@
       :open="confirmStatusChange"
       :status="onChangeBookingStatus"
       :status-key="currentStatusKey"
-      :open-proof-count="openProofCount"
+      :proof-booking="proofBooking"
       @reject="statusChangeRejected"
       @confirm="statusChangeConfirmed"
       :in-progress="isLoading"
@@ -125,7 +125,8 @@ export default {
       oldStatusId: null,
       temporaryEvent: null,
       currentStatusKey: null,
-      // The proofs open at a booking a column releases, for the hint.
+      // The booking a column releases and its proofs open, for the hint.
+      proofBooking: null,
       openProofCount: 0,
     };
   },
@@ -307,9 +308,10 @@ export default {
 
         // A release with open or unchecked proofs always shows its hint,
         // even where the user chose not to be asked again.
-        this.openProofCount = this.releasesBooking(statusChangeActions)
-          ? openProofCountOf(evt.added.element.bookingItem)
-          : 0;
+        this.proofBooking = this.releasesBooking(statusChangeActions)
+          ? evt.added.element.bookingItem
+          : null;
+        this.openProofCount = openProofCountOf(this.proofBooking);
 
         if (
           this.openProofCount === 0 &&
@@ -385,6 +387,7 @@ export default {
       this.temporaryEvent = null;
       this.newStatusId = null;
       this.oldStatusId = null;
+      this.proofBooking = null;
       this.openProofCount = 0;
       this.confirmStatusChange = false;
     },

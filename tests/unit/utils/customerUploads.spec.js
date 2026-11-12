@@ -27,6 +27,7 @@ import {
   PROOF_STATE,
   filterBookingsByProofState,
   mostUrgentProofStateOf,
+  missingProofLabelsOf,
   openProofCountOf,
   openProofCountOfAll,
   proofStateMarker,
@@ -666,6 +667,21 @@ describe("customerUploads - the proof chips (ECCdigital/tickets#831)", () => {
       openProofCountOfAll([booking, withFields([proofField("submitted")])])
     ).toBe(5);
     expect(openProofCountOfAll(undefined)).toBe(0);
+  });
+
+  it("names the required proofs still missing, for the release", () => {
+    const booking = {
+      customerUploadState: {
+        fields: [
+          { label: "A", required: true, state: "open" },
+          { label: "B", required: true, state: "overdue" },
+          { label: "C", required: false, state: "open" },
+          { label: "D", required: true, state: "submitted" },
+        ],
+      },
+    };
+    expect(missingProofLabelsOf(booking)).toEqual(["A", "B"]);
+    expect(missingProofLabelsOf({ id: "x" })).toEqual([]);
   });
 });
 

@@ -276,4 +276,14 @@ export default {
       { reason }
     );
   },
+  /** „Nachweise anfordern“: mails the booker the required proofs missing. */
+  remindCustomerUploads(tenantId, bookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/remind`,
+      {}
+    );
+  },
 };
