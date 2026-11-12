@@ -298,11 +298,11 @@ export default {
       ApiEventService.duplicateEvent(eventId)
         .then(() => {
           this.fetchEvents();
-        })
-        .finally(() => {
           this.addToast(
             ToastService.createToast("event.duplicate.success", "success")
           );
+        })
+        .finally(() => {
           this.stopLoading("fetch-duplicate-event");
         })
         .catch((error) => {
