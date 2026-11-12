@@ -503,8 +503,10 @@ export default {
         provider: title,
       });
     },
+    // Only a door is located by its provider (NUKI); the location of an
+    // Anlage is entered by hand (ECCdigital/tickets#1045).
     canPrefillLocation() {
-      if (!this.isEdit) return false;
+      if (!this.isEdit || this.isLocker) return false;
       const provider = this.providers.find((p) => p.id === this.form.provider);
       return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
@@ -1366,8 +1368,7 @@ export default {
             />
           </template>
 
-          <!-- Mode, QR rules and address describe a door; a locker system has
-               none of them -->
+          <!-- Mode and QR rules describe a door; a locker system has neither -->
           <template v-if="!isLocker">
             <!-- Validation rules -->
             <div class="section-title mt-4 mb-2">
@@ -1400,43 +1401,47 @@ export default {
             >
               {{ qrScanDefaultHint }}
             </div>
-
-            <!-- Location -->
-            <div class="section-title mt-6 mb-3">
-              <v-icon small left>mdi-map-marker</v-icon>
-              <span class="font-weight-medium">
-                {{ $t("accessPoint.management.location.title") }}
-              </span>
-            </div>
-            <LocationInput
-              ref="location"
-              :key="opening"
-              :value="form.location"
-              :stored="storedLocation"
-              narrow
-              class="mb-2"
-              @input="onLocationChange"
-            />
-            <div v-if="!isEdit" class="text-caption text--secondary mb-2">
-              {{ $t("accessPoint.management.location.prefillAfterSave") }}
-            </div>
-            <div v-if="canPrefillLocation" class="mb-2">
-              <v-btn
-                small
-                outlined
-                color="primary"
-                :loading="prefilling"
-                :disabled="prefilling"
-                @click="prefillLocation"
-              >
-                <v-icon left small>mdi-crosshairs-gps</v-icon>
-                {{ $t("accessPoint.management.location.prefill") }}
-              </v-btn>
-            </div>
-            <div v-if="prefillHint" class="text-caption text--secondary mb-2">
-              {{ prefillHint }}
-            </div>
           </template>
+
+          <!-- Location: a door's, or the whole Anlage's - not one per
+               Schließfachschrank or Fach (ECCdigital/tickets#1045) -->
+          <div class="section-title mt-6 mb-3">
+            <v-icon small left>mdi-map-marker</v-icon>
+            <span class="font-weight-medium">
+              {{ $t("accessPoint.management.location.title") }}
+            </span>
+          </div>
+          <LocationInput
+            ref="location"
+            :key="opening"
+            :value="form.location"
+            :stored="storedLocation"
+            narrow
+            class="mb-2"
+            @input="onLocationChange"
+          />
+          <div
+            v-if="!isEdit && !isLocker"
+            class="text-caption text--secondary mb-2"
+          >
+            {{ $t("accessPoint.management.location.prefillAfterSave") }}
+          </div>
+          <div v-if="canPrefillLocation" class="mb-2">
+            <v-btn
+              small
+              outlined
+              color="primary"
+              :loading="prefilling"
+              :disabled="prefilling"
+              @click="prefillLocation"
+            >
+              <v-icon left small>mdi-crosshairs-gps</v-icon>
+              {{ $t("accessPoint.management.location.prefill") }}
+            </v-btn>
+          </div>
+          <div v-if="prefillHint" class="text-caption text--secondary mb-2">
+            {{ prefillHint }}
+          </div>
 
           <!-- Advanced -->
           <v-expansion-panels
