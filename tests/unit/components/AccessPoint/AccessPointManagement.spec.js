@@ -741,5 +741,27 @@ describe("AccessPointManagement", () => {
 
       expect(qrDialog(wrapper).props("open")).toBe(false);
     });
+
+    // tickets#1061: a Fach rotated in the dialog reloads the list, as the
+    // door's rotation does; the dialog stays open.
+    it("reloads the access points after a Fach was rotated", async () => {
+      const wrapper = await mountManagement();
+      await rowFor(wrapper, "Fahrradgarage Süd")
+        .find(".compartment-qr")
+        .trigger("click");
+      const loads = ApiAccessPointService.getAccessPoints.mock.calls.length;
+
+      qrDialog(wrapper).vm.$emit(
+        "rotated",
+        OPEN_LOCKER_ANLAGE,
+        OPEN_LOCKER_ANLAGE.config.compartments[0]
+      );
+      await flushPromises();
+
+      expect(ApiAccessPointService.getAccessPoints.mock.calls.length).toBe(
+        loads + 1
+      );
+      expect(qrDialog(wrapper).props("open")).toBe(true);
+    });
   });
 });

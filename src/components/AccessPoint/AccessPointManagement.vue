@@ -627,6 +627,7 @@ export default {
     <AccessPointCompartmentQrDialog
       :open="compartmentQrDialog"
       :access-point="selectedAccessPoint"
+      @rotated="onRotated"
       @close="compartmentQrDialog = false"
     />
     <AccessPointDeleteDialog
