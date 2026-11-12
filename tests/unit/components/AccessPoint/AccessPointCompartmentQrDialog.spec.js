@@ -240,3 +240,67 @@ describe("AccessPointCompartmentQrDialog", () => {
     expect(wrapper.emitted("close")).toHaveLength(1);
   });
 });
+
+/**
+ * „Rotieren“ in the row of every Fach (ECCdigital/tickets#1061) opens the
+ * question of `AccessPointCompartmentRotateDialog` for that Fach; its own
+ * spec pins the question, the rotation and the downloads.
+ */
+describe("AccessPointCompartmentQrDialog: rotating one Fach", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function rotateDialog(wrapper) {
+    return wrapper.findComponent({
+      name: "AccessPointCompartmentRotateDialog",
+    });
+  }
+
+  async function clickRotate(wrapper, compartmentId) {
+    await rowOf(wrapper, compartmentId)
+      .find(".rotate-compartment-qr")
+      .trigger("click");
+    await wrapper.vm.$nextTick();
+  }
+
+  it("offers „Rotieren“ for every Fach, out of service too", async () => {
+    const wrapper = await mountDialog();
+
+    [FACH_HAFEN_1, FACH_LABOR_2, FACH_LABOR_10].forEach((id) => {
+      expect(rowOf(wrapper, id).find(".rotate-compartment-qr").text()).toBe(
+        "Rotieren"
+      );
+    });
+    expect(rotateDialog(wrapper).props("open")).toBe(false);
+  });
+
+  it("asks before rotating the Fach of its row", async () => {
+    const wrapper = await mountDialog();
+
+    await clickRotate(wrapper, FACH_LABOR_10);
+
+    const dialog = rotateDialog(wrapper);
+    expect(dialog.props("open")).toBe(true);
+    expect(dialog.props("accessPoint")).toBe(ANLAGE);
+    expect(dialog.props("compartment")).toBe(ANLAGE.config.compartments[1]);
+    expect(card(dialog).text()).toContain(
+      "Soll der Scan-Code von „Schrank Labor Fachbank 1, Fach 10“ der Anlage „Fahrradgarage Süd“ ersetzt werden?"
+    );
+    expect(ApiAccessPointService.getCompartmentQrCode).not.toHaveBeenCalled();
+  });
+
+  it("passes a rotation on and stays open behind the question", async () => {
+    const wrapper = await mountDialog();
+    await clickRotate(wrapper, FACH_LABOR_2);
+
+    const fach = ANLAGE.config.compartments[2];
+    rotateDialog(wrapper).vm.$emit("rotated", ANLAGE, fach);
+    rotateDialog(wrapper).vm.$emit("close");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted("rotated")).toEqual([[ANLAGE, fach]]);
+    expect(rotateDialog(wrapper).props("open")).toBe(false);
+    expect(wrapper.emitted("close")).toBeUndefined();
+  });
+});
