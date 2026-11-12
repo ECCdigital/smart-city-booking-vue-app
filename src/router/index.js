@@ -638,6 +638,17 @@ const routes = [
     props: true,
   },
   {
+    // „Nachweise einreichen“ with the signed link of a booking, where the
+    // instance runs no storefront.
+    path: "/booking/proofs",
+    name: "customer-proofs",
+    component: lazyLoad("CustomerProofs"),
+    meta: {
+      title: "Nachweise einreichen",
+      requiresAuth: false,
+    },
+  },
+  {
     path: "/booking/request-reject/:tenantId",
     name: "booking-request-reject",
     component: lazyLoad("RequestRejectBooking"),

@@ -835,3 +835,180 @@ export function groupCheckoutUploadParts(body, uploads) {
 export function alsoForOf(upload) {
   return Array.isArray(upload?.alsoFor) ? upload.alsoFor : [];
 }
+
+/*
+ * The page „Nachweise einreichen“ of the Admin UI (`/booking/proofs`): an
+ * instance without a storefront links every customer there, with the
+ * signed link of the booking, without a sign-in.
+ */
+
+/**
+ * The tenant and booking a signed link names, read off its payload so the
+ * page knows where to ask. Unchecked: the backend checks the signature and
+ * refuses a forged one.
+ *
+ * @param {string} link The token `base64url(JSON {t, b}).signature`
+ * @returns {{ tenantId: string, bookingId: string }|null}
+ */
+export function customerUploadLinkTarget(link) {
+  const [payload, signature, ...rest] = String(link || "").split(".");
+  if (!payload || !signature || rest.length > 0) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      Array.from(window.atob(base64))
+        .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join("")
+    );
+    const { t, b } = JSON.parse(json);
+    if (typeof t !== "string" || typeof b !== "string" || !t || !b) {
+      return null;
+    }
+    return { tenantId: t, bookingId: b };
+  } catch {
+    return null;
+  }
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+/** From this many days before the deadline an open field stands out. */
+const DEADLINE_WARNING_DAYS = 3;
+
+const lastReviewed = (field, status) =>
+  [...(field.uploads || [])]
+    .filter((upload) => upload.review?.status === status)
+    .sort((a, b) => (b.review.reviewedAt ?? 0) - (a.review.reviewedAt ?? 0))[0];
+
+/**
+ * How the page shows one upload field to the customer: the chip of its
+ * state, the files still waiting for their check (replace, delete), whether
+ * a new file fits, and the texts that go with its state - as the
+ * storefront's page shows it.
+ *
+ * @param {Object} field A field of `customerUploadState.fields`
+ * @param {number} [now]
+ * @returns {{ color: string, labelKey: string, labelParams: Object,
+ *   canUpload: boolean, pendingUploads: Object[], lateHint: boolean,
+ *   reason: string|null, reasonKey: string|null }}
+ */
+export function customerProofFieldView(field, now = Date.now()) {
+  const deadline = field.deadline ?? null;
+  const days =
+    deadline === null ? null : Math.max(0, Math.ceil((deadline - now) / DAY));
+  const key = (name) => `customer-proofs.state.${name}`;
+  const base = {
+    color: "grey",
+    labelKey: key("open"),
+    labelParams: { deadline, days },
+    canUpload: field.remainingFiles > 0,
+    pendingUploads: (field.uploads || []).filter(
+      (upload) => upload.mediaId && isWaiting(upload)
+    ),
+    lateHint: false,
+    reason: null,
+    reasonKey: null,
+  };
+
+  switch (field.state) {
+    case "submitted":
+      return { ...base, color: "info", labelKey: key("submitted") };
+    case "rejected": {
+      // A rejection or „Erneut anfordern“: both ask for a new file.
+      const requestedAgain = field.reopen?.kind === "requestedAgain";
+      return {
+        ...base,
+        color: "error",
+        labelKey: key(requestedAgain ? "requested-again" : "rejected"),
+        reason:
+          field.reopen?.reason ||
+          lastReviewed(field, "rejected")?.review.reason ||
+          null,
+        reasonKey: `customer-proofs.${
+          requestedAgain ? "request-again-reason" : "rejection-reason"
+        }`,
+        lateHint: Boolean(field.pastDeadline),
+      };
+    }
+    case "overdue":
+      return {
+        ...base,
+        color: "error",
+        labelKey: key("overdue"),
+        lateHint: true,
+      };
+    case "fulfilled": {
+      // Only a sensitive file is deleted with its check.
+      const accepted = lastReviewed(field, "accepted");
+      return {
+        ...base,
+        color: "success",
+        labelKey: key(
+          accepted?.review.fileDeleted ? "fulfilled" : "fulfilled-kept"
+        ),
+        labelParams: { reviewedAt: accepted?.review.reviewedAt ?? null },
+        canUpload: false,
+      };
+    }
+    default:
+      return {
+        ...base,
+        color:
+          days !== null && days <= DEADLINE_WARNING_DAYS ? "warning" : "grey",
+        // Due before the release, which has no date: no deadline to name.
+        labelKey:
+          field.timing === "beforeRelease"
+            ? key("open-before-release")
+            : deadline === null
+            ? key("open-without-deadline")
+            : key("open"),
+      };
+  }
+}
+
+/**
+ * Size, number and format of a file for an upload field on the page,
+ * before it goes. The backend checks again, by the content.
+ *
+ * @param {{ name?: string, type?: string, size: number }} file
+ * @param {Object} field A field of `customerUploadState.fields`
+ * @param {{ replacing?: boolean }} [options] A replacement takes no room
+ * @returns {{ code: string, params: Object }|null} Null when it may go
+ */
+export function precheckCustomerProof(file, field, { replacing = false } = {}) {
+  // The checks of the checkout, the files waiting for their check as the
+  // ones chosen; a replacement takes the place of one of them.
+  const waiting = replacing ? 0 : field.maxFiles - field.remainingFiles;
+  return precheckCheckoutUpload(file, field, waiting);
+}
+
+const CUSTOMER_PROOF_ERROR_KEYS = Object.freeze({
+  customer_upload_format_not_allowed: "format",
+  customer_upload_too_large: "size",
+  customer_upload_field_full: "field-full",
+  customer_upload_booking_limit: "booking-limit",
+  customer_upload_virus_found: "virus",
+  customer_upload_scanner_unavailable: "scanner",
+  customer_upload_rate_limited: "rate-limit",
+  customer_upload_not_open: "not-open",
+  customer_upload_already_reviewed: "already-reviewed",
+  customer_upload_file_missing: "file-missing",
+  customer_upload_field_not_found: "not-found",
+  customer_upload_not_found: "not-found",
+  booking_not_found: "not-found",
+  customer_upload_link_invalid: "link-invalid",
+  customer_upload_link_expired: "link-expired",
+});
+
+/** The German message key of a refusal on the page, by its code. */
+export function customerProofErrorKey(code) {
+  return `customer-proofs.errors.${
+    CUSTOMER_PROOF_ERROR_KEYS[code] ?? "generic"
+  }`;
+}
+
+/** Why the page cannot open the booking of its link: `invalid`, `expired`, `error`. */
+export function customerProofLinkRefusalOf(code) {
+  if (code === "customer_upload_link_expired") return "expired";
+  if (code === "customer_upload_link_invalid") return "invalid";
+  return "error";
+}

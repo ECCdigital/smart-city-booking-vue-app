@@ -286,4 +286,70 @@ export default {
       {}
     );
   },
+  /**
+   * The booking of a signed link of the page „Nachweise einreichen“
+   * (`/booking/proofs`), without a sign-in: provider, time, offers and the
+   * derived state of its uploads.
+   */
+  readCustomerUploadsByLink({ tenantId, bookingId }, link) {
+    return ApiClient.get(customerUploadLinkUrl(tenantId, bookingId), {
+      headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link },
+    });
+  },
+  /** A file for an upload field, with the signed link. */
+  uploadCustomerUploadByLink({ tenantId, bookingId }, link, fieldId, file) {
+    return ApiClient.post(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId),
+      fileForm(file),
+      linkMultipart(link)
+    );
+  },
+  /** A file in place of one not checked yet, with the signed link. */
+  replaceCustomerUploadByLink(
+    { tenantId, bookingId },
+    link,
+    fieldId,
+    mediaId,
+    file
+  ) {
+    return ApiClient.put(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId, mediaId),
+      fileForm(file),
+      linkMultipart(link)
+    );
+  },
+  /** Deletes a file not checked yet, with the signed link. */
+  removeCustomerUploadByLink({ tenantId, bookingId }, link, fieldId, mediaId) {
+    return ApiClient.delete(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId, mediaId),
+      { headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link } }
+    );
+  },
 };
+
+/** The header the signed link of a booking goes in, in place of a sign-in. */
+const CUSTOMER_UPLOAD_LINK_HEADER = "X-Customer-Upload-Link";
+
+function customerUploadLinkUrl(tenantId, bookingId, ...rest) {
+  return [
+    `api/v2/${encodeURIComponent(tenantId)}/bookings/${encodeURIComponent(
+      bookingId
+    )}/customer-uploads-by-link`,
+    ...rest.map(encodeURIComponent),
+  ].join("/");
+}
+
+function fileForm(file) {
+  const form = new FormData();
+  form.append("file", file);
+  return form;
+}
+
+function linkMultipart(link) {
+  return {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      [CUSTOMER_UPLOAD_LINK_HEADER]: link,
+    },
+  };
+}

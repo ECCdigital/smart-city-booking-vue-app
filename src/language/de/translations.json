@@ -212,6 +212,70 @@
     "required": "Pflichtfeld",
     "integerRequired": "Ganzzahl erforderlich"
   },
+  "customer-proofs": {
+    "title": "Nachweise einreichen",
+    "intro": "{name} benötigt für Ihre Buchung noch Nachweise. Sie können sie bis zum Ende der Buchung einreichen und bis zur Prüfung ersetzen oder löschen. Besonders schutzwürdige Nachweise werden nach der Prüfung gelöscht.",
+    "booking": "Buchung #{id}",
+    "loading": "Buchung wird geladen …",
+    "none": "Für diese Buchung werden keine Nachweise benötigt.",
+    "required": "Pflicht",
+    "optional": "Optional",
+    "sensitive": "Besonders schutzwürdig",
+    "sensitive-hint": "Dieser Nachweis enthält besonders schützenswerte Daten. Die Datei wird deshalb sofort nach der Prüfung gelöscht.",
+    "state": {
+      "open": "Offen · bis {deadline} (noch {days} Tag) | Offen · bis {deadline} (noch {days} Tage)",
+      "open-without-deadline": "Offen",
+      "open-before-release": "Offen · vor Freigabe einzureichen",
+      "submitted": "Eingereicht · wird geprüft",
+      "rejected": "Abgelehnt · neu hochladen",
+      "requested-again": "Erneut angefordert · neu hochladen",
+      "overdue": "Frist abgelaufen am {deadline}",
+      "fulfilled": "Geprüft am {reviewedAt} · Datei gelöscht",
+      "fulfilled-kept": "Geprüft am {reviewedAt}"
+    },
+    "rejection-reason": "Grund der Ablehnung: {reason}",
+    "request-again-reason": "Grund: {reason}",
+    "late-hint": "Die Frist ist vorbei. Sie können trotzdem einreichen, {tenant} entscheidet, ob der Nachweis noch angenommen wird.",
+    "replace": "Ersetzen",
+    "delete": "Löschen",
+    "change-until-review": "Bis zur Prüfung können Sie die Datei ersetzen oder löschen.",
+    "change-until-review-sensitive": "Bis zur Prüfung können Sie die Datei ersetzen oder löschen. Nach der Prüfung wird sie gelöscht.",
+    "choose": "Datei hochladen",
+    "limits": "{formats} · max. {size} MB",
+    "uploaded": "Der Nachweis ist eingereicht.",
+    "deleted": "Die Datei ist gelöscht.",
+    "link": {
+      "invalid": {
+        "title": "Link ungültig",
+        "text": "Dieser Link ist ungültig. Bitte nutzen Sie den Link aus Ihrer letzten E-Mail zur Buchung."
+      },
+      "expired": {
+        "title": "Link abgelaufen",
+        "text": "Die Buchung ist beendet. Über diesen Link können Sie keine Nachweise mehr einreichen."
+      },
+      "error": {
+        "title": "Buchung nicht geladen",
+        "text": "Die Buchung konnte gerade nicht geladen werden. Bitte versuchen Sie es später noch einmal.",
+        "retry": "Erneut versuchen"
+      }
+    },
+    "errors": {
+      "format": "Diese Datei hat kein erlaubtes Format. Erlaubt: {formats}.",
+      "size": "Die Datei ist zu groß. Erlaubt sind höchstens {size} MB.",
+      "field-full": "Für diesen Nachweis sind höchstens {count} Dateien erlaubt. Ersetzen oder löschen Sie eine eingereichte Datei.",
+      "booking-limit": "Für diese Buchung sind schon so viele Nachweise gespeichert wie erlaubt.",
+      "virus": "In der Datei wurde Schadsoftware gefunden. Sie wurde nicht gespeichert.",
+      "scanner": "Die Datei kann gerade nicht geprüft werden. Bitte versuchen Sie es später erneut.",
+      "rate-limit": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
+      "not-open": "Für diese Buchung können Sie gerade keine Nachweise einreichen.",
+      "already-reviewed": "Dieser Nachweis wurde schon geprüft und kann nicht mehr geändert werden.",
+      "file-missing": "Bitte wählen Sie eine Datei aus.",
+      "not-found": "Dieser Nachweis wurde nicht gefunden. Bitte laden Sie die Seite neu.",
+      "link-invalid": "Dieser Link ist ungültig. Bitte nutzen Sie den Link aus Ihrer letzten E-Mail zur Buchung.",
+      "link-expired": "Die Buchung ist beendet. Über diesen Link können Sie keine Nachweise mehr einreichen.",
+      "generic": "Die Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+    }
+  },
   "bookable": {
     "uploadFields": {
       "title": "Upload-Felder",
