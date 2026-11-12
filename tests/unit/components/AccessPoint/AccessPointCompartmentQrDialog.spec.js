@@ -367,3 +367,69 @@ describe("AccessPointCompartmentQrDialog: rotating one Fach", () => {
     expect(wrapper.emitted("close")).toBeUndefined();
   });
 });
+
+/**
+ * „Alle rotieren …“ over the list (ECCdigital/tickets#1063) opens the
+ * question of `AccessPointCompartmentRotateAllDialog` for the whole Anlage;
+ * its own spec pins the question, the tick, the hint and the Sammel-PDF.
+ */
+describe("AccessPointCompartmentQrDialog: rotating all Fächer", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function rotateAllDialog(wrapper) {
+    return wrapper.findComponent({
+      name: "AccessPointCompartmentRotateAllDialog",
+    });
+  }
+
+  function rotateAllButton(wrapper) {
+    return card(wrapper).find(
+      ".compartment-qr-actions .rotate-all-compartment-qr"
+    );
+  }
+
+  it("offers „Alle rotieren …“ next to the Sammel-PDF", async () => {
+    const wrapper = await mountDialog();
+
+    expect(rotateAllButton(wrapper).text()).toBe("Alle rotieren …");
+    expect(rotateAllButton(wrapper).attributes("disabled")).toBeUndefined();
+    expect(rotateAllDialog(wrapper).props("open")).toBe(false);
+  });
+
+  it("offers nothing to rotate for an Anlage without Fächer", async () => {
+    const wrapper = await mountDialog({
+      ...ANLAGE,
+      config: { compartments: [] },
+    });
+
+    expect(rotateAllButton(wrapper).attributes("disabled")).toBeDefined();
+  });
+
+  it("asks, naming the number of Fächer, before rotating all", async () => {
+    const wrapper = await mountDialog();
+
+    await rotateAllButton(wrapper).trigger("click");
+    await wrapper.vm.$nextTick();
+
+    const dialog = rotateAllDialog(wrapper);
+    expect(dialog.props("open")).toBe(true);
+    expect(dialog.props("accessPoint")).toBe(ANLAGE);
+    expect(card(dialog).text()).toContain("Das betrifft 3 Fächer.");
+  });
+
+  it("passes a rotation on and stays open behind the question", async () => {
+    const wrapper = await mountDialog();
+    await rotateAllButton(wrapper).trigger("click");
+    await wrapper.vm.$nextTick();
+
+    rotateAllDialog(wrapper).vm.$emit("rotated", ANLAGE);
+    rotateAllDialog(wrapper).vm.$emit("close");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted("rotated")).toEqual([[ANLAGE]]);
+    expect(rotateAllDialog(wrapper).props("open")).toBe(false);
+    expect(wrapper.emitted("close")).toBeUndefined();
+  });
+});

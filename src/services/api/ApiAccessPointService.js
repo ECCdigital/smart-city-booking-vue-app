@@ -94,6 +94,19 @@ export default {
   },
 
   /**
+   * Rotate the scan codes of all Fächer of a Schließfachanlage that carries
+   * its own Fächer at once (ECCdigital/tickets#1063). The answer carries no
+   * code.
+   */
+  rotateAllCompartmentScanCodes(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/accesspoints/${id}/compartments/rotate-scan-codes`,
+      {}
+    );
+  },
+
+  /**
    * Ask the provider where the lock stands. The answer is a suggestion only -
    * adopting it into `location` stays an explicit save by the admin.
    */

@@ -2,6 +2,7 @@
 import { mapGetters } from "vuex";
 import AppList from "@/components/commons/AppList.vue";
 import AccessPointCompartmentRotateDialog from "@/components/AccessPoint/AccessPointCompartmentRotateDialog.vue";
+import AccessPointCompartmentRotateAllDialog from "@/components/AccessPoint/AccessPointCompartmentRotateAllDialog.vue";
 import {
   downloadCompartmentQrCode,
   downloadCompartmentQrSheet,
@@ -25,7 +26,11 @@ import { compartmentsByLockerBank } from "@/utilities/locker-system-compartments
  */
 export default {
   name: "AccessPointCompartmentQrDialog",
-  components: { AppList, AccessPointCompartmentRotateDialog },
+  components: {
+    AppList,
+    AccessPointCompartmentRotateDialog,
+    AccessPointCompartmentRotateAllDialog,
+  },
   props: {
     open: { type: Boolean, default: false },
     accessPoint: { type: Object, default: null },
@@ -39,6 +44,8 @@ export default {
       // The Fach whose „Rotieren“ asks (tickets#1061), null while none does
       rotateCompartment: null,
       rotateDialog: false,
+      // „Alle rotieren …“ asking (tickets#1063)
+      rotateAllDialog: false,
     };
   },
   computed: {
@@ -86,6 +93,7 @@ export default {
         this.downloading = "";
         this.error = "";
         this.rotateDialog = false;
+        this.rotateAllDialog = false;
       }
     },
   },
@@ -178,6 +186,16 @@ export default {
           >
             <v-icon left>mdi-file-pdf-box</v-icon>
             {{ $t("accessPoint.management.compartmentQr.printAll") }}
+          </v-btn>
+          <v-btn
+            class="rotate-all-compartment-qr"
+            color="error"
+            outlined
+            :disabled="!compartments.length || !!downloading"
+            @click="rotateAllDialog = true"
+          >
+            <v-icon left>mdi-autorenew</v-icon>
+            {{ $t("accessPoint.management.rotate.allAction") }}
           </v-btn>
         </div>
 
@@ -282,6 +300,12 @@ export default {
         :compartment="rotateCompartment"
         @rotated="(...args) => $emit('rotated', ...args)"
         @close="rotateDialog = false"
+      />
+      <AccessPointCompartmentRotateAllDialog
+        :open="rotateAllDialog"
+        :access-point="accessPoint"
+        @rotated="(...args) => $emit('rotated', ...args)"
+        @close="rotateAllDialog = false"
       />
     </v-card>
   </v-dialog>
