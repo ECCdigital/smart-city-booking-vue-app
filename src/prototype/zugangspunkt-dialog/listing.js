@@ -5,7 +5,7 @@
  *
  * The facts mirror `src/utilities/access-points.js` on feat/660-open-locker:
  * - Modus: the PIN modes are „bald verfügbar“ everywhere, so every provider
- *   opens per App today. No variant asks for it.
+ *   opens per App today. No variant asks for it; A shows it as a fixed line.
  * - Typ and Anbieter: settled by the section the dialog opens from. Only Open
  *   Locker asks: Schließfachanlage or festes Fach.
  * - Öffnungsart: Nuki doors only.
@@ -175,7 +175,6 @@ export function facts(providerId, type) {
   if (providerId === "ifbs") {
     return {
       ...base,
-      manual: false,
       idLabel: "Standort-ID",
       idHint:
         "Wechseln Sie die Standort-ID, um die Anlage bei iFBS zu tauschen.",
@@ -285,7 +284,9 @@ export function saveForm(form) {
 /** The settings left at their defaults, as one line - for collapsed sections. */
 export function summary(form) {
   const f = facts(form.provider, form.lockerType);
-  const parts = [];
+  // Decided in tickets#1085: the Modus is shown as a fixed line while
+  // „Öffnen per App“ is the only one to choose.
+  const parts = ["Öffnen per App"];
   if (f.openAction)
     parts.push(`Öffnungsart ${openActionText(form.openAction)}`);
   if (f.qr)

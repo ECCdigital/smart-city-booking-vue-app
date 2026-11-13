@@ -318,6 +318,14 @@ export default {
               </div>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
+              <div class="fixed-line mb-4">
+                <div class="text-caption text--secondary">Modus</div>
+                <div>Öffnen per App</div>
+                <div class="text-caption text--secondary">
+                  Buchende öffnen per Knopfdruck in der App. PIN-Code kommt
+                  später, dann wird daraus eine Auswahl.
+                </div>
+              </div>
               <v-select
                 v-if="f.openAction"
                 v-model="form.openAction"
