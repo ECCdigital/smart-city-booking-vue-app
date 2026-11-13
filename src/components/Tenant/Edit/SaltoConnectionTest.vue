@@ -1,11 +1,7 @@
 <script>
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
-import { SALTO_PROVIDER, saltoSecretSources } from "@/utilities/access-apps";
-import { runConnectionTest } from "@/utilities/access-connection-test";
-import {
-  stateKey,
-  stateMeta,
-} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
+import { saltoSecretSources } from "@/utilities/access-apps";
+import { iqSummary } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 
 /** Where the texts of the connection test live in the catalogue. */
 const I18N_PREFIX = "accessPoint.tenant.salto.connectionTest";
@@ -41,39 +37,25 @@ const MISSING_CODES = ["missing_secret", "missing_fields"];
 const HINT_STATUSES = ["failed", "unknown", "not_verifiable", "todo"];
 
 /**
- * The IQs in numbers: all of them, those that need an activation (OTP on),
- * how many of those are done, how many are open, how many offline. Done is
- * what the activation section counts as done (`stateMeta`).
- */
-function iqSummary(iqs) {
-  const needed = iqs.filter((iq) => stateKey(iq) !== "no_otp").length;
-  const open = iqs.filter((iq) => !stateMeta(iq).done).length;
-  return {
-    total: iqs.length,
-    needed,
-    ready: needed - open,
-    open,
-    offline: iqs.filter((iq) => iq.online === false).length,
-  };
-}
-
-/**
- * The connection test of Salto KS: the button, what it tests with, and the
- * answer. A secret field left empty is sent empty; the backend then takes the
- * stored secret, as long as it belongs to the client id, system user and
- * environment in the form, and answers `missing_secret` with the reason per
- * secret otherwise. The text next to the button follows the same rule.
+ * The connection test of Salto KS as the settings of its section show it
+ * (ECCdigital/tickets#1104): what it tests with, and the answer. The settings
+ * own the button and run the test. A secret field left empty is sent empty;
+ * the backend then takes the stored secret, as long as it belongs to the
+ * client id, system user and environment in the form, and answers
+ * `missing_secret` with the reason per secret otherwise. The text under the
+ * button follows the same rule.
  *
- * A test that ran is a checklist under the button: a headline, one row per
- * check with sign, value and, where needed, what to do, and where each secret
- * came from. The IQs are a summary only, with a jump to the activation
- * (`to-activation`) that shows the state per IQ.
+ * A test that ran is a checklist: a headline, one row per check with sign,
+ * value and, where needed, what to do, and where each secret came from. The
+ * IQs are a summary only, with a jump to the activation (`to-activation`)
+ * that shows the state per IQ.
  */
 export default {
   name: "SaltoConnectionTest",
   components: { ConnectionTestAlert },
   props: {
-    tenantId: { type: String, required: true },
+    /** The answer of the test the settings ran, or null. */
+    result: { type: Object, default: null },
     /** The Salto KS application as the form holds it. */
     app: { type: Object, required: true },
     /** The stored Salto KS application, whose identity the secrets are for. */
@@ -82,13 +64,6 @@ export default {
     passwordConfigured: { type: Boolean, default: false },
     /** Whether the activation of the IQs is on the page to jump to. */
     activationShown: { type: Boolean, default: false },
-  },
-  data() {
-    return {
-      testing: false,
-      /** The backend's answer as it came, or `{ success: false, message }`. */
-      result: null,
-    };
   },
   computed: {
     /** Per secret: `form`, `stored`, or `missing` with the reason. */
@@ -250,36 +225,18 @@ export default {
         jump,
       };
     },
-    credentials() {
-      const app = this.app;
-      return {
-        clientId: app.clientId || undefined,
-        clientSecret: app.clientSecret || "",
-        username: app.username || undefined,
-        password: app.password || "",
-        siteId: app.siteId || undefined,
-        environment: app.environment,
-      };
-    },
-    async test() {
-      this.testing = true;
-      this.result = null;
-
-      this.result = await runConnectionTest(
-        this.tenantId,
-        this.credentials(),
-        SALTO_PROVIDER
-      );
-      this.testing = false;
-    },
   },
 };
 </script>
 
 <template>
   <div>
+    <div class="text-caption text--secondary mt-2" data-test="salto-basis">
+      {{ basisText }}
+    </div>
+
     <!-- Result of the test -->
-    <v-row v-if="result" dense>
+    <v-row v-if="result" dense class="mt-2">
       <v-col cols="12">
         <v-alert v-if="stoppedForMissing" type="warning" text dense>
           <div v-for="(text, index) in missingTexts" :key="index">
@@ -349,29 +306,10 @@ export default {
         <ConnectionTestAlert v-else :result="result" />
       </v-col>
     </v-row>
-
-    <!-- Action -->
-    <v-row dense class="mt-2">
-      <v-col class="d-flex align-center justify-end flex-wrap test-action">
-        <span class="text-caption text--secondary">{{ basisText }}</span>
-        <v-btn
-          color="primary"
-          :loading="testing"
-          :disabled="testing"
-          @click="test"
-        >
-          <v-icon left>mdi-connection</v-icon>
-          {{ $t("accessPoint.tenant.testConnection") }}
-        </v-btn>
-      </v-col>
-    </v-row>
   </div>
 </template>
 
 <style scoped>
-.test-action {
-  gap: var(--scb-space-3);
-}
 .checklist-ok {
   border-left: 3px solid var(--v-success-base) !important;
 }

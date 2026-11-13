@@ -23,15 +23,15 @@ export default {
   },
 
   /**
-   * The running and future bookings at Fächer of a Schließfachanlage, read
-   * before a save takes them out of service or out of the Anlage
-   * (ECCdigital/tickets#1043): `{ total, bookings }`, each booking with
-   * `state` (`running` | `future`) and the `compartment` it holds.
+   * Set the bookables that carry the access point (ECCdigital/tickets#1110):
+   * `bookableIds` names every one of them, the backend adds the access point
+   * where it is missing and removes it from every other bookable. A bookable
+   * that gets its first access point has its access switched on.
    */
-  getCompartmentBookings(id, compartmentIds, tenant) {
+  assignBookables(id, bookableIds, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/accesspoints/${id}/compartment-bookings`, {
-      params: { compartmentIds: compartmentIds.join(",") },
+    return ApiClient.put(`api/${t}/accesspoints/${id}/bookables`, {
+      bookableIds,
     });
   },
 

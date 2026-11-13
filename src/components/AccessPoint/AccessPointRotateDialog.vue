@@ -1,12 +1,21 @@
 <script>
 import { mapGetters } from "vuex";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import AccessPointQrPreview from "@/components/AccessPoint/AccessPointQrPreview.vue";
+import accessPointRequest from "@/mixins/accessPointRequest";
 import { downloadQrCode } from "@/utilities/access-point-qr";
-import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
-import { accessPointLabel } from "@/utilities/access-points";
+import { rotationWarning } from "@/utilities/scan-code-rotation";
 
+/**
+ * „Scan-Code rotieren“ of a door or a fixed Fach (ECCdigital/tickets#1111):
+ * the question with what the rotation means for bookers, then the new code
+ * with „Neuen QR-Code drucken“ as the main button, SVG and PNG beside it.
+ * The scan code never reaches the client; the server renders every file.
+ */
 export default {
   name: "AccessPointRotateDialog",
+  mixins: [accessPointRequest],
+  components: { AccessPointQrPreview },
   props: {
     open: { type: Boolean, default: false },
     accessPoint: { type: Object, default: null },
@@ -15,16 +24,16 @@ export default {
     return {
       rotating: false,
       rotated: false,
+      // The format of the file that loads, "" while none does
       downloading: "",
-      error: "",
     };
   },
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
-    label() {
-      return accessPointLabel(this.accessPoint);
+    warning() {
+      return this.accessPoint ? rotationWarning(this.accessPoint) : null;
     },
   },
   watch: {
@@ -38,38 +47,28 @@ export default {
     },
   },
   methods: {
-    async rotate() {
-      this.rotating = true;
-      this.error = "";
-
-      try {
-        await ApiAccessPointService.rotateScanCode(
-          this.accessPoint.id,
-          this.tenantId
-        );
-        this.rotated = true;
-        this.$emit("rotated", this.accessPoint);
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.rotate.error",
-        });
-      } finally {
-        this.rotating = false;
-      }
+    rotate() {
+      return this.runRequest(
+        "rotating",
+        true,
+        "accessPoint.management.rotate.error",
+        async () => {
+          await ApiAccessPointService.rotateScanCode(
+            this.accessPoint.id,
+            this.tenantId
+          );
+          this.rotated = true;
+          this.$emit("rotated", this.accessPoint);
+        }
+      );
     },
-    async download(format) {
-      this.downloading = format;
-      this.error = "";
-
-      try {
-        await downloadQrCode(this.accessPoint, format, this.tenantId);
-      } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.qr.error",
-        });
-      } finally {
-        this.downloading = "";
-      }
+    download(format) {
+      return this.runRequest(
+        "downloading",
+        format,
+        "accessPoint.management.qr.error",
+        () => downloadQrCode(this.accessPoint, format, this.tenantId)
+      );
     },
   },
 };
@@ -78,14 +77,16 @@ export default {
 <template>
   <v-dialog
     :value="open"
-    max-width="560"
+    max-width="480"
     persistent
     scrollable
     @input="!$event && $emit('close')"
   >
-    <v-card>
+    <v-card v-if="accessPoint">
       <v-card-title class="d-flex align-center py-4 px-6">
-        <v-icon left color="error">mdi-alert</v-icon>
+        <v-icon left :color="rotated ? undefined : 'error'">
+          {{ rotated ? "mdi-qrcode" : "mdi-alert" }}
+        </v-icon>
         <span class="text-h5">
           {{ $t("accessPoint.management.rotate.title") }}
         </span>
@@ -97,50 +98,32 @@ export default {
       <v-divider />
 
       <v-card-text class="pa-6">
-        <template v-if="!rotated">
-          <p>{{ $t("accessPoint.management.rotate.question", { label }) }}</p>
-          <v-alert color="warning" text dense class="mb-0">
-            <v-icon left>mdi-alert</v-icon>
-            {{ $t("accessPoint.management.rotate.warning") }}
+        <div v-if="!rotated" data-test="rotate-question">
+          <p data-test="rotate-text">{{ warning.replaced }}</p>
+          <v-alert v-if="warning.locks" color="warning" text dense class="mb-0">
+            <v-icon left>mdi-lock-alert-outline</v-icon>
+            <span data-test="rotate-text">{{ warning.consequence }}</span>
           </v-alert>
-        </template>
+          <p v-else class="text--secondary mb-0" data-test="rotate-text">
+            {{ warning.consequence }}
+          </p>
+        </div>
 
-        <template v-else>
-          <v-alert color="success" text dense>
-            <v-icon left>mdi-check-circle</v-icon>
-            {{ $t("accessPoint.management.rotate.done") }}
-          </v-alert>
-          <p class="mb-2">{{ $t("accessPoint.management.rotate.reprint") }}</p>
-          <div class="d-flex align-center flex-wrap" style="gap: 8px">
-            <v-btn
-              color="primary"
-              :loading="downloading === 'pdf'"
-              :disabled="!!downloading"
-              @click="download('pdf')"
-            >
-              <v-icon left>mdi-file-pdf-box</v-icon>
-              {{ $t("accessPoint.management.qr.pdf") }}
-            </v-btn>
-            <v-btn
-              text
-              small
-              :loading="downloading === 'svg'"
-              :disabled="!!downloading"
-              @click="download('svg')"
-            >
-              {{ $t("accessPoint.management.qr.svg") }}
-            </v-btn>
-            <v-btn
-              text
-              small
-              :loading="downloading === 'png'"
-              :disabled="!!downloading"
-              @click="download('png')"
-            >
-              {{ $t("accessPoint.management.qr.png") }}
-            </v-btn>
+        <div v-else class="rotated">
+          <AccessPointQrPreview :access-point="accessPoint" />
+          <div>
+            <div class="rotated__title">
+              <v-icon small color="success" class="mr-1">mdi-check</v-icon>
+              {{ $t("accessPoint.management.rotate.done") }}
+            </div>
+            <div class="rotated__formats">
+              {{ $t("accessPoint.management.compartmentQr.formats") }}
+              <a href="#" @click.prevent="download('svg')">SVG</a>
+              ·
+              <a href="#" @click.prevent="download('png')">PNG</a>
+            </div>
           </div>
-        </template>
+        </div>
 
         <v-alert v-if="error" color="error" text dense class="mt-4 mb-0">
           <v-icon left>mdi-alert-circle</v-icon>
@@ -164,9 +147,37 @@ export default {
           @click="rotate"
         >
           <v-icon left small>mdi-autorenew</v-icon>
-          {{ $t("accessPoint.management.rotate.confirm") }}
+          {{ warning.confirm }}
+        </v-btn>
+        <v-btn
+          v-else
+          color="primary"
+          :loading="downloading === 'pdf'"
+          :disabled="!!downloading"
+          @click="download('pdf')"
+        >
+          <v-icon left small>mdi-printer-outline</v-icon>
+          {{ $t("accessPoint.management.rotate.reprint") }}
         </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.rotated {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-4);
+}
+
+.rotated__title {
+  font-weight: var(--scb-font-weight-medium);
+  margin-bottom: var(--scb-space-1);
+}
+
+.rotated__formats {
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
+}
+</style>

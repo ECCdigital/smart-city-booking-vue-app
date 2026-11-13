@@ -174,7 +174,7 @@
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
-      "access_provider_rejected": "{provider} hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+      "access_provider_rejected": "{provider} hat den Zugriff abgelehnt. Bitte die Zugangsdaten beim Anbieter prüfen."
     },
     "unavailable-codes": {
       "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
@@ -2854,42 +2854,238 @@
   },
   "accessPoint": {
     "management": {
-      "tab": "Zugangspunkte",
-      "providersTab": "Schließsysteme",
-      "title": "Zugangspunkte",
-      "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
       "edit": "Bearbeiten",
-      "reload": "Neu laden",
-      "search": "Bezeichnung, Anbieter, Typ, Herkunft oder Zuordnung",
       "save": "Speichern",
       "cancel": "Abbrechen",
       "close": "Schließen",
       "required": "Pflichtfeld",
-      "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
       "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
-      "iqNotActivated": "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „{tab}“ › Salto KS › „{section}“. Speichern können Sie schon jetzt.",
-      "providerInactive": {
-        "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
-        "locker": "{provider} ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
+      "setup": {
+        "start": {
+          "question": "Welche Anbieter nutzt der Mandant?",
+          "intro": "Verbinden Sie zuerst einen Anbieter. Danach legen Sie seine Türen oder Schließfachanlagen an und ordnen sie Buchungsobjekten zu. Wer bucht, öffnet dann mit seiner Buchung."
+        },
+        "groups": {
+          "door": "Türen",
+          "locker": "Schließfächer & Fahrradboxen"
+        },
+        "connect": "Verbinden",
+        "more": "Weiteren Anbieter verbinden",
+        "empty": {
+          "door": "Noch keine Tür. Legen Sie die erste an.",
+          "lockerSystem": "Noch keine Schließfachanlage. Legen Sie die erste an."
+        },
+        "emptyOff": {
+          "door": "Noch keine Tür.",
+          "lockerSystem": "Noch keine Schließfachanlage."
+        },
+        "next": {
+          "sentence": "{provider} ist verbunden. Als Nächstes: {step}.",
+          "iqsFirst": "IQs aktivieren, dann {create}",
+          "create": {
+            "door": "die erste Tür anlegen",
+            "lockerSystem": "die erste Schließfachanlage anlegen"
+          }
+        },
+        "steps": {
+          "connect": {
+            "title": "Anbieter verbinden",
+            "none": "Noch keiner verbunden",
+            "connected": "1 verbunden | {count} verbunden",
+            "openIqs": "1 IQ offen | {count} IQs offen"
+          },
+          "create": {
+            "title": "Zugangspunkte anlegen",
+            "none": "Noch keiner angelegt",
+            "created": "1 angelegt | {count} angelegt"
+          },
+          "assign": {
+            "title": "Buchungsobjekten zuordnen",
+            "none": "Kommt nach dem Anlegen",
+            "unreadable": "Zuordnung nicht lesbar",
+            "assigned": "{assigned} von {total} zugeordnet"
+          }
+        },
+        "done": "Eingerichtet: {providers}, {accessPoints}, alle einem Buchungsobjekt zugeordnet.",
+        "providers": "1 Anbieter | {count} Anbieter",
+        "accessPoints": "1 Zugangspunkt | {count} Zugangspunkte"
       },
-      "table": {
-        "assignment": "Zuordnung",
-        "unassigned": "Keinem Buchungsobjekt zugeordnet",
-        "loading": "Daten werden geladen...",
-        "empty": "Es ist noch kein Zugangspunkt angelegt.",
-        "perPage": "Zugangspunkte pro Seite",
+      "section": {
+        "createDoor": "Tür anlegen",
+        "createLockerSystem": "Schließfachanlage anlegen",
+        "settings": "Einstellungen",
+        "notConnected": "Nicht verbunden",
+        "discard": "Verwerfen",
+        "states": {
+          "connected": "Verbunden",
+          "unchecked": "Nicht geprüft",
+          "failing": "Gestört",
+          "disabled": "Ausgeschaltet"
+        },
+        "active": "Aktiv",
+        "switchOff": {
+          "question": "{provider} ausschalten?",
+          "stops": "{things} öffnet dann nicht mehr, auch nicht für laufende Buchungen. | {things} öffnen dann nicht mehr, auch nicht für laufende Buchungen.",
+          "kept": "Alles bleibt gespeichert.",
+          "cancel": "Abbrechen",
+          "confirm": "Ausschalten"
+        },
+        "kinds": {
+          "door": "1 Tür | {count} Türen",
+          "lockerSystem": "1 Schließfachanlage | {count} Schließfachanlagen",
+          "fixedCompartment": "1 festes Fach | {count} feste Fächer"
+        },
+        "and": "und",
+        "failing": {
+          "error": "Letzte Prüfung gescheitert: {error}",
+          "noError": "Letzte Prüfung gescheitert.",
+          "check": "Zugangsdaten prüfen"
+        },
+        "iqs": {
+          "summary": "IQs: {ready} von {needed} aktiviert",
+          "missing": "Türen an diesem IQ öffnen noch nicht. | Türen an diesen IQs öffnen noch nicht.",
+          "none": "Keine IQs an dieser Site"
+        }
+      },
+      "settings": {
+        "connection": "Verbindung",
+        "lastTest": "Zuletzt geprüft am {at}",
+        "never": "Noch nie geprüft",
+        "test": "Verbindung testen",
+        "remove": "Verbindung entfernen",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saveAndActivate": "Speichern und aktivieren",
+        "more": "Weitere Einstellungen",
+        "allStandard": "alles auf Standard",
+        "standard": "Standard: {value}",
+        "stored": "gespeichert",
+        "changed": "geändert",
+        "given": "angegeben",
+        "storedSecret": "Gespeichert",
+        "changeSecret": "Ändern",
+        "keepSecret": "Gespeichertes behalten",
+        "saveFailed": "Die Einstellungen ließen sich nicht speichern.",
+        "removeFailed": "Die Verbindung ließ sich nicht entfernen.",
+        "removeBlocked": "Erst alle {things} löschen.",
+        "removeKinds": {
+          "door": "Türen",
+          "lockerSystem": "Schließfachanlagen",
+          "fixedCompartment": "festen Fächer"
+        },
+        "caption": {
+          "checked": "Geprüft.",
+          "unchecked": "Ungeprüft. Speichern geht trotzdem.",
+          "failed": "Test gescheitert. Speichern markiert es als gestört."
+        },
+        "faults": {
+          "missing": "Bitte ausfüllen.",
+          "notStored": "Nicht gespeichert. Bitte eingeben.",
+          "changed": "Gehört zu den bisherigen Angaben. Bitte neu eingeben.",
+          "refused": "Vom Anbieter abgelehnt."
+        },
+        "result": {
+          "missing_fields": "Es fehlen Angaben: {fields}.",
+          "missing_secret": "Es fehlt: {fields}.",
+          "codes": {
+            "invalid_credentials": "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht.",
+            "terms_not_accepted": "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert. Melden Sie sich mit dem Konto bei Open Locker an und akzeptieren Sie sie.",
+            "email_not_verified": "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt. Bestätigen Sie sie über den Link in der Mail von Open Locker."
+          }
+        },
+        "toasts": {
+          "saved": {
+            "title": "Gespeichert",
+            "message": "Die Einstellungen von {provider} sind gespeichert."
+          }
+        },
+        "help": {
+          "nuki": "Welche Rechte braucht der Token?",
+          "salto": "Voraussetzungen in Salto KS",
+          "openLocker": "Was das technische Konto braucht"
+        },
+        "fields": {
+          "apiToken": "API-Token",
+          "apiBaseUrl": "API-Adresse",
+          "clientId": "Client-ID",
+          "clientSecret": "Client-Secret",
+          "siteId": "Site-ID",
+          "saltoUsername": "System-User (E-Mail)",
+          "saltoPassword": "Passwort des System-Users",
+          "environment": "Umgebung",
+          "serverUrl": "Server-Adresse",
+          "openLockerEmail": "E-Mail des technischen Kontos",
+          "password": "Passwort",
+          "apiKeyID": "API Key ID",
+          "apiKey": "API Key",
+          "secretPhrase": "Secret Phrase",
+          "lockerId": "Locker-ID",
+          "user": "Benutzername"
+        },
+        "hints": {
+          "saltoUsername": "Ein eigener User nur für Biletado. An dieses Postfach schickt Salto die PIN zum Aktivieren eines IQ.",
+          "secretPhrase": "Nur, wenn iFBS sie für den Mandanten vergeben hat."
+        },
+        "choices": {
+          "environment": {
+            "production": "Production",
+            "accept": "Accept (Sandbox)"
+          }
+        }
+      },
+      "search": {
+        "fields": "Bezeichnung, ID, Standort, Art oder Buchungsobjekt",
+        "hits": "{hits} von {total}",
+        "none": "Keine Treffer bei {provider}.",
+        "open": "Offen ({count})"
+      },
+      "row": {
         "assignmentForbidden": "Nicht abrufbar",
-        "origin": "Herkunft",
-        "originManual": "Selbst angelegt",
-        "originProvider": "Vom Anbieter",
-        "capacityHint": "Kapazität steht am Buchungsobjekt",
-        "typeFilter": "Typ",
-        "filterAll": "Alle",
-        "filterDoors": "Türen",
-        "filterCompartments": "Fächer",
-        "filterDoorsAndCompartments": "Türen & Fächer",
-        "filterLockers": "Anlagen",
-        "emptyFiltered": "Kein Zugangspunkt dieses Typs."
+        "assign": "Buchungsobjekt zuordnen",
+        "next": "Angelegt. Als Nächstes: einem Buchungsobjekt zuordnen.",
+        "nextWithQr": "Angelegt. Als Nächstes: QR-Code drucken und einem Buchungsobjekt zuordnen.",
+        "withoutCompartment": {
+          "label": "1 Buchung ohne Fach | {count} Buchungen ohne Fach",
+          "tooltip": "Beim Speichern war kein Fach in Betrieb frei. Sie stehen noch am alten Fach.",
+          "lead": "Kein freies Fach für",
+          "tail": "Sie bleiben am alten Fach, bis Sie sie lösen, etwa in den Details der Buchung."
+        },
+        "more": "Weitere Aktionen",
+        "markers": {
+          "withQrScan": {
+            "label": "mit QR-Scan",
+            "tooltip": "Abweichend vom Standard des Anbieters verlangt dieser Zugangspunkt den QR-Scan."
+          },
+          "withoutQrScan": {
+            "label": "ohne QR-Scan",
+            "tooltip": "Abweichend vom Standard des Anbieters öffnet dieser Zugangspunkt ohne QR-Scan."
+          },
+          "byHand": {
+            "label": "von Hand",
+            "tooltip": "Dieser Zugangspunkt steht nicht in der Liste des Anbieters, er wurde von Hand eingetragen."
+          },
+          "iqOff": {
+            "label": "IQ nicht aktiviert",
+            "tooltip": "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist."
+          }
+        },
+        "qr": {
+          "door": "QR-Code drucken (PDF, A4)",
+          "compartment": "QR-Code des Fachs drucken (PDF, A4)",
+          "compartments": "QR-Codes der Fächer: einzeln oder als Sammel-PDF"
+        },
+        "actions": {
+          "svg": "QR-Code als SVG",
+          "png": "QR-Code als PNG",
+          "rotate": "Scan-Code rotieren …",
+          "rotateAll": "Alle Scan-Codes rotieren …",
+          "delete": "Löschen …"
+        },
+        "kind": {
+          "lockerSystem": "Schließfachanlage",
+          "fixedCompartment": "festes Fach",
+          "compartments": "1 Fach | {count} Fächer"
+        }
       },
       "types": {
         "door": "Tür",
@@ -2901,11 +3097,6 @@
         "authorization": "PIN-Code",
         "remote": "Öffnen per App",
         "both": "PIN-Code & App"
-      },
-      "modeHints": {
-        "authorization": "Der Buchende gibt einen PIN-Code direkt am Schloss ein.",
-        "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
-        "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
       },
       "openActions": {
         "auto": "Automatisch",
@@ -2923,13 +3114,13 @@
       },
       "openActionHint": "Welche Aktion Nuki beim Öffnen ausführt. Die Wartezeit von Lock'n'Go wird in der Nuki-App eingestellt.",
       "openActionUnsupported": "Für diesen Gerätetyp nicht verfügbar",
-      "openActionMismatch": "Dieses Schloss unterstützt die gewählte Öffnungsart nicht.",
+      "openActionMismatch": "Diese Tür unterstützt die gewählte Öffnungsart nicht.",
       "fields": {
         "label": "Bezeichnung",
         "type": "Typ",
         "provider": "Anbieter",
         "externalId": "ID beim Anbieter",
-        "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
+        "externalIdHint": "Ändern Sie diese ID, um die Tür beim Anbieter auszutauschen, ohne den QR-Code neu zu drucken.",
         "providerLocationId": "Standort-ID beim Anbieter",
         "mode": "Modus",
         "config": {
@@ -2937,20 +3128,19 @@
         },
         "location": "Standort",
         "validationRules": "Validierungsregeln",
-        "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
-        "typeChoiceHint": "Bei einer Schließfachanlage teilt Biletado jeder Buchung ein freies Fach aus der Anlage zu. Ein einzelnes Fach teilen sich alle Buchungen des Buchungsobjekts.",
-        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Schließfachanlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
-        "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
+        "locationIdHint": "Ändern Sie die Standort-ID, um die Schließfachanlage bei iFBS auszutauschen.",
         "productId": "Produkt-ID",
-        "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
+        "productIdHint": "Ändern Sie die Produkt-ID, um die Schließfachanlage bei Pareva auszutauschen.",
         "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
         "compartmentUuid": "UUID des Fachs",
-        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
+        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen.",
+        "bookableIds": "Buchungsobjekte"
       },
       "compartments": {
-        "title": "Fächer der Anlage",
-        "hint": "Wählen Sie die Fächer der Anlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Anlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
+        "title": "Fächer der Schließfachanlage",
+        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Schließfachanlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
         "lockerBank": "Schrank {name}",
         "compartment": "Fach {number}",
         "outOfService": "außer Betrieb",
@@ -2958,138 +3148,183 @@
         "empty": "Keine Fächer zur Wahl.",
         "selected": "Gewählte Fächer: {count}",
         "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern.",
-        "leave": {
-          "title": "Fächer mit Buchungen",
-          "question": "An diesen Fächern hängen Buchungen. Künftige Buchungen bekommen beim Speichern das erste freie Fach in Betrieb, auch unbezahlte. Laufende Buchungen behalten ihr Fach, weil schon Sachen darin liegen können.",
-          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach.",
-          "states": {
-            "running": "läuft – behält das Fach",
-            "future": "künftig – bekommt ein freies Fach"
-          },
-          "more": "… und {count} weitere.",
-          "confirm": "Trotzdem speichern",
-          "unmovedTitle": "Nicht alle Buchungen haben ein neues Fach",
-          "unmovedText": "Die Anlage ist gespeichert. Kein freies Fach für diese künftigen Buchungen: Sie bleiben an ihrem alten Fach. Lösen Sie sie von Hand, etwa in den Details der Buchung.",
-          "close": "Schließen"
+        "bookings": {
+          "legendRunning": "laufende Buchung",
+          "legendFuture": "künftige Buchung",
+          "runningUntil": "läuft bis {end}, bleibt",
+          "running": "läuft, bleibt",
+          "moving": "{count} zieht um | {count} ziehen um",
+          "summary": "Beim Speichern: {consequences}.",
+          "keep": "1 laufende Buchung behält ihr Fach | {count} laufende Buchungen behalten ihr Fach",
+          "move": "1 künftige Buchung bekommt ein freies Fach in Betrieb | {count} künftige Buchungen bekommen ein freies Fach in Betrieb",
+          "moveAfterKeep": "1 künftige bekommt ein freies Fach in Betrieb | {count} künftige bekommen ein freies Fach in Betrieb",
+          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach."
         }
-      },
-      "picker": {
-        "title": "Zugangspunkt vom Anbieter übernehmen",
-        "provider": "Anbieter",
-        "lock": "Zugangspunkt",
-        "apply": "Übernehmen",
-        "alreadyCreated": "bereits angelegt",
-        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
       },
       "rules": {
-        "title": "Validierungsregeln",
-        "qrScan": "QR-Scan erforderlich",
-        "qrScanShort": "QR-Scan",
-        "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
-        "qrScanHintAnlage": "Gilt für alle Fächer der Anlage: Ein Fach öffnet sich nur, wenn sein eigener QR-Code vor Ort gescannt wurde.",
-        "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
-        "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen.",
-        "required": "erforderlich",
-        "notRequired": "nicht nötig",
-        "notApplicable": "entfällt",
-        "forAllCompartments": "für alle Fächer"
+        "qrScan": "QR-Scan erforderlich"
       },
       "location": {
         "title": "Standort",
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
         "prefillApplied": "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern.",
-        "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
+        "prefillEmpty": "Der Anbieter kennt für diesen Zugangspunkt keinen Standort."
       },
       "config": {
-        "title": "Erweiterte Konfiguration",
         "label": "Anbieter-Konfiguration (JSON)",
         "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
-        "hintOpenAction": "Die Öffnungsart wird oben eingestellt.",
         "invalid": "Kein gültiges JSON.",
         "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
       },
       "qr": {
-        "pdf": "QR-Code drucken (PDF, A4)",
-        "svg": "QR-Code als SVG",
-        "png": "QR-Code als PNG",
         "error": "Der QR-Code konnte nicht erzeugt werden."
       },
       "rotate": {
-        "action": "Scan-Code rotieren",
         "title": "Scan-Code rotieren",
-        "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
-        "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
-        "compartmentQuestion": "Soll der Scan-Code von „{compartment}“ der Anlage „{label}“ ersetzt werden?",
-        "compartmentWarning": "Der angebrachte QR-Code dieses Fachs wird damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn am Fach an.",
-        "compartmentDone": "Der Scan-Code wurde ersetzt. Der alte QR-Code dieses Fachs ist ab sofort ungültig.",
-        "allAction": "Alle rotieren …",
-        "allTitle": "Alle Scan-Codes rotieren",
-        "allQuestion": "Soll der Scan-Code aller Fächer der Anlage „{label}“ ersetzt werden? Das betrifft 1 Fach. | Soll der Scan-Code aller Fächer der Anlage „{label}“ ersetzt werden? Das betrifft {count} Fächer.",
-        "allWarning": "Der gedruckte und angebrachte QR-Code wird sofort ungültig. Drucken Sie das Sammel-PDF und bringen Sie den Aufkleber an seinem Fach an. | Alle {count} gedruckten und angebrachten QR-Codes werden sofort ungültig. Drucken Sie das Sammel-PDF und bringen Sie jeden Aufkleber an seinem Fach an.",
-        "allQrScanRequired": "Die Anlage verlangt den QR-Scan. Bis die neuen Aufkleber hängen, öffnet keines dieser Fächer für Buchende.",
-        "allQrScanOptional": "Die Anlage verlangt keinen QR-Scan. Buchende öffnen weiter über die App, nur die alten Aufkleber führen ins Leere.",
-        "allAcknowledge": "Ich drucke alle Aufkleber neu und bringe sie an.",
-        "allConfirm": "{count} rotieren",
-        "allDone": "1 Scan-Code ersetzt. Der alte QR-Code ist ab sofort ungültig. | {count} Scan-Codes ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
-        "allReprint": "Neue QR-Codes drucken:",
-        "allError": "Die Scan-Codes konnten nicht rotiert werden.",
+        "question": "Scan-Code rotieren?",
+        "allQuestion": "Alle Scan-Codes rotieren?",
+        "replaced": "Der Scan-Code {target} wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr.",
+        "target": {
+          "accessPoint": "von „{label}“",
+          "compartment": "von Fach {number}",
+          "all": "des einen Fachs | aller {count} Fächer"
+        },
+        "locks": {
+          "one": "Bis der neue Aufkleber hängt, {opensNot} für Buchende.",
+          "all": "Bis die neuen Aufkleber hängen, {opensNot} für Buchende."
+        },
+        "opensNot": {
+          "door": "öffnet die Tür nicht",
+          "fixed": "öffnet das Fach nicht",
+          "compartment": "öffnet Fach {number} nicht",
+          "all": "öffnet das Fach nicht | öffnet keines der {count} Fächer"
+        },
+        "keepsOpening": {
+          "one": "Buchende öffnen weiter über die App, nur der alte Aufkleber führt ins Leere.",
+          "all": "Buchende öffnen weiter über die App, nur die alten Aufkleber führen ins Leere."
+        },
+        "acknowledge": "Ich drucke alle Aufkleber neu und bringe sie an.",
         "confirm": "Rotieren",
-        "done": "Der Scan-Code wurde ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
-        "reprint": "Neuen QR-Code drucken:",
-        "error": "Der Scan-Code konnte nicht rotiert werden."
+        "allConfirm": "{count} rotieren",
+        "action": "Scan-Code rotieren …",
+        "allAction": "Alle rotieren …",
+        "reprint": "Neuen QR-Code drucken",
+        "done": "Scan-Code ersetzt. Jetzt den neuen QR-Code drucken und anbringen.",
+        "error": "Der Scan-Code konnte nicht rotiert werden.",
+        "allError": "Die Scan-Codes konnten nicht rotiert werden."
+      },
+      "qrPreview": {
+        "alt": "QR-Code"
       },
       "compartmentQr": {
-        "action": "QR-Codes der Fächer",
-        "menu": "QR-Codes der Fächer …",
         "title": "QR-Codes der Fächer",
+        "all": "Alle Fächer ({count})",
+        "allTitle": "Alle Fächer",
+        "printSheet": "Sammel-PDF drucken",
+        "compartmentTitle": "Schrank {name} · Fach {number}",
+        "print": "Drucken (PDF, A4)",
+        "formats": "Für eigene Layouts:",
+        "new": "neu",
+        "sheetHint": "Etikettenbogen 2×4 je A4 (105 × 74 mm), jeder Schrank auf einer neuen Seite.",
         "subtitle": "{label} · 1 Fach | {label} · {count} Fächer",
-        "printAll": "Alle drucken (Sammel-PDF)",
-        "printAllTitle": "QR-Codes aller Fächer als Etikettenbogen (2×4 je A4, 105 × 74 mm), jeder Schrank auf einer neuen Seite",
-        "columns": {
-          "compartment": "Fach",
-          "state": "Zustand",
-          "qr": "QR-Code"
-        },
-        "inService": "in Betrieb",
-        "pdfTitle": "QR-Code drucken (PDF, A4)",
         "empty": "Diese Schließfachanlage hat noch keine Fächer."
       },
       "delete": {
-        "action": "Löschen",
-        "title": "Zugangspunkt löschen",
-        "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
-        "confirm": "Löschen",
-        "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
-        "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
-        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet.",
-        "bookingsTitle": "Laufende Buchungen mit erteiltem Zugang:",
-        "bookingsHint": "Die erteilten Berechtigungen werden dabei nicht widerrufen – beim Anbieter bleiben sie bestehen und lassen sich anschließend hier nicht mehr entziehen. Bedienen lässt sich der Zugangspunkt aus diesen Buchungen nicht mehr.",
-        "bookingsNone": "Keine laufende Buchung hält an diesem Zugangspunkt einen erteilten Zugang.",
-        "bookingsLoading": "Laufende Buchungen werden geprüft …",
-        "bookingsUnreadable": "Ob laufende Buchungen hier einen erteilten Zugang halten, ist nicht abrufbar – die Buchungen dieses Mandanten konnten nicht gelesen werden.",
-        "bookingsMore": "… und {count} weitere."
+        "title": "„{label}“ löschen?",
+        "loses": {
+          "one": {
+            "door": "{names} verliert die Tür.",
+            "lockerSystem": "{names} verliert die Schließfachanlage.",
+            "fixedCompartment": "{names} verliert das feste Fach."
+          },
+          "other": {
+            "door": "{names} verlieren die Tür.",
+            "lockerSystem": "{names} verlieren die Schließfachanlage.",
+            "fixedCompartment": "{names} verlieren das feste Fach."
+          }
+        },
+        "bookablesUnchecked": {
+          "door": "Ob Buchungsobjekte die Tür verlieren, ließ sich nicht prüfen.",
+          "lockerSystem": "Ob Buchungsobjekte die Schließfachanlage verlieren, ließ sich nicht prüfen.",
+          "fixedCompartment": "Ob Buchungsobjekte das feste Fach verlieren, ließ sich nicht prüfen."
+        },
+        "names": {
+          "last": "{names} und {last}",
+          "more": "{names} und {count} weitere"
+        },
+        "running": {
+          "one": "{bookings} behält ihren Zugang bei {provider}, entziehen lässt er sich hier danach nicht mehr.",
+          "other": "{bookings} behalten ihren Zugang bei {provider}, entziehen lässt er sich hier danach nicht mehr."
+        },
+        "runningCount": "{n} laufende Buchung | {n} laufende Buchungen",
+        "which": "Welche?",
+        "hide": "Ausblenden",
+        "until": "bis {time}",
+        "checking": "Prüfe laufende Buchungen …",
+        "unchecked": "Ob laufende Buchungen hier Zugang haben, ließ sich nicht prüfen.",
+        "nothing": "Nichts weiter betroffen: kein Buchungsobjekt, keine laufende Buchung.",
+        "confirm": "Löschen"
       },
       "dialog": {
-        "editTitle": "Zugangspunkt bearbeiten",
-        "createTitle": "Zugangspunkt anlegen",
-        "modes": {
-          "provider": "Vom Anbieter übernehmen",
-          "manual": "Manuell anlegen"
+        "kinds": {
+          "door": {
+            "create": "Tür anlegen",
+            "edit": "Tür bearbeiten",
+            "noun": "Tür"
+          },
+          "lockerSystem": {
+            "create": "Schließfachanlage anlegen",
+            "edit": "Schließfachanlage bearbeiten",
+            "noun": "Schließfachanlage",
+            "choice": "Schließfachanlage"
+          },
+          "fixedCompartment": {
+            "create": "Festes Fach anlegen",
+            "edit": "Festes Fach bearbeiten",
+            "noun": "Fach",
+            "choice": "Festes Fach"
+          }
         },
-        "modeHints": {
-          "provider": "Der Anbieter listet seine Türen und Anlagen; das Formular füllt sich aus der Liste.",
-          "manual": "Eine Tür oder eine Pareva-Anlage von Hand eintragen. Eine iFBS-Anlage kommt immer vom Anbieter."
-        }
+        "typeHints": {
+          "lockerSystem": "Biletado teilt jeder Buchung ein freies Fach der Schließfachanlage zu.",
+          "fixedCompartment": "Alle Buchungen des Buchungsobjekts teilen sich dieses eine Fach."
+        },
+        "pickTitle": "{noun} aus der Liste von {provider} wählen",
+        "byHandRow": "Nicht in der Liste: {noun} von Hand eintragen",
+        "byHand": "Von Hand eingetragen",
+        "taken": "schon angelegt",
+        "iqOff": "IQ nicht aktiviert",
+        "iqWarning": "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist. Speichern können Sie schon jetzt.",
+        "swap": "Tauschen",
+        "more": "Weitere Einstellungen",
+        "technical": "Technik",
+        "modeHint": "Buchende öffnen per Knopfdruck in der App. Kommt der PIN-Code, wird der Modus eine Auswahl.",
+        "qrScan": {
+          "default": "Standard bei {provider}: {value}.",
+          "defaultAnlage": "Gilt für alle Fächer, jedes mit seinem eigenen QR-Code. Standard bei {provider}: {value}.",
+          "on": "QR-Scan erforderlich",
+          "off": "ohne QR-Scan"
+        },
+        "summary": {
+          "openAction": "Öffnungsart {name}",
+          "qrScan": "QR-Scan erforderlich",
+          "noQrScan": "ohne QR-Scan",
+          "noLocation": "kein Standort",
+          "point": "Standort auf der Karte"
+        },
+        "nextStep": "Danach: zuordnen und QR-Code drucken",
+        "nextStepNoQr": "Danach: zuordnen"
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
         "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
         "notFoundOrForbidden": "Nicht gefunden oder nicht zugänglich. Der Eintrag existiert nicht mehr, oder er liegt außerhalb Ihrer Berechtigung.",
         "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
+        "providersFailed": "Die Anbieter konnten nicht geladen werden.",
         "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
         "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
         "preconditionFailed": "Die Regel „{rule}“ lässt sich nicht aktivieren, solange folgende Angaben fehlen: {requires}.",
@@ -3100,19 +3335,29 @@
           "validate": "Unzulässiger Wert",
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet",
-          "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
+          "unsupported_mode": "Dieser Zugangspunkt unterstützt den gewählten Modus nicht.",
           "duplicate_compartment": "Das Fach ist doppelt gewählt.",
-          "unsupported_by_provider": "Die Anlagen dieses Anbieters tragen keine eigenen Fächer.",
-          "unknown_open_action": "Unzulässiger Wert"
+          "unsupported_by_provider": "Die Schließfachanlagen dieses Anbieters tragen keine eigenen Fächer.",
+          "unknown_open_action": "Unzulässiger Wert",
+          "locker_system_one_bookable": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt."
         },
-        "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
-        "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
+        "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt diese Tür nicht. Möglich sind: {supportedOpenActions}.",
+        "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt diese Tür nicht.",
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
         "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
         "compartmentIsFixed": "Das Fach ist schon als festes Fach „{label}“ angelegt.",
         "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
+      },
+      "assign": {
+        "title": "Buchungsobjekte zuordnen",
+        "hint": "Wer eines davon bucht, öffnet den Zugangspunkt für die Buchungszeit mit der App.",
+        "single": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt.",
+        "none": "Es gibt kein Buchungsobjekt, das Sie bearbeiten dürfen.",
+        "save": "Zuordnen",
+        "error": "Die Zuordnung konnte nicht gespeichert werden.",
+        "forbidden": "Dafür fehlt Ihnen die Berechtigung: Sie dürfen nicht jedes dieser Buchungsobjekte bearbeiten."
       },
       "toasts": {
         "saved": {
@@ -3123,51 +3368,34 @@
           "title": "Gelöscht",
           "message": "Der Zugangspunkt wurde gelöscht."
         },
+        "assigned": {
+          "title": "Zugeordnet",
+          "message": "Die Zuordnung wurde gespeichert."
+        },
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",
           "message": "Der QR-Code konnte nicht erzeugt werden."
         },
-        "tenantSaved": {
-          "title": "Gespeichert",
-          "message": "Änderungen wurden erfolgreich gespeichert."
-        },
-        "tenantSaveFailed": {
-          "title": "Speichern fehlgeschlagen",
-          "message": "Fehler beim Speichern der Änderungen."
+        "switchFailed": {
+          "title": "Nicht geschaltet",
+          "message": "Der Anbieter ließ sich nicht schalten."
         }
       },
       "hints": {
-        "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
+        "assignmentForbidden": "Welchen Buchungsobjekten die Zugangspunkte zugeordnet sind, lässt sich nicht anzeigen: Sie haben keinen Zugriff auf Buchungsobjekte."
       },
       "create": "Zugangspunkt anlegen"
     },
     "comingSoon": {
-      "badge": "Bald verfügbar",
-      "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
+      "badge": "Bald verfügbar"
     },
     "tenant": {
-      "title": "Türsteuerung & Zugang",
-      "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",
-      "providerTitle": "Smarte Türschlösser",
-      "providerDescription": "Mit Nuki öffnen und schließen Sie Türen aus der Ferne. Buchende erhalten während ihres Buchungszeitraums automatisch Zugang.",
-      "providerLink": "Mehr über Nuki",
-      "activate": "Nuki aktivieren",
-      "apiCredentials": "API-Zugangsdaten",
-      "apiToken": "API-Token",
-      "apiTokenPlaceholder": "Nuki Web API Token",
-      "apiTokenUnchanged": "•••••••• (unverändert)",
-      "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
-      "apiBaseUrl": "API Base-URL",
-      "permissionsTitle": "Benötigte Token-Berechtigungen",
       "permissionsIntro": "Der Nuki Web API-Token muss beim Anlegen in Nuki Web (MENÜ → API) mit den passenden Berechtigungen versehen werden. Tokens erhalten dauerhaft genau die Rechte, die beim Erstellen angehakt wurden, und werden ungültig, sobald das Passwort des Nuki-Web-Accounts geändert wird.",
-      "permissionsMinTitle": "Minimum (öffnen/schließen + Status)",
       "permissionReadOnly": "Geräte anzeigen (smartlock.readOnly) – Verbindungstest, Türen auflisten, Status lesen",
       "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
-      "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
       "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
       "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Tür-Events",
       "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
-      "testConnection": "Verbindung testen",
       "connectionSuccess": "Verbindung erfolgreich!",
       "customerService": {
         "title": "Kundenservice",
@@ -3179,48 +3407,10 @@
         "invalidPhone": "Muss eine gültige Telefonnummer sein."
       },
       "openLocker": {
-        "providerTitle": "Fächer per App öffnen",
-        "providerDescription": "Mit Open Locker öffnen Buchende ein Fach während ihres Buchungszeitraums per App. Biletado meldet sich dafür mit einem technischen Konto bei Ihrer Open-Locker-Instanz an. Jedes Fach wählen Sie beim Anlegen eines Zugangspunkts aus der Liste der Fächer, auf die das Konto Zugriff hat.",
-        "activate": "Open Locker aktivieren",
-        "server": "Serverkonfiguration",
-        "serverUrl": "Server-URL",
-        "serverUrlPlaceholder": "z. B. https://locker.example.org",
-        "account": "Technisches Konto",
-        "email": "E-Mail des technischen Kontos",
-        "password": "Passwort",
-        "accountHint": "Das technische Konto muss in Open Locker seine E-Mail-Adresse bestätigt und die aktuellen Nutzungsbedingungen akzeptiert haben, sonst ist es gesperrt. Es braucht Zugriff auf die Fächer, die Sie als Zugangspunkte anlegen.",
-        "testFailed": "Verbindung fehlgeschlagen: {message}",
-        "testErrors": {
-          "invalid_credentials": "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht.",
-          "terms_not_accepted": "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert. Melden Sie sich mit dem Konto bei Open Locker an und akzeptieren Sie sie.",
-          "email_not_verified": "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt. Bestätigen Sie sie über den Link in der Mail von Open Locker."
-        }
+        "accountHint": "Das technische Konto muss in Open Locker seine E-Mail-Adresse bestätigt und die aktuellen Nutzungsbedingungen akzeptiert haben, sonst ist es gesperrt. Es braucht Zugriff auf die Fächer, die Sie als Zugangspunkte anlegen."
       },
       "salto": {
-        "providerTitle": "Salto KS – Cloud-Schließanlage",
-        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende öffnen die Tür während ihres Buchungszeitraums per App.",
-        "providerLink": "Mehr über Salto KS",
-        "activate": "Salto KS aktivieren",
-        "clientId": "Client-ID",
-        "clientSecret": "Client-Secret",
-        "clientSecretPlaceholder": "Salto KS Client-Secret",
-        "clientSecretUnchanged": "•••••••• (unverändert)",
-        "clientSecretHint": "Es ist bereits ein Secret hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
-        "username": "System-User (E-Mail)",
-        "usernamePlaceholder": "z. B. service-user@example.com",
-        "usernameHint": "E-Mail des Salto-KS-System-Users mit der Rolle „site_admin“ für alle relevanten Sites.",
-        "password": "System-User-Passwort",
-        "passwordPlaceholder": "Salto KS System-User-Passwort",
-        "passwordUnchanged": "•••••••• (unverändert)",
-        "passwordHint": "Es ist bereits ein Passwort hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
-        "systemUserMissing": "System-User fehlt – ohne E-Mail und Passwort ist keine Verbindung möglich. Bitte tragen Sie die Zugangsdaten des KS-System-Users ein und speichern Sie.",
-        "siteId": "Site-ID",
-        "environment": "Umgebung",
-        "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
-        "environmentAccept": "Accept (Sandbox)",
-        "environmentProduction": "Production",
         "prerequisites": {
-          "title": "Voraussetzungen in Salto KS",
           "intro": "Biletado meldet sich bei Salto KS als System-User an. Richten Sie ihn in Salto KS so ein, bevor Sie die Zugangsdaten unten eintragen:",
           "systemUser": "Ein eigener System-User nur für Biletado, kein persönliches Konto. Sein Name zeigt den Zweck, etwa „Biletado – nicht löschen“.",
           "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",
@@ -3281,7 +3471,7 @@
             "remote_access_off": "Der System-User darf nicht fernöffnen. Erlauben Sie in Salto KS „Remote Opening“ unter Lock Options.",
             "other": "Salto meldet: {message}"
           },
-          "site": "{count} Schloss | {count} Schlösser",
+          "site": "{count} Tür | {count} Türen",
           "iqs": {
             "summary": "{total} IQs, {ready} von {needed} aktiviert",
             "none": "Keine IQs an dieser Site",
@@ -3302,14 +3492,8 @@
           "confirm": "Trotzdem speichern"
         },
         "iq": {
-          "title": "IQ-Aktivierung für Remote-Open",
-          "refresh": "IQ-Liste aktualisieren",
           "appBan": "Wichtig: Den System-User niemals in der Salto-App an einem IQ aktivieren („Get Code“ / IQ-Aktivierung). Die App-Aktivierung macht das hier gespeicherte Secret still ungültig – jedes Fernöffnen schlägt danach mit otp_invalid fehl.",
-          "progress": "{ready} von {total} IQs bereit für Remote-Open",
-          "progressActionNeeded": "Noch nicht bereit: {count} – die Liste ist nach Handlungsbedarf sortiert.",
-          "progressAllDone": "Alles erledigt – alle Türen an diesen IQs lassen sich fernöffnen.",
           "noIqs": "An der Salto-Site wurden keine IQs gefunden.",
-          "notConfigured": "Die IQ-Liste ist erst verfügbar, wenn der Mandant mit aktiver Salto-KS-App gespeichert wurde.",
           "loadError": "Die IQ-Liste konnte nicht geladen werden:",
           "online": "online",
           "offline": "offline",
@@ -3328,7 +3512,7 @@
             },
             "not_activated": {
               "label": "Nicht aktiviert",
-              "nextStep": "Aktivierung starten – Salto sendet eine PIN an das Postfach des System-Users."
+              "nextStep": "Aktivieren – Salto sendet eine PIN an das Postfach des System-Users."
             },
             "pending_pin": {
               "label": "PIN ausstehend",
@@ -3344,7 +3528,7 @@
             }
           },
           "actions": {
-            "start": "Aktivierung starten",
+            "start": "Aktivieren",
             "complete": "Abschließen",
             "resendMail": "PIN-Mail erneut senden",
             "discard": "Verwerfen",
@@ -3477,7 +3661,7 @@
         "unlimited": "Die Anzahl ist unbegrenzt, gleichzeitig buchbar ist aber höchstens das eine Fach der Schließfachanlage „{label}“. | Die Anzahl ist unbegrenzt, gleichzeitig buchbar sind aber höchstens die {count} Fächer der Schließfachanlage „{label}“.",
         "larger": "Die Anzahl ({amount}) ist größer als das eine Fach der Schließfachanlage „{label}“. Gleichzeitig buchbar ist höchstens 1. | Die Anzahl ({amount}) ist größer als die {count} Fächer der Schließfachanlage „{label}“. Gleichzeitig buchbar sind höchstens {count}."
       },
-      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zugangspunkte“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
       "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
       "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",

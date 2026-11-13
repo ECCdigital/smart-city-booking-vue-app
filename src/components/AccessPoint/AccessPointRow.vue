@@ -1,0 +1,352 @@
+<script>
+import FormatService from "@/services/FormatService";
+import { accessPointLabel } from "@/utilities/access-points";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
+import {
+  deviations,
+  hasQr,
+  metaLine,
+  moreActions,
+  nextStep,
+  qrTitle,
+} from "@/utilities/access-point-rows";
+
+/**
+ * The row of one access point on the Zugangspunkte page
+ * (ECCdigital/tickets#1108). It shows the access point and hands every
+ * action up as an event; the page opens the dialogs and calls the backend.
+ * What it shows and offers comes from `@/utilities/access-point-rows`.
+ *
+ * Events: `edit`, `qr` (the visible QR code), `assign` (the button or a
+ * chip), and from the menu „…“ `download` (with "svg" or "png"), `rotate`,
+ * `rotate-all` and `delete`. `fresh` marks the row of an access point just
+ * created, with its next step (ECCdigital/tickets#1110).
+ * `withoutCompartment` are the future bookings of a Schließfachanlage no
+ * Fach was free for: a marker and a line with each, linked, until they are
+ * solved; a click hands the booking up as `open-booking`
+ * (ECCdigital/tickets#1113).
+ */
+export default {
+  name: "AccessPointRow",
+  props: {
+    accessPoint: { type: Object, required: true },
+    // The bookables it is assigned to; `null` where they were not readable,
+    // so the row makes no claim about them.
+    bookables: { type: Array, default: null },
+    // What its provider lists, for „von Hand“ and „IQ nicht aktiviert“;
+    // `null` while not read.
+    listing: { type: Array, default: null },
+    fresh: { type: Boolean, default: false },
+    // `{ id, compartment, timeBegin, timeEnd, href }` each.
+    withoutCompartment: { type: Array, default: () => [] },
+  },
+  computed: {
+    label() {
+      return accessPointLabel(this.accessPoint);
+    },
+    meta() {
+      return metaLine(this.accessPoint);
+    },
+    markers() {
+      return deviations(this.accessPoint, this.listing);
+    },
+    hasQr() {
+      return hasQr(this.accessPoint);
+    },
+    qrTitle() {
+      return this.hasQr ? qrTitle(this.accessPoint) : "";
+    },
+    moreActions() {
+      return moreActions(this.accessPoint);
+    },
+    nextStep() {
+      return nextStep(this.accessPoint);
+    },
+  },
+  methods: {
+    compartmentOf(booking) {
+      const compartment = booking.compartment || {};
+      return compartmentTitle({
+        number: compartment.number,
+        lockerBankName: compartment.lockerBank?.name,
+      });
+    },
+    periodOf(booking) {
+      if (booking.timeBegin == null || booking.timeEnd == null) return "";
+      return `${FormatService.dateTime(
+        booking.timeBegin
+      )} – ${FormatService.dateTime(booking.timeEnd)}`;
+    },
+    whereOf(booking) {
+      return [this.compartmentOf(booking), this.periodOf(booking)]
+        .filter(Boolean)
+        .join(", ");
+    },
+  },
+};
+</script>
+
+<template>
+  <div
+    class="access-point-row"
+    :class="{ 'access-point-row--fresh': fresh }"
+    data-test="access-point-row"
+  >
+    <div class="access-point-row__main">
+      <div class="access-point-row__label">
+        {{ label }}
+        <v-tooltip v-for="marker in markers" :key="marker.key" bottom>
+          <template #activator="{ on, attrs }">
+            <span
+              class="access-point-row__marker"
+              :class="`access-point-row__marker--${marker.tone}`"
+              data-test="access-point-marker"
+              v-bind="attrs"
+              v-on="on"
+              >{{ marker.label }}</span
+            >
+          </template>
+          <span>{{ marker.tooltip }}</span>
+        </v-tooltip>
+        <v-tooltip v-if="withoutCompartment.length" bottom>
+          <template #activator="{ on, attrs }">
+            <span
+              class="access-point-row__marker access-point-row__marker--warning"
+              data-test="access-point-marker"
+              v-bind="attrs"
+              v-on="on"
+              >{{
+                $tc(
+                  "accessPoint.management.row.withoutCompartment.label",
+                  withoutCompartment.length,
+                  { count: withoutCompartment.length }
+                )
+              }}</span
+            >
+          </template>
+          <span>{{
+            $t("accessPoint.management.row.withoutCompartment.tooltip")
+          }}</span>
+        </v-tooltip>
+      </div>
+      <div class="access-point-row__meta" data-test="access-point-meta">
+        {{ meta }}
+      </div>
+      <div
+        v-if="fresh"
+        class="access-point-row__next"
+        data-test="access-point-next"
+      >
+        {{ nextStep }}
+      </div>
+    </div>
+    <div class="access-point-row__bookables">
+      <span v-if="!bookables" class="text--secondary">
+        {{ $t("accessPoint.management.row.assignmentForbidden") }}
+      </span>
+      <template v-else-if="bookables.length">
+        <v-chip
+          v-for="bookable in bookables"
+          :key="bookable.id"
+          x-small
+          class="mr-1 my-1"
+          data-test="access-point-bookable"
+          @click="$emit('assign')"
+        >
+          {{ bookable.title }}
+        </v-chip>
+      </template>
+      <v-btn
+        v-else
+        x-small
+        outlined
+        color="warning"
+        data-test="assign-bookable"
+        @click="$emit('assign')"
+      >
+        <v-icon left x-small>mdi-link-variant</v-icon>
+        {{ $t("accessPoint.management.row.assign") }}
+      </v-btn>
+    </div>
+    <div class="access-point-row__actions">
+      <!-- QR-Code and Bearbeiten keep their places: a row without a QR
+           code leaves the gap. -->
+      <v-btn
+        v-if="hasQr"
+        icon
+        small
+        :title="qrTitle"
+        :aria-label="qrTitle"
+        data-test="row-qr"
+        @click="$emit('qr')"
+      >
+        <v-icon small>mdi-qrcode</v-icon>
+      </v-btn>
+      <span v-else class="access-point-row__gap" />
+      <v-btn
+        icon
+        small
+        :title="$t('accessPoint.management.edit')"
+        :aria-label="$t('accessPoint.management.edit')"
+        data-test="row-edit"
+        @click="$emit('edit')"
+      >
+        <v-icon small>mdi-pencil-outline</v-icon>
+      </v-btn>
+      <v-menu offset-y left>
+        <template #activator="{ on, attrs }">
+          <v-btn
+            icon
+            small
+            :title="$t('accessPoint.management.row.more')"
+            :aria-label="$t('accessPoint.management.row.more')"
+            data-test="row-menu"
+            v-bind="attrs"
+            v-on="on"
+          >
+            <v-icon small>mdi-dots-horizontal</v-icon>
+          </v-btn>
+        </template>
+        <v-list dense>
+          <template v-for="(action, index) in moreActions">
+            <v-divider
+              v-if="action.danger && index > 0"
+              :key="`divider-${action.key}`"
+            />
+            <v-list-item
+              :key="action.key"
+              link
+              :data-test="`row-action-${action.key}`"
+              @click="$emit(action.event, action.arg)"
+            >
+              <v-list-item-icon>
+                <v-icon small :color="action.danger ? 'error' : undefined">
+                  {{ action.icon }}
+                </v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>{{ action.label }}</v-list-item-title>
+            </v-list-item>
+          </template>
+        </v-list>
+      </v-menu>
+    </div>
+    <div
+      v-if="withoutCompartment.length"
+      class="access-point-row__without"
+      data-test="bookings-without-compartment"
+    >
+      <v-icon small color="warning" class="mr-2">mdi-alert-outline</v-icon>
+      <span>
+        {{ $t("accessPoint.management.row.withoutCompartment.lead") }}
+        <template v-for="(booking, index) in withoutCompartment">
+          <a
+            :key="`link-${booking.id}`"
+            :href="booking.href"
+            @click.prevent="$emit('open-booking', booking.id)"
+            >{{ booking.id }}</a
+          >
+          <span :key="`where-${booking.id}`" class="text--secondary">
+            ({{ whereOf(booking) }})</span
+          ><span :key="`end-${booking.id}`">{{
+            index < withoutCompartment.length - 1 ? ", " : "."
+          }}</span>
+        </template>
+        {{ $t("accessPoint.management.row.withoutCompartment.tail") }}
+      </span>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.access-point-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) auto;
+  align-items: center;
+  gap: var(--scb-space-4);
+  padding: var(--scb-space-2) var(--scb-space-2) var(--scb-space-2)
+    var(--scb-space-4);
+}
+
+.access-point-row + .access-point-row {
+  border-top: 1px solid var(--scb-rule);
+}
+
+.access-point-row--fresh {
+  background: var(--scb-selected-tint-faint);
+  box-shadow: inset 3px 0 0 var(--v-primary-base);
+}
+
+.access-point-row__next {
+  font-size: var(--scb-font-size-xs);
+  color: var(--v-primary-base);
+}
+
+.access-point-row__label {
+  font-weight: var(--scb-font-weight-medium);
+}
+
+.access-point-row__marker {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--scb-radius-badge);
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-medium);
+  line-height: 16px;
+  vertical-align: 1px;
+  cursor: default;
+}
+
+.access-point-row__marker--neutral {
+  border: 1px solid var(--scb-surface-border);
+  color: var(--scb-text-muted);
+}
+
+.access-point-row__marker--warning {
+  border: 1px solid var(--v-warning-base);
+  background: var(--scb-warning-tint);
+  color: var(--scb-text);
+}
+
+.access-point-row__without {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  margin: calc(-1 * var(--scb-space-1)) calc(-1 * var(--scb-space-2))
+    calc(-1 * var(--scb-space-2)) calc(-1 * var(--scb-space-4));
+  padding: var(--scb-space-2) var(--scb-space-2) var(--scb-space-2)
+    var(--scb-space-4);
+  background: var(--scb-warning-tint);
+  font-size: var(--scb-font-size-sm);
+}
+
+.access-point-row__meta {
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.access-point-row__actions {
+  display: flex;
+  align-items: center;
+}
+
+.access-point-row__gap {
+  display: inline-block;
+  width: 28px;
+}
+
+/* Below $scb-bp-sm (959px) the row stacks. */
+@media (max-width: 959px) {
+  .access-point-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .access-point-row__bookables {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+</style>

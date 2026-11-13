@@ -1,7 +1,7 @@
 /**
  * The tenant applications for doors and locker systems.
  *
- * They are configured under "Zutritt & Schließsysteme" but still travel in
+ * They are configured on the page „Zugangspunkte“ but still travel in
  * the tenant's `applications` array, so the tenant page has to carry them
  * through a save unchanged - which only works if both pages agree on their
  * shape.
@@ -9,13 +9,16 @@
  * All five are of type `access`: the backend schema knows no other type for
  * them since the migration, and there is no fallback - a tenant whose
  * applications were not migrated reads as not configured.
+ *
+ * In the order the Zugangspunkte page offers them: doors first, then
+ * lockers.
  */
 export const LOCK_AND_ACCESS_APP_IDS = [
-  "pareva",
-  "ifbs",
   "nuki",
   "salto-ks",
   "open-locker",
+  "ifbs",
+  "pareva",
 ];
 
 /** The id of Salto KS as a provider and as a tenant application. */
