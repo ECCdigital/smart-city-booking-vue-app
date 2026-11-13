@@ -16,6 +16,7 @@ import {
 import { typeSearch } from "@tests/unit/support/search";
 import { selectByLabel } from "@tests/unit/support/vuetify";
 import ApiGeoService from "@/services/api/ApiGeoService";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenant: vi.fn(), submitTenant: vi.fn() },
@@ -36,6 +37,7 @@ vi.mock("@/services/api/ApiAccessPointService", () => ({
     getQrCode: vi.fn(),
     getCompartmentBookings: vi.fn(),
     getLocationPrefill: vi.fn(),
+    assignBookables: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiBookablesService", () => ({
@@ -52,6 +54,9 @@ vi.mock("@/services/permissions/AccessPointPermissionService", () => ({
 }));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
   default: { allowUpdate: () => true },
+}));
+vi.mock("@/services/permissions/BookablePermissionService", () => ({
+  default: { allowUpdate: vi.fn(() => true) },
 }));
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: { allowAuditExport: () => false },
@@ -1113,25 +1118,6 @@ describe("AccessPoints shows the assignment in the row", () => {
     ).toBe("Buchungsobjekt zuordnen");
   });
 
-  // Until the page assigns itself, the button points to the area at the
-  // bookable, where the assignment is made today.
-  it("points to the area at the bookable from the assignment", async () => {
-    const wrapper = await mountAccessPointsPage();
-
-    await rowOf(wrapper, "Schließfächer Rathaus")
-      .find("[data-test='assign-bookable']")
-      .trigger("click");
-    await settle(wrapper);
-
-    expect(addToast).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        type: "info",
-        message: expect.stringContaining("Schließsysteme"),
-      })
-    );
-  });
-
   // „Not assigned“ is a claim about the bookables; on a denial the page
   // cannot make it, so it says why instead.
   it("does not offer the assignment when the bookables are forbidden", async () => {
@@ -1144,6 +1130,292 @@ describe("AccessPoints shows the assignment in the row", () => {
     expect(row.find("[data-test='assign-bookable']").exists()).toBe(false);
     expect(wrapper.text()).toContain(
       "Sie haben keinen Zugriff auf Buchungsobjekte"
+    );
+  });
+});
+
+/** The card of the dialog Zuordnen, wherever Vuetify detached it. */
+function assignDialog(wrapper) {
+  return dialogCard(wrapper, "AccessPointAssignDialog");
+}
+
+/** The bookables the dialog Zuordnen lists, each with whether it is ticked. */
+function assignChoices(wrapper) {
+  return assignDialog(wrapper)
+    .findAll("[data-test='assign-choice']")
+    .wrappers.map((choice) => [
+      choice.text(),
+      choice.find("input").element.checked,
+    ]);
+}
+
+async function tick(wrapper, title) {
+  await assignDialog(wrapper)
+    .findAll("[data-test='assign-choice']")
+    .wrappers.find((choice) => choice.text() === title)
+    .find("input")
+    .trigger("click");
+  await settle(wrapper);
+}
+
+async function saveAssignment(wrapper) {
+  await assignDialog(wrapper)
+    .find("[data-test='assign-save']")
+    .trigger("click");
+  await settle(wrapper);
+}
+
+/**
+ * The page assigns an access point itself (ECCdigital/tickets#1110): „Buchungsobjekt
+ * zuordnen“ and a chip open the same small dialog, which lists the bookables
+ * the person may edit to tick. Saving sets the bookables of the access point
+ * in one call; then the page loads the assignments anew.
+ */
+describe("AccessPoints assigns an access point to bookables", () => {
+  const BOOKABLES = [
+    {
+      id: "b1",
+      title: "Besprechungsraum",
+      accessPointDetails: { accessPointIds: [DOOR.id] },
+    },
+    {
+      id: "b2",
+      title: "Werkstatt",
+      accessPointDetails: { accessPointIds: [] },
+    },
+    { id: "b3", title: "Saal" },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    BookablePermissionService.allowUpdate.mockImplementation(() => true);
+    ApiAccessPointService.assignBookables.mockResolvedValue({ data: {} });
+  });
+
+  it("opens the dialog from „Buchungsobjekt zuordnen“, nothing ticked", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+
+    await rowOf(wrapper, "Schließfächer Rathaus")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(assignDialog(wrapper).text()).toContain("Schließfächer Rathaus");
+    expect(assignChoices(wrapper)).toEqual([
+      ["Besprechungsraum", false],
+      ["Werkstatt", false],
+      ["Saal", false],
+    ]);
+  });
+
+  it("opens the same dialog from a chip, the assigned ones ticked", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+
+    await rowOf(wrapper, "Haupteingang")
+      .find("[data-test='access-point-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(assignDialog(wrapper).text()).toContain("Haupteingang");
+    expect(assignChoices(wrapper)).toEqual([
+      ["Besprechungsraum", true],
+      ["Werkstatt", false],
+      ["Saal", false],
+    ]);
+  });
+
+  it("saves the ticked bookables and shows them as chips after loading anew", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    expect(openToggle(wrapper).text()).toBe("Offen (1)");
+    await rowOf(wrapper, "Schließfächer Rathaus")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    await tick(wrapper, "Werkstatt");
+    await tick(wrapper, "Saal");
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [
+        BOOKABLES[0],
+        {
+          ...BOOKABLES[1],
+          accessPointDetails: { accessPointIds: ["ap-pareva"] },
+        },
+        {
+          ...BOOKABLES[2],
+          accessPointDetails: { accessPointIds: ["ap-pareva"] },
+        },
+      ],
+    });
+    await saveAssignment(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      "ap-pareva",
+      ["b2", "b3"],
+      "t1"
+    );
+    expect(chipsOf(wrapper, "Schließfächer Rathaus")).toEqual([
+      "Werkstatt",
+      "Saal",
+    ]);
+    expect(openToggle(wrapper).text()).toBe("Offen (0)");
+    expect(assignDialog(wrapper).isVisible()).toBe(false);
+  });
+
+  it("takes a bookable off by its tick", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    await rowOf(wrapper, "Haupteingang")
+      .find("[data-test='access-point-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    await tick(wrapper, "Besprechungsraum");
+    await saveAssignment(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      "ap-door",
+      [],
+      "t1"
+    );
+  });
+
+  it("lists only the bookables the person may edit, and keeps the others", async () => {
+    BookablePermissionService.allowUpdate.mockImplementation(
+      (bookable) => bookable.id !== "b1"
+    );
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    await rowOf(wrapper, "Haupteingang")
+      .find("[data-test='access-point-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(assignChoices(wrapper)).toEqual([
+      ["Werkstatt", false],
+      ["Saal", false],
+    ]);
+
+    await tick(wrapper, "Saal");
+    await saveAssignment(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      "ap-door",
+      ["b1", "b3"],
+      "t1"
+    );
+  });
+
+  it("ticks one bookable at most for a Schließfachanlage with its own Fächer", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE],
+      bookables: BOOKABLES,
+    });
+    await rowOf(wrapper, "Fahrradgarage Süd")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    await tick(wrapper, "Werkstatt");
+    await tick(wrapper, "Saal");
+
+    expect(assignChoices(wrapper)).toEqual([
+      ["Besprechungsraum", false],
+      ["Werkstatt", false],
+      ["Saal", true],
+    ]);
+    expect(assignDialog(wrapper).text()).toContain(
+      "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt."
+    );
+
+    await saveAssignment(wrapper);
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      "ap-open-locker-anlage",
+      ["b3"],
+      "t1"
+    );
+  });
+
+  /** Creates a door by hand in the section of Nuki; the backend names it `ap-new`. */
+  async function createDoor(wrapper, created) {
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: created });
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [DOOR, PAREVA_LOCKER, created],
+    });
+    await create(wrapper, "Nuki");
+    const dialog = editDialog(wrapper);
+    await dialog.find("[data-test='pick-manual']").trigger("click");
+    await dialog.find(".label-field input").setValue(created.label);
+    await dialog.find(".external-id-field input").setValue(created.externalId);
+    await dialog.find(".save-access-point").trigger("click");
+    await settle(wrapper);
+  }
+
+  function nextStep(wrapper, label) {
+    const line = rowOf(wrapper, label).find("[data-test='access-point-next']");
+    return line.exists() ? line.text() : null;
+  }
+
+  it("marks the new row with the next step until it is assigned", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    await createDoor(wrapper, {
+      ...DOOR,
+      id: "ap-new",
+      label: "Hintereingang",
+      externalId: "lock-2",
+    });
+
+    expect(nextStep(wrapper, "Hintereingang")).toBe(
+      "Angelegt. Als Nächstes: QR-Code drucken und einem Buchungsobjekt zuordnen."
+    );
+    expect(nextStep(wrapper, "Haupteingang")).toBeNull();
+
+    await rowOf(wrapper, "Hintereingang")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+    await tick(wrapper, "Saal");
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [
+        BOOKABLES[0],
+        BOOKABLES[1],
+        { ...BOOKABLES[2], accessPointDetails: { accessPointIds: ["ap-new"] } },
+      ],
+    });
+    await saveAssignment(wrapper);
+
+    expect(chipsOf(wrapper, "Hintereingang")).toEqual(["Saal"]);
+    expect(nextStep(wrapper, "Hintereingang")).toBeNull();
+  });
+
+  it("names no QR code in the next step where the access point opens without the scan", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    await createDoor(wrapper, {
+      ...DOOR,
+      id: "ap-new",
+      label: "Hintereingang",
+      externalId: "lock-2",
+      validationRules: [],
+    });
+
+    expect(nextStep(wrapper, "Hintereingang")).toBe(
+      "Angelegt. Als Nächstes: einem Buchungsobjekt zuordnen."
+    );
+  });
+
+  it("shows the refusal in the dialog and keeps it open", async () => {
+    ApiAccessPointService.assignBookables.mockRejectedValue(forbiddenError());
+    const wrapper = await mountAccessPointsPage({ bookables: BOOKABLES });
+    await rowOf(wrapper, "Schließfächer Rathaus")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    await tick(wrapper, "Saal");
+    await saveAssignment(wrapper);
+
+    expect(assignDialog(wrapper).isVisible()).toBe(true);
+    expect(assignDialog(wrapper).text()).toContain(
+      "Sie dürfen nicht jedes dieser Buchungsobjekte bearbeiten."
     );
   });
 });

@@ -2876,6 +2876,8 @@
       "row": {
         "assignmentForbidden": "Nicht abrufbar",
         "assign": "Buchungsobjekt zuordnen",
+        "next": "Angelegt. Als Nächstes: einem Buchungsobjekt zuordnen.",
+        "nextWithQr": "Angelegt. Als Nächstes: QR-Code drucken und einem Buchungsobjekt zuordnen.",
         "more": "Weitere Aktionen",
         "markers": {
           "withQrScan": {
@@ -2953,7 +2955,8 @@
         "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
         "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
         "compartmentUuid": "UUID des Fachs",
-        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen."
+        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen.",
+        "bookableIds": "Buchungsobjekte"
       },
       "compartments": {
         "title": "Fächer der Anlage",
@@ -3124,7 +3127,8 @@
           "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
           "duplicate_compartment": "Das Fach ist doppelt gewählt.",
           "unsupported_by_provider": "Die Anlagen dieses Anbieters tragen keine eigenen Fächer.",
-          "unknown_open_action": "Unzulässiger Wert"
+          "unknown_open_action": "Unzulässiger Wert",
+          "locker_system_one_bookable": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt."
         },
         "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
         "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
@@ -3135,6 +3139,15 @@
         "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
+      "assign": {
+        "title": "Buchungsobjekte zuordnen",
+        "hint": "Wer eines davon bucht, öffnet den Zugangspunkt für die Buchungszeit mit der App.",
+        "single": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt.",
+        "none": "Es gibt kein Buchungsobjekt, das Sie bearbeiten dürfen.",
+        "save": "Zuordnen",
+        "error": "Die Zuordnung konnte nicht gespeichert werden.",
+        "forbidden": "Dafür fehlt Ihnen die Berechtigung: Sie dürfen nicht jedes dieser Buchungsobjekte bearbeiten."
+      },
       "toasts": {
         "saved": {
           "title": "Gespeichert",
@@ -3144,9 +3157,9 @@
           "title": "Gelöscht",
           "message": "Der Zugangspunkt wurde gelöscht."
         },
-        "assignAtBookable": {
-          "title": "Zuordnen am Buchungsobjekt",
-          "message": "Ordnen Sie den Zugangspunkt vorerst am Buchungsobjekt zu, im Bereich „Schließsysteme“."
+        "assigned": {
+          "title": "Zugeordnet",
+          "message": "Die Zuordnung wurde gespeichert."
         },
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",

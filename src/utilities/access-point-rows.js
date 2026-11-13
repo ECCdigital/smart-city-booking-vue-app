@@ -231,3 +231,17 @@ export function matches(accessPoint, query, bookables) {
 export function needsAction(accessPoint, bookables) {
   return Array.isArray(bookables) && bookables.length === 0;
 }
+
+/**
+ * The next step of an access point just created, as its row names it
+ * (ECCdigital/tickets#1110): print the QR code where it is scanned to open,
+ * and assign it.
+ *
+ * @param {Object} accessPoint The access point
+ * @returns {string} A translated sentence
+ */
+export function nextStep(accessPoint) {
+  return t(
+    hasQr(accessPoint) && requiresQrScan(accessPoint) ? "nextWithQr" : "next"
+  );
+}
