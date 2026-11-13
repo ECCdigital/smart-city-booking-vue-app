@@ -28,8 +28,9 @@ const STATES = {
  * connection, „Einstellungen“ and the creation, and its access points
  * beneath, which the page hands in through the default slot. The settings
  * unfold between the two (ECCdigital/tickets#1104), handed in through the
- * slot `settings`. The section knows the provider, not the access points:
- * the page loads them and opens the dialogs.
+ * slot `settings`. The section knows the provider, not the rows: the page
+ * loads the access points, hands them in to count what stops opening, and
+ * opens the dialogs.
  *
  * The switch „Aktiv“ in the head (ECCdigital/tickets#1107) hands up
  * `switch` with the state asked for: on at once, off only once the line
@@ -64,10 +65,6 @@ export default {
     },
     stateColor() {
       return STATES[this.state];
-    },
-    // Only a stored application can be switched.
-    switchable() {
-      return this.knownState;
     },
     active() {
       return this.state !== "disabled";
@@ -126,7 +123,7 @@ export default {
       </v-chip>
       <v-spacer />
       <v-switch
-        v-if="switchable"
+        v-if="knownState"
         :input-value="active && !askingOff"
         :label="$t('accessPoint.management.section.active')"
         dense
