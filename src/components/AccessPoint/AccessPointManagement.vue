@@ -76,6 +76,8 @@ export default {
       rotateDialog: false,
       compartmentQrDialog: false,
       assignDialog: false,
+      // „QR-Codes der Fächer“ opens with the question to rotate all.
+      rotateAllCompartments: false,
       search: "",
       // „Offen“: only the access points with something still to do.
       onlyOpen: false,
@@ -322,8 +324,9 @@ export default {
       this.selectedAccessPoint = accessPoint;
       this.rotateDialog = true;
     },
-    openCompartmentQr(accessPoint) {
+    openCompartmentQr(accessPoint, rotateAll = false) {
       this.selectedAccessPoint = accessPoint;
+      this.rotateAllCompartments = rotateAll;
       this.compartmentQrDialog = true;
     },
     async openDelete(accessPoint) {
@@ -518,7 +521,7 @@ export default {
         @qr="openQr(item)"
         @download="(format) => downloadQr(item, format)"
         @rotate="openRotate(item)"
-        @rotate-all="openCompartmentQr(item)"
+        @rotate-all="openCompartmentQr(item, true)"
         @delete="openDelete(item)"
       />
     </AccessPointProviderSection>
@@ -548,6 +551,7 @@ export default {
     <AccessPointCompartmentQrDialog
       :open="compartmentQrDialog"
       :access-point="selectedAccessPoint"
+      :rotate-all="rotateAllCompartments"
       @rotated="onRotated"
       @close="compartmentQrDialog = false"
     />

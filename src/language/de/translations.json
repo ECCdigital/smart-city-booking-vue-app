@@ -3087,46 +3087,56 @@
         "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
       },
       "qr": {
-        "pdf": "QR-Code drucken (PDF, A4)",
-        "svg": "QR-Code als SVG",
-        "png": "QR-Code als PNG",
         "error": "Der QR-Code konnte nicht erzeugt werden."
       },
       "rotate": {
         "title": "Scan-Code rotieren",
-        "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
-        "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
-        "compartmentQuestion": "Soll der Scan-Code von „{compartment}“ der Anlage „{label}“ ersetzt werden?",
-        "compartmentWarning": "Der angebrachte QR-Code dieses Fachs wird damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn am Fach an.",
-        "compartmentDone": "Der Scan-Code wurde ersetzt. Der alte QR-Code dieses Fachs ist ab sofort ungültig.",
-        "allAction": "Alle rotieren …",
-        "allTitle": "Alle Scan-Codes rotieren",
-        "allQuestion": "Soll der Scan-Code aller Fächer der Anlage „{label}“ ersetzt werden? Das betrifft 1 Fach. | Soll der Scan-Code aller Fächer der Anlage „{label}“ ersetzt werden? Das betrifft {count} Fächer.",
-        "allWarning": "Der gedruckte und angebrachte QR-Code wird sofort ungültig. Drucken Sie das Sammel-PDF und bringen Sie den Aufkleber an seinem Fach an. | Alle {count} gedruckten und angebrachten QR-Codes werden sofort ungültig. Drucken Sie das Sammel-PDF und bringen Sie jeden Aufkleber an seinem Fach an.",
-        "allQrScanRequired": "Die Anlage verlangt den QR-Scan. Bis die neuen Aufkleber hängen, öffnet keines dieser Fächer für Buchende.",
-        "allQrScanOptional": "Die Anlage verlangt keinen QR-Scan. Buchende öffnen weiter über die App, nur die alten Aufkleber führen ins Leere.",
-        "allAcknowledge": "Ich drucke alle Aufkleber neu und bringe sie an.",
-        "allConfirm": "{count} rotieren",
-        "allDone": "1 Scan-Code ersetzt. Der alte QR-Code ist ab sofort ungültig. | {count} Scan-Codes ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
-        "allReprint": "Neue QR-Codes drucken:",
-        "allError": "Die Scan-Codes konnten nicht rotiert werden.",
+        "question": "Scan-Code rotieren?",
+        "allQuestion": "Alle Scan-Codes rotieren?",
+        "replaced": "Der Scan-Code {target} wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr.",
+        "target": {
+          "accessPoint": "von „{label}“",
+          "compartment": "von Fach {number}",
+          "all": "des einen Fachs | aller {count} Fächer"
+        },
+        "locks": {
+          "one": "Bis der neue Aufkleber hängt, {opensNot} für Buchende.",
+          "all": "Bis die neuen Aufkleber hängen, {opensNot} für Buchende."
+        },
+        "opensNot": {
+          "door": "öffnet die Tür nicht",
+          "fixed": "öffnet das Fach nicht",
+          "compartment": "öffnet Fach {number} nicht",
+          "all": "öffnet das Fach nicht | öffnet keines der {count} Fächer"
+        },
+        "keepsOpening": {
+          "one": "Buchende öffnen weiter über die App, nur der alte Aufkleber führt ins Leere.",
+          "all": "Buchende öffnen weiter über die App, nur die alten Aufkleber führen ins Leere."
+        },
+        "acknowledge": "Ich drucke alle Aufkleber neu und bringe sie an.",
         "confirm": "Rotieren",
-        "done": "Der Scan-Code wurde ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
-        "reprint": "Neuen QR-Code drucken:",
-        "error": "Der Scan-Code konnte nicht rotiert werden."
+        "allConfirm": "{count} rotieren",
+        "action": "Scan-Code rotieren …",
+        "allAction": "Alle rotieren …",
+        "reprint": "Neuen QR-Code drucken",
+        "done": "Scan-Code ersetzt. Jetzt den neuen QR-Code drucken und anbringen.",
+        "error": "Der Scan-Code konnte nicht rotiert werden.",
+        "allError": "Die Scan-Codes konnten nicht rotiert werden."
+      },
+      "qrPreview": {
+        "alt": "QR-Code"
       },
       "compartmentQr": {
         "title": "QR-Codes der Fächer",
+        "all": "Alle Fächer ({count})",
+        "allTitle": "Alle Fächer",
+        "printSheet": "Sammel-PDF drucken",
+        "compartmentTitle": "Schrank {name} · Fach {number}",
+        "print": "Drucken (PDF, A4)",
+        "formats": "Für eigene Layouts:",
+        "new": "neu",
+        "sheetHint": "Etikettenbogen 2×4 je A4 (105 × 74 mm), jeder Schrank auf einer neuen Seite.",
         "subtitle": "{label} · 1 Fach | {label} · {count} Fächer",
-        "printAll": "Alle drucken (Sammel-PDF)",
-        "printAllTitle": "QR-Codes aller Fächer als Etikettenbogen (2×4 je A4, 105 × 74 mm), jeder Schrank auf einer neuen Seite",
-        "columns": {
-          "compartment": "Fach",
-          "state": "Zustand",
-          "qr": "QR-Code"
-        },
-        "inService": "in Betrieb",
-        "pdfTitle": "QR-Code drucken (PDF, A4)",
         "empty": "Diese Schließfachanlage hat noch keine Fächer."
       },
       "delete": {
