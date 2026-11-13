@@ -1,10 +1,7 @@
 <script>
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
 import { saltoSecretSources } from "@/utilities/access-apps";
-import {
-  stateKey,
-  stateMeta,
-} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
+import { iqSummary } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 
 /** Where the texts of the connection test live in the catalogue. */
 const I18N_PREFIX = "accessPoint.tenant.salto.connectionTest";
@@ -38,23 +35,6 @@ const MISSING_CODES = ["missing_secret", "missing_fields"];
 
 /** The statuses that ask the admin to look, counted in the headline. */
 const HINT_STATUSES = ["failed", "unknown", "not_verifiable", "todo"];
-
-/**
- * The IQs in numbers: all of them, those that need an activation (OTP on),
- * how many of those are done, how many are open, how many offline. Done is
- * what the activation section counts as done (`stateMeta`).
- */
-function iqSummary(iqs) {
-  const needed = iqs.filter((iq) => stateKey(iq) !== "no_otp").length;
-  const open = iqs.filter((iq) => !stateMeta(iq).done).length;
-  return {
-    total: iqs.length,
-    needed,
-    ready: needed - open,
-    open,
-    offline: iqs.filter((iq) => iq.online === false).length,
-  };
-}
 
 /**
  * The connection test of Salto KS as the settings of its section show it

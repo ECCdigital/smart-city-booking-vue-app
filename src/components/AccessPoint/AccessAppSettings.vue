@@ -2,12 +2,12 @@
 import { mapActions, mapGetters } from "vuex";
 import AccessAppForm from "@/components/AccessPoint/AccessAppForm.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
-import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import { runConnectionTest } from "@/utilities/access-connection-test";
 import { SALTO_PROVIDER, saltoIdentityChanged } from "@/utilities/access-apps";
+import { removalHint } from "@/utilities/access-app-lifecycle";
 import {
   fieldLabelKey,
   newSettings,
@@ -31,18 +31,24 @@ const T = "accessPoint.management.settings";
  * tested; once a field changes it lapses. What was saved goes out as
  * `saved`, with the application as the backend answered it.
  *
- * Salto KS keeps its checklist of the test and, while it is switched on,
- * the activation of its IQs here, and asks before a save that lets
- * activations rest (ECCdigital/tickets#574).
+ * Salto KS keeps its checklist of the test here, whose jump to the IQs goes
+ * out as `to-iqs` - the IQs are a row of the section
+ * (ECCdigital/tickets#1107) - and asks before a save that lets activations
+ * rest (ECCdigital/tickets#574).
  */
 export default {
   name: "AccessAppSettings",
-  components: { AccessAppForm, SaltoConnectionTest, SaltoIqActivationSection },
+  components: { AccessAppForm, SaltoConnectionTest },
   props: {
     // The provider as the section knows it: `id` and `title`.
     provider: { type: Object, required: true },
     // The stored access application without its secrets, or null.
     app: { type: Object, default: null },
+    // The provider's access points: while there are any, the connection
+    // cannot be removed (ECCdigital/tickets#1107).
+    accessPoints: { type: Array, default: () => [] },
+    // Salto KS: the IQs with an activation of the stored identity.
+    activatedIqCount: { type: Number, default: 0 },
   },
   data() {
     const settings = newSettings(this.provider.id, this.app);
@@ -58,9 +64,6 @@ export default {
       saveError: "",
       removing: false,
       removeError: "",
-      // IQs with an activation of the stored identity, as the activation
-      // section last listed them.
-      activatedIqCount: 0,
       // The open question before an identity change: { count, resolve }.
       identityQuestion: null,
     };
@@ -69,6 +72,11 @@ export default {
     ...mapGetters({ tenantId: "tenants/currentTenantId" }),
     dirty() {
       return JSON.stringify(this.settings.values) !== this.openedValues;
+    },
+    removeBlocked() {
+      return this.accessPoints.length
+        ? removalHint(this.provider.id, this.accessPoints)
+        : "";
     },
     isSalto() {
       return this.provider.id === SALTO_PROVIDER;
@@ -169,10 +177,7 @@ export default {
       this.testing = false;
     },
     toIqActivation() {
-      this.$refs.iqActivation?.$el.scrollIntoView?.({
-        behavior: "smooth",
-        block: "start",
-      });
+      this.$emit("to-iqs");
     },
     /**
      * Asks before a save that changes site, System-User or environment of
@@ -201,7 +206,7 @@ export default {
     },
     // Removes the stored application with its credentials. While the
     // provider has access points the backend refuses (409), and the
-    // settings say so.
+    // settings say what the barred button says.
     async remove() {
       this.removing = true;
       this.removeError = "";
@@ -209,10 +214,10 @@ export default {
         await ApiAccessAppsService.removeApp(this.tenantId, this.provider.id);
         this.$emit("removed");
       } catch (error) {
-        this.removeError = getApiErrorMessage(
-          error,
-          this.$t(`${T}.removeFailed`)
-        );
+        this.removeError =
+          error.response?.data?.code === "access_app_has_access_points"
+            ? removalHint(this.provider.id, this.accessPoints)
+            : getApiErrorMessage(error, this.$t(`${T}.removeFailed`));
       } finally {
         this.removing = false;
       }
@@ -307,13 +312,6 @@ export default {
         </div>
       </aside>
     </div>
-    <SaltoIqActivationSection
-      v-if="showsIqActivation"
-      ref="iqActivation"
-      class="mx-5"
-      :tenant-id="tenantId"
-      @update:activated-count="activatedIqCount = $event"
-    />
     <v-alert
       v-if="removeError"
       type="error"
@@ -340,11 +338,18 @@ export default {
         small
         text
         :loading="removing"
-        :disabled="removing"
+        :disabled="removing || !!removeBlocked"
         @click="remove"
       >
         {{ $t("accessPoint.management.settings.remove") }}
       </v-btn>
+      <span
+        v-if="app && removeBlocked"
+        class="access-app-settings__caption"
+        data-test="access-app-remove-blocked"
+      >
+        {{ removeBlocked }}
+      </span>
       <v-spacer />
       <span
         class="access-app-settings__caption"

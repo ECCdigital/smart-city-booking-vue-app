@@ -26,9 +26,11 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: {
     testConnection: vi.fn(),
     saveApp: vi.fn(),
+    setActive: vi.fn(),
     removeApp: vi.fn(),
     getSaltoIqs: vi.fn(),
     startSaltoIqActivation: vi.fn(),
+    completeSaltoIqActivation: vi.fn(),
     getProviders: vi.fn(),
     getAccessPoints: vi.fn(),
   },
@@ -152,9 +154,26 @@ const PAREVA_LOCKER = {
 };
 
 /**
+ * What each provider lists by default: the access points stored for it, so
+ * none of them reads as entered by hand.
+ */
+function listingsOf(accessPoints) {
+  const listings = {};
+  accessPoints.forEach((accessPoint) => {
+    if (!listings[accessPoint.provider]) listings[accessPoint.provider] = [];
+    listings[accessPoint.provider].push(
+      listed(accessPoint.provider, accessPoint.externalId, accessPoint.label)
+    );
+  });
+  return listings;
+}
+
+/**
  * The Zugangspunkte page on its first tab, with the tenant's connected
  * providers and access points as the backend answers them. `bookables` may
- * be an error the backend answers instead.
+ * be an error the backend answers instead. `listings` are what each provider
+ * lists, an entry an error or a promise of its own; by default the access
+ * points stored for it.
  */
 async function mountAccessPointsPage({
   apps = [],
@@ -162,12 +181,19 @@ async function mountAccessPointsPage({
   accessPoints = [DOOR, PAREVA_LOCKER],
   bookables = [],
   bookings = [],
+  listings = listingsOf(accessPoints),
 } = {}) {
   ApiTenantService.getTenant.mockResolvedValue({
     data: { id: "t1", name: "Mandant", applications: apps },
   });
   ApiAccessAppsService.getProviders.mockResolvedValue({ data: providers });
-  ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+  ApiAccessAppsService.getAccessPoints.mockImplementation(
+    async (_, provider) => {
+      const listing = listings[provider];
+      if (listing instanceof Error) throw listing;
+      return { data: await (listing || []) };
+    }
+  );
   ApiAccessPointService.getAccessPoints.mockResolvedValue({
     data: accessPoints,
   });
@@ -332,6 +358,197 @@ describe("AccessPoints shows the state of each provider in its head", () => {
     });
 
     expect(stateOf(wrapper, "Pareva")).toBe("Ausgeschaltet");
+  });
+
+  it("names the last fault of a failing provider, with a way to its credentials", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [
+        storedApp("nuki", {
+          connectionState: "failing",
+          lastTest: {
+            success: false,
+            testedAt: 1794571200000,
+            error: "401 Unauthorized",
+          },
+        }),
+        storedApp("pareva"),
+      ],
+    });
+
+    const line = sectionOf(wrapper, "Nuki").find(
+      "[data-test='provider-section-failing']"
+    );
+    expect(line.text()).toContain(
+      "Letzte Prüfung gescheitert: 401 Unauthorized"
+    );
+    expect(
+      sectionOf(wrapper, "Pareva")
+        .find("[data-test='provider-section-failing']")
+        .exists()
+    ).toBe(false);
+
+    await click(wrapper, line, "Zugangsdaten prüfen");
+
+    expect(settingsOf(wrapper, "Nuki").exists()).toBe(true);
+  });
+});
+
+const NUKI_DOOR_2 = {
+  ...DOOR,
+  id: "ap-door-2",
+  label: "Werkstatttür",
+  externalId: "lock-2",
+};
+
+function switchOf(wrapper, title) {
+  // Vuetify hands the attribute on to the input of the switch.
+  return sectionOf(wrapper, title).find(
+    "input[data-test='provider-section-active']"
+  );
+}
+
+function switchOffQuestion(wrapper, title) {
+  return sectionOf(wrapper, title).find(
+    "[data-test='provider-section-switch-off']"
+  );
+}
+
+/** Answers the switch with the application as the backend stores it then. */
+function answerSwitch() {
+  ApiAccessAppsService.setActive.mockImplementation(
+    async (tenant, provider, active) => ({
+      data: storedApp(provider, {
+        active,
+        connectionState: active ? "connected" : "disabled",
+      }),
+    })
+  );
+}
+
+/**
+ * The switch „Aktiv“ in the head turns a provider off and on
+ * (ECCdigital/tickets#1107). Off, it keeps its credentials, access points
+ * and assignments; the section asks first and names what stops opening.
+ */
+describe("AccessPoints switches a provider off and on", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    answerSwitch();
+  });
+
+  it("asks in the section before switching off, naming the doors that stop opening", async () => {
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [DOOR, NUKI_DOOR_2, PAREVA_LOCKER],
+      apps: [storedApp("nuki"), storedApp("pareva")],
+    });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+
+    expect(ApiAccessAppsService.setActive).not.toHaveBeenCalled();
+    const question = switchOffQuestion(wrapper, "Nuki");
+    expect(question.text()).toContain(
+      "Nuki ausschalten? 2 Türen öffnen dann nicht mehr, auch nicht für laufende Buchungen. Alles bleibt gespeichert."
+    );
+
+    await click(wrapper, question, "Ausschalten");
+
+    expect(ApiAccessAppsService.setActive).toHaveBeenCalledWith(
+      "t1",
+      "nuki",
+      false
+    );
+    expect(stateOf(wrapper, "Nuki")).toBe("Ausgeschaltet");
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+  });
+
+  it("names Schließfachanlage and festes Fach apart, in the singular", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      apps: [storedApp("open-locker")],
+    });
+
+    await switchOf(wrapper, "Open Locker").trigger("click");
+    await settle(wrapper);
+
+    expect(switchOffQuestion(wrapper, "Open Locker").text()).toContain(
+      "1 Schließfachanlage und 1 festes Fach öffnen dann nicht mehr"
+    );
+  });
+
+  it("keeps the provider on when the question is cancelled", async () => {
+    const wrapper = await mountAccessPointsPage({ apps: [storedApp("nuki")] });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+    await click(wrapper, switchOffQuestion(wrapper, "Nuki"), "Abbrechen");
+
+    expect(ApiAccessAppsService.setActive).not.toHaveBeenCalled();
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+    expect(switchOf(wrapper, "Nuki").element.checked).toBe(true);
+    expect(stateOf(wrapper, "Nuki")).toBe("Verbunden");
+  });
+
+  it("pales the rows of a provider switched off and bars the creation", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [
+        storedApp("nuki", { active: false, connectionState: "disabled" }),
+        storedApp("pareva"),
+      ],
+    });
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(
+      nuki.find("[data-test='provider-section-rows']").classes()
+    ).toContain("provider-section__rows--off");
+    expect(
+      nuki.find("[data-test='provider-section-create']").attributes("disabled")
+    ).toBe("disabled");
+    const pareva = sectionOf(wrapper, "Pareva");
+    expect(
+      pareva.find("[data-test='provider-section-rows']").classes()
+    ).not.toContain("provider-section__rows--off");
+    expect(
+      pareva
+        .find("[data-test='provider-section-create']")
+        .attributes("disabled")
+    ).toBeUndefined();
+  });
+
+  it("keeps the actions of the pale rows at hand", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [storedApp("nuki", { active: false, connectionState: "disabled" })],
+    });
+
+    await clickRowIcon(wrapper, "Haupteingang", "edit");
+    expect(pointDialog(wrapper).text()).toContain("Tür bearbeiten");
+
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+    expect(dialogCard(wrapper, "AccessPointRotateDialog").exists()).toBe(true);
+  });
+
+  it("switches on without asking", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [storedApp("nuki", { active: false, connectionState: "disabled" })],
+    });
+    ApiAccessAppsService.getProviders.mockResolvedValue({
+      data: [NUKI, PAREVA],
+    });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+    expect(ApiAccessAppsService.setActive).toHaveBeenCalledWith(
+      "t1",
+      "nuki",
+      true
+    );
+    expect(stateOf(wrapper, "Nuki")).toBe("Verbunden");
   });
 });
 
@@ -1350,8 +1567,13 @@ describe("AccessPoints shows the checks of the Salto KS test", () => {
       .find("[data-test='salto-to-activation']")
       .trigger("click");
 
+    // The IQs are a row of the section (ECCdigital/tickets#1107): the jump
+    // unfolds it.
     expect(scrolled).toHaveLength(1);
-    expect(scrolled[0].textContent).toContain("IQ-Aktivierung für Remote-Open");
+    expect(scrolled[0].getAttribute("data-test")).toBe("salto-iq-row");
+    expect(iqRow(wrapper).text()).toContain(
+      "An der Salto-Site wurden keine IQs gefunden."
+    );
   });
 
   it("names per secret what the test ran with", async () => {
@@ -1367,14 +1589,85 @@ describe("AccessPoints shows the checks of the Salto KS test", () => {
   });
 });
 
+function iqRow(wrapper) {
+  return sectionOf(wrapper, "Salto KS").find("[data-test='salto-iq-row']");
+}
+
+async function unfoldIqs(wrapper) {
+  await iqRow(wrapper).find("[data-test='salto-iq-row-head']").trigger("click");
+  await settle(wrapper);
+  return iqRow(wrapper);
+}
+
+/** Salto KS on the page, its settings folded, with the IQs of its site. */
+async function mountSaltoSection({ app = storedSalto(), iqs = [] } = {}) {
+  ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: iqs });
+  return mountAccessPointsPage({
+    providers: [SALTO],
+    accessPoints: [],
+    apps: app ? [app] : [],
+  });
+}
+
+function threeIqs() {
+  return [
+    { ...IQ, id: "1", customerReference: "Labortür", state: "activated" },
+    { ...IQ, id: "2", customerReference: "Werkstatt", state: "not_activated" },
+    { ...IQ, id: "3", customerReference: "Lager", state: "pending_pin" },
+  ];
+}
+
 /**
- * Salto hands out the first secret once per System-User and IQ; the IQ
- * activation stays in the settings of Salto KS until the section shows the
- * IQs as a row of their own (ECCdigital/tickets#1107).
+ * The IQs of Salto KS are a row of their own in its section
+ * (ECCdigital/tickets#1107): folded, how many are activated, yellow while
+ * one is missing; unfolded, the IQs with their state and „Aktivieren“,
+ * which starts the wizard of before. Salto hands out the first secret once
+ * per System-User and IQ.
  */
-describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
+describe("AccessPoints activates the IQs of Salto KS in its section", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("counts the activated IQs in a yellow row while one is missing", async () => {
+    const wrapper = await mountSaltoSection({ iqs: threeIqs() });
+
+    const row = iqRow(wrapper);
+    expect(row.find("[data-test='salto-iq-row-head']").text()).toContain(
+      "IQs: 1 von 3 aktiviert"
+    );
+    expect(row.classes()).toContain("salto-iq-row--missing");
+    expect(row.text()).not.toContain("Werkstatt");
+    // The row stands without the settings unfolded.
+    expect(saltoSettings(wrapper).exists()).toBe(false);
+  });
+
+  it("is no longer yellow once every IQ is activated", async () => {
+    const wrapper = await mountSaltoSection({
+      iqs: [
+        { ...IQ, id: "1" },
+        { ...IQ, id: "2", otpEnabled: false, state: "not_activated" },
+      ],
+    });
+
+    const row = iqRow(wrapper);
+    expect(row.text()).toContain("IQs: 1 von 1 aktiviert");
+    expect(row.classes()).not.toContain("salto-iq-row--missing");
+  });
+
+  it("lists the IQs with their state once unfolded", async () => {
+    const wrapper = await mountSaltoSection({ iqs: threeIqs() });
+
+    const row = await unfoldIqs(wrapper);
+
+    const text = row.text();
+    expect(text).toContain("Werkstatt");
+    expect(text).toContain("Nicht aktiviert");
+    expect(text).toContain("Lager");
+    expect(text).toContain("PIN ausstehend");
+    expect(text).toContain("Labortür");
+    expect(buttonIn(row, "Aktivieren")).toBeTruthy();
+    expect(text).not.toContain("IQ-Liste aktualisieren");
   });
 
   it("names a new System-User as the way out of an IQ activated before", async () => {
@@ -1384,11 +1677,11 @@ describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
         data: { code: "salto_iq_already_activated_at_salto" },
       },
     });
-    const wrapper = await mountSalto({
+    const wrapper = await mountSaltoSection({
       iqs: [{ ...IQ, id: "1", state: "not_activated" }],
     });
 
-    await click(wrapper, saltoSettings(wrapper), "Aktivierung starten");
+    await click(wrapper, await unfoldIqs(wrapper), "Aktivieren");
     const wizard = () =>
       [...document.querySelectorAll(".v-dialog")].find((d) =>
         d.textContent.includes("IQ aktivieren")
@@ -1408,14 +1701,54 @@ describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
   });
 
-  it("offers no activation while Salto KS is switched off", async () => {
-    const wrapper = await mountSalto({
+  it("counts anew once a step of the wizard is done", async () => {
+    ApiAccessAppsService.startSaltoIqActivation.mockResolvedValue({});
+    const wrapper = await mountSaltoSection({
+      iqs: [{ ...IQ, id: "1", state: "pending_pin" }],
+    });
+    ApiAccessAppsService.completeSaltoIqActivation.mockResolvedValue({});
+    const row = await unfoldIqs(wrapper);
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({
+      data: [{ ...IQ, id: "1", state: "activated" }],
+    });
+
+    await click(wrapper, row, "PIN-Mail erneut senden");
+
+    expect(iqRow(wrapper).text()).toContain("IQs: 1 von 1 aktiviert");
+  });
+
+  it("shows no IQs while Salto KS is switched off", async () => {
+    const wrapper = await mountSaltoSection({
       app: storedSalto({ active: false, connectionState: "disabled" }),
       iqs: [{ ...IQ, id: "1", state: "not_activated" }],
     });
 
-    expect(saltoSettings(wrapper).text()).not.toContain(
-      "IQ-Aktivierung für Remote-Open"
+    expect(iqRow(wrapper).exists()).toBe(false);
+    expect(ApiAccessAppsService.getSaltoIqs).not.toHaveBeenCalled();
+  });
+
+  it("shows the IQs right after the first save, without refreshing", async () => {
+    const wrapper = await mountSaltoSection({ app: null, iqs: threeIqs() });
+    expect(iqRow(wrapper).exists()).toBe(false);
+    ApiAccessAppsService.saveApp.mockResolvedValue({ data: storedSalto() });
+
+    await click(wrapper, await openSettings(wrapper, "Salto KS"), "Speichern");
+
+    expect(iqRow(wrapper).text()).toContain("IQs: 1 von 3 aktiviert");
+  });
+
+  it("names a list that cannot be read", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockRejectedValue({
+      response: { status: 502, data: { message: "Salto antwortet nicht" } },
+    });
+    const wrapper = await mountAccessPointsPage({
+      providers: [SALTO],
+      accessPoints: [],
+      apps: [storedSalto()],
+    });
+
+    expect(iqRow(wrapper).text()).toContain(
+      "Die IQ-Liste konnte nicht geladen werden"
     );
   });
 });
@@ -1627,8 +1960,9 @@ describe("AccessPoints exports the access log at the end of the page", () => {
 
 /**
  * „Verbindung entfernen“ stands in the foot of the settings
- * (ECCdigital/tickets#1104); when it is barred and what it says then is
- * ECCdigital/tickets#1107's.
+ * (ECCdigital/tickets#1104). It is barred while the section has access
+ * points, with the hint by kind, and a 409 of the backend says the same
+ * (ECCdigital/tickets#1107).
  */
 describe("AccessPoints removes the connection of a provider", () => {
   beforeEach(() => {
@@ -1651,14 +1985,39 @@ describe("AccessPoints removes the connection of a provider", () => {
     expect(sectionOf(wrapper, "Pareva")).toBeTruthy();
   });
 
-  it("says so when the backend refuses, and keeps the settings", async () => {
+  it("bars the removal while the section has access points, and says why", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, OPEN_LOCKER],
+      accessPoints: [DOOR, OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      apps: [NUKI_STORED, storedApp("open-locker")],
+    });
+
+    const nuki = await openSettings(wrapper, "Nuki");
+    expect(buttonIn(nuki, "Verbindung entfernen").attributes("disabled")).toBe(
+      "disabled"
+    );
+    expect(nuki.find("[data-test='access-app-remove-blocked']").text()).toBe(
+      "Erst alle Türen löschen."
+    );
+
+    const openLocker = await openSettings(wrapper, "Open Locker");
+    expect(
+      openLocker.find("[data-test='access-app-remove-blocked']").text()
+    ).toBe("Erst alle Schließfachanlagen und festen Fächer löschen.");
+    expect(ApiAccessAppsService.removeApp).not.toHaveBeenCalled();
+  });
+
+  it("says the same when the backend refuses for access points, and keeps the settings", async () => {
     ApiAccessAppsService.removeApp.mockRejectedValue(
       lifecycleError(409, "access_app_has_access_points", {
         provider: "nuki",
         accessPoints: 1,
       })
     );
-    const wrapper = await mountAccessPointsPage({ apps: [NUKI_STORED] });
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [PAREVA_LOCKER],
+      apps: [NUKI_STORED],
+    });
     const settings = await openSettings(wrapper, "Nuki");
 
     await click(wrapper, settings, "Verbindung entfernen");
@@ -1666,8 +2025,25 @@ describe("AccessPoints removes the connection of a provider", () => {
     expect(
       settingsOf(wrapper, "Nuki")
         .find("[data-test='access-app-remove-error']")
-        .exists()
-    ).toBe(true);
+        .text()
+    ).toBe("Erst alle Türen löschen.");
+  });
+
+  it("names any other refusal in general", async () => {
+    ApiAccessAppsService.removeApp.mockRejectedValue(new Error("Network"));
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [PAREVA_LOCKER],
+      apps: [NUKI_STORED],
+    });
+    const settings = await openSettings(wrapper, "Nuki");
+
+    await click(wrapper, settings, "Verbindung entfernen");
+
+    expect(
+      settingsOf(wrapper, "Nuki")
+        .find("[data-test='access-app-remove-error']")
+        .text()
+    ).toContain("Die Verbindung ließ sich nicht entfernen.");
   });
 
   it("offers no removal before anything is stored", async () => {
@@ -1813,6 +2189,8 @@ describe("AccessPoints creates in the section of the provider", () => {
       providers: [NUKI, OPEN_LOCKER],
       accessPoints: [],
     });
+    // The page reads every listing behind it; the dialog asks for its own.
+    ApiAccessAppsService.getAccessPoints.mockClear();
 
     await create(wrapper, "Nuki");
 
@@ -2900,6 +3278,170 @@ describe("AccessPoints marks what differs from the standard", () => {
   });
 });
 
+const SALTO_DOOR = {
+  id: "ap-salto",
+  type: "door",
+  provider: "salto-ks",
+  label: "Labortür",
+  externalId: "salto-lock-1",
+  validationRules: [{ type: "qrScan" }],
+};
+
+/** The tone a marker of the row shows in. */
+function markerTone(wrapper, label, text) {
+  const marker = rowOf(wrapper, label)
+    .findAll("[data-test='access-point-marker']")
+    .wrappers.find((candidate) => candidate.text() === text);
+  return marker
+    .classes()
+    .find((name) => name.startsWith("access-point-row__marker--"))
+    .replace("access-point-row__marker--", "");
+}
+
+/**
+ * „von Hand“ and „IQ nicht aktiviert“ need what each provider lists
+ * (ECCdigital/tickets#1107). The page reads the listing of every active
+ * provider behind the page, without waiting for it, and leaves the markers
+ * out where a listing cannot be read.
+ */
+describe("AccessPoints marks what differs from the provider's listing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: [] });
+  });
+
+  const NUKI_BY_HAND = {
+    ...DOOR,
+    id: "ap-hand",
+    label: "Hintertür",
+    externalId: "lock-9",
+  };
+
+  async function mountListed(listings = {}, options = {}) {
+    return mountAccessPointsPage({
+      providers: [NUKI, PAREVA, SALTO, OPEN_LOCKER],
+      accessPoints: [
+        DOOR,
+        NUKI_BY_HAND,
+        PAREVA_LOCKER,
+        SALTO_DOOR,
+        OPEN_LOCKER_FACH,
+      ],
+      apps: [storedApp("nuki"), storedSalto()],
+      listings: {
+        nuki: [listed("nuki", "lock-1", "Haupteingang")],
+        "salto-ks": [
+          listed("salto-ks", "salto-lock-1", "Labortür", {
+            supportedModes: [],
+          }),
+        ],
+        "open-locker": [],
+        ...listings,
+      },
+      ...options,
+    });
+  }
+
+  it("marks a door that is not in the provider's listing as entered by hand", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Hintertür")).toEqual(["von Hand"]);
+    expect(markersOf(wrapper, "Haupteingang")).toEqual([]);
+    expect(await tooltipOf(wrapper, "Hintertür", "von Hand")).toBe(
+      "Dieser Zugangspunkt steht nicht in der Liste des Anbieters, er wurde von Hand eingetragen."
+    );
+  });
+
+  it("marks no access point of a provider that has no listing or takes none by hand", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
+    expect(markersOf(wrapper, "Labor Fachbank 1 · Fach 2")).toEqual([]);
+    expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalledWith(
+      "t1",
+      "pareva"
+    );
+  });
+
+  it("warns in yellow at a Salto KS door whose IQ is not activated", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Labortür")).toEqual(["IQ nicht aktiviert"]);
+    expect(markerTone(wrapper, "Labortür", "IQ nicht aktiviert")).toBe(
+      "warning"
+    );
+    expect(await tooltipOf(wrapper, "Labortür", "IQ nicht aktiviert")).toBe(
+      "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist."
+    );
+  });
+
+  it("counts a door whose IQ is not activated as open, assigned or not", async () => {
+    const wrapper = await mountListed(
+      {},
+      {
+        bookables: [
+          {
+            id: "b1",
+            title: "Labor",
+            accessPointDetails: {
+              accessPointIds: [
+                DOOR.id,
+                NUKI_BY_HAND.id,
+                PAREVA_LOCKER.id,
+                SALTO_DOOR.id,
+                OPEN_LOCKER_FACH.id,
+              ],
+            },
+          },
+        ],
+      }
+    );
+
+    expect(openToggle(wrapper).text()).toBe("Offen (1)");
+    await openToggle(wrapper).trigger("click");
+    await settle(wrapper);
+    expect(rowLabels(wrapper)).toHaveLength(1);
+    expect(rowLabels(wrapper)[0]).toMatch(/^Labortür/);
+  });
+
+  it("reads the listing of Salto KS anew once a step of the IQ wizard is done", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({
+      data: [{ ...IQ, id: "1", state: "pending_pin" }],
+    });
+    ApiAccessAppsService.startSaltoIqActivation.mockResolvedValue({});
+    const wrapper = await mountListed();
+    expect(markersOf(wrapper, "Labortür")).toEqual(["IQ nicht aktiviert"]);
+    answerListings({
+      "salto-ks": [listed("salto-ks", "salto-lock-1", "Labortür")],
+    });
+
+    await click(wrapper, await unfoldIqs(wrapper), "PIN-Mail erneut senden");
+
+    expect(markersOf(wrapper, "Labortür")).toEqual([]);
+  });
+
+  it("leaves the markers out where a listing cannot be read, and says nothing", async () => {
+    const wrapper = await mountListed({
+      nuki: new Error("Network"),
+      "salto-ks": new Error("Network"),
+    });
+
+    expect(markersOf(wrapper, "Hintertür")).toEqual([]);
+    expect(markersOf(wrapper, "Labortür")).toEqual([]);
+    expect(wrapper.find(".v-alert").exists()).toBe(false);
+  });
+
+  it("shows the rows before the listings are read", async () => {
+    const wrapper = await mountListed({
+      nuki: new Promise(() => {}),
+      "salto-ks": new Promise(() => {}),
+    });
+
+    expect(rowLabels(wrapper)).toContain("Hintertür");
+    expect(markersOf(wrapper, "Hintertür")).toEqual([]);
+  });
+});
+
 /** The labels of the rows the page shows, top to bottom. */
 function rowLabels(wrapper) {
   return wrapper
@@ -3302,6 +3844,7 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
 
   it("asks a Pareva Schließfachanlage for its Produkt-ID and Bezeichnung alone", async () => {
     const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    ApiAccessAppsService.getAccessPoints.mockClear();
     await create(wrapper, "Pareva");
 
     const card = pointDialog(wrapper);

@@ -17,6 +17,9 @@ import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
  *
  * `bookables` is what the page knows of the bookables the access point is
  * assigned to: a list, or `null` where the bookables were not readable.
+ * `listing` is what its provider lists (`listAccessPoints`), read behind the
+ * page (ECCdigital/tickets#1107): a list, or `null` while it is not read or
+ * could not be, so nothing is said of it.
  */
 
 const t = (key, params) => i18n.t(`accessPoint.management.row.${key}`, params);
@@ -158,20 +161,65 @@ export function moreActions(accessPoint) {
 }
 
 /**
+ * Whether the provider lists the lock as one that can do nothing until its
+ * IQ is activated: a Salto KS lock lists no modes then.
+ *
+ * @param {Object} lock An entry of the listing
+ * @returns {boolean}
+ */
+export function iqNotActivated(lock) {
+  return (
+    Array.isArray(lock?.supportedModes) && lock.supportedModes.length === 0
+  );
+}
+
+/**
+ * What the provider's listing says of the access point: whether it was
+ * entered by hand - not in the listing of a provider that takes one by hand
+ * - and whether the IQ of its Salto KS lock is not activated. Without a
+ * listing, neither.
+ *
+ * @param {Object} accessPoint The access point
+ * @param {Object[]|null} listing What its provider lists
+ * @returns {{byHand: boolean, iqOff: boolean}}
+ */
+function listingFacts(accessPoint, listing) {
+  if (!Array.isArray(listing)) return { byHand: false, iqOff: false };
+  const fields = accessPointFields(accessPoint.provider, accessPoint.type);
+  const entry = listing.find(
+    (lock) =>
+      String(lock.externalId || lock.id) === String(accessPoint.externalId)
+  );
+  return {
+    byHand: fields.listing && fields.manual && !entry,
+    iqOff: fields.iq && !!entry && iqNotActivated(entry),
+  };
+}
+
+/**
  * The markers of the row: only where the access point differs from the
  * standard, each with the sentence of its tooltip. `tone` names its look,
- * "neutral" so far.
+ * "neutral", or "warning" where it does not open.
  *
  * The QR scan is measured against what a new access point of the provider
  * and type starts with (`qrScanDefault` of `accessPointFields`), wherever
  * there is a QR code to scan (`hasQr`). „von Hand“ and „IQ nicht aktiviert“
- * need the listing of the provider, which the page does not load.
+ * come from the listing of the provider.
  *
  * @param {Object} accessPoint The access point
+ * @param {Object[]|null} [listing] What its provider lists
  * @returns {Array<{key: string, label: string, tooltip: string, tone: string}>}
  */
-export function deviations(accessPoint) {
+export function deviations(accessPoint, listing = null) {
   const markers = [];
+  const marker = (key, tone) => ({
+    key,
+    label: t(`markers.${key}.label`),
+    tooltip: t(`markers.${key}.tooltip`),
+    tone,
+  });
+  const { byHand, iqOff } = listingFacts(accessPoint, listing);
+  if (byHand) markers.push(marker("byHand", "neutral"));
   if (hasQr(accessPoint)) {
     const scan = requiresQrScan(accessPoint);
     const { qrScanDefault } = accessPointFields(
@@ -179,15 +227,10 @@ export function deviations(accessPoint) {
       accessPoint.type
     );
     if (scan !== qrScanDefault) {
-      const key = scan ? "withQrScan" : "withoutQrScan";
-      markers.push({
-        key,
-        label: t(`markers.${key}.label`),
-        tooltip: t(`markers.${key}.tooltip`),
-        tone: "neutral",
-      });
+      markers.push(marker(scan ? "withQrScan" : "withoutQrScan", "neutral"));
     }
   }
+  if (iqOff) markers.push(marker("iqOff", "warning"));
   return markers;
 }
 
@@ -219,17 +262,19 @@ export function matches(accessPoint, query, bookables) {
 
 /**
  * Whether something is still to do at the access point, for „Offen“: it has
- * no bookable. Where the bookables were not readable nothing can be said.
- *
- * „IQ nicht aktiviert“ counts here too once the page knows the IQ of a Salto
- * KS door; the IQs it can load today name no door.
+ * no bookable, or the IQ of its Salto KS lock is not activated. Where the
+ * bookables or the listing were not readable nothing is said of them.
  *
  * @param {Object} accessPoint The access point
  * @param {Object[]|null} bookables The bookables it is assigned to
+ * @param {Object[]|null} [listing] What its provider lists
  * @returns {boolean}
  */
-export function needsAction(accessPoint, bookables) {
-  return Array.isArray(bookables) && bookables.length === 0;
+export function needsAction(accessPoint, bookables, listing = null) {
+  return (
+    (Array.isArray(bookables) && bookables.length === 0) ||
+    listingFacts(accessPoint, listing).iqOff
+  );
 }
 
 /**

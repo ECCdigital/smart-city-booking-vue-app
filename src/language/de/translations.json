@@ -2870,6 +2870,30 @@
           "unchecked": "Nicht geprüft",
           "failing": "Gestört",
           "disabled": "Ausgeschaltet"
+        },
+        "active": "Aktiv",
+        "switchOff": {
+          "question": "{provider} ausschalten?",
+          "stops": "{things} öffnet dann nicht mehr, auch nicht für laufende Buchungen. | {things} öffnen dann nicht mehr, auch nicht für laufende Buchungen.",
+          "kept": "Alles bleibt gespeichert.",
+          "cancel": "Abbrechen",
+          "confirm": "Ausschalten"
+        },
+        "kinds": {
+          "door": "1 Tür | {count} Türen",
+          "lockerSystem": "1 Schließfachanlage | {count} Schließfachanlagen",
+          "fixedCompartment": "1 festes Fach | {count} feste Fächer"
+        },
+        "and": "und",
+        "failing": {
+          "error": "Letzte Prüfung gescheitert: {error}",
+          "noError": "Letzte Prüfung gescheitert.",
+          "check": "Zugangsdaten prüfen"
+        },
+        "iqs": {
+          "summary": "IQs: {ready} von {needed} aktiviert",
+          "missing": "Türen an diesem IQ öffnen noch nicht. | Türen an diesen IQs öffnen noch nicht.",
+          "none": "Keine IQs an dieser Site"
         }
       },
       "settings": {
@@ -2891,6 +2915,12 @@
         "keepSecret": "Gespeichertes behalten",
         "saveFailed": "Die Einstellungen ließen sich nicht speichern.",
         "removeFailed": "Die Verbindung ließ sich nicht entfernen.",
+        "removeBlocked": "Erst alle {things} löschen.",
+        "removeKinds": {
+          "door": "Türen",
+          "lockerSystem": "Schließfachanlagen",
+          "fixedCompartment": "festen Fächer"
+        },
         "caption": {
           "checked": "Geprüft.",
           "unchecked": "Ungeprüft. Speichern geht trotzdem.",
@@ -2971,6 +3001,14 @@
           "withoutQrScan": {
             "label": "ohne QR-Scan",
             "tooltip": "Abweichend vom Standard des Anbieters öffnet dieser Zugangspunkt ohne QR-Scan."
+          },
+          "byHand": {
+            "label": "von Hand",
+            "tooltip": "Dieser Zugangspunkt steht nicht in der Liste des Anbieters, er wurde von Hand eingetragen."
+          },
+          "iqOff": {
+            "label": "IQ nicht aktiviert",
+            "tooltip": "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist."
           }
         },
         "qr": {
@@ -3280,6 +3318,10 @@
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",
           "message": "Der QR-Code konnte nicht erzeugt werden."
+        },
+        "switchFailed": {
+          "title": "Nicht geschaltet",
+          "message": "Der Anbieter ließ sich nicht schalten."
         }
       },
       "hints": {
@@ -3393,14 +3435,8 @@
           "confirm": "Trotzdem speichern"
         },
         "iq": {
-          "title": "IQ-Aktivierung für Remote-Open",
-          "refresh": "IQ-Liste aktualisieren",
           "appBan": "Wichtig: Den System-User niemals in der Salto-App an einem IQ aktivieren („Get Code“ / IQ-Aktivierung). Die App-Aktivierung macht das hier gespeicherte Secret still ungültig – jedes Fernöffnen schlägt danach mit otp_invalid fehl.",
-          "progress": "{ready} von {total} IQs bereit für Remote-Open",
-          "progressActionNeeded": "Noch nicht bereit: {count} – die Liste ist nach Handlungsbedarf sortiert.",
-          "progressAllDone": "Alles erledigt – alle Türen an diesen IQs lassen sich fernöffnen.",
           "noIqs": "An der Salto-Site wurden keine IQs gefunden.",
-          "notConfigured": "Die IQ-Liste ist erst verfügbar, wenn der Mandant mit aktiver Salto-KS-App gespeichert wurde.",
           "loadError": "Die IQ-Liste konnte nicht geladen werden:",
           "online": "online",
           "offline": "offline",
@@ -3419,7 +3455,7 @@
             },
             "not_activated": {
               "label": "Nicht aktiviert",
-              "nextStep": "Aktivierung starten – Salto sendet eine PIN an das Postfach des System-Users."
+              "nextStep": "Aktivieren – Salto sendet eine PIN an das Postfach des System-Users."
             },
             "pending_pin": {
               "label": "PIN ausstehend",
@@ -3435,7 +3471,7 @@
             }
           },
           "actions": {
-            "start": "Aktivierung starten",
+            "start": "Aktivieren",
             "complete": "Abschließen",
             "resendMail": "PIN-Mail erneut senden",
             "discard": "Verwerfen",
