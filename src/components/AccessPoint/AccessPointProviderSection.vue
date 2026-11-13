@@ -5,6 +5,7 @@ import {
   LOCKER_TYPE,
 } from "@/utilities/access-points";
 import { switchOffQuestion } from "@/utilities/access-app-lifecycle";
+import { emptySection, nextAfterConnect } from "@/utilities/access-setup";
 
 // What the creation in the head says it makes, by the type the provider's
 // access points start as: an Open Locker one starts as a Schließfachanlage.
@@ -36,6 +37,10 @@ const STATES = {
  * `switch` with the state asked for: on at once, off only once the line
  * beneath the head has named what stops opening and was confirmed. The
  * slot `iqs` holds the row of the IQs of Salto KS, above the access points.
+ *
+ * A provider being connected (ECCdigital/tickets#1106) is a draft whose head
+ * offers „Verwerfen“; a section without access points names the next step
+ * while its provider was just connected, else that it has none.
  */
 export default {
   name: "AccessPointProviderSection",
@@ -52,6 +57,15 @@ export default {
     // The provider's access points, for what stops opening when it is
     // switched off.
     accessPoints: { type: Array, default: () => [] },
+    // A provider being connected (ECCdigital/tickets#1106): nothing stored
+    // yet, so the head offers „Verwerfen“ alone.
+    draft: { type: Boolean, default: false },
+    // Whether the provider has no access point yet, and whether it was just
+    // connected: the section then names the next step.
+    empty: { type: Boolean, default: false },
+    fresh: { type: Boolean, default: false },
+    // The IQs of the provider not activated yet.
+    openIqs: { type: Number, default: 0 },
   },
   data() {
     return {
@@ -74,6 +88,12 @@ export default {
         this.provider.title || this.provider.id,
         this.accessPoints
       );
+    },
+    emptyText() {
+      return emptySection(this.provider.id);
+    },
+    nextText() {
+      return nextAfterConnect(this.provider, this.openIqs);
     },
     createLabel() {
       const type = providerAccessPointDefaults(this.provider.id)?.type;
@@ -106,13 +126,26 @@ export default {
 </script>
 
 <template>
-  <section class="provider-section" data-test="provider-section">
+  <section
+    class="provider-section"
+    :class="{ 'provider-section--draft': draft }"
+    data-test="provider-section"
+  >
     <header class="provider-section__head">
       <h3 class="provider-section__title" data-test="provider-section-title">
         {{ provider.title || provider.id }}
       </h3>
       <v-chip
-        v-if="knownState"
+        v-if="draft"
+        small
+        label
+        outlined
+        data-test="provider-section-state"
+      >
+        {{ $t("accessPoint.management.section.notConnected") }}
+      </v-chip>
+      <v-chip
+        v-else-if="knownState"
         small
         label
         :color="stateColor"
@@ -134,6 +167,16 @@ export default {
         @change="onSwitch"
       />
       <v-btn
+        v-if="draft"
+        small
+        text
+        data-test="provider-section-discard"
+        @click="$emit('discard')"
+      >
+        {{ $t("accessPoint.management.section.discard") }}
+      </v-btn>
+      <v-btn
+        v-if="!draft"
         small
         text
         data-test="provider-section-settings"
@@ -146,6 +189,7 @@ export default {
         </v-icon>
       </v-btn>
       <v-btn
+        v-if="!draft"
         small
         depressed
         color="primary"
@@ -194,6 +238,23 @@ export default {
     </div>
     <slot v-if="settingsOpen" name="settings" />
     <slot name="iqs" />
+    <template v-if="!draft && empty">
+      <div
+        v-if="fresh"
+        class="provider-section__note provider-section__note--next"
+        data-test="provider-section-next"
+      >
+        <v-icon small color="primary" class="mr-2">mdi-check-circle</v-icon>
+        <span>{{ nextText }}</span>
+      </div>
+      <div
+        v-else
+        class="provider-section__note provider-section__note--empty"
+        data-test="provider-section-empty"
+      >
+        {{ emptyText }}
+      </div>
+    </template>
     <!-- Switched off, the rows go pale; their actions stay at hand. -->
     <div
       class="provider-section__rows"
@@ -209,6 +270,10 @@ export default {
 .provider-section {
   border: 1px solid var(--scb-surface-border);
   border-radius: var(--scb-radius-surface);
+}
+
+.provider-section--draft {
+  border-style: dashed;
 }
 
 .provider-section__head {
@@ -241,6 +306,21 @@ export default {
 
 .provider-section__rows--off {
   opacity: 0.55;
+}
+
+.provider-section__note--empty,
+.provider-section__note--next {
+  padding: 12px 16px;
+  border-bottom: 0;
+}
+
+.provider-section__note--empty {
+  color: var(--scb-text-muted);
+}
+
+.provider-section__note--next {
+  color: var(--scb-text);
+  background: var(--scb-selected-tint-faint);
 }
 
 .provider-section__title {

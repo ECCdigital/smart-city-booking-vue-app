@@ -160,6 +160,22 @@ export function testPayload(settings) {
   return credentials;
 }
 
+/**
+ * What the connection test sends to test what is stored: the fields of the
+ * connection with every secret empty, so the backend takes the stored ones.
+ *
+ * @param {string} providerId
+ * @param {{values: Object}} settings
+ * @returns {Object}
+ */
+export function storedTestPayload(providerId, settings) {
+  const payload = testPayload(settings);
+  secretKeys(providerId).forEach((key) => {
+    if (key in payload) payload[key] = "";
+  });
+  return payload;
+}
+
 /** The fields a refusal of the provider names, by the code of the test. */
 const REFUSED_FIELDS = {
   "open-locker": { invalid_credentials: ["email", "password"] },

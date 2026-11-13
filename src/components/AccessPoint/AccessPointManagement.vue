@@ -19,6 +19,8 @@ import AccessPointAssignDialog from "@/components/AccessPoint/AccessPointAssignD
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
 import AccessPointCompartmentQrDialog from "@/components/AccessPoint/AccessPointCompartmentQrDialog.vue";
+import AccessProviderPicker from "@/components/AccessPoint/AccessProviderPicker.vue";
+import AccessSetupStrip from "@/components/AccessPoint/AccessSetupStrip.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 import ToolbarAction from "@/components/commons/ToolbarAction.vue";
@@ -30,11 +32,15 @@ import {
   LOCK_AND_ACCESS_APP_IDS,
   SALTO_PROVIDER,
 } from "@/utilities/access-apps";
-import { hasActivation } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
+import {
+  hasActivation,
+  iqSummary,
+} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
 import { canListAccessPoints } from "@/utilities/access-points";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 import { matches, needsAction } from "@/utilities/access-point-rows";
+import { knownProviders, setupState } from "@/utilities/access-setup";
 
 export default {
   name: "AccessPointManagement",
@@ -48,6 +54,8 @@ export default {
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
     AccessPointCompartmentQrDialog,
+    AccessProviderPicker,
+    AccessSetupStrip,
     SearchBar,
     ToolbarRow,
     ToolbarAction,
@@ -78,6 +86,12 @@ export default {
       // for „von Hand“ and „IQ nicht aktiviert“; a listing that could not
       // be read is left out (ECCdigital/tickets#1107).
       listings: {},
+      // The providers being connected: a section in the UI alone until
+      // „Speichern und aktivieren“ stores them.
+      drafts: [],
+      // The provider connected last on this page: its section names the
+      // next step while it has no access point.
+      freshProvider: "",
       editDialog: false,
       // The provider of the section whose creation opened the dialog; empty
       // while an access point is edited.
@@ -147,9 +161,13 @@ export default {
       this.accessPoints.forEach((accessPoint) => {
         ensure(accessPoint.provider).accessPoints.push(accessPoint);
       });
+      this.drafts.forEach(ensure);
       return [...byProvider.values()].map((section) => ({
         ...section,
         app: this.apps[section.provider.id] || null,
+        draft:
+          !this.apps[section.provider.id] &&
+          this.drafts.includes(section.provider.id),
         rows: section.accessPoints.filter((accessPoint) =>
           this.shows(accessPoint)
         ),
@@ -165,17 +183,37 @@ export default {
     activatedIqCount() {
       return this.iqs.filter(hasActivation).length;
     },
+    // The providers without a section, to connect.
+    unconnectedProviders() {
+      const shown = this.sections.map((section) => section.provider.id);
+      return knownProviders().filter(({ id }) => !shown.includes(id));
+    },
     filtering() {
       return !!this.search.trim() || this.onlyOpen;
     },
-    openCount() {
-      return this.accessPoints.filter((accessPoint) =>
-        needsAction(
-          accessPoint,
-          this.bookablesOf(accessPoint),
-          this.listingOf(accessPoint)
-        )
+    // The providers stored and switched on, or listed as active.
+    connectedCount() {
+      const active = this.providers.map((provider) => provider.id);
+      return this.sections.filter(({ provider, app, draft }) =>
+        app ? app.active : !draft && active.includes(provider.id)
       ).length;
+    },
+    // The IQs of Salto KS still to activate, from the IQs the page loads.
+    openIqs() {
+      return this.saltoActive ? iqSummary(this.iqs).open : 0;
+    },
+    // How far the setup is, and with it what is open.
+    setup() {
+      return setupState({
+        connected: this.connectedCount,
+        openIqs: this.openIqs,
+        accessPoints: this.accessPoints,
+        bookablesOf: this.bookablesOf,
+        listingOf: this.listingOf,
+      });
+    },
+    openCount() {
+      return this.setup.open;
     },
     hits() {
       return this.sections.reduce(
@@ -353,6 +391,29 @@ export default {
         this.providers = [];
       }
     },
+    // Only Salto KS has IQs.
+    openIqsOf(provider) {
+      return this.isSalto(provider) ? this.openIqs : 0;
+    },
+    // „Verbinden“: a section of the provider with its settings open, in the
+    // UI alone.
+    connect(provider) {
+      if (!this.drafts.includes(provider)) {
+        this.drafts = [...this.drafts, provider];
+      }
+      if (!this.openSettings.includes(provider)) {
+        this.openSettings = [...this.openSettings, provider];
+      }
+    },
+    // „Verwerfen“: the section goes, nothing was stored.
+    discard(provider) {
+      this.drafts = this.drafts.filter((id) => id !== provider);
+      this.closeSettings(provider);
+    },
+    cancelSettings(provider) {
+      if (this.drafts.includes(provider)) this.discard(provider);
+      else this.closeSettings(provider);
+    },
     toggleSettings(provider) {
       if (this.openSettings.includes(provider)) this.closeSettings(provider);
       else this.openSettings = [...this.openSettings, provider];
@@ -392,11 +453,18 @@ export default {
       }
       await this.refreshProvider(provider);
     },
-    // The IQs of Salto KS stand right after its first save.
-    async onAppSaved(provider, app) {
+    // A provider saved the first time is among the active ones now, and
+    // with Salto KS its IQs stand right after (ECCdigital/tickets#1107).
+    // Tested again after the save (ECCdigital/tickets#1106), the
+    // connection is read anew, so head and IQs say its state.
+    async onAppSaved(provider, app, { retested = false } = {}) {
+      const first = !this.apps[provider];
+      if (first) this.freshProvider = provider;
       this.apps = { ...this.apps, [provider]: app };
+      this.drafts = this.drafts.filter((id) => id !== provider);
       this.closeSettings(provider);
       await this.refreshProvider(provider);
+      if (retested) await this.fetchApps();
     },
     // The creation starts in the section of a provider, so the provider is
     // settled before the dialog opens.
@@ -564,12 +632,19 @@ export default {
       {{ $t("accessPoint.management.hints.assignmentForbidden") }}
     </v-alert>
 
-    <div
+    <AccessProviderPicker
       v-if="!loading && !loadError && !sections.length"
-      class="text--secondary"
-    >
-      {{ $t("accessPoint.management.empty") }}
-    </div>
+      start
+      :providers="unconnectedProviders"
+      @connect="connect"
+    />
+
+    <AccessSetupStrip
+      v-if="!loadError && sections.length"
+      :steps="setup.steps"
+      :done="setup.done"
+      class="mb-6"
+    />
 
     <SearchBar
       v-if="accessPoints.length"
@@ -621,10 +696,15 @@ export default {
         (section.app && section.app.lastTest && section.app.lastTest.error) ||
         ''
       "
+      :draft="section.draft"
+      :empty="!section.accessPoints.length"
+      :fresh="section.provider.id === freshProvider"
+      :open-iqs="openIqsOf(section.provider.id)"
       class="mb-5"
       @create="openCreate(section.provider.id)"
       @settings="toggleSettings(section.provider.id)"
       @switch="switchApp(section.provider.id, $event)"
+      @discard="discard(section.provider.id)"
     >
       <template #settings>
         <AccessAppSettings
@@ -633,8 +713,8 @@ export default {
           :access-points="section.accessPoints"
           :activated-iq-count="activatedIqCount"
           @to-iqs="showIqs"
-          @cancel="closeSettings(section.provider.id)"
-          @saved="onAppSaved(section.provider.id, $event)"
+          @cancel="cancelSettings(section.provider.id)"
+          @saved="(app, how) => onAppSaved(section.provider.id, app, how)"
           @dirty="onSettingsDirty(section.provider.id, $event)"
           @removed="onAppRemoved(section.provider.id)"
         />
@@ -651,7 +731,7 @@ export default {
         />
       </template>
       <div
-        v-if="filtering && !section.rows.length"
+        v-if="filtering && section.accessPoints.length && !section.rows.length"
         class="access-point-none"
         data-test="access-point-none"
       >
@@ -677,6 +757,12 @@ export default {
         @delete="openDelete(item)"
       />
     </AccessPointProviderSection>
+
+    <AccessProviderPicker
+      v-if="sections.length"
+      :providers="unconnectedProviders"
+      @connect="connect"
+    />
 
     <AccessPointEditDialog
       :open="editDialog"

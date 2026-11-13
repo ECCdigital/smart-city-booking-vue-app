@@ -2860,11 +2860,58 @@
       "close": "Schließen",
       "required": "Pflichtfeld",
       "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
-      "empty": "Es ist noch kein Zugangspunkt angelegt.",
+      "setup": {
+        "start": {
+          "question": "Welche Anbieter nutzt der Mandant?",
+          "intro": "Verbinden Sie zuerst einen Anbieter. Danach legen Sie seine Türen oder Schließfachanlagen an und ordnen sie Buchungsobjekten zu. Wer bucht, öffnet dann mit seiner Buchung."
+        },
+        "groups": {
+          "door": "Türen",
+          "locker": "Schließfächer & Fahrradboxen"
+        },
+        "connect": "Verbinden",
+        "more": "Weiteren Anbieter verbinden",
+        "empty": {
+          "door": "Noch keine Tür. Legen Sie die erste an.",
+          "locker": "Noch keine Schließfachanlage. Legen Sie die erste an."
+        },
+        "next": {
+          "sentence": "{provider} ist verbunden. Als Nächstes: {step}.",
+          "iqsFirst": "IQs aktivieren, dann {create}",
+          "create": {
+            "door": "die erste Tür anlegen",
+            "locker": "die erste Schließfachanlage anlegen"
+          }
+        },
+        "steps": {
+          "connect": {
+            "title": "Anbieter verbinden",
+            "none": "Noch keiner verbunden",
+            "connected": "1 verbunden | {count} verbunden",
+            "openIqs": "1 IQ offen | {count} IQs offen"
+          },
+          "create": {
+            "title": "Zugangspunkte anlegen",
+            "none": "Noch keiner angelegt",
+            "created": "1 angelegt | {count} angelegt"
+          },
+          "assign": {
+            "title": "Buchungsobjekten zuordnen",
+            "none": "Kommt nach dem Anlegen",
+            "unreadable": "Zuordnung nicht lesbar",
+            "assigned": "{assigned} von {total} zugeordnet"
+          }
+        },
+        "done": "Eingerichtet: {providers}, {accessPoints}, alle einem Buchungsobjekt zugeordnet.",
+        "providers": "1 Anbieter | {count} Anbieter",
+        "accessPoints": "1 Zugangspunkt | {count} Zugangspunkte"
+      },
       "section": {
         "createDoor": "Tür anlegen",
         "createLockerSystem": "Schließfachanlage anlegen",
         "settings": "Einstellungen",
+        "notConnected": "Nicht verbunden",
+        "discard": "Verwerfen",
         "states": {
           "connected": "Verbunden",
           "unchecked": "Nicht geprüft",
@@ -2904,6 +2951,7 @@
         "remove": "Verbindung entfernen",
         "cancel": "Abbrechen",
         "save": "Speichern",
+        "saveAndActivate": "Speichern und aktivieren",
         "more": "Weitere Einstellungen",
         "allStandard": "alles auf Standard",
         "standard": "Standard: {value}",
