@@ -4,6 +4,7 @@ import AccessAppForm from "@/components/AccessPoint/AccessAppForm.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
 import ToastService from "@/services/ToastService";
 import { runConnectionTest } from "@/utilities/access-connection-test";
 import { SALTO_PROVIDER, saltoIdentityChanged } from "@/utilities/access-apps";
@@ -100,13 +101,7 @@ export default {
       const testedAt = this.app?.lastTest?.testedAt;
       if (!testedAt) return this.$t(`${T}.never`);
       return this.$t(`${T}.lastTest`, {
-        at: new Date(testedAt).toLocaleString("de-DE", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        at: FormatService.dateTime(testedAt),
       });
     },
     // The result of the last test, while the form holds what it tested.

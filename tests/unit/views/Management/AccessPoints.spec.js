@@ -1117,7 +1117,7 @@ describe("AccessPoints unfolds the settings of a provider in its section", () =>
     expect(sectionOf(wrapper, "Nuki").text()).toContain("Haupteingang");
     const connection = settings.find("[data-test='access-app-connection']");
     expect(connection.text()).toContain("Verbindung");
-    expect(connection.text()).toContain("Zuletzt geprüft am 13.11.2026, 13:00");
+    expect(connection.text()).toContain("Zuletzt geprüft am 13.11.26, 13:00");
     expect(buttonIn(connection, "Verbindung testen")).toBeTruthy();
     const foot = settings.find("[data-test='access-app-foot']");
     expect(foot.findAll("button").wrappers.map((b) => b.text())).toEqual([
