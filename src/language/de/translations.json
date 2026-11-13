@@ -1462,8 +1462,8 @@
       },
       "customerUploads": {
         "title": "Nachweise von Buchenden",
-        "intro": "Geben Sie frei, dass bei einer Buchung oder nach Freigabe der Buchung von den Buchenden Nachweise hochgeladen werden können. Nach Aktivierung der Funktion kann jeder Mandant die Nachweise für sich freischalten und für seine Buchungsobjekte Upload-Felder definieren.",
-        "enabled": "Funktion zum Upload von Nachweisen für Mandanten freigeben",
+        "intro": "Geben Sie frei, dass von den Buchenden für Buchungen Nachweise hochgeladen werden können. Nach Aktivierung der Funktion kann jeder Mandant die Nachweise für sich freischalten und für seine Buchungsobjekte Upload-Felder definieren.",
+        "enabled": "Upload-Funktion für Mandanten freigeben",
         "enabled-hint": "Ohne Freigabe nimmt kein Mandant Nachweise an, auch wenn er sie freigeschaltet hat. Bereits hochgeladene, besonders schutzwürdige Nachweise werden weiter fristgerecht gelöscht.",
         "limits": "Grenzen",
         "limits-hint": "Legen Sie Begrenzungen für alle Mandanten fest. Ohne Angabe wird die angegebene Maximalgrenze genutzt.",
@@ -1473,7 +1473,7 @@
         "limit-hint": "Maximalgrenze: {max}",
         "deletion": {
           "title": "So werden Nachweise gelöscht",
-          "normal": "Normale Nachweise bleiben auch nach der Prüfung bei der Buchung gespeichert und können heruntergeladen werden. Sie werden erst mit der Buchung gelöscht.",
+          "normal": "Normale Nachweise bleiben auch nach der Prüfung bei der Buchung gespeichert und können heruntergeladen werden.",
           "sensitive": "Besonders schutzwürdige Nachweise, etwa Ausweise oder Gesundheitsdaten, werden sofort gelöscht, sobald sie akzeptiert oder abgelehnt sind. Ungeprüfte löscht das System nach der Löschfrist, die jeder Mandant festlegt (höchstens {max} Tage).",
           "start": "Die Löschfrist beginnt:",
           "start-ticket": "bei Tickets mit dem Ende der Veranstaltung,",

@@ -37,7 +37,7 @@
           data-test="instance-customer-uploads-deletion"
           class="instance-customer-uploads-deletion text-body-2 mt-6"
         >
-          <div class="text-subtitle-2 mb-1">
+          <div class="text-subtitle-2 customer-uploads__heading mb-1">
             {{ $t("instance.edit.customerUploads.deletion.title") }}
           </div>
           <p class="text--secondary mb-2">
@@ -70,7 +70,7 @@
         </div>
 
         <template v-if="customerUploads.enabled">
-          <div class="text-subtitle-2 mt-6 mb-1">
+          <div class="text-subtitle-2 customer-uploads__heading mt-6 mb-1">
             {{ $t("instance.edit.customerUploads.limits") }}
           </div>
           <p class="text-caption text--secondary mb-1">
@@ -207,3 +207,9 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.customer-uploads__heading {
+  font-weight: var(--scb-font-weight-semibold) !important;
+}
+</style>
