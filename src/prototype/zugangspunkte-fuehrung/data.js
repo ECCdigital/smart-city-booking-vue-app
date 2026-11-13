@@ -78,6 +78,11 @@ export function bookable(id) {
 
 export const SCENARIOS = [
   {
+    key: "alle",
+    label: "Alle fünf",
+    hint: "Alle fünf Schließsysteme verbunden, je ein paar Zugangspunkte (tickets#1085)",
+  },
+  {
     key: "neu",
     label: "Neu",
     hint: "Kein Schließsystem verbunden, kein Zugangspunkt",
@@ -153,6 +158,50 @@ function scenarioState(key) {
         door("ap3", "Makerspace Werkstatttür", "nuki", []),
         door("ap4", "Gemeinschaftsraum Gaarden", "salto-ks", [], {
           iqActive: false,
+        }),
+      ],
+    };
+  }
+
+  if (key === "alle") {
+    // PROTOTYPE (tickets#1085): every provider, so each dialog case is reachable.
+    PROVIDERS.forEach((p) => (systems[p.id] = on()));
+    systems["salto-ks"] = on({ iqTotal: 3, iqActive: 2 });
+    return {
+      systems,
+      accessPoints: [
+        door("ap1", "Rathaus Haupteingang", "nuki", ["b1", "b2"], {
+          externalId: "17A3F2C1",
+          providerLocationId: "Konto 48213",
+          openAction: "unlatch",
+          address: "Rathausplatz 1, 24103 Kiel",
+        }),
+        door("ap3", "Makerspace Werkstatttür", "nuki", [], {
+          externalId: "17A3F9E4",
+          providerLocationId: "Konto 48213",
+          openAction: "auto",
+          address: "",
+        }),
+        door("ap4", "Gemeinschaftsraum Gaarden", "salto-ks", ["b6"], {
+          externalId: "c0ffee12-77a1",
+          providerLocationId: "Site Gaarden",
+          iqActive: false,
+          address: "Elisabethstraße 64, 24143 Kiel",
+        }),
+        locker("ap5", "Schließfachanlage Bürgerbüro", "open-locker", ["b5"], {
+          lockerType: "locker",
+          compartments: 6,
+          compartmentIds: ["A1", "A2", "A3", "A4", "B1", "B2"],
+          qrRequired: true,
+          address: "Andreas-Gayk-Straße 31, 24103 Kiel",
+        }),
+        locker("ap6", "Fahrradboxen Bahnhof Nord", "ifbs", ["b4"], {
+          externalId: "LOC-4711",
+          address: "Kaistraße 2, 24114 Kiel",
+        }),
+        locker("ap8", "Schließfächer Sporthalle", "pareva", [], {
+          externalId: "66570d1a1f9b6357ed971746",
+          address: "",
         }),
       ],
     };

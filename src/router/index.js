@@ -232,6 +232,19 @@ const routes = [
       requiresAuth: false,
     },
   },
+  // PROTOTYPE — Dialog zum Anlegen und Bearbeiten (ECCdigital/tickets#1085).
+  // Throwaway route on branch `prototype/1085-zugangspunkt-dialog`, never
+  // merged. Public so it runs without a backend.
+  {
+    path: "/prototype/zugangspunkt-dialog",
+    name: "prototype-zugangspunkt-dialog",
+    component: () =>
+      import("@/views/Prototype/ZugangspunktDialogPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Zugangspunkt: Dialog",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
