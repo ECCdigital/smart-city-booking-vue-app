@@ -86,7 +86,7 @@ export default {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 8px 16px;
+  padding: var(--scb-space-2) var(--scb-space-4);
   font-size: var(--scb-font-size-sm);
   text-align: left;
 }
@@ -97,6 +97,6 @@ export default {
 
 .salto-iq-row__list {
   border-top: 1px solid var(--scb-rule);
-  padding: 12px 16px;
+  padding: var(--scb-space-3) var(--scb-space-4);
 }
 </style>

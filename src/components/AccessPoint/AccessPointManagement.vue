@@ -881,7 +881,7 @@ export default {
 }
 
 .access-point-none {
-  padding: 8px 16px;
+  padding: var(--scb-space-2) var(--scb-space-4);
   font-size: var(--scb-font-size-sm);
   color: var(--scb-text-muted);
 }

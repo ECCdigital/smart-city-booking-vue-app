@@ -62,8 +62,8 @@ export default {
 .setup-strip__step {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--scb-space-3);
+  padding: var(--scb-space-3) var(--scb-space-4);
   background: var(--scb-surface-tint);
 }
 
@@ -113,7 +113,8 @@ export default {
   color: var(--scb-text-muted);
 }
 
-@media (max-width: 760px) {
+/* Below $scb-bp-sm (959px) the steps stack. */
+@media (max-width: 959px) {
   .setup-strip {
     grid-template-columns: 1fr;
   }

@@ -102,7 +102,7 @@ export default {
 .provider-picker__groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  gap: var(--scb-space-6);
 }
 
 .provider-picker__group-title {
@@ -120,7 +120,7 @@ export default {
 .provider-picker__row {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: var(--scb-space-3) var(--scb-space-4);
 }
 
 .provider-picker__row + .provider-picker__row {

@@ -1181,13 +1181,13 @@ export default {
   overflow-y: auto;
 }
 .pick-group {
-  padding: 6px 12px 2px;
+  padding: 6px var(--scb-space-3) 2px;
   color: var(--scb-text-caption);
 }
 .pick-row {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--scb-space-2) var(--scb-space-3);
   cursor: pointer;
   border-bottom: 1px solid var(--scb-rule);
 }
@@ -1211,7 +1211,7 @@ export default {
 .lock-line {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--scb-space-2) var(--scb-space-3);
   border: 1px solid var(--scb-rule);
   border-radius: var(--scb-radius-control);
 }

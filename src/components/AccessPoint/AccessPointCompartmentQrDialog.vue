@@ -511,7 +511,8 @@ export default {
   text-align: center;
 }
 
-@media (max-width: 600px) {
+/* $scb-bp-xs of tokens.scss: the list moves above the preview. */
+@media (max-width: 599px) {
   .compartment-qr {
     grid-template-columns: 1fr;
   }

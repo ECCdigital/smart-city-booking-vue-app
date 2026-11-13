@@ -465,13 +465,14 @@ export default {
 .access-app-settings__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 24px;
-  padding: 16px 16px 4px 20px;
+  gap: var(--scb-space-6);
+  padding: var(--scb-space-4) var(--scb-space-4) var(--scb-space-1)
+    var(--scb-space-5);
 }
 
 .access-app-settings__connection {
   border-left: 1px solid var(--scb-rule);
-  padding-left: 20px;
+  padding-left: var(--scb-space-5);
 }
 
 .access-app-settings__title {
@@ -489,16 +490,16 @@ export default {
   display: flex;
   align-items: flex-start;
   font-size: var(--scb-font-size-sm);
-  padding: 10px 12px;
+  padding: 10px var(--scb-space-3);
   border-radius: var(--scb-radius-surface);
 }
 
 .access-app-settings__result--ok {
-  background: var(--scb-success-tint, rgba(76, 175, 80, 0.08));
+  background: var(--scb-success-tint);
 }
 
 .access-app-settings__result--failed {
-  background: var(--scb-error-tint, rgba(244, 67, 54, 0.08));
+  background: var(--scb-error-tint);
 }
 
 .access-app-settings__caption {
@@ -509,11 +510,13 @@ export default {
 .access-app-settings__foot {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px 12px 20px;
+  gap: var(--scb-space-2);
+  padding: var(--scb-space-2) var(--scb-space-4) var(--scb-space-3)
+    var(--scb-space-5);
 }
 
-@media (max-width: 860px) {
+/* Below $scb-bp-sm (959px) the connection moves under the form. */
+@media (max-width: 959px) {
   .access-app-settings__grid {
     grid-template-columns: 1fr;
   }

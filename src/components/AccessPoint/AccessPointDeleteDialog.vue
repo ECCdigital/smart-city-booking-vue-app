@@ -271,7 +271,7 @@ export default {
 
 .consequence-icon {
   flex: none;
-  margin: 2px 12px 0 0;
+  margin: 2px var(--scb-space-3) 0 0;
 }
 
 .consequence-toggle {
@@ -280,7 +280,7 @@ export default {
 
 /* A busy Schließfachanlage can have many; the list scrolls. */
 .consequence-list {
-  margin: 0 0 4px 28px;
+  margin: 0 0 var(--scb-space-1) 28px;
   padding: 0;
   list-style: none;
   font-size: var(--scb-font-size-xs);

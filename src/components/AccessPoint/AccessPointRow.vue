@@ -262,8 +262,9 @@ export default {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 8px 8px 8px 16px;
+  gap: var(--scb-space-4);
+  padding: var(--scb-space-2) var(--scb-space-2) var(--scb-space-2)
+    var(--scb-space-4);
 }
 
 .access-point-row + .access-point-row {
@@ -311,8 +312,10 @@ export default {
   grid-column: 1 / -1;
   display: flex;
   align-items: flex-start;
-  margin: -4px -8px -8px -16px;
-  padding: 8px 8px 8px 16px;
+  margin: calc(-1 * var(--scb-space-1)) calc(-1 * var(--scb-space-2))
+    calc(-1 * var(--scb-space-2)) calc(-1 * var(--scb-space-4));
+  padding: var(--scb-space-2) var(--scb-space-2) var(--scb-space-2)
+    var(--scb-space-4);
   background: var(--scb-warning-tint);
   font-size: var(--scb-font-size-sm);
 }
@@ -335,7 +338,8 @@ export default {
   width: 28px;
 }
 
-@media (max-width: 760px) {
+/* Below $scb-bp-sm (959px) the row stacks. */
+@media (max-width: 959px) {
   .access-point-row {
     grid-template-columns: 1fr auto;
   }

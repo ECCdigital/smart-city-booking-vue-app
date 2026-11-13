@@ -285,29 +285,29 @@ export default {
 .provider-section__head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px 10px 16px;
+  gap: var(--scb-space-2);
+  padding: 10px var(--scb-space-3) 10px var(--scb-space-4);
   background: var(--scb-surface-tint);
   border-bottom: 1px solid var(--scb-rule-strong);
 }
 
 .provider-section__switch {
-  margin: 0 4px 0 0;
+  margin: 0 var(--scb-space-1) 0 0;
   padding: 0;
 }
 
 .provider-section__note {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
+  gap: var(--scb-space-1);
+  padding: var(--scb-space-2) var(--scb-space-4);
   font-size: var(--scb-font-size-sm);
   border-bottom: 1px solid var(--scb-rule);
 }
 
 .provider-section__note--off,
 .provider-section__note--failing {
-  background: var(--scb-error-tint, rgba(244, 67, 54, 0.08));
+  background: var(--scb-error-tint);
 }
 
 .provider-section__rows--off {
@@ -316,7 +316,7 @@ export default {
 
 .provider-section__note--empty,
 .provider-section__note--next {
-  padding: 12px 16px;
+  padding: var(--scb-space-3) var(--scb-space-4);
   border-bottom: 0;
 }
 

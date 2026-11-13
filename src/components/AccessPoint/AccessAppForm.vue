@@ -312,8 +312,8 @@ export default {
 <style scoped>
 .access-app-form__help {
   border-left: 3px solid var(--v-primary-base);
-  padding: 6px 0 6px 12px;
-  margin-bottom: 16px;
+  padding: 6px 0 6px var(--scb-space-3);
+  margin-bottom: var(--scb-space-4);
   background: var(--scb-surface-tint);
   border-radius: 0 var(--scb-radius-surface) var(--scb-radius-surface) 0;
 }
@@ -329,20 +329,20 @@ export default {
 
 .access-app-form__help-body {
   font-size: var(--scb-font-size-xs);
-  padding: 6px 12px 4px 22px;
+  padding: 6px var(--scb-space-3) var(--scb-space-1) 22px;
   max-width: 68ch;
 }
 
 .access-app-form__help-body ul {
-  padding-left: 16px;
+  padding-left: var(--scb-space-4);
 }
 
 .access-app-form__secret {
   display: flex;
   align-items: center;
   border: 1px solid var(--scb-surface-border);
-  border-radius: 4px;
-  padding: 6px 8px 6px 12px;
+  border-radius: var(--scb-radius-control);
+  padding: 6px var(--scb-space-2) 6px var(--scb-space-3);
   margin-bottom: 18px;
 }
 
@@ -367,7 +367,7 @@ export default {
 .access-app-form__more {
   border-top: 1px solid var(--scb-rule);
   padding-top: 10px;
-  margin-top: 4px;
+  margin-top: var(--scb-space-1);
 }
 
 .access-app-form__more-summary {
