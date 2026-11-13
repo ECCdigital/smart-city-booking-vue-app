@@ -219,6 +219,19 @@ const routes = [
       interfaceName: "tenants",
     },
   },
+  // PROTOTYPE — Führung durch die Ersteinrichtung (ECCdigital/tickets#1084).
+  // Throwaway route on branch `prototype/1084-zugangspunkte-fuehrung`, never
+  // merged. Public so it runs without a backend.
+  {
+    path: "/prototype/zugangspunkte-fuehrung",
+    name: "prototype-zugangspunkte-fuehrung",
+    component: () =>
+      import("@/views/Prototype/ZugangspunkteFuehrungPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Zugangspunkte: Führung",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
