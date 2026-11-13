@@ -283,6 +283,20 @@ const routes = [
       requiresAuth: false,
     },
   },
+  // PROTOTYPE — Rückfragen mit Folgen: Löschen und Fächer mit Buchungen
+  // (ECCdigital/tickets#1095). Throwaway route on branch
+  // `prototype/1095-rueckfragen-mit-folgen`, never merged. Public, runs
+  // without a backend.
+  {
+    path: "/prototype/rueckfragen-mit-folgen",
+    name: "prototype-rueckfragen-mit-folgen",
+    component: () =>
+      import("@/views/Prototype/RueckfragenMitFolgenPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Rückfragen mit Folgen",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
