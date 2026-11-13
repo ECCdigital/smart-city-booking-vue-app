@@ -1,5 +1,7 @@
 <script>
+import FormatService from "@/services/FormatService";
 import { accessPointLabel } from "@/utilities/access-points";
+import { compartmentTitle } from "@/utilities/locker-system-compartments";
 import {
   deviations,
   hasQr,
@@ -19,6 +21,10 @@ import {
  * chip), and from the menu „…“ `download` (with "svg" or "png"), `rotate`,
  * `rotate-all` and `delete`. `fresh` marks the row of an access point just
  * created, with its next step (ECCdigital/tickets#1110).
+ * `withoutCompartment` are the future bookings of a Schließfachanlage no
+ * Fach was free for: a marker and a line with each, linked, until they are
+ * solved; a click hands the booking up as `open-booking`
+ * (ECCdigital/tickets#1113).
  */
 export default {
   name: "AccessPointRow",
@@ -28,6 +34,8 @@ export default {
     // so the row makes no claim about them.
     bookables: { type: Array, default: null },
     fresh: { type: Boolean, default: false },
+    // `{ id, compartment, timeBegin, timeEnd, href }` each.
+    withoutCompartment: { type: Array, default: () => [] },
   },
   computed: {
     label() {
@@ -50,6 +58,26 @@ export default {
     },
     nextStep() {
       return nextStep(this.accessPoint);
+    },
+  },
+  methods: {
+    compartmentOf(booking) {
+      const compartment = booking.compartment || {};
+      return compartmentTitle({
+        number: compartment.number,
+        lockerBankName: compartment.lockerBank?.name,
+      });
+    },
+    periodOf(booking) {
+      if (booking.timeBegin == null || booking.timeEnd == null) return "";
+      return `${FormatService.dateTime(
+        booking.timeBegin
+      )} – ${FormatService.dateTime(booking.timeEnd)}`;
+    },
+    whereOf(booking) {
+      return [this.compartmentOf(booking), this.periodOf(booking)]
+        .filter(Boolean)
+        .join(", ");
     },
   },
 };
@@ -76,6 +104,26 @@ export default {
             >
           </template>
           <span>{{ marker.tooltip }}</span>
+        </v-tooltip>
+        <v-tooltip v-if="withoutCompartment.length" bottom>
+          <template #activator="{ on, attrs }">
+            <span
+              class="access-point-row__marker access-point-row__marker--warning"
+              data-test="access-point-marker"
+              v-bind="attrs"
+              v-on="on"
+              >{{
+                $tc(
+                  "accessPoint.management.row.withoutCompartment.label",
+                  withoutCompartment.length,
+                  { count: withoutCompartment.length }
+                )
+              }}</span
+            >
+          </template>
+          <span>{{
+            $t("accessPoint.management.row.withoutCompartment.tooltip")
+          }}</span>
         </v-tooltip>
       </div>
       <div class="access-point-row__meta" data-test="access-point-meta">
@@ -179,6 +227,30 @@ export default {
         </v-list>
       </v-menu>
     </div>
+    <div
+      v-if="withoutCompartment.length"
+      class="access-point-row__without"
+      data-test="bookings-without-compartment"
+    >
+      <v-icon small color="warning" class="mr-2">mdi-alert-outline</v-icon>
+      <span>
+        {{ $t("accessPoint.management.row.withoutCompartment.lead") }}
+        <template v-for="(booking, index) in withoutCompartment">
+          <a
+            :key="`link-${booking.id}`"
+            :href="booking.href"
+            @click.prevent="$emit('open-booking', booking.id)"
+            >{{ booking.id }}</a
+          >
+          <span :key="`where-${booking.id}`" class="text--secondary">
+            ({{ whereOf(booking) }})</span
+          ><span :key="`end-${booking.id}`">{{
+            index < withoutCompartment.length - 1 ? ", " : "."
+          }}</span>
+        </template>
+        {{ $t("accessPoint.management.row.withoutCompartment.tail") }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -224,6 +296,21 @@ export default {
 .access-point-row__marker--neutral {
   border: 1px solid var(--scb-surface-border);
   color: var(--scb-text-muted);
+}
+
+.access-point-row__marker--warning {
+  background: var(--scb-warning-tint);
+  color: var(--v-warning-darken2);
+}
+
+.access-point-row__without {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  margin: -4px -8px -8px -16px;
+  padding: 8px 8px 8px 16px;
+  background: var(--scb-warning-tint);
+  font-size: var(--scb-font-size-sm);
 }
 
 .access-point-row__meta {

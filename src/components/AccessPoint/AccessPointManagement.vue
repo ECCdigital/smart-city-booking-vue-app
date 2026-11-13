@@ -26,7 +26,12 @@ import {
   LOCK_AND_ACCESS_APP_IDS,
 } from "@/utilities/access-apps";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
-import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
+import {
+  bookingsWithoutCompartment,
+  carriesOwnCompartments,
+  compartmentBookings,
+} from "@/utilities/locker-system-compartments";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 import { matches, needsAction } from "@/utilities/access-point-rows";
 
 export default {
@@ -167,6 +172,10 @@ export default {
       if (!this.selectedAccessPoint) return [];
       return bookingsWithLiveAccess(this.bookings, this.selectedAccessPoint.id);
     },
+    // The bookings at the Fächer of the Anlage the dialog edits.
+    selectedCompartmentBookings() {
+      return this.compartmentBookingsOf(this.selectedAccessPoint);
+    },
   },
   watch: {
     tenantId() {
@@ -202,7 +211,35 @@ export default {
         this.fetchBookables(),
         this.fetchProviders(),
         this.fetchApps(),
+        this.fetchCompartmentBookings(),
       ]);
+    },
+    // The bookings at the Fächer of an Anlage live in the tenant's bookings,
+    // so they are read only where an Anlage carries its own Fächer.
+    async fetchCompartmentBookings() {
+      if (this.accessPoints.some(carriesOwnCompartments)) {
+        await this.fetchBookings();
+      }
+    },
+    compartmentBookingsOf(accessPoint) {
+      return compartmentBookings(accessPoint, this.bookings, this.bookables);
+    },
+    // The future bookings a save found no free Fach for, with the link to
+    // each.
+    withoutCompartmentOf(accessPoint) {
+      return bookingsWithoutCompartment(
+        accessPoint,
+        this.compartmentBookingsOf(accessPoint)
+      ).map((booking) => ({
+        ...booking,
+        href: this.$router?.resolve?.(this.bookingRoute(booking.id))?.href,
+      }));
+    },
+    bookingRoute(bookingId) {
+      return bookingPageRoute(bookingId, this.tenantId);
+    },
+    openBooking(bookingId) {
+      this.$router.push(this.bookingRoute(bookingId));
     },
     // The access applications travel with the tenant.
     async fetchApps() {
@@ -517,6 +554,7 @@ export default {
         :access-point="item"
         :bookables="bookablesOf(item)"
         :fresh="item.id === freshId && needsAction(item, bookablesOf(item))"
+        :without-compartment="withoutCompartmentOf(item)"
         @assign="openAssign(item)"
         @edit="openEdit(item)"
         @qr="openQr(item)"
@@ -524,6 +562,7 @@ export default {
         @rotate="openRotate(item)"
         @rotate-all="openCompartmentQr(item, true)"
         @delete="openDelete(item)"
+        @open-booking="openBooking"
       />
     </AccessPointProviderSection>
 
@@ -533,6 +572,8 @@ export default {
       :access-points="accessPoints"
       :providers="providers"
       :provider="createProvider"
+      :compartment-bookings="selectedCompartmentBookings"
+      :bookings-unreadable="bookingsUnreadable"
       @close="editDialog = false"
       @saved="onSaved"
     />

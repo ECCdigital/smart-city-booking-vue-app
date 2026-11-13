@@ -44,7 +44,6 @@ vi.mock("@/services/api/ApiAccessPointService", () => ({
     rotateScanCode: vi.fn(),
     rotateCompartmentScanCode: vi.fn(),
     rotateAllCompartmentScanCodes: vi.fn(),
-    getCompartmentBookings: vi.fn(),
     getLocationPrefill: vi.fn(),
     assignBookables: vi.fn(),
   },
@@ -154,7 +153,7 @@ const PAREVA_LOCKER = {
 /**
  * The Zugangspunkte page on its first tab, with the tenant's connected
  * providers and access points as the backend answers them. `bookables` may
- * be an error the backend answers instead.
+ * be an error the backend answers instead, as may `bookings`.
  */
 async function mountAccessPointsPage({
   apps = [],
@@ -176,7 +175,11 @@ async function mountAccessPointsPage({
   } else {
     ApiBookablesService.getBookables.mockResolvedValue({ data: bookables });
   }
-  ApiBookingService.getBookings.mockResolvedValue({ data: bookings });
+  if (bookings instanceof Error) {
+    ApiBookingService.getBookings.mockRejectedValue(bookings);
+  } else {
+    ApiBookingService.getBookings.mockResolvedValue({ data: bookings });
+  }
   // The location input behind „Weitere Einstellungen“ asks the geo routes.
   ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
   ApiGeoService.search.mockResolvedValue([]);
@@ -187,7 +190,7 @@ async function mountAccessPointsPage({
     store: store(),
     mocks: {
       $route: { query: {} },
-      $router: { replace: vi.fn(), beforeEach: routerGuard },
+      $router: { replace: vi.fn(), push: vi.fn(), beforeEach: routerGuard },
     },
   });
   await settle(wrapper);
@@ -3875,152 +3878,309 @@ describe("AccessPoints keeps the settings of an access point", () => {
 });
 
 /**
- * Saving an Open Locker Schließfachanlage that takes a Fach out first asks
- * about the bookings there (ECCdigital/tickets#1043). Unchanged until the
- * Fächer show their bookings themselves (ECCdigital/tickets#1113).
+ * The Fächer show their bookings themselves (ECCdigital/tickets#1113): a dot
+ * per booking at each Fach, what a save does to them at a Fach taken out and
+ * under the Fächer, and the save asks nothing. A future booking no Fach was
+ * free for shows at the row of the Anlage until it is solved. The page reads
+ * them from the tenant's bookings, each holding its Fach in `accessInfo`.
  */
-describe("AccessPoints asks about the bookings at a Fach that leaves", () => {
+describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
   const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
   const UUID_1 = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
   const UUID_2 = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+  const UUID_3 = "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b";
   const FACH_1 = { id: UUID_1, number: 1, lockerBank: LABOR };
+  const FACH_2 = { id: UUID_2, number: 2, lockerBank: LABOR };
+  const FACH_3 = { id: UUID_3, number: 3, lockerBank: LABOR };
   const ANLAGE = {
     ...OPEN_LOCKER_ANLAGE,
     config: {
       compartments: [
         { ...FACH_1, outOfService: false },
-        { id: UUID_2, number: 2, lockerBank: LABOR, outOfService: false },
+        { ...FACH_2, outOfService: false },
       ],
     },
   };
+  // Open Locker lists the Fächer, so one taken out stays to be seen.
+  const LISTING = [FACH_1, FACH_2, FACH_3].map((fach) =>
+    listed("open-locker", fach.id, `${LABOR.name} · Fach ${fach.number}`, {
+      locationId: LABOR.id,
+      metadata: fach,
+    })
+  );
+  const NOW = Date.UTC(2026, 10, 20, 10, 0);
+  const HOUR = 60 * 60 * 1000;
 
-  function booking(id, state) {
+  /**
+   * A booking of the tenant holding `fach` at the Anlage, from `begin` to
+   * `end` hours from now.
+   */
+  function booking(id, fach, begin, end, extra = {}) {
     return {
       id,
       name: `Person ${id}`,
-      timeBegin: Date.UTC(2026, 10, 20, 9, 0),
-      timeEnd: Date.UTC(2026, 10, 20, 11, 0),
-      state,
-      compartment: FACH_1,
+      status: "confirmed",
+      timeBegin: NOW + begin * HOUR,
+      timeEnd: NOW + end * HOUR,
+      accessInfo: [
+        {
+          accessPointId: ANLAGE.id,
+          bookableId: "b-rad",
+          type: "locker",
+          assignedCompartment: fach,
+        },
+      ],
+      ...extra,
     };
   }
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
-    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
-      data: { total: 0, bookings: [] },
-    });
   });
 
-  async function takeOutFach1() {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function editAnlage({ anlage = ANLAGE, bookings = [] } = {}) {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],
-      accessPoints: [ANLAGE],
+      accessPoints: [anlage],
+      bookings,
     });
-    answerListings({ "open-locker": [] });
-    await editPoint(wrapper, "Fahrradgarage Süd");
-    await pointDialog(wrapper)
-      .find(`.compartment-row[data-compartment-id='${UUID_1}'] input`)
-      .trigger("click");
-    await settle(wrapper);
+    answerListings({ "open-locker": LISTING });
+    await editPoint(wrapper, anlage.label);
     return wrapper;
   }
 
-  function question(wrapper) {
-    return dialogCard(wrapper, "AccessPointCompartmentBookingsDialog");
+  function compartmentRow(wrapper, id) {
+    return pointDialog(wrapper).find(
+      `.compartment-row[data-compartment-id='${id}']`
+    );
   }
 
-  async function click(wrapper, selector) {
-    await question(wrapper).find(selector).trigger("click");
+  function dotsAt(wrapper, id) {
+    return compartmentRow(wrapper, id)
+      .findAll("[data-test='booking-dot']")
+      .wrappers.map((dot) => dot.attributes("data-state"));
+  }
+
+  it("shows a dot per booking at each Fach, filled while it runs", async () => {
+    const wrapper = await editAnlage({
+      bookings: [
+        booking("b-running", FACH_1, -1, 1),
+        booking("b-future", FACH_1, 24, 26),
+        booking("b-later", FACH_2, 48, 50),
+      ],
+    });
+
+    expect(dotsAt(wrapper, UUID_1)).toEqual(["running", "future"]);
+    expect(dotsAt(wrapper, UUID_2)).toEqual(["future"]);
+    const legend = pointDialog(wrapper).find("[data-test='dot-legend']");
+    expect(legend.text().replace(/\s+/g, " ")).toBe(
+      "laufende Buchung künftige Buchung"
+    );
+  });
+
+  async function untick(wrapper, id) {
+    await compartmentRow(wrapper, id)
+      .find("input[type='checkbox']")
+      .trigger("click");
     await settle(wrapper);
   }
 
-  it("names the bookings and saves only once confirmed", async () => {
-    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+  async function takeOutOfService(wrapper, id) {
+    await compartmentRow(wrapper, id).find("[role='switch']").trigger("click");
+    await settle(wrapper);
+  }
+
+  function consequenceAt(wrapper, id) {
+    const sentence = compartmentRow(wrapper, id).find(
+      "[data-test='compartment-consequence']"
+    );
+    return sentence.exists() ? sentence.text() : "";
+  }
+
+  it("says at a Fach taken out what happens to its bookings", async () => {
+    const wrapper = await editAnlage({
+      bookings: [
+        booking("b-running", FACH_1, -1, 3),
+        booking("b-future", FACH_1, 24, 26),
+        booking("b-later", FACH_1, 48, 50),
+        booking("b-other", FACH_2, 24, 26),
+      ],
+    });
+
+    expect(consequenceAt(wrapper, UUID_1)).toBe("");
+
+    await untick(wrapper, UUID_1);
+
+    expect(consequenceAt(wrapper, UUID_1)).toBe(
+      "läuft bis 20.11.26, 14:00, bleibt · 2 ziehen um"
+    );
+    expect(consequenceAt(wrapper, UUID_2)).toBe("");
+  });
+
+  it("says it at a Fach taken out of service too", async () => {
+    const wrapper = await editAnlage({
+      bookings: [booking("b-future", FACH_2, 24, 26)],
+    });
+
+    await takeOutOfService(wrapper, UUID_2);
+
+    expect(consequenceAt(wrapper, UUID_2)).toBe("1 zieht um");
+  });
+
+  function summary(wrapper) {
+    const sentence = pointDialog(wrapper).find(
+      "[data-test='compartments-summary']"
+    );
+    return sentence.exists() ? sentence.text() : "";
+  }
+
+  it("sums up under the Fächer what the save does to the bookings", async () => {
+    const wrapper = await editAnlage({
+      bookings: [
+        booking("b-running", FACH_1, -1, 3),
+        booking("b-future", FACH_1, 24, 26),
+        booking("b-other", FACH_2, 48, 50),
+      ],
+    });
+    expect(summary(wrapper)).toBe("");
+
+    await untick(wrapper, UUID_2);
+
+    expect(summary(wrapper)).toBe(
+      "Beim Speichern: 1 künftige Buchung bekommt ein freies Fach in Betrieb."
+    );
+
+    await untick(wrapper, UUID_1);
+
+    expect(summary(wrapper)).toBe(
+      "Beim Speichern: 1 laufende Buchung behält ihr Fach, 2 künftige bekommen ein freies Fach in Betrieb."
+    );
+  });
+
+  it("says nothing under the Fächer when no booking hangs at one taken out", async () => {
+    const wrapper = await editAnlage({
+      bookings: [booking("b-future", FACH_1, 24, 26)],
+    });
+
+    await untick(wrapper, UUID_2);
+
+    expect(summary(wrapper)).toBe("");
+  });
+
+  it("saves without asking, also when bookings hang at the Fach", async () => {
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({
       data: {
-        total: 2,
-        bookings: [
-          booking("b-running", "running"),
-          booking("b-future", "future"),
-        ],
+        id: ANLAGE.id,
+        unmovedBookings: [{ id: "b-future", compartment: FACH_1 }],
       },
     });
-    const wrapper = await takeOutFach1();
+    const wrapper = await editAnlage({
+      bookings: [
+        booking("b-running", FACH_1, -1, 3),
+        booking("b-future", FACH_1, 24, 26),
+      ],
+    });
+    await untick(wrapper, UUID_1);
 
-    await savePoint(wrapper);
-
-    expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
-      ANLAGE.id,
-      [UUID_1],
-      "t1"
-    );
-    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
-    const text = question(wrapper).text();
-    expect(text).toContain("läuft – behält das Fach");
-    expect(text).toContain("künftig – bekommt ein freies Fach");
-
-    await click(wrapper, ".confirm-compartments-leave");
+    const payload = await savePoint(wrapper);
 
     expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
-    expect(
-      ApiAccessPointService.storeAccessPoint.mock.calls[0][0].config
-        .compartments
-    ).toEqual([
-      { id: UUID_2, number: 2, lockerBank: LABOR, outOfService: false },
+    expect(payload.config.compartments).toEqual([
+      { ...FACH_2, outOfService: false },
     ]);
+    expect(pointDialog(wrapper).isVisible()).toBe(false);
+    expect(addToast).toHaveBeenCalledTimes(1);
   });
 
-  it("saves nothing when the question is cancelled", async () => {
-    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
-      data: { total: 1, bookings: [booking("b-future", "future")] },
+  function withoutCompartment(wrapper) {
+    const line = rowOf(wrapper, ANLAGE.label).find(
+      "[data-test='bookings-without-compartment']"
+    );
+    return line.exists() ? line : null;
+  }
+
+  it("marks the Anlage with the future bookings whose Fach left it", async () => {
+    const anlage = {
+      ...ANLAGE,
+      config: {
+        compartments: [
+          { ...FACH_1, outOfService: false },
+          { ...FACH_2, outOfService: true },
+        ],
+      },
+    };
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [anlage],
+      bookings: [
+        // Fach 3 is no longer in the Anlage, Fach 2 out of service.
+        booking("B-1041", FACH_3, 24, 26),
+        booking("B-1042", FACH_2, 48, 50),
+        // A running booking keeps its Fach, one in service is fine.
+        booking("B-1043", FACH_3, -1, 3),
+        booking("B-1044", FACH_1, 24, 26),
+        booking("B-1045", FACH_2, 24, 26, { status: "cancelled" }),
+      ],
     });
-    const wrapper = await takeOutFach1();
-    await savePoint(wrapper);
 
-    await click(wrapper, ".cancel-compartments-leave");
-
-    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
-  });
-
-  it("saves without asking when no booking hangs at the Fach", async () => {
-    const wrapper = await takeOutFach1();
-
-    await savePoint(wrapper);
-
-    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
-  });
-
-  it("still asks when the bookings cannot be read, and says so", async () => {
-    ApiAccessPointService.getCompartmentBookings.mockRejectedValue(
-      lifecycleError(403, "forbidden")
+    expect(markersOf(wrapper, ANLAGE.label)).toEqual(["2 Buchungen ohne Fach"]);
+    const line = withoutCompartment(wrapper);
+    expect(line.text().replace(/\s+/g, " ")).toBe(
+      "Kein freies Fach für B-1041 (Schrank Labor Fachbank 1, Fach 3, 21.11.26, 11:00 – 21.11.26, 13:00), " +
+        "B-1042 (Schrank Labor Fachbank 1, Fach 2, 22.11.26, 11:00 – 22.11.26, 13:00). " +
+        "Sie bleiben am alten Fach, bis Sie sie lösen, etwa in den Details der Buchung."
     );
-    const wrapper = await takeOutFach1();
 
-    await savePoint(wrapper);
+    await line.findAll("a").at(1).trigger("click");
 
-    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
-    expect(question(wrapper).text()).toContain(
-      "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen."
-    );
-  });
-
-  it("names after the save the bookings that could not move", async () => {
-    ApiAccessPointService.storeAccessPoint.mockResolvedValue({
-      data: { id: ANLAGE.id, unmovedBookings: [booking("b-stuck")] },
+    expect(wrapper.vm.$router.push).toHaveBeenCalledWith({
+      name: "booking-details",
+      params: { bookingId: "B-1042" },
+      query: { tenant: "t1" },
     });
-    const wrapper = await takeOutFach1();
+  });
+
+  it("marks the Anlage after a save left a booking without Fach", async () => {
+    const wrapper = await editAnlage({
+      bookings: [booking("B-1041", FACH_1, 24, 26)],
+    });
+    expect(markersOf(wrapper, ANLAGE.label)).toEqual([]);
+    expect(withoutCompartment(wrapper)).toBe(null);
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [
+        {
+          ...ANLAGE,
+          config: { compartments: [{ ...FACH_2, outOfService: false }] },
+        },
+      ],
+    });
+    await untick(wrapper, UUID_1);
 
     await savePoint(wrapper);
+    await settle(wrapper);
 
-    expect(question(wrapper).text()).toContain(
-      "Kein freies Fach für diese künftigen Buchungen"
+    expect(markersOf(wrapper, ANLAGE.label)).toEqual(["1 Buchung ohne Fach"]);
+    expect(ApiBookingService.getBookings).toHaveBeenCalledTimes(2);
+  });
+
+  it("says under the Fächer when the bookings cannot be read", async () => {
+    const wrapper = await editAnlage({
+      bookings: lifecycleError(403, "forbidden"),
+    });
+    expect(summary(wrapper)).toBe("");
+
+    await untick(wrapper, UUID_1);
+
+    expect(summary(wrapper)).toBe(
+      "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach."
     );
-    expect(addToast).not.toHaveBeenCalled();
-
-    await click(wrapper, ".close-unmoved");
-
-    expect(addToast).toHaveBeenCalled();
   });
 });
 
