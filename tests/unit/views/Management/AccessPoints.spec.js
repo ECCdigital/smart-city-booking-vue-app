@@ -11,6 +11,7 @@ import {
   flushPromises,
   forbiddenError,
   lifecycleError,
+  serverError,
   validationError,
 } from "@tests/unit/support/api";
 import { typeSearch } from "@tests/unit/support/search";
@@ -168,9 +169,19 @@ function listingsOf(accessPoints) {
 }
 
 /**
+ * Lets `mock` answer `value` in the shape `wrap` gives it: an error is
+ * refused, a promise answered once it settles.
+ */
+function answer(mock, value, wrap) {
+  if (value instanceof Error) mock.mockRejectedValue(value);
+  else mock.mockImplementation(async () => wrap(await value));
+}
+
+/**
  * The Zugangspunkte page on its first tab, with the tenant's connected
  * providers and access points as the backend answers them. `bookables` may
- * be an error the backend answers instead, as may `bookings`. `listings`
+ * be an error the backend answers instead, as may `bookings`, `apps` and
+ * `providers`; these two may also be a promise. `listings`
  * are what each provider lists, an entry an error or a promise of its own;
  * by default the access points stored for it.
  */
@@ -182,10 +193,10 @@ async function mountAccessPointsPage({
   bookings = [],
   listings = listingsOf(accessPoints),
 } = {}) {
-  ApiTenantService.getTenant.mockResolvedValue({
-    data: { id: "t1", name: "Mandant", applications: apps },
-  });
-  ApiAccessAppsService.getProviders.mockResolvedValue({ data: providers });
+  answer(ApiTenantService.getTenant, apps, (applications) => ({
+    data: { id: "t1", name: "Mandant", applications },
+  }));
+  answer(ApiAccessAppsService.getProviders, providers, (data) => ({ data }));
   ApiAccessAppsService.getAccessPoints.mockImplementation(
     async (_, provider) => {
       const listing = listings[provider];
@@ -285,6 +296,81 @@ describe("AccessPoints shows a section per connected provider", () => {
     expect(createLabel("Nuki")).toBe("Tür anlegen");
     expect(createLabel("Pareva")).toBe("Schließfachanlage anlegen");
     expect(createLabel("Open Locker")).toBe("Schließfachanlage anlegen");
+  });
+});
+
+/**
+ * The empty page asks only once it knows (stories 1 and 7 of
+ * ECCdigital/tickets#1082): the providers and their connections are read
+ * first, and a page that could not read them says so instead of asking.
+ */
+describe("AccessPoints asks for the providers only once it knows", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const QUESTION = "Welche Anbieter nutzt der Mandant?";
+
+  it("does not ask while the providers are still read", async () => {
+    let answerProviders;
+    const providers = new Promise((resolve) => {
+      answerProviders = resolve;
+    });
+    const wrapper = await mountAccessPointsPage({
+      providers,
+      accessPoints: [],
+    });
+
+    expect(wrapper.text()).not.toContain(QUESTION);
+
+    answerProviders([]);
+    await settle(wrapper);
+
+    expect(wrapper.text()).toContain(QUESTION);
+  });
+
+  it("does not ask while the connections are still read", async () => {
+    let answerApps;
+    const apps = new Promise((resolve) => {
+      answerApps = resolve;
+    });
+    const wrapper = await mountAccessPointsPage({
+      providers: [],
+      accessPoints: [],
+      apps,
+    });
+
+    expect(wrapper.text()).not.toContain(QUESTION);
+
+    answerApps([]);
+    await settle(wrapper);
+
+    expect(wrapper.text()).toContain(QUESTION);
+  });
+
+  it("says the providers could not be read instead of asking", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: serverError(),
+      accessPoints: [],
+    });
+
+    expect(wrapper.text()).not.toContain(QUESTION);
+    expect(wrapper.find(".v-alert").text()).toContain(
+      "Die Anbieter konnten nicht geladen werden."
+    );
+  });
+
+  it("says the connections could not be read instead of asking", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: serverError(),
+      providers: [],
+      accessPoints: [],
+    });
+
+    expect(wrapper.text()).not.toContain(QUESTION);
+    expect(wrapper.find(".v-alert").text()).toContain(
+      "Die Anbieter konnten nicht geladen werden."
+    );
   });
 });
 
@@ -4616,9 +4702,7 @@ describe("AccessPoints edits an access point in the same dialog", () => {
     const wrapper = await mountAccessPointsPage({
       providers: [PAREVA],
       accessPoints: [DOOR],
-      apps: [
-        storedApp("nuki", { active: false, connectionState: "disabled" }),
-      ],
+      apps: [storedApp("nuki", { active: false, connectionState: "disabled" })],
     });
     ApiAccessAppsService.getAccessPoints.mockClear();
 

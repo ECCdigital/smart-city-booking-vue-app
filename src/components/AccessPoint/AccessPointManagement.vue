@@ -258,30 +258,35 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    // The page decides what it shows - the sections or the question for
+    // the providers - only once the access points, the providers and their
+    // connections are read; one that could not be read is named instead
+    // (ECCdigital/tickets#1082).
     async fetchAll() {
       if (!this.tenantId) return;
 
       this.loading = true;
       this.loadError = "";
 
-      try {
-        const response = await ApiAccessPointService.getAccessPoints(
-          this.tenantId
-        );
-        this.accessPoints = response.data || [];
-      } catch (error) {
-        this.accessPoints = [];
-        this.loadError = formatAccessPointErrorMessage(error, {
+      const [pointsError, providersError, appsError] = await Promise.all([
+        this.fetchAccessPoints(),
+        this.fetchProviders(),
+        this.fetchApps(),
+      ]);
+      if (pointsError) {
+        this.loadError = formatAccessPointErrorMessage(pointsError, {
           fallbackKey: "accessPoint.management.errors.loadFailed",
         });
-      } finally {
-        this.loading = false;
+      } else if (providersError || appsError) {
+        this.loadError = formatAccessPointErrorMessage(
+          providersError || appsError,
+          { fallbackKey: "accessPoint.management.errors.providersFailed" }
+        );
       }
+      this.loading = false;
 
       await Promise.all([
         this.fetchBookables(),
-        this.fetchProviders(),
-        this.fetchApps(),
         this.fetchCompartmentBookings(),
       ]);
       // Behind the page: it stands before these are read.
@@ -385,7 +390,21 @@ export default {
     openBooking(bookingId) {
       this.$router.push(this.bookingRoute(bookingId));
     },
-    // The access applications travel with the tenant.
+    // The access points of the tenant; answers the error that kept them.
+    async fetchAccessPoints() {
+      try {
+        const response = await ApiAccessPointService.getAccessPoints(
+          this.tenantId
+        );
+        this.accessPoints = response.data || [];
+        return null;
+      } catch (error) {
+        this.accessPoints = [];
+        return error;
+      }
+    },
+    // The access applications travel with the tenant; answers the error
+    // that kept them.
     async fetchApps() {
       try {
         const response = await ApiTenantService.getTenant(this.tenantId);
@@ -396,8 +415,10 @@ export default {
           if (app) apps[id] = app;
         });
         this.apps = apps;
+        return null;
       } catch (error) {
         this.apps = {};
+        return error;
       }
     },
     async fetchBookables() {
@@ -420,12 +441,15 @@ export default {
         this.bookablesForbidden = isForbiddenError(error);
       }
     },
+    // The active providers; answers the error that kept them.
     async fetchProviders() {
       try {
         const response = await ApiAccessAppsService.getProviders(this.tenantId);
         this.providers = response.data || [];
+        return null;
       } catch (error) {
         this.providers = [];
+        return error;
       }
     },
     // Only Salto KS has IQs.
