@@ -13,6 +13,7 @@ import {
   newSettings,
   secretStored,
   savePayload,
+  saveRefusal,
   storedTestPayload,
   testFaults,
   testPayload,
@@ -69,6 +70,10 @@ export default {
       testedValues: null,
       saving: false,
       saveError: "",
+      // A save refused for a secret, and the values it refused: its faults
+      // stand at the fields while the form holds them.
+      refusal: null,
+      refusedValues: null,
       removing: false,
       removeError: "",
       // The open question before an identity change: { count, resolve }.
@@ -118,8 +123,18 @@ export default {
         ? this.$t(`${T}.caption.checked`)
         : this.$t(`${T}.caption.failed`);
     },
+    // The refusal of the last save, while the form holds what it refused.
+    currentRefusal() {
+      if (!this.refusal) return null;
+      return JSON.stringify(this.settings.values) === this.refusedValues
+        ? this.refusal
+        : null;
+    },
     faults() {
-      return testFaults(this.provider.id, this.currentResult);
+      return {
+        ...testFaults(this.provider.id, this.currentResult),
+        ...testFaults(this.provider.id, this.currentRefusal),
+      };
     },
     fieldErrors() {
       return Object.fromEntries(
@@ -135,10 +150,7 @@ export default {
       if (result.success)
         return this.$t("accessPoint.tenant.connectionSuccess");
       if (["missing_fields", "missing_secret"].includes(result.code)) {
-        const fields = (result.missing || [])
-          .map(({ field }) => this.$t(fieldLabelKey(this.provider.id, field)))
-          .join(", ");
-        return this.$t(`${T}.result.${result.code}`, { fields });
+        return this.missingText(result);
       }
       const coded = `${T}.result.codes.${result.code}`;
       if (result.code && this.$te(coded)) return this.$t(coded);
@@ -159,6 +171,13 @@ export default {
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
     secretStored,
+    // „Es fehlen Angaben: …“ or „Es fehlt: …“, the fields by their labels.
+    missingText({ code, missing }) {
+      const fields = (missing || [])
+        .map(({ field }) => this.$t(fieldLabelKey(this.provider.id, field)))
+        .join(", ");
+      return this.$t(`${T}.result.${code}`, { fields });
+    },
     update(key, value) {
       this.$set(this.settings.values, key, value);
     },
@@ -233,6 +252,7 @@ export default {
       if (!(await this.confirmIdentity())) return;
       this.saving = true;
       this.saveError = "";
+      this.refusal = null;
       const retest = !this.app && !!this.currentResult;
       try {
         const response = await ApiAccessAppsService.saveApp(
@@ -254,7 +274,13 @@ export default {
         );
         this.$emit("saved", response.data, { retested: retest });
       } catch (error) {
-        this.saveError = getApiErrorMessage(error, this.$t(`${T}.saveFailed`));
+        // A secret the backend will not keep for a changed identity stands
+        // at its field, as after a test.
+        this.refusal = saveRefusal(error);
+        this.refusedValues = JSON.stringify(this.settings.values);
+        this.saveError = this.refusal
+          ? this.missingText(this.refusal)
+          : getApiErrorMessage(error, this.$t(`${T}.saveFailed`));
       } finally {
         this.saving = false;
       }

@@ -1610,6 +1610,51 @@ describe("AccessPoints puts the faults of a test at the field", () => {
     );
   });
 
+  // The backend refuses a save whose stored secret belongs to another
+  // identity (ECCdigital/tickets#1082) in the form of the test.
+  it("puts a secret the save refuses at the field", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [],
+      apps: [
+        storedApp("open-locker", {
+          serverUrl: "https://locker.example",
+          email: "technik@example.org",
+          storedSecrets: { password: true },
+        }),
+      ],
+    });
+    const settings = await openSettings(wrapper, "Open Locker");
+    await inputLabelled(settings, "Server-Adresse").setValue(
+      "https://other-locker.example"
+    );
+    ApiAccessAppsService.saveApp.mockRejectedValueOnce(
+      lifecycleError(400, "missing_secret", {
+        provider: "open-locker",
+        missing: [{ field: "password", reason: "server_url_changed" }],
+      })
+    );
+
+    await click(wrapper, settings, "Speichern");
+
+    const open = settingsOf(wrapper, "Open Locker");
+    expect(open.find("[data-test='access-app-save-error']").text()).toBe(
+      "Es fehlt: Passwort."
+    );
+    expect(storedSecret(open, "Passwort").text()).toContain(
+      "Gehört zu den bisherigen Angaben. Bitte neu eingeben."
+    );
+
+    await inputLabelled(open, "Server-Adresse").setValue(
+      "https://locker.example"
+    );
+    await settle(wrapper);
+
+    expect(storedSecret(open, "Passwort").text()).not.toContain(
+      "Gehört zu den bisherigen Angaben."
+    );
+  });
+
   it("puts a refusal of Open Locker at e-mail and password", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],

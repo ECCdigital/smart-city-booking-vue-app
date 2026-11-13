@@ -224,6 +224,25 @@ export function testFaults(providerId, result) {
 }
 
 /**
+ * The refusal of a save as the test answers it, where the backend refused
+ * a stored secret that belongs to another identity (`400 missing_secret`,
+ * `params.missing` as at the test, ECCdigital/tickets#1082) - so its fields
+ * read like a test's (`testFaults`). `null` for any other failure.
+ *
+ * @param {Error} error The error of the save
+ * @returns {{success: false, code: "missing_secret", missing: Array}|null}
+ */
+export function saveRefusal(error) {
+  const data = error?.response?.data;
+  if (data?.code !== "missing_secret") return null;
+  return {
+    success: false,
+    code: "missing_secret",
+    missing: Array.isArray(data.params?.missing) ? data.params.missing : [],
+  };
+}
+
+/**
  * The text key of a field of the provider's form.
  *
  * @param {string} providerId
