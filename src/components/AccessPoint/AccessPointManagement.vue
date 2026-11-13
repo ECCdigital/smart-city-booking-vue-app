@@ -32,6 +32,7 @@ import {
 } from "@/utilities/access-apps";
 import { hasActivation } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
+import { canListAccessPoints } from "@/utilities/access-points";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 import { matches, needsAction } from "@/utilities/access-point-rows";
 
@@ -73,6 +74,10 @@ export default {
       iqsLoaded: false,
       iqsError: "",
       iqsOpen: false,
+      // What each active provider lists, by provider, read behind the page
+      // for „von Hand“ and „IQ nicht aktiviert“; a listing that could not
+      // be read is left out (ECCdigital/tickets#1107).
+      listings: {},
       editDialog: false,
       // The provider of the section whose creation opened the dialog; empty
       // while an access point is edited.
@@ -165,7 +170,11 @@ export default {
     },
     openCount() {
       return this.accessPoints.filter((accessPoint) =>
-        needsAction(accessPoint, this.bookablesOf(accessPoint))
+        needsAction(
+          accessPoint,
+          this.bookablesOf(accessPoint),
+          this.listingOf(accessPoint)
+        )
       ).length;
     },
     hits() {
@@ -229,6 +238,44 @@ export default {
       ]);
       // Behind the page: it stands before these are read.
       this.fetchIqs();
+      this.listings = {};
+      this.providers.forEach((provider) => this.fetchListing(provider.id));
+    },
+    // A listing that cannot be read leaves its markers out, silently.
+    async fetchListing(id) {
+      const provider = this.providers.find((known) => known.id === id);
+      if (!provider || !canListAccessPoints(provider)) {
+        this.$delete(this.listings, id);
+        return;
+      }
+      try {
+        const response = await ApiAccessAppsService.getAccessPoints(
+          this.tenantId,
+          id
+        );
+        this.$set(
+          this.listings,
+          id,
+          Array.isArray(response?.data) ? response.data : []
+        );
+      } catch (error) {
+        this.$delete(this.listings, id);
+      }
+    },
+    listingOf(accessPoint) {
+      return this.listings[accessPoint.provider] || null;
+    },
+    // After a provider is saved or switched: the active providers anew, and
+    // behind them its listing and, for Salto KS, its IQs.
+    async refreshProvider(provider) {
+      await this.fetchProviders();
+      this.fetchListing(provider);
+      if (this.isSalto(provider)) await this.fetchIqs();
+    },
+    // An IQ activated changes what Salto KS lists of its locks.
+    async reloadIqs() {
+      this.fetchListing(SALTO_PROVIDER);
+      await this.fetchIqs();
     },
     async fetchIqs() {
       if (!this.saltoActive) {
@@ -322,8 +369,7 @@ export default {
       delete apps[provider];
       this.apps = apps;
       this.closeSettings(provider);
-      await this.fetchProviders();
-      if (this.isSalto(provider)) await this.fetchIqs();
+      await this.refreshProvider(provider);
     },
     // Switching keeps credentials, access points and assignments; the
     // active providers are read anew, since only they list and create.
@@ -344,14 +390,13 @@ export default {
         );
         return;
       }
-      await this.fetchProviders();
-      if (this.isSalto(provider)) await this.fetchIqs();
+      await this.refreshProvider(provider);
     },
     // The IQs of Salto KS stand right after its first save.
     async onAppSaved(provider, app) {
       this.apps = { ...this.apps, [provider]: app };
       this.closeSettings(provider);
-      if (this.isSalto(provider)) await this.fetchIqs();
+      await this.refreshProvider(provider);
     },
     // The creation starts in the section of a provider, so the provider is
     // settled before the dialog opens.
@@ -373,7 +418,8 @@ export default {
       const bookables = this.bookablesOf(accessPoint);
       return (
         matches(accessPoint, this.search, bookables) &&
-        (!this.onlyOpen || needsAction(accessPoint, bookables))
+        (!this.onlyOpen ||
+          needsAction(accessPoint, bookables, this.listingOf(accessPoint)))
       );
     },
     openAssign(accessPoint) {
@@ -601,7 +647,7 @@ export default {
           :iqs="iqs"
           :error="iqsError"
           :open.sync="iqsOpen"
-          :reload="fetchIqs"
+          :reload="reloadIqs"
         />
       </template>
       <div
@@ -620,6 +666,7 @@ export default {
         :key="item.id"
         :access-point="item"
         :bookables="bookablesOf(item)"
+        :listing="listingOf(item)"
         :fresh="item.id === freshId && needsAction(item, bookablesOf(item))"
         @assign="openAssign(item)"
         @edit="openEdit(item)"

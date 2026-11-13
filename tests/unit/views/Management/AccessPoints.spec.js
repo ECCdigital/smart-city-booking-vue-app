@@ -154,9 +154,26 @@ const PAREVA_LOCKER = {
 };
 
 /**
+ * What each provider lists by default: the access points stored for it, so
+ * none of them reads as entered by hand.
+ */
+function listingsOf(accessPoints) {
+  const listings = {};
+  accessPoints.forEach((accessPoint) => {
+    if (!listings[accessPoint.provider]) listings[accessPoint.provider] = [];
+    listings[accessPoint.provider].push(
+      listed(accessPoint.provider, accessPoint.externalId, accessPoint.label)
+    );
+  });
+  return listings;
+}
+
+/**
  * The Zugangspunkte page on its first tab, with the tenant's connected
  * providers and access points as the backend answers them. `bookables` may
- * be an error the backend answers instead.
+ * be an error the backend answers instead. `listings` are what each provider
+ * lists, an entry an error or a promise of its own; by default the access
+ * points stored for it.
  */
 async function mountAccessPointsPage({
   apps = [],
@@ -164,12 +181,19 @@ async function mountAccessPointsPage({
   accessPoints = [DOOR, PAREVA_LOCKER],
   bookables = [],
   bookings = [],
+  listings = listingsOf(accessPoints),
 } = {}) {
   ApiTenantService.getTenant.mockResolvedValue({
     data: { id: "t1", name: "Mandant", applications: apps },
   });
   ApiAccessAppsService.getProviders.mockResolvedValue({ data: providers });
-  ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+  ApiAccessAppsService.getAccessPoints.mockImplementation(
+    async (_, provider) => {
+      const listing = listings[provider];
+      if (listing instanceof Error) throw listing;
+      return { data: await (listing || []) };
+    }
+  );
   ApiAccessPointService.getAccessPoints.mockResolvedValue({
     data: accessPoints,
   });
@@ -2164,6 +2188,8 @@ describe("AccessPoints creates in the section of the provider", () => {
       providers: [NUKI, OPEN_LOCKER],
       accessPoints: [],
     });
+    // The page reads every listing behind it; the dialog asks for its own.
+    ApiAccessAppsService.getAccessPoints.mockClear();
 
     await create(wrapper, "Nuki");
 
@@ -3251,6 +3277,170 @@ describe("AccessPoints marks what differs from the standard", () => {
   });
 });
 
+const SALTO_DOOR = {
+  id: "ap-salto",
+  type: "door",
+  provider: "salto-ks",
+  label: "Labortür",
+  externalId: "salto-lock-1",
+  validationRules: [{ type: "qrScan" }],
+};
+
+/** The tone a marker of the row shows in. */
+function markerTone(wrapper, label, text) {
+  const marker = rowOf(wrapper, label)
+    .findAll("[data-test='access-point-marker']")
+    .wrappers.find((candidate) => candidate.text() === text);
+  return marker
+    .classes()
+    .find((name) => name.startsWith("access-point-row__marker--"))
+    .replace("access-point-row__marker--", "");
+}
+
+/**
+ * „von Hand“ and „IQ nicht aktiviert“ need what each provider lists
+ * (ECCdigital/tickets#1107). The page reads the listing of every active
+ * provider behind the page, without waiting for it, and leaves the markers
+ * out where a listing cannot be read.
+ */
+describe("AccessPoints marks what differs from the provider's listing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: [] });
+  });
+
+  const NUKI_BY_HAND = {
+    ...DOOR,
+    id: "ap-hand",
+    label: "Hintertür",
+    externalId: "lock-9",
+  };
+
+  async function mountListed(listings = {}, options = {}) {
+    return mountAccessPointsPage({
+      providers: [NUKI, PAREVA, SALTO, OPEN_LOCKER],
+      accessPoints: [
+        DOOR,
+        NUKI_BY_HAND,
+        PAREVA_LOCKER,
+        SALTO_DOOR,
+        OPEN_LOCKER_FACH,
+      ],
+      apps: [storedApp("nuki"), storedSalto()],
+      listings: {
+        nuki: [listed("nuki", "lock-1", "Haupteingang")],
+        "salto-ks": [
+          listed("salto-ks", "salto-lock-1", "Labortür", {
+            supportedModes: [],
+          }),
+        ],
+        "open-locker": [],
+        ...listings,
+      },
+      ...options,
+    });
+  }
+
+  it("marks a door that is not in the provider's listing as entered by hand", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Hintertür")).toEqual(["von Hand"]);
+    expect(markersOf(wrapper, "Haupteingang")).toEqual([]);
+    expect(await tooltipOf(wrapper, "Hintertür", "von Hand")).toBe(
+      "Dieser Zugangspunkt steht nicht in der Liste des Anbieters, er wurde von Hand eingetragen."
+    );
+  });
+
+  it("marks no access point of a provider that has no listing or takes none by hand", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
+    expect(markersOf(wrapper, "Labor Fachbank 1 · Fach 2")).toEqual([]);
+    expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalledWith(
+      "t1",
+      "pareva"
+    );
+  });
+
+  it("warns in yellow at a Salto KS door whose IQ is not activated", async () => {
+    const wrapper = await mountListed();
+
+    expect(markersOf(wrapper, "Labortür")).toEqual(["IQ nicht aktiviert"]);
+    expect(markerTone(wrapper, "Labortür", "IQ nicht aktiviert")).toBe(
+      "warning"
+    );
+    expect(await tooltipOf(wrapper, "Labortür", "IQ nicht aktiviert")).toBe(
+      "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist."
+    );
+  });
+
+  it("counts a door whose IQ is not activated as open, assigned or not", async () => {
+    const wrapper = await mountListed(
+      {},
+      {
+        bookables: [
+          {
+            id: "b1",
+            title: "Labor",
+            accessPointDetails: {
+              accessPointIds: [
+                DOOR.id,
+                NUKI_BY_HAND.id,
+                PAREVA_LOCKER.id,
+                SALTO_DOOR.id,
+                OPEN_LOCKER_FACH.id,
+              ],
+            },
+          },
+        ],
+      }
+    );
+
+    expect(openToggle(wrapper).text()).toBe("Offen (1)");
+    await openToggle(wrapper).trigger("click");
+    await settle(wrapper);
+    expect(rowLabels(wrapper)).toHaveLength(1);
+    expect(rowLabels(wrapper)[0]).toMatch(/^Labortür/);
+  });
+
+  it("reads the listing of Salto KS anew once a step of the IQ wizard is done", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({
+      data: [{ ...IQ, id: "1", state: "pending_pin" }],
+    });
+    ApiAccessAppsService.startSaltoIqActivation.mockResolvedValue({});
+    const wrapper = await mountListed();
+    expect(markersOf(wrapper, "Labortür")).toEqual(["IQ nicht aktiviert"]);
+    answerListings({
+      "salto-ks": [listed("salto-ks", "salto-lock-1", "Labortür")],
+    });
+
+    await click(wrapper, await unfoldIqs(wrapper), "PIN-Mail erneut senden");
+
+    expect(markersOf(wrapper, "Labortür")).toEqual([]);
+  });
+
+  it("leaves the markers out where a listing cannot be read, and says nothing", async () => {
+    const wrapper = await mountListed({
+      nuki: new Error("Network"),
+      "salto-ks": new Error("Network"),
+    });
+
+    expect(markersOf(wrapper, "Hintertür")).toEqual([]);
+    expect(markersOf(wrapper, "Labortür")).toEqual([]);
+    expect(wrapper.find(".v-alert").exists()).toBe(false);
+  });
+
+  it("shows the rows before the listings are read", async () => {
+    const wrapper = await mountListed({
+      nuki: new Promise(() => {}),
+      "salto-ks": new Promise(() => {}),
+    });
+
+    expect(rowLabels(wrapper)).toContain("Hintertür");
+    expect(markersOf(wrapper, "Hintertür")).toEqual([]);
+  });
+});
+
 /** The labels of the rows the page shows, top to bottom. */
 function rowLabels(wrapper) {
   return wrapper
@@ -3653,6 +3843,7 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
 
   it("asks a Pareva Schließfachanlage for its Produkt-ID and Bezeichnung alone", async () => {
     const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    ApiAccessAppsService.getAccessPoints.mockClear();
     await create(wrapper, "Pareva");
 
     const card = pointDialog(wrapper);

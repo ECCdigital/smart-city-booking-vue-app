@@ -3001,6 +3001,14 @@
           "withoutQrScan": {
             "label": "ohne QR-Scan",
             "tooltip": "Abweichend vom Standard des Anbieters öffnet dieser Zugangspunkt ohne QR-Scan."
+          },
+          "byHand": {
+            "label": "von Hand",
+            "tooltip": "Dieser Zugangspunkt steht nicht in der Liste des Anbieters, er wurde von Hand eingetragen."
+          },
+          "iqOff": {
+            "label": "IQ nicht aktiviert",
+            "tooltip": "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist."
           }
         },
         "qr": {

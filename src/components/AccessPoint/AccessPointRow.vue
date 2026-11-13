@@ -27,6 +27,9 @@ export default {
     // The bookables it is assigned to; `null` where they were not readable,
     // so the row makes no claim about them.
     bookables: { type: Array, default: null },
+    // What its provider lists, for „von Hand“ and „IQ nicht aktiviert“;
+    // `null` while not read.
+    listing: { type: Array, default: null },
     fresh: { type: Boolean, default: false },
   },
   computed: {
@@ -37,7 +40,7 @@ export default {
       return metaLine(this.accessPoint);
     },
     markers() {
-      return deviations(this.accessPoint);
+      return deviations(this.accessPoint, this.listing);
     },
     hasQr() {
       return hasQr(this.accessPoint);
@@ -224,6 +227,12 @@ export default {
 .access-point-row__marker--neutral {
   border: 1px solid var(--scb-surface-border);
   color: var(--scb-text-muted);
+}
+
+.access-point-row__marker--warning {
+  border: 1px solid var(--v-warning-base);
+  background: var(--scb-warning-tint);
+  color: var(--scb-text);
 }
 
 .access-point-row__meta {
