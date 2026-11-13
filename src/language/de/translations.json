@@ -2873,9 +2873,43 @@
         "createDoor": "Tür anlegen",
         "createLockerSystem": "Schließfachanlage anlegen"
       },
+      "search": {
+        "fields": "Bezeichnung, ID, Standort, Art oder Buchungsobjekt",
+        "hits": "{hits} von {total}",
+        "none": "Keine Treffer bei {provider}.",
+        "open": "Offen ({count})"
+      },
       "row": {
-        "unassigned": "Keinem Buchungsobjekt zugeordnet",
-        "assignmentForbidden": "Nicht abrufbar"
+        "assignmentForbidden": "Nicht abrufbar",
+        "assign": "Buchungsobjekt zuordnen",
+        "more": "Weitere Aktionen",
+        "markers": {
+          "withQrScan": {
+            "label": "mit QR-Scan",
+            "tooltip": "Abweichend vom Standard des Anbieters verlangt dieser Zugangspunkt den QR-Scan."
+          },
+          "withoutQrScan": {
+            "label": "ohne QR-Scan",
+            "tooltip": "Abweichend vom Standard des Anbieters öffnet dieser Zugangspunkt ohne QR-Scan."
+          }
+        },
+        "qr": {
+          "door": "QR-Code drucken (PDF, A4)",
+          "compartment": "QR-Code des Fachs drucken (PDF, A4)",
+          "compartments": "QR-Codes der Fächer: einzeln oder als Sammel-PDF"
+        },
+        "actions": {
+          "svg": "QR-Code als SVG",
+          "png": "QR-Code als PNG",
+          "rotate": "Scan-Code rotieren …",
+          "rotateAll": "Alle Scan-Codes rotieren …",
+          "delete": "Löschen …"
+        },
+        "kind": {
+          "lockerSystem": "Schließfachanlage",
+          "fixedCompartment": "festes Fach",
+          "compartments": "1 Fach | {count} Fächer"
+        }
       },
       "types": {
         "door": "Tür",
@@ -3000,7 +3034,6 @@
         "error": "Der QR-Code konnte nicht erzeugt werden."
       },
       "rotate": {
-        "action": "Scan-Code rotieren",
         "title": "Scan-Code rotieren",
         "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
         "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
@@ -3024,8 +3057,6 @@
         "error": "Der Scan-Code konnte nicht rotiert werden."
       },
       "compartmentQr": {
-        "action": "QR-Codes der Fächer",
-        "menu": "QR-Codes der Fächer …",
         "title": "QR-Codes der Fächer",
         "subtitle": "{label} · 1 Fach | {label} · {count} Fächer",
         "printAll": "Alle drucken (Sammel-PDF)",
@@ -3040,7 +3071,6 @@
         "empty": "Diese Schließfachanlage hat noch keine Fächer."
       },
       "delete": {
-        "action": "Löschen",
         "title": "Zugangspunkt löschen",
         "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
         "confirm": "Löschen",
@@ -3103,6 +3133,10 @@
         "deleted": {
           "title": "Gelöscht",
           "message": "Der Zugangspunkt wurde gelöscht."
+        },
+        "assignAtBookable": {
+          "title": "Zuordnen am Buchungsobjekt",
+          "message": "Ordnen Sie den Zugangspunkt vorerst am Buchungsobjekt zu, im Bereich „Schließsysteme“."
         },
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",

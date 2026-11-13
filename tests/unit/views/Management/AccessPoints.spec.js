@@ -8,6 +8,7 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, forbiddenError } from "@tests/unit/support/api";
+import { typeSearch } from "@tests/unit/support/search";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenant: vi.fn(), submitTenant: vi.fn() },
@@ -484,7 +485,7 @@ describe("AccessPoints shows a section per connected provider", () => {
 
     const pareva = sectionOf(wrapper, "Pareva");
     expect(pareva.text()).toContain("Schließfächer Rathaus");
-    expect(pareva.find(".row-menu").exists()).toBe(true);
+    expect(pareva.find("[data-test='row-menu']").exists()).toBe(true);
   });
 
   it("says so when there is nothing to show", async () => {
@@ -651,15 +652,32 @@ function rowOf(wrapper, label) {
 
 /** The row menu detaches into the `data-app` container, so it is read there. */
 async function openRowMenu(wrapper, label) {
-  await rowOf(wrapper, label).find(".row-menu").trigger("click");
+  await rowOf(wrapper, label).find("[data-test='row-menu']").trigger("click");
   await wrapper.vm.$nextTick();
   await wrapper.vm.$nextTick();
   return document.querySelector(".menuable__content__active");
 }
 
-async function clickRowAction(wrapper, label, selector) {
+/** The entries of the row menu „…“, top to bottom. */
+async function menuEntries(wrapper, label) {
   const menu = await openRowMenu(wrapper, label);
-  menu.querySelector(selector).click();
+  return [...menu.querySelectorAll(".v-list-item")].map((item) =>
+    item.textContent.trim()
+  );
+}
+
+/** Clicks the entry of the row menu with the key of its action. */
+async function clickRowAction(wrapper, label, key) {
+  const menu = await openRowMenu(wrapper, label);
+  menu.querySelector(`[data-test='row-action-${key}']`).click();
+  await settle(wrapper);
+}
+
+/** Clicks one of the icons the row shows: `qr` or `edit`. */
+async function clickRowIcon(wrapper, label, name) {
+  await rowOf(wrapper, label)
+    .find(`[data-test='row-${name}']`)
+    .trigger("click");
   await settle(wrapper);
 }
 
@@ -667,70 +685,175 @@ function dialogCard(wrapper, name) {
   return wrapper.findComponent({ name }).findComponent({ name: "v-card" });
 }
 
+const IFBS = { id: "ifbs", title: "iFBS", providerCapabilities: [] };
+
+const IFBS_LOCKER = {
+  id: "ap-ifbs",
+  type: "locker",
+  provider: "ifbs",
+  label: "Fahrradboxen Bahnhof",
+  externalId: "LOC-4711",
+  validationRules: [],
+};
+
+/** One access point of each kind and provider the menu tells apart. */
+async function mountEveryKind() {
+  return mountAccessPointsPage({
+    providers: [NUKI, PAREVA, OPEN_LOCKER, IFBS],
+    accessPoints: [
+      DOOR,
+      PAREVA_LOCKER,
+      OPEN_LOCKER_FACH,
+      OPEN_LOCKER_ANLAGE,
+      IFBS_LOCKER,
+    ],
+  });
+}
+
 /**
- * The rows are provisional until the row of an access point gets its own
- * component (ECCdigital/tickets#1108); what was reachable from the list stays
- * reachable from them.
+ * QR-Code and Bearbeiten stand in each row as icons, always in the same
+ * place; what is rare lies in the menu „…“, by kind and provider
+ * (ECCdigital/tickets#1108). Each action leads where it led before.
  */
-describe("AccessPoints keeps the actions of each access point", () => {
+describe("AccessPoints offers the actions of each access point", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("the assignment", () => {
-    it("names the bookables an access point is assigned to", async () => {
-      const wrapper = await mountAccessPointsPage({
-        bookables: [
-          {
-            id: "b1",
-            title: "Besprechungsraum",
-            accessPointDetails: { accessPointIds: [DOOR.id] },
-          },
-        ],
-      });
+  it("shows the QR code at doors, fixed Fächer and Open Locker Schließfachanlagen", async () => {
+    const wrapper = await mountEveryKind();
 
-      expect(rowOf(wrapper, "Haupteingang").text()).toContain(
-        "Besprechungsraum"
-      );
-      expect(rowOf(wrapper, "Schließfächer Rathaus").text()).toContain(
-        "Keinem Buchungsobjekt zugeordnet"
-      );
+    const hasQr = (label) =>
+      rowOf(wrapper, label).find("[data-test='row-qr']").exists();
+    expect(hasQr("Haupteingang")).toBe(true);
+    expect(hasQr("Labor Fachbank 1 · Fach 2")).toBe(true);
+    expect(hasQr("Fahrradgarage Süd")).toBe(true);
+    expect(hasQr("Schließfächer Rathaus")).toBe(false);
+    expect(hasQr("Fahrradboxen Bahnhof")).toBe(false);
+  });
+
+  it("shows Bearbeiten in every row", async () => {
+    const wrapper = await mountEveryKind();
+
+    [
+      "Haupteingang",
+      "Schließfächer Rathaus",
+      "Labor Fachbank 1 · Fach 2",
+      "Fahrradgarage Süd",
+      "Fahrradboxen Bahnhof",
+    ].forEach((label) => {
+      expect(
+        rowOf(wrapper, label).find("[data-test='row-edit']").exists()
+      ).toBe(true);
     });
+  });
 
-    // „Not assigned“ is a claim about the bookables; on a denial the page
-    // cannot make it, so it says why instead.
-    it("does not claim 'not assigned' when the bookables are forbidden", async () => {
-      const wrapper = await mountAccessPointsPage({
-        bookables: forbiddenError(),
-      });
+  it.each([
+    [
+      "a door",
+      "Haupteingang",
+      [
+        "QR-Code als SVG",
+        "QR-Code als PNG",
+        "Scan-Code rotieren …",
+        "Löschen …",
+      ],
+    ],
+    [
+      "a fixed Fach",
+      "Labor Fachbank 1 · Fach 2",
+      [
+        "QR-Code als SVG",
+        "QR-Code als PNG",
+        "Scan-Code rotieren …",
+        "Löschen …",
+      ],
+    ],
+    [
+      "an Open Locker Schließfachanlage",
+      "Fahrradgarage Süd",
+      ["Alle Scan-Codes rotieren …", "Löschen …"],
+    ],
+    ["a Pareva Schließfachanlage", "Schließfächer Rathaus", ["Löschen …"]],
+    ["an iFBS Schließfachanlage", "Fahrradboxen Bahnhof", ["Löschen …"]],
+  ])("lists in the menu of %s what is rare", async (_, label, entries) => {
+    const wrapper = await mountEveryKind();
 
-      const row = rowOf(wrapper, "Haupteingang").text();
-      expect(row).toContain("Nicht abrufbar");
-      expect(row).not.toContain("Keinem Buchungsobjekt zugeordnet");
-      expect(wrapper.text()).toContain(
-        "Sie haben keinen Zugriff auf Buchungsobjekte"
-      );
-    });
+    expect(await menuEntries(wrapper, label)).toEqual(entries);
   });
 
   it("opens the dialog of the access point from „Bearbeiten“", async () => {
     const wrapper = await mountAccessPointsPage();
 
-    await clickRowAction(wrapper, "Haupteingang", ".edit-access-point");
+    await clickRowIcon(wrapper, "Haupteingang", "edit");
 
     const card = dialogCard(wrapper, "AccessPointEditDialog");
     expect(card.text()).toContain("Zugangspunkt bearbeiten");
     expect(card.find(".label-field input").element.value).toBe("Haupteingang");
   });
 
+  it("loads the PDF of a door from the QR code, without a dialog", async () => {
+    ApiAccessPointService.getQrCode.mockResolvedValue({
+      data: new Blob(["%PDF"]),
+      headers: {},
+    });
+    const wrapper = await mountAccessPointsPage();
+
+    await clickRowIcon(wrapper, "Haupteingang", "qr");
+
+    expect(ApiAccessPointService.getQrCode).toHaveBeenCalledWith(
+      "ap-door",
+      "pdf",
+      "t1"
+    );
+  });
+
+  it("loads the SVG and the PNG of a fixed Fach from the menu", async () => {
+    ApiAccessPointService.getQrCode.mockResolvedValue({
+      data: new Blob(["<svg/>"]),
+      headers: {},
+    });
+    const wrapper = await mountEveryKind();
+
+    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "svg");
+    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "png");
+
+    expect(ApiAccessPointService.getQrCode.mock.calls).toEqual([
+      ["ap-open-locker", "svg", "t1"],
+      ["ap-open-locker", "png", "t1"],
+    ]);
+  });
+
   it("asks before rotating the scan code of a door", async () => {
     const wrapper = await mountAccessPointsPage();
 
-    await clickRowAction(wrapper, "Haupteingang", ".rotate-access-point");
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
 
     expect(dialogCard(wrapper, "AccessPointRotateDialog").text()).toContain(
       "Scan-Code rotieren"
     );
+  });
+
+  it("opens „QR-Codes der Fächer“ of a Schließfachanlage from the QR code", async () => {
+    const wrapper = await mountEveryKind();
+
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    const text = dialogCard(wrapper, "AccessPointCompartmentQrDialog").text();
+    expect(text).toContain("QR-Codes der Fächer");
+    expect(text).toContain("Fahrradgarage Süd");
+  });
+
+  // Until the dialog opens on „Alle Fächer“ with the question
+  // (ECCdigital/tickets#1111), all are rotated from the same dialog.
+  it("opens „QR-Codes der Fächer“ from „Alle Scan-Codes rotieren …“", async () => {
+    const wrapper = await mountEveryKind();
+
+    await clickRowAction(wrapper, "Fahrradgarage Süd", "rotate-all");
+
+    expect(
+      dialogCard(wrapper, "AccessPointCompartmentQrDialog").text()
+    ).toContain("Fahrradgarage Süd");
   });
 
   /**
@@ -765,11 +888,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
         ],
       });
 
-      await clickRowAction(
-        wrapper,
-        "Schließfächer Rathaus",
-        ".delete-access-point"
-      );
+      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
 
       const text = dialogCard(wrapper, "AccessPointDeleteDialog").text();
       expect(text).toContain("„Schließfächer Rathaus“");
@@ -781,11 +900,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
       const wrapper = await mountAccessPointsPage();
       ApiBookingService.getBookings.mockRejectedValue(forbiddenError());
 
-      await clickRowAction(
-        wrapper,
-        "Schließfächer Rathaus",
-        ".delete-access-point"
-      );
+      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
 
       expect(dialogCard(wrapper, "AccessPointDeleteDialog").text()).toContain(
         "konnten nicht gelesen werden"
@@ -796,11 +911,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
       ApiAccessPointService.deleteAccessPoint.mockResolvedValue({});
       const wrapper = await mountAccessPointsPage();
 
-      await clickRowAction(
-        wrapper,
-        "Schließfächer Rathaus",
-        ".delete-access-point"
-      );
+      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
       await dialogCard(wrapper, "AccessPointDeleteDialog")
         .find(".confirm-delete")
         .trigger("click");
@@ -839,7 +950,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
       );
       const wrapper = await mountAccessPointsPage();
 
-      await clickRowAction(wrapper, "Haupteingang", ".download-qr-pdf");
+      await clickRowIcon(wrapper, "Haupteingang", "qr");
 
       expect(ApiAccessPointService.getQrCode).toHaveBeenCalledWith(
         "ap-door",
@@ -866,7 +977,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
       );
       const wrapper = await mountAccessPointsPage();
 
-      await clickRowAction(wrapper, "Haupteingang", ".download-qr-svg");
+      await clickRowAction(wrapper, "Haupteingang", "svg");
 
       expect(addToast).toHaveBeenCalledWith(
         expect.anything(),
@@ -878,78 +989,378 @@ describe("AccessPoints keeps the actions of each access point", () => {
       );
     });
   });
+});
 
-  /**
-   * „QR-Codes der Fächer“ (ECCdigital/tickets#1056): a button in the row and
-   * an entry in its menu, both only at an Anlage that carries its own Fächer.
-   */
-  describe("the QR codes of the Fächer", () => {
-    async function mountWithFaecher() {
-      return mountAccessPointsPage({
-        providers: [NUKI, PAREVA, OPEN_LOCKER],
-        accessPoints: [
-          DOOR,
-          PAREVA_LOCKER,
-          OPEN_LOCKER_FACH,
-          OPEN_LOCKER_ANLAGE,
-        ],
-      });
-    }
+/** The small line under the label of a row. */
+function metaOf(wrapper, label) {
+  return rowOf(wrapper, label).find("[data-test='access-point-meta']").text();
+}
 
-    it("offers the button only at an Open Locker Schließfachanlage", async () => {
-      const wrapper = await mountWithFaecher();
+/**
+ * Each access point is a slim row (ECCdigital/tickets#1108): its label large,
+ * beneath it small the id at the provider and the Standort, and for a
+ * Schließfachanlage or a fixed Fach its kind in front.
+ */
+describe("AccessPoints shows each access point as a slim row", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-      expect(
-        rowOf(wrapper, "Fahrradgarage Süd").find(".compartment-qr").text()
-      ).toContain("QR-Codes der Fächer");
-      [
-        "Haupteingang",
-        "Schließfächer Rathaus",
-        "Labor Fachbank 1 · Fach 2",
-      ].forEach((label) => {
-        expect(rowOf(wrapper, label).find(".compartment-qr").exists()).toBe(
-          false
-        );
-      });
+  it("shows every row of a section, without paging", async () => {
+    const doors = Array.from({ length: 30 }, (_, i) => ({
+      ...DOOR,
+      id: `ap-door-${i}`,
+      label: `Tür ${i + 1}`,
+    }));
+    const wrapper = await mountAccessPointsPage({ accessPoints: doors });
+
+    expect(
+      sectionOf(wrapper, "Nuki").findAll("[data-test='access-point-row']")
+    ).toHaveLength(30);
+  });
+
+  it("names id and Standort under the label, the kind only where it is no door", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, PAREVA, OPEN_LOCKER],
+      accessPoints: [
+        {
+          ...DOOR,
+          location: { display_address: "Rathausplatz 1, 24103 Kiel" },
+        },
+        PAREVA_LOCKER,
+        OPEN_LOCKER_FACH,
+        OPEN_LOCKER_ANLAGE,
+      ],
     });
 
-    it.each([
-      ["a Pareva Schließfachanlage", "Schließfächer Rathaus"],
-      ["a door", "Haupteingang"],
-      ["a fixed Fach", "Labor Fachbank 1 · Fach 2"],
-    ])("has no menu entry at %s", async (_, label) => {
-      const wrapper = await mountWithFaecher();
+    expect(metaOf(wrapper, "Haupteingang")).toBe(
+      "lock-1 · Rathausplatz 1, 24103 Kiel"
+    );
+    expect(metaOf(wrapper, "Schließfächer Rathaus")).toBe(
+      "Schließfachanlage · 66570d1a1f9b6357ed971746"
+    );
+    expect(metaOf(wrapper, "Labor Fachbank 1 · Fach 2")).toBe(
+      "festes Fach · 4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d"
+    );
+    expect(metaOf(wrapper, "Fahrradgarage Süd")).toBe(
+      "Schließfachanlage · 1 Fach"
+    );
+  });
+});
 
-      const menu = await openRowMenu(wrapper, label);
+/** The bookables of a row, as its chips name them. */
+function chipsOf(wrapper, label) {
+  return rowOf(wrapper, label)
+    .findAll("[data-test='access-point-bookable']")
+    .wrappers.map((chip) => chip.text());
+}
 
-      expect(menu.querySelector(".open-compartment-qr")).toBe(null);
+/**
+ * The bookables an access point is assigned to stand as chips in its row;
+ * without one the same place offers the assignment (ECCdigital/tickets#1108).
+ */
+describe("AccessPoints shows the assignment in the row", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("names the assigned bookables as chips, else offers the assignment", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: [
+        {
+          id: "b1",
+          title: "Besprechungsraum",
+          accessPointDetails: { accessPointIds: [DOOR.id] },
+        },
+        {
+          id: "b2",
+          title: "Werkstatt",
+          accessPointDetails: { accessPointIds: [DOOR.id] },
+        },
+      ],
     });
 
-    it("opens the dialog of the Schließfachanlage from the button", async () => {
-      const wrapper = await mountWithFaecher();
+    expect(chipsOf(wrapper, "Haupteingang")).toEqual([
+      "Besprechungsraum",
+      "Werkstatt",
+    ]);
+    expect(
+      rowOf(wrapper, "Haupteingang")
+        .find("[data-test='assign-bookable']")
+        .exists()
+    ).toBe(false);
+    expect(chipsOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
+    expect(
+      rowOf(wrapper, "Schließfächer Rathaus")
+        .find("[data-test='assign-bookable']")
+        .text()
+    ).toBe("Buchungsobjekt zuordnen");
+  });
 
-      await rowOf(wrapper, "Fahrradgarage Süd")
-        .find(".compartment-qr")
-        .trigger("click");
-      await settle(wrapper);
+  // Until the page assigns itself, the button points to the area at the
+  // bookable, where the assignment is made today.
+  it("points to the area at the bookable from the assignment", async () => {
+    const wrapper = await mountAccessPointsPage();
 
-      const text = dialogCard(wrapper, "AccessPointCompartmentQrDialog").text();
-      expect(text).toContain("QR-Codes der Fächer");
-      expect(text).toContain("Fahrradgarage Süd");
+    await rowOf(wrapper, "Schließfächer Rathaus")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(addToast).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        type: "info",
+        message: expect.stringContaining("Schließsysteme"),
+      })
+    );
+  });
+
+  // „Not assigned“ is a claim about the bookables; on a denial the page
+  // cannot make it, so it says why instead.
+  it("does not offer the assignment when the bookables are forbidden", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: forbiddenError(),
     });
 
-    it("opens the same dialog from the row menu", async () => {
-      const wrapper = await mountWithFaecher();
+    const row = rowOf(wrapper, "Haupteingang");
+    expect(row.text()).toContain("Nicht abrufbar");
+    expect(row.find("[data-test='assign-bookable']").exists()).toBe(false);
+    expect(wrapper.text()).toContain(
+      "Sie haben keinen Zugriff auf Buchungsobjekte"
+    );
+  });
+});
 
-      await clickRowAction(
-        wrapper,
-        "Fahrradgarage Süd",
-        ".open-compartment-qr"
-      );
+/** The markers at the label of a row. */
+function markersOf(wrapper, label) {
+  return rowOf(wrapper, label)
+    .findAll("[data-test='access-point-marker']")
+    .wrappers.map((marker) => marker.text());
+}
 
-      expect(
-        dialogCard(wrapper, "AccessPointCompartmentQrDialog").text()
-      ).toContain("Fahrradgarage Süd");
+/** The sentence a marker's tooltip shows; it detaches into `data-app`. */
+async function tooltipOf(wrapper, label, text) {
+  const marker = rowOf(wrapper, label)
+    .findAll("[data-test='access-point-marker']")
+    .wrappers.find((candidate) => candidate.text() === text);
+  await marker.trigger("mouseenter");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await wrapper.vm.$nextTick();
+  const sentence = document
+    .querySelector(".v-tooltip__content.menuable__content__active")
+    .textContent.trim();
+  await marker.trigger("mouseleave");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await wrapper.vm.$nextTick();
+  return sentence;
+}
+
+/**
+ * A row marks only what differs from the standard (ECCdigital/tickets#1108):
+ * the QR scan against what its provider starts with - Nuki and Salto KS with,
+ * Open Locker without; iFBS and Pareva know none.
+ */
+describe("AccessPoints marks what differs from the standard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function mountWithScans() {
+    return mountAccessPointsPage({
+      providers: [NUKI, PAREVA, OPEN_LOCKER],
+      accessPoints: [
+        DOOR,
+        { ...DOOR, id: "ap-side", label: "Seiteneingang", validationRules: [] },
+        PAREVA_LOCKER,
+        OPEN_LOCKER_FACH,
+        {
+          ...OPEN_LOCKER_ANLAGE,
+          validationRules: [{ type: "qrScan" }],
+        },
+      ],
     });
+  }
+
+  it("marks nothing where the access point keeps the standard", async () => {
+    const wrapper = await mountWithScans();
+
+    expect(markersOf(wrapper, "Haupteingang")).toEqual([]);
+    expect(markersOf(wrapper, "Labor Fachbank 1 · Fach 2")).toEqual([]);
+    expect(markersOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
+  });
+
+  it("marks a QR scan that differs from the provider's standard", async () => {
+    const wrapper = await mountWithScans();
+
+    expect(markersOf(wrapper, "Seiteneingang")).toEqual(["ohne QR-Scan"]);
+    expect(markersOf(wrapper, "Fahrradgarage Süd")).toEqual(["mit QR-Scan"]);
+  });
+
+  it("explains each marker in one sentence", async () => {
+    const wrapper = await mountWithScans();
+
+    expect(await tooltipOf(wrapper, "Seiteneingang", "ohne QR-Scan")).toBe(
+      "Abweichend vom Standard des Anbieters öffnet dieser Zugangspunkt ohne QR-Scan."
+    );
+    expect(await tooltipOf(wrapper, "Fahrradgarage Süd", "mit QR-Scan")).toBe(
+      "Abweichend vom Standard des Anbieters verlangt dieser Zugangspunkt den QR-Scan."
+    );
+  });
+});
+
+/** The labels of the rows the page shows, top to bottom. */
+function rowLabels(wrapper) {
+  return wrapper
+    .findAll("[data-test='access-point-row'] .access-point-row__label")
+    .wrappers.map((label) => label.text().split("\n")[0].trim());
+}
+
+async function search(wrapper, text) {
+  await typeSearch(wrapper.find("[data-test='access-point-search']"), text);
+  await settle(wrapper);
+}
+
+function hitCount(wrapper) {
+  const count = wrapper.find("[data-test='access-point-hits']");
+  return count.exists() ? count.text() : null;
+}
+
+/**
+ * One search over all sections (ECCdigital/tickets#1108), in the UI over the
+ * loaded access points: it reads label, id, Standort, kind and bookables,
+ * counts the hits against all, and shrinks a section without one to its head.
+ */
+describe("AccessPoints searches over all sections", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function mountForSearch() {
+    return mountAccessPointsPage({
+      providers: [NUKI, PAREVA, OPEN_LOCKER],
+      accessPoints: [
+        {
+          ...DOOR,
+          location: { display_address: "Holstenstraße 1, 24103 Kiel" },
+        },
+        PAREVA_LOCKER,
+        OPEN_LOCKER_FACH,
+        OPEN_LOCKER_ANLAGE,
+      ],
+      bookables: [
+        {
+          id: "b1",
+          title: "Besprechungsraum",
+          accessPointDetails: { accessPointIds: [OPEN_LOCKER_ANLAGE.id] },
+        },
+      ],
+    });
+  }
+
+  it("counts nothing while nothing is searched", async () => {
+    const wrapper = await mountForSearch();
+
+    expect(rowLabels(wrapper)).toHaveLength(4);
+    expect(hitCount(wrapper)).toBeNull();
+  });
+
+  it.each([
+    ["the label", "rathaus", "Schließfächer Rathaus"],
+    ["the id at the provider", "lock-1", "Haupteingang"],
+    ["the Standort", "holstenstraße", "Haupteingang"],
+    ["the kind", "festes fach", "Labor Fachbank 1 · Fach 2"],
+    ["the bookables", "besprechung", "Fahrradgarage Süd"],
+  ])("finds an access point by %s", async (_, text, label) => {
+    const wrapper = await mountForSearch();
+
+    await search(wrapper, text);
+
+    expect(rowLabels(wrapper)).toEqual([label]);
+    expect(hitCount(wrapper)).toBe("1 von 4");
+  });
+
+  it("shrinks a section without hits to its head", async () => {
+    const wrapper = await mountForSearch();
+
+    await search(wrapper, "fach");
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(nuki.findAll("[data-test='access-point-row']")).toHaveLength(0);
+    expect(nuki.text()).toContain("Keine Treffer bei Nuki.");
+    expect(sectionOf(wrapper, "Open Locker").text()).not.toContain(
+      "Keine Treffer"
+    );
+    expect(hitCount(wrapper)).toBe("3 von 4");
+  });
+});
+
+function openToggle(wrapper) {
+  return wrapper.find("[data-test='access-point-open']");
+}
+
+/**
+ * „Offen (n)“ beside the search shows what is still to do
+ * (ECCdigital/tickets#1108): access points without a bookable.
+ */
+describe("AccessPoints shows what is open", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const ASSIGNED_DOOR = [
+    {
+      id: "b1",
+      title: "Besprechungsraum",
+      accessPointDetails: { accessPointIds: [DOOR.id] },
+    },
+  ];
+
+  it("counts the access points without a bookable", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, PAREVA, OPEN_LOCKER],
+      accessPoints: [DOOR, PAREVA_LOCKER, OPEN_LOCKER_ANLAGE],
+      bookables: ASSIGNED_DOOR,
+    });
+
+    expect(openToggle(wrapper).text()).toBe("Offen (2)");
+  });
+
+  it("shows only the open ones once chosen, over all sections", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: ASSIGNED_DOOR });
+
+    await openToggle(wrapper).trigger("click");
+    await settle(wrapper);
+
+    expect(rowLabels(wrapper)).toEqual(["Schließfächer Rathaus"]);
+    expect(sectionOf(wrapper, "Nuki").text()).toContain(
+      "Keine Treffer bei Nuki."
+    );
+    expect(hitCount(wrapper)).toBe("1 von 2");
+
+    await openToggle(wrapper).trigger("click");
+    await settle(wrapper);
+
+    expect(rowLabels(wrapper)).toHaveLength(2);
+    expect(hitCount(wrapper)).toBeNull();
+  });
+
+  it("narrows the search to the open ones", async () => {
+    const wrapper = await mountAccessPointsPage({ bookables: ASSIGNED_DOOR });
+
+    await openToggle(wrapper).trigger("click");
+    await search(wrapper, "haupteingang");
+
+    expect(rowLabels(wrapper)).toEqual([]);
+    expect(hitCount(wrapper)).toBe("0 von 2");
+  });
+
+  // Without the bookables the page cannot tell what is unassigned.
+  it("offers no „Offen“ when the bookables are forbidden", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: forbiddenError(),
+    });
+
+    expect(openToggle(wrapper).exists()).toBe(false);
   });
 });
