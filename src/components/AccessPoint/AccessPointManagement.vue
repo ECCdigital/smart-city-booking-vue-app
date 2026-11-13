@@ -761,6 +761,7 @@ export default {
       :empty="!section.accessPoints.length"
       :fresh="section.provider.id === freshProvider"
       :open-iqs="openIqsOf(section.provider.id)"
+      :shrunk="filtering && !section.rows.length"
       class="mb-5"
       @create="openCreate(section.provider.id)"
       @settings="toggleSettings(section.provider.id)"
@@ -792,7 +793,7 @@ export default {
         />
       </template>
       <div
-        v-if="filtering && section.accessPoints.length && !section.rows.length"
+        v-if="filtering && !section.rows.length"
         class="access-point-none"
         data-test="access-point-none"
       >

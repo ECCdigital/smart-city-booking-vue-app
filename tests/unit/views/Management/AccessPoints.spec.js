@@ -4057,6 +4057,69 @@ describe("AccessPoints searches over all sections", () => {
     );
     expect(hitCount(wrapper)).toBe("3 von 4");
   });
+
+  // Story 67 of ECCdigital/tickets#1082: a section without hits is its
+  // head and the line, whatever else it holds.
+  it("shrinks a section without access points to its head as well", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, PAREVA],
+      apps: [storedApp("nuki"), storedApp("pareva")],
+      accessPoints: [PAREVA_LOCKER],
+    });
+
+    await search(wrapper, "rathaus");
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(nuki.text()).toContain("Keine Treffer bei Nuki.");
+    expect(nuki.find("[data-test='provider-section-empty']").exists()).toBe(
+      false
+    );
+  });
+
+  it("folds away the settings and the fault of a shrunk section, and keeps them", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, PAREVA],
+      apps: [
+        storedApp("nuki", {
+          connectionState: "failing",
+          lastTest: { success: false, testedAt: 1, error: "Unauthorized" },
+        }),
+        storedApp("pareva"),
+      ],
+    });
+    await openSettings(wrapper, "Nuki");
+
+    await search(wrapper, "rathaus");
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(nuki.find("[data-test='provider-section-failing']").exists()).toBe(
+      false
+    );
+    expect(settingsOf(wrapper, "Nuki").isVisible()).toBe(false);
+
+    await search(wrapper, "");
+
+    expect(settingsOf(wrapper, "Nuki").isVisible()).toBe(true);
+    expect(
+      sectionOf(wrapper, "Nuki")
+        .find("[data-test='provider-section-failing']")
+        .exists()
+    ).toBe(true);
+  });
+
+  it("folds away the IQs of a shrunk section", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: threeIqs() });
+    const wrapper = await mountAccessPointsPage({
+      providers: [SALTO, PAREVA],
+      apps: [storedSalto(), storedApp("pareva")],
+      accessPoints: [PAREVA_LOCKER],
+    });
+    expect(iqRow(wrapper).isVisible()).toBe(true);
+
+    await search(wrapper, "rathaus");
+
+    expect(iqRow(wrapper).exists() && iqRow(wrapper).isVisible()).toBe(false);
+  });
 });
 
 function openToggle(wrapper) {

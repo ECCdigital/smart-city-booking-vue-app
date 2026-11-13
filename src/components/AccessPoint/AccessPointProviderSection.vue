@@ -66,6 +66,10 @@ export default {
     fresh: { type: Boolean, default: false },
     // The IQs of the provider not activated yet.
     openIqs: { type: Number, default: 0 },
+    // Under a search without hits here (ECCdigital/tickets#1082): the
+    // section is its head and the line the page hands in; settings, IQs
+    // and notes fold away, kept as they are.
+    shrunk: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -217,7 +221,7 @@ export default {
       </v-btn>
     </div>
     <div
-      v-else-if="state === 'failing'"
+      v-else-if="state === 'failing' && !shrunk"
       class="provider-section__note provider-section__note--failing"
       data-test="provider-section-failing"
     >
@@ -236,9 +240,11 @@ export default {
         {{ $t("accessPoint.management.section.failing.check") }}
       </v-btn>
     </div>
-    <slot v-if="settingsOpen" name="settings" />
-    <slot name="iqs" />
-    <template v-if="!draft && empty">
+    <div v-show="!shrunk">
+      <slot v-if="settingsOpen" name="settings" />
+      <slot name="iqs" />
+    </div>
+    <template v-if="!draft && empty && !shrunk">
       <div
         v-if="fresh"
         class="provider-section__note provider-section__note--next"
