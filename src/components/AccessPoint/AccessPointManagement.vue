@@ -5,10 +5,14 @@ import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import { isForbiddenError } from "@/services/api/apiErrorMessage";
+import {
+  getApiErrorMessage,
+  isForbiddenError,
+} from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import AccessPointProviderSection from "@/components/AccessPoint/AccessPointProviderSection.vue";
 import AccessAppSettings from "@/components/AccessPoint/AccessAppSettings.vue";
+import AccessPointIqRow from "@/components/AccessPoint/AccessPointIqRow.vue";
 import AccessPointRow from "@/components/AccessPoint/AccessPointRow.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import AccessPointAssignDialog from "@/components/AccessPoint/AccessPointAssignDialog.vue";
@@ -24,7 +28,9 @@ import {
   createLockAndAccessAppDefaults,
   findTenantApp,
   LOCK_AND_ACCESS_APP_IDS,
+  SALTO_PROVIDER,
 } from "@/utilities/access-apps";
+import { hasActivation } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 import { matches, needsAction } from "@/utilities/access-point-rows";
@@ -34,6 +40,7 @@ export default {
   components: {
     AccessPointProviderSection,
     AccessAppSettings,
+    AccessPointIqRow,
     AccessPointRow,
     AccessPointEditDialog,
     AccessPointAssignDialog,
@@ -59,6 +66,13 @@ export default {
       // whose settings hold changes not saved yet.
       openSettings: [],
       dirtySettings: [],
+      // The IQs of Salto KS while it is switched on, loaded behind the
+      // page (ECCdigital/tickets#1107); `iqsError` names a list that could
+      // not be read.
+      iqs: [],
+      iqsLoaded: false,
+      iqsError: "",
+      iqsOpen: false,
       editDialog: false,
       // The provider of the section whose creation opened the dialog; empty
       // while an access point is edited.
@@ -136,6 +150,16 @@ export default {
         ),
       }));
     },
+    saltoActive() {
+      return !!this.apps[SALTO_PROVIDER]?.active;
+    },
+    showsIqs() {
+      return this.saltoActive && (this.iqsLoaded || !!this.iqsError);
+    },
+    // The settings of Salto KS ask before a save lets these rest.
+    activatedIqCount() {
+      return this.iqs.filter(hasActivation).length;
+    },
     filtering() {
       return !!this.search.trim() || this.onlyOpen;
     },
@@ -203,6 +227,41 @@ export default {
         this.fetchProviders(),
         this.fetchApps(),
       ]);
+      // Behind the page: it stands before these are read.
+      this.fetchIqs();
+    },
+    async fetchIqs() {
+      if (!this.saltoActive) {
+        this.iqs = [];
+        this.iqsLoaded = false;
+        this.iqsError = "";
+        return;
+      }
+      try {
+        const response = await ApiAccessAppsService.getSaltoIqs(this.tenantId);
+        this.iqs = Array.isArray(response?.data) ? response.data : [];
+        this.iqsLoaded = true;
+        this.iqsError = "";
+      } catch (error) {
+        this.iqs = [];
+        this.iqsLoaded = false;
+        this.iqsError = getApiErrorMessage(
+          error,
+          this.$t("accessPoint.tenant.salto.iq.errors.generic")
+        );
+      }
+    },
+    isSalto(provider) {
+      return provider === SALTO_PROVIDER;
+    },
+    // The jump from the test of Salto KS to its IQs.
+    async showIqs() {
+      this.iqsOpen = true;
+      await this.$nextTick();
+      [].concat(this.$refs.iqRow || [])[0]?.$el.scrollIntoView?.({
+        behavior: "smooth",
+        block: "start",
+      });
     },
     // The access applications travel with the tenant.
     async fetchApps() {
@@ -264,6 +323,7 @@ export default {
       this.apps = apps;
       this.closeSettings(provider);
       await this.fetchProviders();
+      if (this.isSalto(provider)) await this.fetchIqs();
     },
     // Switching keeps credentials, access points and assignments; the
     // active providers are read anew, since only they list and create.
@@ -285,10 +345,13 @@ export default {
         return;
       }
       await this.fetchProviders();
+      if (this.isSalto(provider)) await this.fetchIqs();
     },
-    onAppSaved(provider, app) {
+    // The IQs of Salto KS stand right after its first save.
+    async onAppSaved(provider, app) {
       this.apps = { ...this.apps, [provider]: app };
       this.closeSettings(provider);
+      if (this.isSalto(provider)) await this.fetchIqs();
     },
     // The creation starts in the section of a provider, so the provider is
     // settled before the dialog opens.
@@ -522,10 +585,23 @@ export default {
           :provider="section.provider"
           :app="section.app"
           :access-points="section.accessPoints"
+          :activated-iq-count="activatedIqCount"
+          @to-iqs="showIqs"
           @cancel="closeSettings(section.provider.id)"
           @saved="onAppSaved(section.provider.id, $event)"
           @dirty="onSettingsDirty(section.provider.id, $event)"
           @removed="onAppRemoved(section.provider.id)"
+        />
+      </template>
+      <template #iqs>
+        <AccessPointIqRow
+          v-if="isSalto(section.provider.id) && showsIqs"
+          ref="iqRow"
+          :tenant-id="tenantId"
+          :iqs="iqs"
+          :error="iqsError"
+          :open.sync="iqsOpen"
+          :reload="fetchIqs"
         />
       </template>
       <div

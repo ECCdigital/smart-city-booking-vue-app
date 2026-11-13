@@ -30,6 +30,7 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
     removeApp: vi.fn(),
     getSaltoIqs: vi.fn(),
     startSaltoIqActivation: vi.fn(),
+    completeSaltoIqActivation: vi.fn(),
     getProviders: vi.fn(),
     getAccessPoints: vi.fn(),
   },
@@ -1542,8 +1543,13 @@ describe("AccessPoints shows the checks of the Salto KS test", () => {
       .find("[data-test='salto-to-activation']")
       .trigger("click");
 
+    // The IQs are a row of the section (ECCdigital/tickets#1107): the jump
+    // unfolds it.
     expect(scrolled).toHaveLength(1);
-    expect(scrolled[0].textContent).toContain("IQ-Aktivierung für Remote-Open");
+    expect(scrolled[0].getAttribute("data-test")).toBe("salto-iq-row");
+    expect(iqRow(wrapper).text()).toContain(
+      "An der Salto-Site wurden keine IQs gefunden."
+    );
   });
 
   it("names per secret what the test ran with", async () => {
@@ -1559,14 +1565,85 @@ describe("AccessPoints shows the checks of the Salto KS test", () => {
   });
 });
 
+function iqRow(wrapper) {
+  return sectionOf(wrapper, "Salto KS").find("[data-test='salto-iq-row']");
+}
+
+async function unfoldIqs(wrapper) {
+  await iqRow(wrapper).find("[data-test='salto-iq-row-head']").trigger("click");
+  await settle(wrapper);
+  return iqRow(wrapper);
+}
+
+/** Salto KS on the page, its settings folded, with the IQs of its site. */
+async function mountSaltoSection({ app = storedSalto(), iqs = [] } = {}) {
+  ApiAccessAppsService.getSaltoIqs.mockResolvedValue({ data: iqs });
+  return mountAccessPointsPage({
+    providers: [SALTO],
+    accessPoints: [],
+    apps: app ? [app] : [],
+  });
+}
+
+function threeIqs() {
+  return [
+    { ...IQ, id: "1", customerReference: "Labortür", state: "activated" },
+    { ...IQ, id: "2", customerReference: "Werkstatt", state: "not_activated" },
+    { ...IQ, id: "3", customerReference: "Lager", state: "pending_pin" },
+  ];
+}
+
 /**
- * Salto hands out the first secret once per System-User and IQ; the IQ
- * activation stays in the settings of Salto KS until the section shows the
- * IQs as a row of their own (ECCdigital/tickets#1107).
+ * The IQs of Salto KS are a row of their own in its section
+ * (ECCdigital/tickets#1107): folded, how many are activated, yellow while
+ * one is missing; unfolded, the IQs with their state and „Aktivieren“,
+ * which starts the wizard of before. Salto hands out the first secret once
+ * per System-User and IQ.
  */
-describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
+describe("AccessPoints activates the IQs of Salto KS in its section", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("counts the activated IQs in a yellow row while one is missing", async () => {
+    const wrapper = await mountSaltoSection({ iqs: threeIqs() });
+
+    const row = iqRow(wrapper);
+    expect(row.find("[data-test='salto-iq-row-head']").text()).toContain(
+      "IQs: 1 von 3 aktiviert"
+    );
+    expect(row.classes()).toContain("salto-iq-row--missing");
+    expect(row.text()).not.toContain("Werkstatt");
+    // The row stands without the settings unfolded.
+    expect(saltoSettings(wrapper).exists()).toBe(false);
+  });
+
+  it("is no longer yellow once every IQ is activated", async () => {
+    const wrapper = await mountSaltoSection({
+      iqs: [
+        { ...IQ, id: "1" },
+        { ...IQ, id: "2", otpEnabled: false, state: "not_activated" },
+      ],
+    });
+
+    const row = iqRow(wrapper);
+    expect(row.text()).toContain("IQs: 1 von 1 aktiviert");
+    expect(row.classes()).not.toContain("salto-iq-row--missing");
+  });
+
+  it("lists the IQs with their state once unfolded", async () => {
+    const wrapper = await mountSaltoSection({ iqs: threeIqs() });
+
+    const row = await unfoldIqs(wrapper);
+
+    const text = row.text();
+    expect(text).toContain("Werkstatt");
+    expect(text).toContain("Nicht aktiviert");
+    expect(text).toContain("Lager");
+    expect(text).toContain("PIN ausstehend");
+    expect(text).toContain("Labortür");
+    expect(buttonIn(row, "Aktivieren")).toBeTruthy();
+    expect(text).not.toContain("IQ-Liste aktualisieren");
   });
 
   it("names a new System-User as the way out of an IQ activated before", async () => {
@@ -1576,11 +1653,11 @@ describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
         data: { code: "salto_iq_already_activated_at_salto" },
       },
     });
-    const wrapper = await mountSalto({
+    const wrapper = await mountSaltoSection({
       iqs: [{ ...IQ, id: "1", state: "not_activated" }],
     });
 
-    await click(wrapper, saltoSettings(wrapper), "Aktivierung starten");
+    await click(wrapper, await unfoldIqs(wrapper), "Aktivieren");
     const wizard = () =>
       [...document.querySelectorAll(".v-dialog")].find((d) =>
         d.textContent.includes("IQ aktivieren")
@@ -1600,14 +1677,54 @@ describe("AccessPoints activates the IQs of Salto KS in its settings", () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
   });
 
-  it("offers no activation while Salto KS is switched off", async () => {
-    const wrapper = await mountSalto({
+  it("counts anew once a step of the wizard is done", async () => {
+    ApiAccessAppsService.startSaltoIqActivation.mockResolvedValue({});
+    const wrapper = await mountSaltoSection({
+      iqs: [{ ...IQ, id: "1", state: "pending_pin" }],
+    });
+    ApiAccessAppsService.completeSaltoIqActivation.mockResolvedValue({});
+    const row = await unfoldIqs(wrapper);
+    ApiAccessAppsService.getSaltoIqs.mockResolvedValue({
+      data: [{ ...IQ, id: "1", state: "activated" }],
+    });
+
+    await click(wrapper, row, "PIN-Mail erneut senden");
+
+    expect(iqRow(wrapper).text()).toContain("IQs: 1 von 1 aktiviert");
+  });
+
+  it("shows no IQs while Salto KS is switched off", async () => {
+    const wrapper = await mountSaltoSection({
       app: storedSalto({ active: false, connectionState: "disabled" }),
       iqs: [{ ...IQ, id: "1", state: "not_activated" }],
     });
 
-    expect(saltoSettings(wrapper).text()).not.toContain(
-      "IQ-Aktivierung für Remote-Open"
+    expect(iqRow(wrapper).exists()).toBe(false);
+    expect(ApiAccessAppsService.getSaltoIqs).not.toHaveBeenCalled();
+  });
+
+  it("shows the IQs right after the first save, without refreshing", async () => {
+    const wrapper = await mountSaltoSection({ app: null, iqs: threeIqs() });
+    expect(iqRow(wrapper).exists()).toBe(false);
+    ApiAccessAppsService.saveApp.mockResolvedValue({ data: storedSalto() });
+
+    await click(wrapper, await openSettings(wrapper, "Salto KS"), "Speichern");
+
+    expect(iqRow(wrapper).text()).toContain("IQs: 1 von 3 aktiviert");
+  });
+
+  it("names a list that cannot be read", async () => {
+    ApiAccessAppsService.getSaltoIqs.mockRejectedValue({
+      response: { status: 502, data: { message: "Salto antwortet nicht" } },
+    });
+    const wrapper = await mountAccessPointsPage({
+      providers: [SALTO],
+      accessPoints: [],
+      apps: [storedSalto()],
+    });
+
+    expect(iqRow(wrapper).text()).toContain(
+      "Die IQ-Liste konnte nicht geladen werden"
     );
   });
 });

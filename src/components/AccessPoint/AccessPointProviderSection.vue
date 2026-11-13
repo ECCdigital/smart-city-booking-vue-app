@@ -33,7 +33,8 @@ const STATES = {
  *
  * The switch „Aktiv“ in the head (ECCdigital/tickets#1107) hands up
  * `switch` with the state asked for: on at once, off only once the line
- * beneath the head has named what stops opening and was confirmed.
+ * beneath the head has named what stops opening and was confirmed. The
+ * slot `iqs` holds the row of the IQs of Salto KS, above the access points.
  */
 export default {
   name: "AccessPointProviderSection",
@@ -195,6 +196,7 @@ export default {
       </v-btn>
     </div>
     <slot v-if="settingsOpen" name="settings" />
+    <slot name="iqs" />
     <!-- Switched off, the rows go pale; their actions stay at hand. -->
     <div
       class="provider-section__rows"
