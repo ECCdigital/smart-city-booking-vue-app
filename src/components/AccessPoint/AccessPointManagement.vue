@@ -123,9 +123,10 @@ export default {
         0
       );
     },
+    // `null` where the bookables were not readable, see `bookablesOf`.
     affectedBookables() {
       if (!this.selectedAccessPoint) return [];
-      return this.bookablesByAccessPointId[this.selectedAccessPoint.id] || [];
+      return this.bookablesOf(this.selectedAccessPoint);
     },
     // The bookings that hold a granted, unrevoked access at the access point
     // about to be deleted. There is no route that asks that question directly:

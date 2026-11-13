@@ -3043,18 +3043,40 @@
         "empty": "Diese Schließfachanlage hat noch keine Fächer."
       },
       "delete": {
-        "title": "Zugangspunkt löschen",
-        "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
-        "confirm": "Löschen",
-        "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
-        "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
-        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet.",
-        "bookingsTitle": "Laufende Buchungen mit erteiltem Zugang:",
-        "bookingsHint": "Die erteilten Berechtigungen werden dabei nicht widerrufen – beim Anbieter bleiben sie bestehen und lassen sich anschließend hier nicht mehr entziehen. Bedienen lässt sich der Zugangspunkt aus diesen Buchungen nicht mehr.",
-        "bookingsNone": "Keine laufende Buchung hält an diesem Zugangspunkt einen erteilten Zugang.",
-        "bookingsLoading": "Laufende Buchungen werden geprüft …",
-        "bookingsUnreadable": "Ob laufende Buchungen hier einen erteilten Zugang halten, ist nicht abrufbar – die Buchungen dieses Mandanten konnten nicht gelesen werden.",
-        "bookingsMore": "… und {count} weitere."
+        "title": "„{label}“ löschen?",
+        "loses": {
+          "one": {
+            "door": "{names} verliert die Tür.",
+            "lockerSystem": "{names} verliert die Schließfachanlage.",
+            "fixedCompartment": "{names} verliert das feste Fach."
+          },
+          "other": {
+            "door": "{names} verlieren die Tür.",
+            "lockerSystem": "{names} verlieren die Schließfachanlage.",
+            "fixedCompartment": "{names} verlieren das feste Fach."
+          }
+        },
+        "bookablesUnchecked": {
+          "door": "Ob Buchungsobjekte die Tür verlieren, ließ sich nicht prüfen.",
+          "lockerSystem": "Ob Buchungsobjekte die Schließfachanlage verlieren, ließ sich nicht prüfen.",
+          "fixedCompartment": "Ob Buchungsobjekte das feste Fach verlieren, ließ sich nicht prüfen."
+        },
+        "names": {
+          "last": "{names} und {last}",
+          "more": "{names} und {count} weitere"
+        },
+        "running": {
+          "one": "{bookings} behält ihren Zugang bei {provider}, entziehen lässt er sich hier danach nicht mehr.",
+          "other": "{bookings} behalten ihren Zugang bei {provider}, entziehen lässt er sich hier danach nicht mehr."
+        },
+        "runningCount": "{n} laufende Buchung | {n} laufende Buchungen",
+        "which": "Welche?",
+        "hide": "Ausblenden",
+        "until": "bis {time}",
+        "checking": "Prüfe laufende Buchungen …",
+        "unchecked": "Ob laufende Buchungen hier Zugang haben, ließ sich nicht prüfen.",
+        "nothing": "Nichts weiter betroffen: kein Buchungsobjekt, keine laufende Buchung.",
+        "confirm": "Löschen"
       },
       "dialog": {
         "kinds": {

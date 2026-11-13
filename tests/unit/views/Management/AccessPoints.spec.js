@@ -873,74 +873,6 @@ describe("AccessPoints offers the actions of each access point", () => {
   });
 
   /**
-   * Deleting names the bookings that hold a granted, unrevoked access at the
-   * access point; the tenant's bookings carry that in `accessInfo`.
-   */
-  describe("deleting", () => {
-    const NOW = Date.now();
-
-    function bookingAt(id, accessPointId, revokedAt) {
-      return {
-        id,
-        name: "Erika Mustermann",
-        timeEnd: NOW + 3_600_000,
-        accessInfo: [
-          {
-            accessPointId,
-            accessPointType: "locker",
-            isProvisioned: true,
-            revokedAt,
-            grant: { authorizationId: `auth-${id}` },
-          },
-        ],
-      };
-    }
-
-    it("names the bookings with a live grant at the access point", async () => {
-      const wrapper = await mountAccessPointsPage({
-        bookings: [
-          bookingAt("booking-7", PAREVA_LOCKER.id, null),
-          bookingAt("booking-8", PAREVA_LOCKER.id, NOW - 1000),
-        ],
-      });
-
-      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
-
-      const text = dialogCard(wrapper, "AccessPointDeleteDialog").text();
-      expect(text).toContain("„Schließfächer Rathaus“");
-      expect(text).toContain("booking-7");
-      expect(text).not.toContain("booking-8");
-    });
-
-    it("says when the bookings could not be read", async () => {
-      const wrapper = await mountAccessPointsPage();
-      ApiBookingService.getBookings.mockRejectedValue(forbiddenError());
-
-      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
-
-      expect(dialogCard(wrapper, "AccessPointDeleteDialog").text()).toContain(
-        "konnten nicht gelesen werden"
-      );
-    });
-
-    it("deletes the access point once confirmed", async () => {
-      ApiAccessPointService.deleteAccessPoint.mockResolvedValue({});
-      const wrapper = await mountAccessPointsPage();
-
-      await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
-      await dialogCard(wrapper, "AccessPointDeleteDialog")
-        .find(".confirm-delete")
-        .trigger("click");
-      await settle(wrapper);
-
-      expect(ApiAccessPointService.deleteAccessPoint).toHaveBeenCalledWith(
-        PAREVA_LOCKER.id,
-        "t1"
-      );
-    });
-  });
-
-  /**
    * The QR code encodes the store-front address of the instance. Without
    * `STORE_FRONT_URL` the backend answers `503 store_front_url_missing`
    * (tickets#272), in the blob body the download asked for.
@@ -1004,6 +936,282 @@ describe("AccessPoints offers the actions of each access point", () => {
         })
       );
     });
+  });
+});
+
+/**
+ * Deleting asks in a slim dialog whose title is the question, one sentence
+ * per consequence beneath it (ECCdigital/tickets#1112): the bookables that
+ * lose the access point, and the running bookings whose grant at the
+ * provider outlives it - the tenant's bookings carry that in `accessInfo`.
+ */
+describe("AccessPoints asks before deleting, one sentence per consequence", () => {
+  const NOW = Date.now();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function bookingAt(id, accessPointId, { name, timeEnd, revokedAt } = {}) {
+    return {
+      id,
+      name: name || "Erika Mustermann",
+      timeEnd: timeEnd || NOW + 3_600_000,
+      accessInfo: [
+        {
+          accessPointId,
+          accessPointType: "locker",
+          isProvisioned: true,
+          revokedAt,
+          grant: { authorizationId: `auth-${id}` },
+        },
+      ],
+    };
+  }
+
+  function deleteCard(wrapper) {
+    return dialogCard(wrapper, "AccessPointDeleteDialog");
+  }
+
+  /** The lines of the dialog, one per consequence, top to bottom. */
+  function consequences(wrapper) {
+    return deleteCard(wrapper)
+      .findAll("[data-test='delete-consequence']")
+      .wrappers.map((line) => line.text().replace(/\s+/g, " ").trim());
+  }
+
+  function deleteButton(wrapper) {
+    return deleteCard(wrapper)
+      .findAll("button")
+      .wrappers.find((button) => button.text() === "Löschen");
+  }
+
+  it("asks in the title of a slim dialog", async () => {
+    const wrapper = await mountAccessPointsPage();
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    expect(deleteCard(wrapper).find(".v-card__title").text()).toBe(
+      "„Schließfächer Rathaus“ löschen?"
+    );
+    expect(document.querySelector(".v-dialog--active").style.maxWidth).toBe(
+      "480px"
+    );
+  });
+
+  function bookablesAt(accessPoint, ...titles) {
+    return titles.map((title, index) => ({
+      id: `b${index}`,
+      title,
+      accessPointDetails: { accessPointIds: [accessPoint.id] },
+    }));
+  }
+
+  it("names the bookable that loses the door", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: bookablesAt(DOOR, "Besprechungsraum"),
+    });
+
+    await clickRowAction(wrapper, "Haupteingang", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Besprechungsraum verliert die Tür.",
+    ]);
+  });
+
+  it("names up to three bookables that lose the Schließfachanlage", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: bookablesAt(
+        PAREVA_LOCKER,
+        "Fahrrad 1",
+        "Fahrrad 2",
+        "Fahrrad 3"
+      ),
+    });
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Fahrrad 1, Fahrrad 2 und Fahrrad 3 verlieren die Schließfachanlage.",
+    ]);
+  });
+
+  it("counts the bookables after the third", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: bookablesAt(
+        PAREVA_LOCKER,
+        "Fahrrad 1",
+        "Fahrrad 2",
+        "Fahrrad 3",
+        "Fahrrad 4",
+        "Fahrrad 5"
+      ),
+    });
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Fahrrad 1, Fahrrad 2, Fahrrad 3 und 2 weitere verlieren die Schließfachanlage.",
+    ]);
+  });
+
+  it("names the fixed Fach that a bookable loses", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_FACH],
+      bookables: bookablesAt(OPEN_LOCKER_FACH, "Laborschrank", "Werkbank"),
+    });
+
+    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Laborschrank und Werkbank verlieren das feste Fach.",
+    ]);
+  });
+
+  async function clickText(card, text) {
+    await card
+      .findAll("a, button")
+      .wrappers.find((element) => element.text() === text)
+      .trigger("click");
+    await card.vm.$nextTick();
+  }
+
+  it("counts the running bookings whose access outlives it, and names them under „Welche?“", async () => {
+    const christmas = new Date("2099-12-24T18:00:00+01:00").getTime();
+    const wrapper = await mountAccessPointsPage({
+      bookings: [
+        bookingAt("booking-7", PAREVA_LOCKER.id, { timeEnd: christmas }),
+        bookingAt("booking-8", PAREVA_LOCKER.id, { name: "Max Muster" }),
+        bookingAt("booking-9", PAREVA_LOCKER.id, { revokedAt: NOW - 1000 }),
+        bookingAt("booking-10", DOOR.id),
+      ],
+    });
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    const card = deleteCard(wrapper);
+    expect(consequences(wrapper)).toEqual([
+      "2 laufende Buchungen behalten ihren Zugang bei Pareva, entziehen lässt er sich hier danach nicht mehr. Welche?",
+    ]);
+
+    await clickText(card, "Welche?");
+
+    const listed = card
+      .findAll("[data-test='delete-running-booking']")
+      .wrappers.map((item) => item.text().replace(/\s+/g, " "));
+    expect(listed).toEqual([
+      "booking-7 · Erika Mustermann · bis 24.12.99, 18:00",
+      expect.stringMatching(/^booking-8 · Max Muster · bis /),
+    ]);
+  });
+
+  it("says it in the singular for one running booking", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookings: [bookingAt("booking-7", DOOR.id)],
+    });
+
+    await clickRowAction(wrapper, "Haupteingang", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "1 laufende Buchung behält ihren Zugang bei Nuki, entziehen lässt er sich hier danach nicht mehr. Welche?",
+    ]);
+  });
+
+  it("says only that nothing else is affected when nothing is", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: bookablesAt(DOOR, "Besprechungsraum"),
+      bookings: [bookingAt("booking-10", DOOR.id)],
+    });
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Nichts weiter betroffen: kein Buchungsobjekt, keine laufende Buchung.",
+    ]);
+  });
+
+  /**
+   * Confirming before the check has answered is the unnoticed click the
+   * question exists to prevent, so Löschen waits for it.
+   */
+  it("checks the running bookings before Löschen may be clicked", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: bookablesAt(DOOR, "Besprechungsraum"),
+    });
+    let answer;
+    ApiBookingService.getBookings.mockReturnValue(
+      new Promise((resolve) => (answer = resolve))
+    );
+
+    await clickRowAction(wrapper, "Haupteingang", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Besprechungsraum verliert die Tür.",
+      "Prüfe laufende Buchungen …",
+    ]);
+    expect(deleteButton(wrapper).attributes("disabled")).toBe("disabled");
+
+    answer({ data: [bookingAt("booking-7", DOOR.id)] });
+    await settle(wrapper);
+
+    expect(consequences(wrapper)).toEqual([
+      "Besprechungsraum verliert die Tür.",
+      "1 laufende Buchung behält ihren Zugang bei Nuki, entziehen lässt er sich hier danach nicht mehr. Welche?",
+    ]);
+    expect(deleteButton(wrapper).attributes("disabled")).toBeUndefined();
+  });
+
+  /**
+   * „Nothing else is affected“ is a claim about the bookings; when they could
+   * not be read, the dialog says so instead, and deleting still goes.
+   */
+  it("still deletes when the check is not possible, and says so in grey", async () => {
+    ApiAccessPointService.deleteAccessPoint.mockResolvedValue({});
+    const wrapper = await mountAccessPointsPage();
+    ApiBookingService.getBookings.mockRejectedValue(forbiddenError());
+
+    await clickRowAction(wrapper, "Schließfächer Rathaus", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Ob laufende Buchungen hier Zugang haben, ließ sich nicht prüfen.",
+    ]);
+    const line = deleteCard(wrapper).find("[data-test='delete-consequence']");
+    expect(line.classes()).toContain("text--secondary");
+
+    await deleteButton(wrapper).trigger("click");
+    await settle(wrapper);
+
+    expect(ApiAccessPointService.deleteAccessPoint).toHaveBeenCalledWith(
+      PAREVA_LOCKER.id,
+      "t1"
+    );
+  });
+
+  it("claims nothing about the bookables when they are forbidden", async () => {
+    const wrapper = await mountAccessPointsPage({
+      bookables: forbiddenError(),
+    });
+
+    await clickRowAction(wrapper, "Haupteingang", "delete");
+
+    expect(consequences(wrapper)).toEqual([
+      "Ob Buchungsobjekte die Tür verlieren, ließ sich nicht prüfen.",
+    ]);
+  });
+
+  it("deletes the access point once confirmed", async () => {
+    ApiAccessPointService.deleteAccessPoint.mockResolvedValue({});
+    const wrapper = await mountAccessPointsPage();
+
+    await clickRowAction(wrapper, "Haupteingang", "delete");
+    await deleteButton(wrapper).trigger("click");
+    await settle(wrapper);
+
+    expect(ApiAccessPointService.deleteAccessPoint).toHaveBeenCalledWith(
+      DOOR.id,
+      "t1"
+    );
   });
 });
 
