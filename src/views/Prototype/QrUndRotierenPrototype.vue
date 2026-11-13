@@ -4,7 +4,7 @@
  * (ECCdigital/tickets#1094). Throwaway, never merged.
  *
  * Three variants on the rows of tickets#1093 (Variante A), switchable with
- * `?variant=` (A-C, bottom bar or ← →):
+ * `?variant=` (A-D, bottom bar or ← →):
  *
  *   A  Direkt drucken: Tür lädt das PDF sofort, Anlage öffnet eine schlanke
  *      Liste der Fächer, Warnung nach QR-Scan abgestuft
@@ -24,6 +24,7 @@ import PrototypeVariantBar from "@/prototype/zugangspunkte-fuehrung/PrototypeVar
 import VariantA from "@/prototype/qr-und-rotieren/variants/VariantA.vue";
 import VariantB from "@/prototype/qr-und-rotieren/variants/VariantB.vue";
 import VariantC from "@/prototype/qr-und-rotieren/variants/VariantC.vue";
+import VariantD from "@/prototype/qr-und-rotieren/variants/VariantD.vue";
 import { store, prototypeBus } from "@/prototype/zugangspunkte-fuehrung/data";
 import { loadQr, isAnlage } from "@/prototype/qr-und-rotieren/qr";
 
@@ -31,6 +32,7 @@ const VARIANTS = [
   { key: "A", name: "Direkt drucken", component: VariantA },
   { key: "B", name: "Ein QR-Dialog für alles", component: VariantB },
   { key: "C", name: "Aufkleber im Blick", component: VariantC },
+  { key: "D", name: "Mischung: Zeile A, Fächer B", component: VariantD },
 ];
 
 const CASES = [
