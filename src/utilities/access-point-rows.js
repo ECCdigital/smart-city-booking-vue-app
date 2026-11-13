@@ -1,7 +1,13 @@
 import i18n from "@/language/index";
-import { accessPointFields, kindNoun } from "@/utilities/access-point-fields";
 import {
-  DOOR_TYPE,
+  accessPointFields,
+  accessPointKind,
+  DOOR_KIND,
+  FIXED_COMPARTMENT_KIND,
+  kindNoun,
+} from "@/utilities/access-point-fields";
+import {
+  isFixedCompartment,
   isLockerAccessPoint,
   requiresQrScan,
 } from "@/utilities/access-points";
@@ -26,13 +32,6 @@ const t = (key, params) => i18n.t(`accessPoint.management.row.${key}`, params);
 const tc = (key, count) =>
   i18n.tc(`accessPoint.management.row.${key}`, count, { count });
 
-/** An Open Locker door is a single Fach, without an Anlage around it. */
-export function isFixedCompartment(accessPoint) {
-  return (
-    accessPoint?.provider === "open-locker" && accessPoint?.type === DOOR_TYPE
-  );
-}
-
 /**
  * The kind of the access point as the small line names it: „Schließfachanlage
  * · 12 Fächer“, „Schließfachanlage“ or „festes Fach“; empty for a door, whose
@@ -42,8 +41,9 @@ export function isFixedCompartment(accessPoint) {
  * @returns {string}
  */
 export function kindLabel(accessPoint) {
-  if (isFixedCompartment(accessPoint)) return t("kind.fixedCompartment");
-  if (!isLockerAccessPoint(accessPoint)) return "";
+  const kind = accessPointKind(accessPoint);
+  if (kind === DOOR_KIND) return "";
+  if (kind === FIXED_COMPARTMENT_KIND) return t("kind.fixedCompartment");
   if (!carriesOwnCompartments(accessPoint)) return t("kind.lockerSystem");
   return [
     t("kind.lockerSystem"),
@@ -83,17 +83,16 @@ export function metaLine(accessPoint) {
 }
 
 /**
- * Whether the row shows the QR code: at every door, also one without QR scan,
- * and at a fixed Fach and an Open Locker Schließfachanlage. A Schließfachanlage
- * of iFBS or Pareva has none.
+ * Whether the access point has a QR code: every door, also one without QR
+ * scan, a fixed Fach and an Open Locker Schließfachanlage; a
+ * Schließfachanlage of iFBS or Pareva has none (`qrCode` of
+ * `accessPointFields`).
  *
  * @param {Object} accessPoint The access point
  * @returns {boolean}
  */
 export function hasQr(accessPoint) {
-  return (
-    !isLockerAccessPoint(accessPoint) || carriesOwnCompartments(accessPoint)
-  );
+  return accessPointFields(accessPoint?.provider, accessPoint?.type).qrCode;
 }
 
 /**

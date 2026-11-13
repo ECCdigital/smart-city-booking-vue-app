@@ -32,7 +32,7 @@ import {
   accessPointTypes,
   settingsSummary,
 } from "@/utilities/access-point-fields";
-import { printsQr } from "@/utilities/access-point-rows";
+import { iqNotActivated, printsQr } from "@/utilities/access-point-rows";
 import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
@@ -227,12 +227,7 @@ export default {
           ...lock,
           externalId,
           taken: this.taken.has(externalId),
-          // A Salto lock whose IQ is not activated lists no modes: it can do
-          // nothing until it is.
-          iqOff:
-            this.fields.iq &&
-            Array.isArray(lock.supportedModes) &&
-            lock.supportedModes.length === 0,
+          iqOff: this.fields.iq && iqNotActivated(lock),
           group: lock.metadata?.lockerBank?.name || "",
         };
       });
@@ -521,6 +516,11 @@ export default {
       this.swapping = true;
       this.manual = false;
     },
+    // What Open Locker's choice of type is called, by the kind it makes.
+    typeChoiceLabel(type) {
+      const { kind } = accessPointFields(this.form.provider, type);
+      return this.$t(`accessPoint.management.dialog.kinds.${kind}.choice`);
+    },
     // Open Locker's choice starts the lock afresh: an Anlage has Fächer, a
     // fixed Fach one id.
     chooseType(type) {
@@ -783,13 +783,7 @@ export default {
                 text
                 small
               >
-                {{
-                  $t(
-                    `accessPoint.management.dialog.kinds.${
-                      type === "locker" ? "lockerSystem" : "fixedCompartment"
-                    }.choice`
-                  )
-                }}
+                {{ typeChoiceLabel(type) }}
               </v-btn>
             </v-btn-toggle>
             <div

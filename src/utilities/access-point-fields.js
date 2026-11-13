@@ -117,7 +117,7 @@ const FIELDS = {
  * @returns {string[]}
  */
 export function accessPointTypes(provider) {
-  if (provider === "open-locker") return [LOCKER_TYPE, DOOR_TYPE];
+  if (FIELDS[provider]) return Object.keys(FIELDS[provider]);
   return [providerAccessPointDefaults(provider)?.type || DOOR_TYPE];
 }
 

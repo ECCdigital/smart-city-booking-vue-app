@@ -1,6 +1,9 @@
 import i18n from "@/language/index";
-import { accessPointLabel, requiresQrScan } from "@/utilities/access-points";
-import { isFixedCompartment } from "@/utilities/access-point-rows";
+import {
+  accessPointLabel,
+  isFixedCompartment,
+  requiresQrScan,
+} from "@/utilities/access-points";
 
 /**
  * What the question before rotating a scan code says (ECCdigital/tickets#1111),

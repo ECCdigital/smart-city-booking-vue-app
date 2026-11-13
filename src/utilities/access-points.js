@@ -80,6 +80,18 @@ export function isLockerAccessPoint(accessPoint) {
 }
 
 /**
+ * Whether the access point is a fixed Fach: an Open Locker compartment that
+ * is an access point of its own, a door by type, without an Anlage around
+ * it (`accessPointTypeName` "compartment").
+ *
+ * @param {Object} accessPoint The access point to inspect
+ * @returns {boolean}
+ */
+export function isFixedCompartment(accessPoint) {
+  return accessPointTypeName(accessPoint) === "compartment";
+}
+
+/**
  * The `accessPointDetails` a bookable starts out with. Everything that reads
  * the block tolerates missing keys, but writing it from one place keeps the
  * shared buffer from quietly going missing when access is switched on.

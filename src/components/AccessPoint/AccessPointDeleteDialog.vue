@@ -1,7 +1,7 @@
 <script>
 import FormatService from "@/services/FormatService";
 import { accessPointLabel } from "@/utilities/access-points";
-import { accessPointFields } from "@/utilities/access-point-fields";
+import { accessPointKind } from "@/utilities/access-point-fields";
 import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
 
 // The sentence names this many bookables and counts the rest.
@@ -48,10 +48,7 @@ export default {
     },
     // „door“, „lockerSystem“ or „fixedCompartment“: what the bookables lose.
     kind() {
-      return accessPointFields(
-        this.accessPoint?.provider,
-        this.accessPoint?.type
-      ).kind;
+      return accessPointKind(this.accessPoint);
     },
     bookables() {
       return this.affectedBookables || [];

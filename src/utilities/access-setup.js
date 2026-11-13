@@ -1,5 +1,9 @@
 import i18n from "@/language/index";
-import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
+import {
+  createLockAndAccessAppDefaults,
+  LOCK_AND_ACCESS_APP_IDS,
+} from "@/utilities/access-apps";
+import { accessPointFields } from "@/utilities/access-point-fields";
 import {
   DOOR_TYPE,
   providerAccessPointDefaults,
@@ -14,9 +18,6 @@ import { needsAction } from "@/utilities/access-point-rows";
  * access points and assignments -, the backend keeps no state of the setup.
  */
 
-/** The order the providers are offered in: doors first, then lockers. */
-const PROVIDER_ORDER = ["nuki", "salto-ks", "open-locker", "ifbs", "pareva"];
-
 /**
  * Every provider the page can connect, as `{ id, title }`, in the order it
  * offers them.
@@ -25,7 +26,10 @@ const PROVIDER_ORDER = ["nuki", "salto-ks", "open-locker", "ifbs", "pareva"];
  */
 export function knownProviders() {
   const defaults = createLockAndAccessAppDefaults();
-  return PROVIDER_ORDER.map((id) => ({ id, title: defaults[id].title }));
+  return LOCK_AND_ACCESS_APP_IDS.map((id) => ({
+    id,
+    title: defaults[id].title,
+  }));
 }
 
 /**
@@ -51,11 +55,9 @@ export function groupProviders(providers) {
 const t = (key, params) =>
   i18n.t(`accessPoint.management.setup.${key}`, params);
 
-/** What the provider's access points are called, by the type they start as. */
+/** The kind the provider's access points start as: `door` or `lockerSystem`. */
 function kindOf(providerId) {
-  return providerAccessPointDefaults(providerId)?.type === DOOR_TYPE
-    ? "door"
-    : "locker";
+  return accessPointFields(providerId).kind;
 }
 
 /**

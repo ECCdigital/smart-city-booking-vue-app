@@ -1,5 +1,11 @@
 import i18n from "@/language/index";
-import { accessPointFields } from "@/utilities/access-point-fields";
+import {
+  accessPointFields,
+  accessPointKind,
+  DOOR_KIND,
+  FIXED_COMPARTMENT_KIND,
+  LOCKER_SYSTEM_KIND,
+} from "@/utilities/access-point-fields";
 
 /**
  * What the section of a provider says before it is switched off or its
@@ -9,7 +15,7 @@ import { accessPointFields } from "@/utilities/access-point-fields";
  */
 
 // The kinds in the order they are named.
-const KINDS = ["door", "lockerSystem", "fixedCompartment"];
+const KINDS = [DOOR_KIND, LOCKER_SYSTEM_KIND, FIXED_COMPARTMENT_KIND];
 
 /**
  * How many access points of each kind there are, the kinds without any left
@@ -21,7 +27,7 @@ const KINDS = ["door", "lockerSystem", "fixedCompartment"];
 function kindCounts(accessPoints) {
   const counts = {};
   (accessPoints || []).forEach((accessPoint) => {
-    const { kind } = accessPointFields(accessPoint.provider, accessPoint.type);
+    const kind = accessPointKind(accessPoint);
     counts[kind] = (counts[kind] || 0) + 1;
   });
   return KINDS.filter((kind) => counts[kind]).map((kind) => ({

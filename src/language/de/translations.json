@@ -2873,18 +2873,18 @@
         "more": "Weiteren Anbieter verbinden",
         "empty": {
           "door": "Noch keine Tür. Legen Sie die erste an.",
-          "locker": "Noch keine Schließfachanlage. Legen Sie die erste an."
+          "lockerSystem": "Noch keine Schließfachanlage. Legen Sie die erste an."
         },
         "emptyOff": {
           "door": "Noch keine Tür.",
-          "locker": "Noch keine Schließfachanlage."
+          "lockerSystem": "Noch keine Schließfachanlage."
         },
         "next": {
           "sentence": "{provider} ist verbunden. Als Nächstes: {step}.",
           "iqsFirst": "IQs aktivieren, dann {create}",
           "create": {
             "door": "die erste Tür anlegen",
-            "locker": "die erste Schließfachanlage anlegen"
+            "lockerSystem": "die erste Schließfachanlage anlegen"
           }
         },
         "steps": {
