@@ -7,14 +7,12 @@ import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCo
 import AccessPointCompartmentBookingsDialog from "@/components/AccessPoint/AccessPointCompartmentBookingsDialog.vue";
 import {
   formatAccessPointErrorMessage,
-  isProviderNotActiveError,
   splitAccessPointFieldError,
   splitCompartmentErrors,
 } from "@/utilities/access-point-errors";
 import {
   carriesOwnCompartments,
   leavingCompartmentIds,
-  lockerCarriesCompartments,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
 import {
@@ -22,21 +20,19 @@ import {
   SALTO_PROVIDER,
 } from "@/utilities/access-apps";
 import {
-  accessPointLabel,
-  accessPointTypeLabel,
   canListAccessPoints,
   hasProviderCapability,
-  isLockerAccessPoint,
   providerAccessPointDefaults,
-  providerIdFields,
-  providerModes,
-  providerRequiresScanByDefault,
-  providerTypes,
   requiresQrScan,
   DOOR_TYPE,
+  LOCKER_TYPE,
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
-import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
+import {
+  accessPointFields,
+  accessPointTypes,
+  settingsSummary,
+} from "@/utilities/access-point-fields";
 import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
@@ -44,17 +40,16 @@ const GET_LOCATION_CAPABILITY = "getLocation";
 // by hand, so a changed address asks before the point follows.
 const PREFILL_ORIGIN = "nuki";
 
+// A Salto door opens remotely or not at all: the backend refuses the PIN
+// modes at every Salto lock (tickets#499).
+const REMOTE_MODE = "remote";
+
 /**
- * The Öffnungsart of a Nuki access point: which action Nuki performs when the
- * door is opened. `auto` is the missing key - the per-device choice the
- * provider has always made - and the vocabulary is the provider's, which is
- * why only nuki is asked for one. Which of them a given lock can carry out is
- * the backend's word (`supportedOpenActions` of the listing); this dialog
- * keeps no device table of its own.
+ * The Öffnungsart of a Nuki door: which action Nuki performs when the door is
+ * opened. `auto` is the missing key - the per-device choice the provider has
+ * always made. Which of them a lock can carry out is the backend's word
+ * (`supportedOpenActions` of the listing).
  */
-const NUKI_PROVIDER = "nuki";
-const SALTO_MODES = providerModes(SALTO_PROVIDER);
-const DOOR_MODES = ["authorization", "remote", "both"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -65,14 +60,8 @@ const OPEN_ACTIONS = [
 ];
 const OPEN_ACTION_FIELD = "config.openAction";
 
-// The two ways into a new access point: taken over from what the provider
-// lists, or entered by hand.
-const PROVIDER_MODE = "provider";
-const MANUAL_MODE = "manual";
-const CREATE_MODES = [
-  { value: PROVIDER_MODE, icon: "mdi-cloud-download-outline" },
-  { value: MANUAL_MODE, icon: "mdi-pencil-outline" },
-];
+// The index of „Weitere Einstellungen“ in its panels, open or not.
+const MORE_OPEN = 0;
 
 /**
  * The question about the bookings at Fächer that leave the Anlage, and the
@@ -99,11 +88,21 @@ function emptyForm() {
     provider: "",
     externalId: "",
     providerLocationId: "",
-    mode: "remote",
+    mode: REMOTE_MODE,
     location: null,
   };
 }
 
+/**
+ * The dialog Zugangspunkt (ECCdigital/tickets#1109): one dialog to create
+ * and edit an access point, its provider and type settled by the section it
+ * opens from. Creating shows two things - what the provider lists, as a list
+ * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
+ * asks first for its Schließfachanlage or a fixed Fach. Everything with a
+ * default waits folded under „Weitere Einstellungen“, its state in one line.
+ * Editing shows the chosen lock as one line with „Tauschen“ and the settings
+ * unfolded. Which fields an access point has is `accessPointFields`.
+ */
 export default {
   name: "AccessPointEditDialog",
   components: {
@@ -115,22 +114,16 @@ export default {
     open: { type: Boolean, default: false },
     // The access point to edit; `null` opens the dialog in create mode.
     accessPoint: { type: Object, default: null },
-    // All access points of the tenant, to mark locks that already have one.
+    // All access points of the tenant, to mark what is created already.
     accessPoints: { type: Array, default: () => [] },
     // Active providers incl. their `providerCapabilities`.
     providers: { type: Array, default: () => [] },
-    // The provider a new access point is created for, settled by the section
-    // the creation started in (ECCdigital/tickets#1103): the dialog then asks
-    // for no provider. Empty leaves the choice to the dialog.
+    // The provider a new access point is created for, settled by the
+    // section the creation started in.
     provider: { type: String, default: "" },
   },
   data() {
     return {
-      valid: false,
-      // The way into a new access point, chosen by the switch at the top:
-      // "provider" shows the listing over the form, "manual" the form alone.
-      // Switching hides and shows the listing and touches nothing entered.
-      mode: PROVIDER_MODE,
       form: emptyForm(),
       // The Öffnungsart owns `config.openAction`, so it lives beside the
       // JSON text rather than in it: taken out of the text on load, merged
@@ -146,30 +139,24 @@ export default {
       configText: "{}",
       configError: "",
       // The switch as the admin set it, or as a stored access point has it.
-      // A new one shows the provider's default until touched, see
-      // `qrScanShown`.
+      // A new one shows the default until touched, see `qrScanShown`.
       qrScanRequired: true,
       // Only a switch the admin actually touched is sent on create - an
       // untouched switch leaves the field out so the server default applies.
       validationRulesTouched: false,
-      advancedPanel: [],
+      // „Weitere Einstellungen“: folded on create, open on edit.
+      more: undefined,
       saving: false,
       saveError: "",
-      pickerProvider: "",
-      pickerLockId: "",
-      // The provider the form was opened on when there was nothing to take
-      // over from and one provider active - a Pareva Anlage is entered by
-      // hand, and with Pareva alone there is no choice to ask for. Remembered
-      // so that a preset does not count as something typed.
-      presetProvider: "",
-      providerLocks: [],
-      // The provider `providerLocks` were asked of.
-      locksProvider: "",
-      loadingLocks: false,
-      lockLoadError: "",
-      // The provider whose listing answered that the tenant has not switched
-      // it on: the access point is saved all the same and checked once it is.
-      inactiveProvider: "",
+      listing: [],
+      loadingListing: false,
+      listingError: "",
+      // The last line of the listing was chosen: the id is typed in.
+      manual: false,
+      // Editing: the lock is swapped, so the listing or the id field shows.
+      swapping: false,
+      // The Bezeichnung the last pick filled in: a label typed by hand stays.
+      pickedLabel: "",
       // The mode a Salto door was stored on that Salto KS does not support;
       // the form proposes `remote` instead.
       unsupportedStoredMode: "",
@@ -186,191 +173,182 @@ export default {
     isEdit() {
       return !!this.form.id;
     },
+    fields() {
+      return accessPointFields(this.form.provider, this.form.type);
+    },
+    kindKey() {
+      return `accessPoint.management.dialog.kinds.${this.fields.kind}`;
+    },
     title() {
-      return this.isEdit
-        ? this.$t("accessPoint.management.dialog.editTitle")
-        : this.$t("accessPoint.management.dialog.createTitle");
+      return this.$t(`${this.kindKey}.${this.isEdit ? "edit" : "create"}`);
     },
-    isLocker() {
-      return isLockerAccessPoint(this.form);
+    noun() {
+      return this.$t(`${this.kindKey}.noun`);
     },
-    // The type is shown, not asked: it follows the provider, and a select
-    // whose answer is already settled is a question without a choice.
-    typeLabel() {
-      return accessPointTypeLabel(this.form);
+    typeIcon() {
+      return this.form.type === LOCKER_TYPE
+        ? "mdi-locker-multiple"
+        : "mdi-door-closed-lock";
     },
-    // Asked only where the provider offers more than one type - Open Locker
-    // its Schließfachanlage and the fixed Fach - and only for a new access
-    // point: a stored one keeps the type its bookings were made with.
+    activeProvider() {
+      return this.providers.find((p) => p.id === this.form.provider) || null;
+    },
+    providerTitle() {
+      const provider = this.form.provider;
+      return (
+        this.activeProvider?.title ||
+        createLockAndAccessAppDefaults()[provider]?.title ||
+        provider
+      );
+    },
+    // Asked only of Open Locker, and only for a new access point: a stored
+    // one keeps the type its bookings were made with.
     typeOptions() {
       if (this.isEdit) return [];
-      const types = providerTypes(this.form.provider);
-      if (types.length < 2) return [];
-      return types.map((type) => ({
-        value: type,
-        text: accessPointTypeLabel({ provider: this.form.provider, type }),
-      }));
+      const types = accessPointTypes(this.form.provider);
+      return types.length < 2 ? [] : types;
     },
-    // A Schließfachanlage whose Fächer are chosen here and assigned by the
-    // platform (ECCdigital/tickets#1037), rather than by its provider.
-    // A stored one by its data; a new one by its provider, as it has none.
-    picksCompartments() {
-      if (!this.isLocker) return false;
-      return this.isEdit
-        ? carriesOwnCompartments(this.accessPoint)
-        : lockerCarriesCompartments(this.form.provider);
+    // The listing is there where the provider has one and lists it - an
+    // active provider with `listAccessPoints`. Without it the id is typed in.
+    canList() {
+      return this.fields.listing && canListAccessPoints(this.activeProvider);
     },
-    // The provider whose listing the Fächer are chosen from, while there is
-    // one to choose for.
-    compartmentSource() {
-      return this.picksCompartments ? this.form.provider : "";
+    // The listing or the id field are asked for: on create, and on edit once
+    // „Tauschen“ is clicked. The Fächer of an Anlage are always at hand.
+    choosing() {
+      return !this.fields.compartments && (!this.isEdit || this.swapping);
     },
-    takenCompartments() {
+    showLockLine() {
+      return this.isEdit && !this.fields.compartments && !this.swapping;
+    },
+    showList() {
+      return this.choosing && this.canList;
+    },
+    showIdField() {
+      return this.choosing && (!this.canList || this.manual);
+    },
+    // A Fach of an Anlage that carries its own is taken as well: it is no
+    // fixed Fach once it stands in an Anlage.
+    taken() {
       return takenProviderIds(this.accessPoints, {
         provider: this.form.provider,
         exceptId: this.form.id,
       });
     },
-    providerTitle() {
-      const provider = this.form.provider;
-      return (
-        this.providers.find((p) => p.id === provider)?.title ||
-        createLockAndAccessAppDefaults()[provider]?.title ||
-        provider
+    entries() {
+      return this.listing.map((lock) => {
+        const externalId = String(lock.externalId || lock.id);
+        return {
+          ...lock,
+          externalId,
+          taken: this.taken.has(externalId),
+          // A Salto lock whose IQ is not activated lists no modes: it can do
+          // nothing until it is.
+          iqOff:
+            this.fields.iq &&
+            Array.isArray(lock.supportedModes) &&
+            lock.supportedModes.length === 0,
+          group: lock.metadata?.lockerBank?.name || "",
+        };
+      });
+    },
+    // The listing by Schließfachschrank where the provider names one (Open
+    // Locker's Fächer), else as one group.
+    entryGroups() {
+      const groups = new Map();
+      this.entries.forEach((entry) => {
+        if (!groups.has(entry.group)) {
+          groups.set(entry.group, { name: entry.group, entries: [] });
+        }
+        groups.get(entry.group).entries.push(entry);
+      });
+      return [...groups.values()];
+    },
+    // The lock behind the access point, as the listing names it.
+    entry() {
+      return this.entries.find(
+        (entry) => entry.externalId === String(this.form.externalId)
       );
     },
-    // Which id fields the access point shows follows the provider, the same
-    // way on create and on edit: a door and an unknown provider carry both,
-    // a locker system of iFBS or Pareva only the one its provider reads, an
-    // Open Locker Schließfachanlage none.
-    idFields() {
-      return providerIdFields(this.form.provider, this.form.type);
+    lockName() {
+      if (this.entry) return this.entry.label || this.entry.externalId;
+      if (this.loadingListing) return "";
+      return this.$t("accessPoint.management.dialog.byHand");
     },
-    externalIdLabel() {
-      return this.$t(`accessPoint.management.fields.${this.idFields.label}`);
-    },
-    // A provider with a field of its own brings its hint along. Otherwise the
-    // hint goes by type: swapping the device behind a door keeps its QR code,
-    // a locker system has none, so the sentence about reprinting must not be
-    // shown for it.
-    externalIdHint() {
-      if (this.idFields.hint) {
-        return this.$t(`accessPoint.management.fields.${this.idFields.hint}`);
-      }
-      return this.isLocker
-        ? this.$t("accessPoint.management.fields.externalIdHintLocker")
-        : this.$t("accessPoint.management.fields.externalIdHint");
-    },
-    externalIdPlaceholder() {
-      return this.idFields.placeholder
-        ? this.$t(`accessPoint.management.fields.${this.idFields.placeholder}`)
+    idLabel() {
+      return this.fields.idLabel
+        ? this.$t(`accessPoint.management.fields.${this.fields.idLabel}`)
         : "";
     },
-    showLocationField() {
-      return this.idFields.locationField;
+    // The hint is about swapping the lock, so it is shown where it is
+    // swapped, not where it is created.
+    idHint() {
+      return this.isEdit && this.fields.idHint
+        ? this.$t(`accessPoint.management.fields.${this.fields.idHint}`)
+        : "";
     },
-    typeIcon() {
-      return this.isLocker ? "mdi-locker-multiple" : "mdi-door-closed-lock";
+    idPlaceholder() {
+      return this.fields.idPlaceholder
+        ? this.$t(`accessPoint.management.fields.${this.fields.idPlaceholder}`)
+        : "";
     },
-    // The choice between the two ways in is only offered while there is a
-    // provider that lists access points to take over from; without one the
-    // dialog is the form alone.
-    showModeToggle() {
-      return !this.isEdit && this.pickerProviderOptions.length > 0;
+    iqWarning() {
+      return !!this.entry?.iqOff;
     },
-    createModes() {
-      return CREATE_MODES.map((mode) => ({
-        ...mode,
-        text: this.$t(`accessPoint.management.dialog.modes.${mode.value}`),
-      }));
-    },
-    modeHint() {
-      return this.$t(`accessPoint.management.dialog.modeHints.${this.mode}`);
-    },
-    // Nothing entered yet: the form is what `reset()` made of it - a preset
-    // provider included - the configuration untouched, the QR switch not
-    // flipped. The provider defaults only ever run behind a provider, so
-    // type and mode need no check of their own.
-    untouched() {
-      const blank = emptyForm();
-      return (
-        ["label", "externalId", "providerLocationId", "location"].every(
-          (field) => this.form[field] === blank[field]
-        ) &&
-        (this.form.provider === blank.provider ||
-          this.form.provider === this.presetProvider) &&
-        this.configText === "{}" &&
-        this.compartments.length === 0 &&
-        !this.validationRulesTouched
+    typeHint() {
+      if (!this.typeOptions.length) return "";
+      return this.$t(
+        `accessPoint.management.dialog.typeHints.${this.fields.kind}`
       );
     },
     // A new access point starts with the rule the server would default to
-    // for its provider - a QR scan, except for an Open Locker compartment -
-    // so what the switch shows is what an untouched create produces. Once
-    // touched, and for a stored access point, it shows what is set.
+    // for it, so what the switch shows is what an untouched create
+    // produces. Once touched, and for a stored access point, it shows what
+    // is set.
     qrScanShown() {
       if (this.isEdit || this.validationRulesTouched) {
         return this.qrScanRequired;
       }
-      return providerRequiresScanByDefault(this.form.provider);
+      return this.fields.qrScanDefault;
     },
-    // The hint under the untouched switch of a new access point names the
-    // default it shows.
-    qrScanDefaultHint() {
-      return this.qrScanShown
-        ? this.$t("accessPoint.management.rules.defaultHint")
-        : this.$t("accessPoint.management.rules.defaultHintOff");
-    },
-    // The picker is the way into an iFBS locker system and the shortcut for
-    // a door - it is what reads `listAccessPoints`. Entering a door or a
-    // Pareva Anlage by hand goes without it.
-    showPicker() {
-      return this.showModeToggle && this.mode === PROVIDER_MODE;
-    },
-    // A Schließfachanlage that carries its own Fächer is not one lock of the
-    // listing: its Fächer are chosen below, so the single pick is left out.
-    showLockSelect() {
-      return !this.picksCompartments;
-    },
-    // The PIN-at-the-lock modes stay listed while they are unfinished, so the
-    // dialog shows what is coming - but they cannot be chosen. A Nuki door
-    // already stored on one keeps it; only picking it anew is barred.
-    //
-    // A Salto door opens remotely or not at all, for good: the backend
-    // refuses `authorization` and `both` at every Salto lock (tickets#499), so
-    // the dialog offers `remote` alone, without a „coming soon“ for the rest.
-    // A Salto door stored on one of them opens on `remote`, and the hint
-    // names the stored mode (`reset()`). An Open Locker compartment is opened
-    // remotely and in no other way, so it is offered `remote` alone as well.
-    modeOptions() {
-      const modes = providerModes(this.form.provider) || DOOR_MODES;
-      return modes.map((value) => {
-        const comingSoon = isComingSoonAccessPointMode(value);
-        return {
-          value,
-          text: this.$t(`accessPoint.management.modes.${value}`),
-          description: comingSoon
-            ? this.$t("accessPoint.comingSoon.mode")
-            : this.$t(`accessPoint.management.modeHints.${value}`),
-          disabled: comingSoon,
-        };
-      });
-    },
-    // Only Nuki knows an Öffnungsart, and only a door has one: the provider
-    // decides what `open` sends, and a compartment of a locker system has no
-    // latch to pull. While creating, the field follows the provider the
-    // moment it is taken over or typed in.
-    showOpenAction() {
-      return (
-        this.form.provider === NUKI_PROVIDER && this.form.type === DOOR_TYPE
+    qrScanHint() {
+      const value = this.$t(
+        `accessPoint.management.dialog.qrScan.${
+          this.fields.qrScanDefault ? "on" : "off"
+        }`
+      );
+      return this.$t(
+        `accessPoint.management.dialog.qrScan.${
+          this.fields.compartments ? "defaultAnlage" : "default"
+        }`,
+        { provider: this.providerTitle, value }
       );
     },
-    // What the picked lock can carry out, as the listing reports it. A
-    // listing without the field - an older backend - says nothing, and
-    // nothing is greyed out then: the backend refuses what it must when the
-    // access point is saved.
+    summary() {
+      return settingsSummary(this.fields, {
+        mode: this.form.mode,
+        openAction: this.openAction,
+        qrScan: this.qrScanShown,
+        location: this.form.location,
+      });
+    },
+    modeText() {
+      const key = `accessPoint.management.modes.${this.form.mode}`;
+      return this.$te(key) ? this.$t(key) : this.form.mode;
+    },
+    storedModeHint() {
+      if (!this.unsupportedStoredMode) return "";
+      return this.$t("accessPoint.management.storedModeUnsupported", {
+        stored: this.$t(
+          `accessPoint.management.modes.${this.unsupportedStoredMode}`
+        ),
+        proposed: this.$t(`accessPoint.management.modes.${REMOTE_MODE}`),
+      });
+    },
+    // What the chosen lock can carry out, as the listing reports it. A
+    // listing without the field says nothing, and nothing is greyed out.
     supportedOpenActions() {
-      const supported = this.matchingLock?.supportedOpenActions;
+      const supported = this.entry?.supportedOpenActions;
       return Array.isArray(supported) && supported.length > 0
         ? supported
         : null;
@@ -388,144 +366,19 @@ export default {
         };
       });
     },
-    // Swapping the device behind a door keeps the Öffnungsart it was set to,
-    // so the field says what the listing thinks of it instead of the sentence
-    // about what Nuki does - the mismatch is the news here.
+    // Swapping the device keeps the Öffnungsart it was set to, so the field
+    // says what the listing thinks of it - the mismatch is the news here.
     openActionHint() {
       return this.isUnsupportedOpenAction(this.openAction)
         ? this.$t("accessPoint.management.openActionMismatch")
         : this.$t("accessPoint.management.openActionHint");
     },
-    // The JSON field says where the Öffnungsart is edited, but only where
-    // there is one to edit.
-    configHint() {
-      const hint = this.$t("accessPoint.management.config.hint");
-      return this.showOpenAction
-        ? `${hint} ${this.$t("accessPoint.management.config.hintOpenAction")}`
-        : hint;
-    },
-    // The picker offers only what can be taken over: providers that list
-    // access points. Pareva is not among them - its listing names size
-    // codes, not the products a Pareva Anlage stands for.
-    pickerProviderOptions() {
-      return this.offeredProviders
-        .filter(canListAccessPoints)
-        .map((provider) => ({
-          value: provider.id,
-          text: provider.title || provider.id,
-        }));
-    },
-    // The free-text field keeps plain ids, and every active provider: one
-    // that lists nothing is still entered by hand here, and a provider may
-    // be edited to one that is not active for this tenant (swapping a lock,
-    // migrations).
-    providerIds() {
-      return this.providers.map((provider) => provider.id);
-    },
-    // The providers a new access point may be created for: the one settled
-    // by `provider` - as it is active, or bare where it is not - or else
-    // every active one.
-    offeredProviders() {
-      if (!this.provider) return this.providers;
-      return [
-        this.providers.find((p) => p.id === this.provider) || {
-          id: this.provider,
-        },
-      ];
-    },
-    requiredRule() {
-      return [(v) => !!v || this.$t("accessPoint.management.required")];
-    },
-    // A Fach of an Anlage that carries its own is taken as well: it is no
-    // fixed Fach once it stands in an Anlage.
-    pickerItems() {
-      const taken = new Map();
-      const takenAt = (provider) => {
-        if (!taken.has(provider)) {
-          taken.set(
-            provider,
-            takenProviderIds(this.accessPoints, {
-              provider,
-              exceptId: this.form.id,
-            })
-          );
-        }
-        return taken.get(provider);
-      };
-      return this.providerLocks.map((lock) => {
-        const externalId = lock.externalId || lock.id;
-        return {
-          ...lock,
-          externalId,
-          alreadyCreated: takenAt(lock.provider || this.pickerProvider).has(
-            String(externalId)
-          ),
-        };
-      });
-    },
-    // The provider lock behind the currently edited access point, when the
-    // list happens to be loaded - used for the mode hint only.
-    matchingLock() {
-      return this.pickerItems.find(
-        (lock) => lock.externalId === this.form.externalId
-      );
-    },
-    doorModeHint() {
-      if (this.unsupportedStoredMode) {
-        return this.$t("accessPoint.management.storedModeUnsupported", {
-          stored: this.$t(
-            `accessPoint.management.modes.${this.unsupportedStoredMode}`
-          ),
-          proposed: this.$t(`accessPoint.management.modes.${SALTO_MODES[0]}`),
-        });
-      }
-      return this.unsupportedMode
-        ? this.$t("accessPoint.management.modeUnsupported")
-        : "";
-    },
-    unsupportedMode() {
-      const supported = this.matchingLock?.supportedModes;
-      if (!Array.isArray(supported) || supported.length === 0) return false;
-      return !supported.includes(this.form.mode);
-    },
-    // A Salto lock whose IQ is not activated, or needs re-activation, lists
-    // no modes: it can do nothing right now. The backend saves the door all
-    // the same (tickets#570); the hint says why it does not open yet and
-    // where the IQ is activated - on the tab of the locking systems, not here.
-    iqNotActivatedHint() {
-      if (this.form.provider !== SALTO_PROVIDER) return "";
-      const supported = this.matchingLock?.supportedModes;
-      if (!Array.isArray(supported) || supported.length > 0) return "";
-
-      return this.$t("accessPoint.management.iqNotActivated", {
-        tab: this.$t("accessPoint.management.providersTab"),
-        section: this.$t("accessPoint.tenant.salto.iq.title"),
-      });
-    },
-    // Lock and mode are judged against the provider's listing. While the
-    // provider is not active there is none, and the backend saves without
-    // it - the hint says so, so a save without a check is no surprise.
-    providerInactiveHint() {
-      const provider = this.inactiveProvider;
-      if (!provider) return "";
-      const picked = this.showPicker && this.pickerProvider === provider;
-      if (!picked && this.form.provider !== provider) return "";
-
-      const title =
-        this.providers.find((p) => p.id === provider)?.title ||
-        createLockAndAccessAppDefaults()[provider]?.title ||
-        provider;
-      const key = this.isLocker ? "locker" : "door";
-      return this.$t(`accessPoint.management.providerInactive.${key}`, {
-        provider: title,
-      });
-    },
-    // Only a door is located by its provider (NUKI); the location of an
-    // Anlage is entered by hand (ECCdigital/tickets#1045).
+    // Only a door is located by its provider (NUKI).
     canPrefillLocation() {
-      if (!this.isEdit || this.isLocker) return false;
-      const provider = this.providers.find((p) => p.id === this.form.provider);
-      return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
+      return (
+        this.form.type === DOOR_TYPE &&
+        hasProviderCapability(this.activeProvider, GET_LOCATION_CAPABILITY)
+      );
     },
     // The location as stored, against which the input measures "unchanged":
     // none for a new access point.
@@ -538,114 +391,57 @@ export default {
       const key = locationRefusal(this.form.location, this.storedLocation);
       return key ? this.$t(key) : "";
     },
+    nextStep() {
+      return this.$t(
+        `accessPoint.management.dialog.${
+          this.fields.qrCode ? "nextStep" : "nextStepNoQr"
+        }`
+      );
+    },
+    requiredRule() {
+      return [
+        (v) =>
+          !!String(v || "").trim() ||
+          this.$t("accessPoint.management.required"),
+      ];
+    },
+    // Required are the choice or the id, and the Bezeichnung.
+    canSave() {
+      if (!this.form.label.trim()) return false;
+      if (this.fields.compartments) return this.compartments.length > 0;
+      return !!String(this.form.externalId || "").trim();
+    },
   },
   watch: {
     open(isOpen) {
       if (isOpen) this.reset();
     },
-    // The picker's own listing; an access point opened for editing has
-    // none, its listing comes from `reset()`.
-    pickerProvider(provider) {
-      if (this.isEdit) return;
-      this.providerLocks = [];
-      this.pickerLockId = "";
-      this.inactiveProvider = "";
-      if (provider) this.fetchProviderLocks(provider);
-      this.followPickerProvider();
-    },
-    // The listing a Schließfachanlage chooses its Fächer from, once the form
-    // is one: typed in, chosen as the type, or opened stored.
-    compartmentSource(provider) {
-      if (provider) this.loadCompartmentListing();
-    },
-    // The provider list may still be loading while the dialog opens: a dialog
-    // that opened on the bare form for want of a listing chooses its way in
-    // anew once the list arrives - as long as nothing has been typed yet. A
-    // dialog that already had a listing keeps what the admin did with it.
-    providers() {
-      if (!this.open || this.isEdit || !this.untouched) return;
-      if (this.mode === PROVIDER_MODE || this.pickerProvider) return;
-      this.chooseWayIn();
-    },
   },
   methods: {
-    // What a provider hands out is the provider's business: Nuki and Salto KS
-    // list doors, iFBS and Pareva locker systems, whose mode follows from the
-    // provider too. A provider outside that table leaves the type as it is.
-    //
-    // Applied where the provider is chosen - typed in, or taken over from a
-    // listing - and not on a watcher: a stored access point opens with the
-    // provider it has, and its mode must survive that, since for a locker
-    // system the mode field is not even shown.
-    applyProviderDefaults(provider) {
-      const defaults = providerAccessPointDefaults(provider);
-      if (!defaults) return;
-
-      this.form.type = defaults.type;
-      if (defaults.mode) this.form.mode = defaults.mode;
-    },
-    // A listing provider that offers a choice of type (Open Locker) puts the
-    // untouched form on itself at once, so the choice - and with it the
-    // Schließfachanlage the form starts as - is there before anything is
-    // taken over. A form with a provider of its own keeps it.
-    followPickerProvider() {
-      const provider = this.pickerProvider;
-      if (!provider || this.mode !== PROVIDER_MODE) return;
-      if (providerTypes(provider).length < 2) return;
-      if (this.form.provider && this.form.provider !== this.presetProvider) {
-        return;
-      }
-      this.form.provider = provider;
-      this.presetProvider = provider;
-      this.applyProviderDefaults(provider);
-    },
-    chooseType(type) {
-      this.form.type = type;
-      this.compartmentErrors = {};
-    },
-    // Asked of an active provider that lists, and of one that is not active,
-    // whose answer says so; never twice for the same provider.
-    loadCompartmentListing() {
-      const provider = this.compartmentSource;
-      if (!provider || this.locksProvider === provider) return;
-      const active = this.providers.find((p) => p.id === provider);
-      if (active && !canListAccessPoints(active)) return;
-      this.fetchProviderLocks(provider);
-    },
-    // A provider typed in that is not active for the tenant has its listing
-    // asked all the same, so the dialog can say that lock and mode are
-    // checked once it is (tickets#311). The listing of an active provider is
-    // the picker's; this asks only whether the provider is on.
-    onProviderChange(provider) {
-      this.applyProviderDefaults(provider);
-      if (!provider || this.providers.some((p) => p.id === provider)) return;
-      this.checkProviderActive(provider);
-    },
-    async checkProviderActive(provider) {
-      try {
-        await ApiAccessAppsService.getAccessPoints(this.tenantId, provider);
-      } catch (error) {
-        if (isProviderNotActiveError(error)) this.inactiveProvider = provider;
-      }
-    },
-    // True where the lock lists its Öffnungsarten and this one is not among
-    // them - a listing that says nothing leaves every option alone.
-    isUnsupportedOpenAction(openAction) {
-      const supported = this.supportedOpenActions;
-      return !!supported && !supported.includes(openAction);
-    },
     reset() {
       const source = this.accessPoint;
-      this.form = source ? { ...emptyForm(), ...source } : emptyForm();
+      const provider = source?.provider || this.provider;
+      this.form = {
+        ...emptyForm(),
+        ...source,
+        provider,
+        type: source?.type || accessPointTypes(provider)[0],
+      };
+      this.form.label = this.form.label || "";
+      this.form.externalId = this.form.externalId || "";
       this.form.providerLocationId = this.form.providerLocationId || "";
+      if (!source) {
+        this.form.mode =
+          providerAccessPointDefaults(provider)?.mode || REMOTE_MODE;
+      }
       this.unsupportedStoredMode = "";
       if (
-        this.form.provider === SALTO_PROVIDER &&
-        !isLockerAccessPoint(this.form) &&
-        !SALTO_MODES.includes(this.form.mode)
+        provider === SALTO_PROVIDER &&
+        this.form.type === DOOR_TYPE &&
+        this.form.mode !== REMOTE_MODE
       ) {
         this.unsupportedStoredMode = this.form.mode;
-        this.form.mode = SALTO_MODES[0];
+        this.form.mode = REMOTE_MODE;
       }
       const { openAction, ...config } = source?.config || {};
       // The Fächer of an Anlage that carries its own are chosen in a list of
@@ -657,11 +453,8 @@ export default {
       }
       this.compartmentErrors = {};
       this.leave = closedLeave();
-      // A stored value outside the five - written into the JSON text past an
-      // older backend - is kept and saved back unchanged, rather than being
-      // read as "Automatisch", which would change the door behind the admin's
-      // back. The select has no option for it and shows empty; refusing it is
-      // the backend's word, not this dialog's.
+      // A stored value outside the five is kept and saved back unchanged,
+      // rather than being read as "Automatisch".
       this.openAction =
         typeof openAction === "string" && openAction
           ? openAction
@@ -671,127 +464,79 @@ export default {
       this.configError = "";
       this.saveError = "";
       this.prefillHint = "";
-      this.lockLoadError = "";
-      this.inactiveProvider = "";
-      this.providerLocks = [];
-      this.locksProvider = "";
-      this.pickerLockId = "";
-      this.advancedPanel = [];
+      this.manual = false;
+      this.swapping = false;
+      this.pickedLabel = "";
       this.validationRulesTouched = false;
-      this.opening += 1;
-      // A new access point shows the provider's default until the switch is
-      // touched (`qrScanShown`).
       this.qrScanRequired = source ? requiresQrScan(source) : true;
-      // A stored access point is edited as it is; only a new one has a way
-      // in to choose.
-      if (source) {
-        this.mode = MANUAL_MODE;
-        this.pickerProvider = "";
-        this.presetProvider = "";
-        if (this.listsOnEdit(source)) this.fetchProviderLocks(source.provider);
-      } else {
-        this.chooseWayIn();
-        this.followPickerProvider();
-      }
+      this.more = source ? MORE_OPEN : undefined;
+      this.opening += 1;
+      this.listing = [];
+      this.listingError = "";
+      if (this.canList) this.fetchListing(provider);
       this.$nextTick(() => this.$refs.form?.resetValidation());
     },
-    // The way into a new access point, from what is active: a provider that
-    // lists access points opens the listing, preset to the first of them.
-    // Without one the dialog is the form alone - and with exactly one
-    // provider active, the form starts on it, the way a tenant with Pareva
-    // alone lands on the Pareva Anlage without being asked. Two providers
-    // and no listing leave the choice to the admin.
-    //
-    // Runs on an untouched form only - fresh from `reset()`, or before
-    // anything was typed - so the provider it finds there is its own doing:
-    // a preset from an earlier run goes when the preset goes, with the type
-    // and mode it brought along.
-    chooseWayIn() {
-      const listable = this.pickerProviderOptions;
-      const offered = this.offeredProviders;
-      const preset =
-        this.provider ||
-        (!listable.length && offered.length === 1 ? offered[0].id : "");
-      const blank = emptyForm();
-
-      this.mode = listable.length ? PROVIDER_MODE : MANUAL_MODE;
-      this.pickerProvider = listable[0]?.value || "";
-      this.presetProvider = preset;
-      this.form.provider = preset || blank.provider;
-      this.form.type = blank.type;
-      this.form.mode = blank.mode;
-      if (preset) this.applyProviderDefaults(preset);
-    },
-    // A stored access point is checked against its provider's listing on
-    // every save, so the dialog reads it too: to say what the save will
-    // find. An active provider that lists nothing (Pareva) is not asked; a
-    // provider that is not active is, and its answer says so.
-    listsOnEdit(accessPoint) {
-      if (!accessPoint.provider) return false;
-      if (!accessPoint.externalId && !carriesOwnCompartments(accessPoint)) {
-        return false;
-      }
-      const active = this.providers.find((p) => p.id === accessPoint.provider);
-      return !active || canListAccessPoints(active);
-    },
-    async fetchProviderLocks(provider) {
-      this.locksProvider = provider;
-      this.loadingLocks = true;
-      this.lockLoadError = "";
-      this.inactiveProvider = "";
+    async fetchListing(provider) {
+      this.loadingListing = true;
       try {
         const response = await ApiAccessAppsService.getAccessPoints(
           this.tenantId,
           provider
         );
-        this.providerLocks = response.data || [];
+        this.listing = response.data || [];
       } catch (error) {
-        this.providerLocks = [];
-        if (isProviderNotActiveError(error)) {
-          this.inactiveProvider = provider;
-        } else {
-          this.lockLoadError = formatAccessPointErrorMessage(error, {
-            fallbackKey: "accessPoint.load.error.message",
-          });
-        }
+        this.listing = [];
+        this.listingError = formatAccessPointErrorMessage(error, {
+          fallbackKey: "accessPoint.load.error.message",
+        });
       } finally {
-        this.loadingLocks = false;
+        this.loadingListing = false;
       }
     },
-    lockText(lock) {
-      return accessPointLabel(lock);
+    // A pick fills the id and, where the admin typed none, the Bezeichnung.
+    // Editing keeps the Bezeichnung: it was given before.
+    choose(entry) {
+      if (entry.taken) return;
+      this.manual = false;
+      this.swapping = false;
+      this.form.externalId = entry.externalId;
+      if (this.fields.providerLocationId) {
+        this.form.providerLocationId = entry.locationId || "";
+      }
+      const label = entry.label || "";
+      if (
+        !this.isEdit &&
+        (!this.form.label || this.form.label === this.pickedLabel)
+      ) {
+        this.form.label = label;
+      }
+      this.pickedLabel = label;
     },
-    // Prefill from the picked lock; every field stays editable afterwards, so
-    // the same form covers manual creation and swapping a lock.
-    applyLock() {
-      const lock = this.pickerItems.find(
-        (item) => item.externalId === this.pickerLockId
-      );
-      if (!lock) return;
-
-      this.form.provider = lock.provider || this.pickerProvider;
-      this.form.externalId = lock.externalId;
-      this.form.label = lock.label || this.form.label;
-      // A provider whose access point shows no location field gets none from
-      // the listing either: Pareva lists the `lockerId` of the app there, iFBS
-      // its `LocationID` a second time - neither is read back.
-      if (this.showLocationField) {
-        this.form.providerLocationId = lock.locationId || "";
-      }
-      // What the provider lists is what it hands out. For a provider the
-      // defaults table knows, the table has the last word; for any other
-      // provider the listing is the only answer there is.
-      if (lock.type) this.form.type = lock.type;
-      if (isLockerAccessPoint(lock) && lock.supportedModes?.length) {
-        this.form.mode = lock.supportedModes[0];
-      }
-      this.applyProviderDefaults(this.form.provider);
-      // A provider that offers several types lists one of them: an Open
-      // Locker compartment taken over is the fixed Fach, not the Anlage the
-      // provider starts with.
-      if (providerTypes(this.form.provider).includes(lock.type)) {
-        this.form.type = lock.type;
-      }
+    chooseManual() {
+      this.manual = true;
+      if (!this.isEdit) this.form.externalId = "";
+    },
+    swap() {
+      this.swapping = true;
+      this.manual = false;
+    },
+    // Open Locker's choice starts the lock afresh: an Anlage has Fächer, a
+    // fixed Fach one id.
+    chooseType(type) {
+      this.form.type = type;
+      this.form.externalId = "";
+      this.compartments = [];
+      this.compartmentErrors = {};
+      this.manual = false;
+    },
+    isSelected(entry) {
+      return !this.manual && entry.externalId === String(this.form.externalId);
+    },
+    // True where the lock lists its Öffnungsarten and this one is not among
+    // them - a listing that says nothing leaves every option alone.
+    isUnsupportedOpenAction(openAction) {
+      const supported = this.supportedOpenActions;
+      return !!supported && !supported.includes(openAction);
     },
     async prefillLocation() {
       this.prefilling = true;
@@ -834,15 +579,13 @@ export default {
     /**
      * The field's answer, merged into what the JSON text holds: an
      * `openAction` typed there is overwritten, and "Automatisch" writes no key
-     * at all - a missing key is what the provider reads as "decide by device",
-     * so an untouched door produces no diff in `config`. An access point that
-     * carries no Öffnungsart - another provider, a locker system - loses the
-     * key with it.
+     * at all - a missing key is what the provider reads as "decide by device".
+     * An access point without Öffnungsart loses the key with it.
      */
     withOpenAction(config) {
       const merged = { ...config };
       delete merged.openAction;
-      if (this.picksCompartments) {
+      if (this.fields.compartments) {
         merged.compartments = this.compartments.map(
           ({ id, number, lockerBank, outOfService }) => ({
             id,
@@ -852,7 +595,7 @@ export default {
           })
         );
       }
-      if (!this.showOpenAction || this.openAction === AUTO_OPEN_ACTION) {
+      if (!this.fields.openAction || this.openAction === AUTO_OPEN_ACTION) {
         return merged;
       }
       return { ...merged, openAction: this.openAction };
@@ -887,16 +630,15 @@ export default {
     },
     buildPayload() {
       const payload = {
-        label: this.form.label,
+        label: this.form.label.trim(),
         type: this.form.type,
         provider: this.form.provider,
         // An Anlage that carries its own Fächer has no id of its own.
-        externalId: this.picksCompartments ? "" : this.form.externalId,
-        // Created without a location field, the access point is created
-        // without a location id. Edited, the stored one passes through unseen
-        // - an old Pareva row loses nothing.
+        externalId: this.fields.compartments ? "" : this.form.externalId,
+        // Created without the field, the access point is created without a
+        // location id. Edited, the stored one passes through unseen.
         providerLocationId:
-          this.isEdit || this.showLocationField
+          this.isEdit || this.fields.providerLocationId
             ? this.form.providerLocationId || null
             : null,
         mode: this.form.mode,
@@ -906,16 +648,13 @@ export default {
 
       if (this.isEdit) payload.id = this.form.id;
 
-      if (this.isLocker && !this.picksCompartments) {
-        // An iFBS or Pareva Anlage has no rules to validate - the compartment
-        // is opened through the provider, not at a QR code. Left out on
-        // create, the server would apply its `qrScan` default.
+      if (this.form.type === LOCKER_TYPE && !this.fields.compartments) {
+        // An iFBS or Pareva Anlage has no rules to validate - the Fach is
+        // opened through the provider, not at a QR code.
         payload.validationRules = [];
       } else if (this.isEdit || this.validationRulesTouched) {
         // Explicitly empty means "no scan needed"; leaving the field out on
-        // create is what makes the server apply its default for the
-        // provider. An Anlage that picks its own Fächer carries the rules
-        // for all of them (ECCdigital/tickets#1060).
+        // create is what makes the server apply its default.
         payload.validationRules = this.buildValidationRules();
       }
 
@@ -932,9 +671,10 @@ export default {
       return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
     },
     async submit() {
-      if (this.saveRefusal || !this.$refs.form.validate()) return;
+      if (!this.canSave || this.saveRefusal) return;
+      if (!this.$refs.form.validate()) return;
       if (!this.parseConfig()) {
-        this.advancedPanel = [0];
+        this.more = MORE_OPEN;
         return;
       }
 
@@ -943,7 +683,7 @@ export default {
       this.compartmentErrors = {};
 
       const leaving =
-        this.isEdit && this.picksCompartments
+        this.isEdit && this.fields.compartments
           ? leavingCompartmentIds(this.accessPoint, this.compartments)
           : [];
       if (leaving.length > 0 && (await this.askAboutLeaving(leaving))) {
@@ -1017,9 +757,8 @@ export default {
       if (answer) this.$emit("saved", answer);
     },
     // The Öffnungsart's own faults belong at the select, a Fach's at the
-    // Fach; everything else - another field, a provider that did not answer
-    // - in the alert below, which names the refused Fächer as well, since
-    // the list may be scrolled away.
+    // Fach; everything else in the alert below, which names the refused
+    // Fächer as well, since the list may be scrolled away.
     applySaveError(error) {
       const { byIndex, rest } = splitCompartmentErrors(error);
       const atCompartments = Object.keys(byIndex).length > 0;
@@ -1041,6 +780,7 @@ export default {
         { fallbackKey: "accessPoint.management.errors.saveFailed" }
       );
       this.openActionError = fieldMessage;
+      if (fieldMessage) this.more = MORE_OPEN;
       this.saveError = atCompartments
         ? `${this.$t(
             "accessPoint.management.compartments.saveRefused"
@@ -1057,7 +797,7 @@ export default {
 <template>
   <v-dialog
     :value="open"
-    max-width="860"
+    max-width="640"
     scrollable
     persistent
     @input="!$event && close()"
@@ -1065,7 +805,10 @@ export default {
     <v-card>
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon left>{{ typeIcon }}</v-icon>
-        <span class="text-h5">{{ title }}</span>
+        <span class="text-h5" data-test="point-dialog-title">{{ title }}</span>
+        <span class="text-body-2 text--secondary ml-3">
+          {{ providerTitle }}
+        </span>
         <v-spacer />
         <v-btn icon :disabled="saving" @click="close">
           <v-icon>mdi-close</v-icon>
@@ -1074,422 +817,367 @@ export default {
       <v-divider />
 
       <v-card-text class="pa-6">
-        <v-form ref="form" v-model="valid">
-          <!-- The way in: from the provider's listing, or by hand -->
-          <template v-if="showModeToggle">
+        <v-form ref="form" @submit.prevent>
+          <!-- Open Locker: the one real choice of type -->
+          <template v-if="typeOptions.length">
             <v-btn-toggle
-              v-model="mode"
+              :value="form.type"
               mandatory
               dense
               color="primary"
-              class="create-mode-toggle d-flex mb-2"
+              class="d-flex mb-1"
+              data-test="type-choice"
+              @change="chooseType"
             >
               <v-btn
-                v-for="option in createModes"
-                :key="option.value"
-                :value="option.value"
-                :class="`create-mode-${option.value}`"
+                v-for="type in typeOptions"
+                :key="type"
+                :value="type"
+                :data-test="`type-choice-${type}`"
                 class="flex-grow-1"
                 text
+                small
               >
-                <v-icon left small>{{ option.icon }}</v-icon>
-                {{ option.text }}
+                {{
+                  $t(
+                    `accessPoint.management.dialog.kinds.${
+                      type === "locker" ? "lockerSystem" : "fixedCompartment"
+                    }.choice`
+                  )
+                }}
               </v-btn>
             </v-btn-toggle>
-            <div class="create-mode-hint text-caption text--secondary mb-4">
-              {{ modeHint }}
+            <div
+              class="text-caption text--secondary mb-4"
+              data-test="type-hint"
+            >
+              {{ typeHint }}
             </div>
           </template>
 
-          <!-- Provider listing, the way an iFBS locker system and optionally
-               a door is taken over -->
-          <template v-if="showPicker">
-            <div class="provider-picker section-title mb-3">
-              <v-icon small left>mdi-magnify</v-icon>
-              <span class="font-weight-medium">
-                {{ $t("accessPoint.management.picker.title") }}
-              </span>
-            </div>
-
-            <v-row dense align="center">
-              <v-col v-if="!provider" cols="12" md="4">
-                <v-select
-                  ref="pickerProviderSelect"
-                  v-model="pickerProvider"
-                  :items="pickerProviderOptions"
-                  :label="$t('accessPoint.management.picker.provider')"
-                  background-color="accent"
-                  filled
-                  dense
-                  hide-details
-                />
-              </v-col>
-              <v-col v-if="showLockSelect" cols="12" md="6">
-                <v-select
-                  ref="lockSelect"
-                  v-model="pickerLockId"
-                  :items="pickerItems"
-                  :item-text="lockText"
-                  item-value="externalId"
-                  :label="$t('accessPoint.management.picker.lock')"
-                  background-color="accent"
-                  filled
-                  dense
-                  hide-details
-                  :loading="loadingLocks"
-                  :disabled="loadingLocks || !pickerProvider"
-                >
-                  <template v-slot:item="{ item }">
-                    <div class="py-1">
-                      <div class="font-weight-medium">
-                        {{ lockText(item) }}
-                        <v-chip
-                          v-if="item.alreadyCreated"
-                          x-small
-                          label
-                          color="grey lighten-1"
-                          class="ml-2"
-                        >
-                          {{
-                            $t("accessPoint.management.picker.alreadyCreated")
-                          }}
-                        </v-chip>
-                      </div>
-                      <div class="text-caption text--secondary">
-                        {{ item.provider || pickerProvider }} •
-                        {{ item.externalId }}
-                      </div>
-                    </div>
-                  </template>
-                </v-select>
-              </v-col>
-              <v-col v-if="showLockSelect" cols="12" md="2" class="text-right">
-                <v-btn
-                  class="apply-lock"
-                  color="primary"
-                  outlined
-                  :disabled="!pickerLockId"
-                  @click="applyLock"
-                >
-                  {{ $t("accessPoint.management.picker.apply") }}
-                </v-btn>
-              </v-col>
-            </v-row>
-
-            <v-alert v-if="lockLoadError" color="error" text dense class="mt-2">
-              <v-icon left>mdi-alert-circle</v-icon>
-              {{ lockLoadError }}
-            </v-alert>
-
-            <div class="text-caption text--secondary mt-2 mb-4">
-              {{ $t("accessPoint.management.picker.hint") }}
-            </div>
-            <v-divider class="mb-4" />
-          </template>
-
-          <!-- Base data -->
-          <v-row dense>
-            <v-col cols="12" md="6">
-              <v-text-field
-                class="label-field"
-                v-model="form.label"
-                :label="$t('accessPoint.management.fields.label')"
-                background-color="accent"
-                filled
-                dense
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <div class="access-point-type">
-                <div class="text-caption text--secondary">
-                  {{ $t("accessPoint.management.fields.type") }}
-                </div>
-                <template v-if="typeOptions.length">
-                  <v-btn-toggle
-                    ref="typeChoice"
-                    :value="form.type"
-                    mandatory
-                    dense
-                    color="primary"
-                    class="type-choice"
-                    @change="chooseType"
-                  >
-                    <v-btn
-                      v-for="option in typeOptions"
-                      :key="option.value"
-                      :value="option.value"
-                      :class="`type-choice-${option.value}`"
-                      small
-                      text
-                    >
-                      {{ option.text }}
-                    </v-btn>
-                  </v-btn-toggle>
-                  <div class="text-caption text--secondary mt-1">
-                    {{ $t("accessPoint.management.fields.typeChoiceHint") }}
-                  </div>
-                </template>
-                <template v-else>
-                  <v-chip
-                    small
-                    label
-                    :color="isLocker ? 'indigo' : 'primary'"
-                    dark
-                  >
-                    <v-icon left small>{{ typeIcon }}</v-icon>
-                    {{ typeLabel }}
-                  </v-chip>
-                  <div class="text-caption text--secondary mt-1">
-                    {{ $t("accessPoint.management.fields.typeHint") }}
-                  </div>
-                </template>
+          <!-- Editing: the lock as one line, swapped on demand -->
+          <div v-if="showLockLine" class="lock-line mb-4" data-test="lock-line">
+            <v-icon small class="mr-3">mdi-link-variant</v-icon>
+            <div class="flex-grow-1">
+              <div class="font-weight-medium">{{ lockName }}</div>
+              <div class="text-caption text--secondary">
+                {{ idLabel }} {{ form.externalId }}
               </div>
-            </v-col>
-            <v-col v-if="!provider" cols="12" md="6">
-              <v-combobox
-                class="provider-field"
-                v-model="form.provider"
-                :items="providerIds"
-                @change="onProviderChange"
-                :label="$t('accessPoint.management.fields.provider')"
-                background-color="accent"
-                filled
-                dense
-                :rules="requiredRule"
-              />
-            </v-col>
-            <v-col v-if="idFields.idField" cols="12" md="6">
-              <v-text-field
-                class="external-id-field"
-                v-model="form.externalId"
-                :label="externalIdLabel"
-                :hint="externalIdHint"
-                :placeholder="externalIdPlaceholder"
-                :persistent-placeholder="!!externalIdPlaceholder"
-                persistent-hint
-                background-color="accent"
-                filled
-                dense
-              />
-            </v-col>
-            <v-col v-if="showLocationField" cols="12" md="6">
-              <v-text-field
-                v-model="form.providerLocationId"
-                :label="$t('accessPoint.management.fields.providerLocationId')"
-                background-color="accent"
-                filled
-                dense
-              />
-            </v-col>
-            <v-col v-if="!isLocker" cols="12" md="6">
-              <v-select
-                ref="modeSelect"
-                v-model="form.mode"
-                :items="modeOptions"
-                :label="$t('accessPoint.management.fields.mode')"
-                background-color="accent"
-                filled
-                dense
-                :rules="requiredRule"
-                :hint="doorModeHint"
-                persistent-hint
+            </div>
+            <v-btn small text color="primary" data-test="swap" @click="swap">
+              {{ $t("accessPoint.management.dialog.swap") }}
+            </v-btn>
+          </div>
+
+          <!-- Which lock: the listing as rows, by hand as the last one -->
+          <div v-if="showList" class="mb-4">
+            <div class="field-title">
+              {{
+                $t("accessPoint.management.dialog.pickTitle", {
+                  noun,
+                  provider: providerTitle,
+                })
+              }}
+            </div>
+            <div
+              v-if="isEdit && idHint"
+              class="text-caption text--secondary mb-2"
+              data-test="swap-hint"
+            >
+              {{ idHint }}
+            </div>
+            <div class="pick-list" data-test="pick-list">
+              <v-progress-linear v-if="loadingListing" indeterminate />
+              <div
+                v-if="listingError"
+                class="pick-row error--text text-body-2"
+                data-test="listing-error"
               >
-                <template v-slot:item="{ item }">
-                  <v-list-item-content>
-                    <v-list-item-title>
-                      {{ item.text }}
-                      <v-chip
-                        v-if="item.disabled"
-                        x-small
-                        color="warning"
-                        text-color="white"
-                        label
-                        class="ml-2"
-                      >
-                        {{ $t("accessPoint.comingSoon.badge") }}
-                      </v-chip>
-                    </v-list-item-title>
-                    <v-list-item-subtitle
-                      class="text-wrap"
-                      style="white-space: normal"
-                    >
-                      {{ item.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                </template>
-              </v-select>
-            </v-col>
-            <v-col v-if="showOpenAction" cols="12" md="6">
-              <v-select
-                ref="openActionSelect"
-                v-model="openAction"
-                :items="openActionOptions"
-                :label="$t('accessPoint.management.fields.config.openAction')"
-                background-color="accent"
-                filled
-                dense
-                :hint="openActionHint"
-                persistent-hint
-                :error-messages="openActionError"
-                @change="openActionError = ''"
+                {{ listingError }}
+              </div>
+              <template v-for="group in entryGroups">
+                <div
+                  v-if="group.name"
+                  :key="`group-${group.name}`"
+                  class="pick-group text-caption font-weight-medium"
+                  data-test="pick-group"
+                >
+                  {{
+                    $t("accessPoint.management.compartments.lockerBank", {
+                      name: group.name,
+                    })
+                  }}
+                </div>
+                <div
+                  v-for="item in group.entries"
+                  :key="item.externalId"
+                  class="pick-row"
+                  :class="{
+                    'pick-row--on': isSelected(item),
+                    'pick-row--taken': item.taken,
+                  }"
+                  data-test="pick-entry"
+                  :aria-disabled="item.taken ? 'true' : 'false'"
+                  @click="choose(item)"
+                >
+                  <v-icon small class="mr-3">
+                    {{
+                      isSelected(item)
+                        ? "mdi-radiobox-marked"
+                        : "mdi-radiobox-blank"
+                    }}
+                  </v-icon>
+                  <div class="flex-grow-1">
+                    <div>{{ item.label || item.externalId }}</div>
+                    <div class="text-caption text--secondary">
+                      {{ item.externalId }}
+                    </div>
+                  </div>
+                  <v-chip
+                    v-if="item.taken"
+                    x-small
+                    label
+                    data-test="pick-taken"
+                  >
+                    {{ $t("accessPoint.management.dialog.taken") }}
+                  </v-chip>
+                  <v-chip
+                    v-else-if="item.iqOff"
+                    x-small
+                    label
+                    color="warning"
+                    text-color="white"
+                    data-test="pick-iq-off"
+                  >
+                    {{ $t("accessPoint.management.dialog.iqOff") }}
+                  </v-chip>
+                </div>
+              </template>
+              <div
+                v-if="fields.manual"
+                class="pick-row pick-row--manual"
+                :class="{ 'pick-row--on': manual }"
+                data-test="pick-manual"
+                @click="chooseManual"
               >
-                <template v-slot:item="{ item }">
-                  <v-list-item-content>
-                    <v-list-item-title>{{ item.text }}</v-list-item-title>
-                    <v-list-item-subtitle
-                      class="text-wrap"
-                      style="white-space: normal"
-                    >
-                      {{ item.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                </template>
-              </v-select>
-            </v-col>
-          </v-row>
+                <v-icon small class="mr-3">mdi-pencil-outline</v-icon>
+                <div>
+                  {{ $t("accessPoint.management.dialog.byHandRow", { noun }) }}
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <v-alert
-            v-if="iqNotActivatedHint"
-            class="iq-not-activated-hint mt-2"
-            type="info"
-            text
-            dense
-          >
-            {{ iqNotActivatedHint }}
-          </v-alert>
-
-          <v-alert
-            v-if="providerInactiveHint"
-            class="provider-inactive-hint mt-2"
-            type="info"
-            text
-            dense
-          >
-            {{ providerInactiveHint }}
-          </v-alert>
-
-          <!-- The Fächer of a Schließfachanlage that carries its own -->
-          <template v-if="picksCompartments">
-            <div class="section-title mt-4 mb-2">
-              <v-icon small left>mdi-locker-multiple</v-icon>
-              <span class="font-weight-medium">
-                {{ $t("accessPoint.management.compartments.title") }}
-              </span>
+          <!-- Open Locker's Schließfachanlage: its Fächer are the lock -->
+          <div v-if="fields.compartments" class="mb-4">
+            <div class="field-title">
+              {{ $t("accessPoint.management.compartments.title") }}
             </div>
             <AccessPointCompartmentPicker
               :value="compartments"
-              :listing="locksProvider === form.provider ? providerLocks : []"
-              :taken="takenCompartments"
+              :listing="listing"
+              :taken="taken"
               :errors="compartmentErrors"
-              :loading="loadingLocks"
+              :loading="loadingListing"
               :provider-title="providerTitle"
               @input="onCompartmentsChange"
             />
-          </template>
-
-          <!-- QR rules describe a door, and an Anlage that picks its own
-               Fächer for all of them (ECCdigital/tickets#1060); an iFBS or
-               Pareva Anlage has none -->
-          <template v-if="!isLocker || picksCompartments">
-            <!-- Validation rules -->
-            <div class="section-title mt-4 mb-2">
-              <v-icon small left>mdi-shield-check</v-icon>
-              <span class="font-weight-medium">
-                {{ $t("accessPoint.management.rules.title") }}
-              </span>
-            </div>
-            <v-switch
-              :input-value="qrScanShown"
-              color="primary"
-              hide-details
-              class="mt-0"
-              @change="onValidationRuleChange($event)"
-            >
-              <template v-slot:label>
-                <div>
-                  <div class="font-weight-medium">
-                    {{ $t("accessPoint.management.rules.qrScan") }}
-                  </div>
-                  <div class="text-caption text--secondary">
-                    {{
-                      picksCompartments
-                        ? $t("accessPoint.management.rules.qrScanHintAnlage")
-                        : $t("accessPoint.management.rules.qrScanHint")
-                    }}
-                  </div>
-                </div>
-              </template>
-            </v-switch>
-            <div
-              v-if="!isEdit && !validationRulesTouched"
-              class="text-caption text--secondary mt-2"
-            >
-              {{ qrScanDefaultHint }}
-            </div>
-          </template>
-
-          <!-- Location: a door's, or the whole Anlage's - not one per
-               Schließfachschrank or Fach (ECCdigital/tickets#1045) -->
-          <div class="section-title mt-6 mb-3">
-            <v-icon small left>mdi-map-marker</v-icon>
-            <span class="font-weight-medium">
-              {{ $t("accessPoint.management.location.title") }}
-            </span>
           </div>
-          <LocationInput
-            ref="location"
-            :key="opening"
-            :value="form.location"
-            :stored="storedLocation"
-            narrow
-            class="mb-2"
-            @input="onLocationChange"
+
+          <v-text-field
+            v-if="showIdField"
+            v-model="form.externalId"
+            class="external-id-field mb-2"
+            :label="idLabel"
+            :hint="idHint"
+            :placeholder="idPlaceholder"
+            :persistent-placeholder="!!idPlaceholder"
+            persistent-hint
+            :rules="requiredRule"
+            background-color="accent"
+            filled
+            dense
           />
-          <div
-            v-if="!isEdit && !isLocker"
-            class="text-caption text--secondary mb-2"
-          >
-            {{ $t("accessPoint.management.location.prefillAfterSave") }}
-          </div>
-          <div v-if="canPrefillLocation" class="mb-2">
-            <v-btn
-              small
-              outlined
-              color="primary"
-              :loading="prefilling"
-              :disabled="prefilling"
-              @click="prefillLocation"
-            >
-              <v-icon left small>mdi-crosshairs-gps</v-icon>
-              {{ $t("accessPoint.management.location.prefill") }}
-            </v-btn>
-          </div>
-          <div v-if="prefillHint" class="text-caption text--secondary mb-2">
-            {{ prefillHint }}
-          </div>
 
-          <!-- Advanced -->
+          <v-alert
+            v-if="iqWarning"
+            type="warning"
+            text
+            dense
+            class="mb-3"
+            data-test="iq-warning"
+          >
+            {{ $t("accessPoint.management.dialog.iqWarning") }}
+          </v-alert>
+
+          <v-text-field
+            v-model="form.label"
+            class="label-field"
+            :label="$t('accessPoint.management.fields.label')"
+            :rules="requiredRule"
+            background-color="accent"
+            filled
+            dense
+          />
+
+          <!-- Everything with a default -->
           <v-expansion-panels
-            v-model="advancedPanel"
+            v-model="more"
             flat
-            multiple
-            class="mt-4"
+            class="more mt-2"
+            data-test="more-settings"
           >
             <v-expansion-panel>
-              <v-expansion-panel-header color="accent">
-                {{ $t("accessPoint.management.config.title") }}
+              <v-expansion-panel-header class="px-4">
+                <div>
+                  <div class="font-weight-medium">
+                    {{ $t("accessPoint.management.dialog.more") }}
+                  </div>
+                  <div
+                    class="text-caption text--secondary mt-1"
+                    data-test="settings-summary"
+                  >
+                    {{ summary }}
+                  </div>
+                </div>
               </v-expansion-panel-header>
-              <v-expansion-panel-content class="mt-3">
+              <v-expansion-panel-content>
+                <div v-if="fields.mode" class="mb-4" data-test="mode-line">
+                  <div class="text-caption text--secondary">
+                    {{ $t("accessPoint.management.fields.mode") }}
+                    <v-chip
+                      x-small
+                      label
+                      color="warning"
+                      text-color="white"
+                      class="ml-1"
+                    >
+                      {{ $t("accessPoint.comingSoon.badge") }}
+                    </v-chip>
+                  </div>
+                  <div>{{ modeText }}</div>
+                  <div class="text-caption text--secondary">
+                    {{ $t("accessPoint.management.dialog.modeHint") }}
+                  </div>
+                  <div
+                    v-if="storedModeHint"
+                    class="text-caption warning--text"
+                    data-test="stored-mode-hint"
+                  >
+                    {{ storedModeHint }}
+                  </div>
+                </div>
+
+                <v-select
+                  v-if="fields.openAction"
+                  ref="openActionSelect"
+                  v-model="openAction"
+                  :items="openActionOptions"
+                  :label="$t('accessPoint.management.fields.config.openAction')"
+                  background-color="accent"
+                  filled
+                  dense
+                  :hint="openActionHint"
+                  persistent-hint
+                  :error-messages="openActionError"
+                  class="mb-3"
+                  @change="openActionError = ''"
+                >
+                  <template v-slot:item="{ item }">
+                    <v-list-item-content>
+                      <v-list-item-title>{{ item.text }}</v-list-item-title>
+                      <v-list-item-subtitle
+                        class="text-wrap"
+                        style="white-space: normal"
+                      >
+                        {{ item.description }}
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                  </template>
+                </v-select>
+
+                <template v-if="fields.qrScan">
+                  <v-switch
+                    :input-value="qrScanShown"
+                    :label="$t('accessPoint.management.rules.qrScan')"
+                    color="primary"
+                    hide-details
+                    class="mt-0"
+                    data-test="qr-scan"
+                    @change="onValidationRuleChange($event)"
+                  />
+                  <div
+                    class="text-caption text--secondary mb-4"
+                    data-test="qr-scan-hint"
+                  >
+                    {{ qrScanHint }}
+                  </div>
+                </template>
+
+                <!-- Location: a door's, or the whole Anlage's -->
+                <div class="field-title mt-2">
+                  {{ $t("accessPoint.management.location.title") }}
+                </div>
+                <LocationInput
+                  ref="location"
+                  :key="opening"
+                  :value="form.location"
+                  :stored="storedLocation"
+                  narrow
+                  class="mb-2"
+                  @input="onLocationChange"
+                />
+                <div
+                  v-if="canPrefillLocation && !isEdit"
+                  class="text-caption text--secondary mb-2"
+                >
+                  {{ $t("accessPoint.management.location.prefillAfterSave") }}
+                </div>
+                <div v-if="canPrefillLocation && isEdit" class="mb-2">
+                  <v-btn
+                    small
+                    outlined
+                    color="primary"
+                    :loading="prefilling"
+                    :disabled="prefilling"
+                    data-test="prefill-location"
+                    @click="prefillLocation"
+                  >
+                    <v-icon left small>mdi-crosshairs-gps</v-icon>
+                    {{ $t("accessPoint.management.location.prefill") }}
+                  </v-btn>
+                </div>
+                <div
+                  v-if="prefillHint"
+                  class="text-caption text--secondary mb-2"
+                >
+                  {{ prefillHint }}
+                </div>
+
+                <div class="field-title mt-4">
+                  {{ $t("accessPoint.management.dialog.technical") }}
+                </div>
+                <v-text-field
+                  v-if="fields.providerLocationId"
+                  v-model="form.providerLocationId"
+                  class="provider-location-id-field"
+                  :label="
+                    $t('accessPoint.management.fields.providerLocationId')
+                  "
+                  background-color="accent"
+                  filled
+                  dense
+                />
                 <v-textarea
-                  class="config-field"
                   v-model="configText"
+                  class="config-field"
                   :label="$t('accessPoint.management.config.label')"
-                  :hint="configHint"
+                  :hint="$t('accessPoint.management.config.hint')"
                   persistent-hint
                   background-color="accent"
                   filled
                   dense
-                  rows="5"
+                  rows="3"
                   :error-messages="configError"
                   @input="configError = ''"
                 />
@@ -1507,6 +1195,14 @@ export default {
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
         <span
+          v-if="!isEdit"
+          class="text-caption text--secondary px-2"
+          data-test="next-step"
+        >
+          {{ nextStep }}
+        </span>
+        <v-spacer />
+        <span
           v-if="saveRefusal"
           class="save-refusal text-caption error--text px-2"
         >
@@ -1519,11 +1215,11 @@ export default {
           class="save-access-point"
           color="primary"
           :loading="saving"
-          :disabled="!!saveRefusal"
+          :disabled="!canSave || !!saveRefusal"
           @click="submit"
         >
           <v-icon left small>mdi-content-save</v-icon>
-          {{ $t("accessPoint.management.save") }}
+          {{ isEdit ? $t("accessPoint.management.save") : title }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -1541,16 +1237,54 @@ export default {
 </template>
 
 <style scoped>
-.section-title {
+.field-title {
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-semibold);
+  margin-bottom: 6px;
+}
+.pick-list {
+  border: 1px solid var(--scb-rule);
+  border-radius: var(--scb-radius-control);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.pick-group {
+  padding: 6px 12px 2px;
+  color: var(--scb-text-caption);
+}
+.pick-row {
   display: flex;
   align-items: center;
-  font-size: 0.95rem;
-  color: rgba(0, 0, 0, 0.7);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding-bottom: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--scb-rule);
 }
-.theme--dark .section-title {
-  color: rgba(255, 255, 255, 0.8);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+.pick-row:last-child {
+  border-bottom: 0;
+}
+.pick-row:hover {
+  background: var(--scb-hover-tint);
+}
+.pick-row--on,
+.pick-row--on:hover {
+  background: var(--scb-selected-tint);
+}
+.pick-row--taken {
+  color: var(--scb-text-muted);
+  cursor: not-allowed;
+}
+.pick-row--manual {
+  color: var(--scb-text-link);
+}
+.lock-line {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--scb-rule);
+  border-radius: var(--scb-radius-control);
+}
+.more {
+  border: 1px solid var(--scb-rule);
+  border-radius: var(--scb-radius-control);
 }
 </style>

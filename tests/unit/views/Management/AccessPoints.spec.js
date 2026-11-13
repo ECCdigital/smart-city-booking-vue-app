@@ -7,7 +7,14 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, forbiddenError } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  forbiddenError,
+  lifecycleError,
+  validationError,
+} from "@tests/unit/support/api";
+import { selectByLabel } from "@tests/unit/support/vuetify";
+import ApiGeoService from "@/services/api/ApiGeoService";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenant: vi.fn(), submitTenant: vi.fn() },
@@ -426,6 +433,11 @@ async function mountAccessPointsPage({
     ApiBookablesService.getBookables.mockResolvedValue({ data: bookables });
   }
   ApiBookingService.getBookings.mockResolvedValue({ data: bookings });
+  // The location input behind „Weitere Einstellungen“ asks the geo routes.
+  ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+  ApiGeoService.search.mockResolvedValue([]);
+  ApiGeoService.reverse.mockResolvedValue(null);
+  ApiGeoService.tile.mockReturnValue(new Promise(() => {}));
 
   const wrapper = mountComponent(AccessPoints, {
     store: store(),
@@ -546,7 +558,7 @@ describe("AccessPoints creates in the section of the provider", () => {
 
     const dialog = editDialog(wrapper);
     expect(dialog.findComponent({ name: "v-card" }).text()).toContain(
-      "Zugangspunkt anlegen"
+      "Schließfachanlage anlegen"
     );
     expect(labelsIn(dialog)).not.toContain("Anbieter");
     await dialog.find(".label-field input").setValue("Schließfächer Bahnhof");
@@ -594,7 +606,7 @@ describe("AccessPoints creates in the section of the provider", () => {
 
     await create(wrapper, "Nuki");
     const dialog = editDialog(wrapper);
-    await dialog.find(".create-mode-manual").trigger("click");
+    await dialog.find("[data-test='pick-manual']").trigger("click");
     await dialog.find(".label-field input").setValue("Hintereingang");
     await dialog.find(".external-id-field input").setValue("lock-2");
     await dialog.find(".save-access-point").trigger("click");
@@ -719,7 +731,7 @@ describe("AccessPoints keeps the actions of each access point", () => {
     await clickRowAction(wrapper, "Haupteingang", ".edit-access-point");
 
     const card = dialogCard(wrapper, "AccessPointEditDialog");
-    expect(card.text()).toContain("Zugangspunkt bearbeiten");
+    expect(card.text()).toContain("Tür bearbeiten");
     expect(card.find(".label-field input").element.value).toBe("Haupteingang");
   });
 
@@ -951,5 +963,984 @@ describe("AccessPoints keeps the actions of each access point", () => {
         dialogCard(wrapper, "AccessPointCompartmentQrDialog").text()
       ).toContain("Fahrradgarage Süd");
     });
+  });
+});
+
+const SALTO = {
+  id: "salto-ks",
+  title: "Salto KS",
+  providerCapabilities: ["listAccessPoints"],
+};
+const IFBS = {
+  id: "ifbs",
+  title: "iFBS",
+  providerCapabilities: ["listAccessPoints"],
+};
+
+/** A lock as the provider lists it (`listAccessPoints`). */
+function listed(provider, externalId, label, extra = {}) {
+  return {
+    id: externalId,
+    externalId,
+    provider,
+    label,
+    type: "door",
+    supportedModes: ["remote"],
+    ...extra,
+  };
+}
+
+const NUKI_LISTING = [
+  listed("nuki", "lock-1", "Haupteingang", { locationId: "Konto 48213" }),
+  listed("nuki", "lock-2", "Werkstatttür", { locationId: "Konto 48213" }),
+];
+
+/** Answers each provider's listing with its own entries. */
+function answerListings(listings) {
+  ApiAccessAppsService.getAccessPoints.mockImplementation(
+    async (_, provider) => ({ data: listings[provider] || [] })
+  );
+}
+
+/** The card of the dialog Zugangspunkt, wherever Vuetify detached it. */
+function pointDialog(wrapper) {
+  return dialogCard(wrapper, "AccessPointEditDialog");
+}
+
+function shown(wrapper, test) {
+  return pointDialog(wrapper).find(`[data-test='${test}']`);
+}
+
+function pickEntries(wrapper) {
+  return pointDialog(wrapper).findAll("[data-test='pick-entry']").wrappers;
+}
+
+function pickEntry(wrapper, label) {
+  return pickEntries(wrapper).find((entry) => entry.text().includes(label));
+}
+
+async function choose(wrapper, label) {
+  await pickEntry(wrapper, label).trigger("click");
+  await settle(wrapper);
+}
+
+function labelValue(wrapper) {
+  return pointDialog(wrapper).find(".label-field input").element.value;
+}
+
+async function savePoint(wrapper) {
+  await pointDialog(wrapper).find(".save-access-point").trigger("click");
+  await settle(wrapper);
+  return ApiAccessPointService.storeAccessPoint.mock.calls.at(-1)?.[0];
+}
+
+/**
+ * One dialog creates and edits an access point, its provider and kind
+ * settled by the section (ECCdigital/tickets#1109). Creating shows two
+ * things: what the provider lists, and the Bezeichnung; the rest waits with
+ * its default under „Weitere Einstellungen“.
+ */
+describe("AccessPoints creates an access point in a slim dialog", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+  });
+
+  it("shows a Nuki door the listing and the Bezeichnung, nothing else", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+
+    await create(wrapper, "Nuki");
+
+    const card = pointDialog(wrapper);
+    expect(card.text()).toContain("Tür anlegen");
+    expect(card.text()).toContain("Tür aus der Liste von Nuki wählen");
+    expect(pickEntries(wrapper).map((entry) => entry.text())).toEqual([
+      expect.stringContaining("Haupteingang"),
+      expect.stringContaining("Werkstatttür"),
+    ]);
+    expect(shown(wrapper, "pick-manual").text()).toBe(
+      "Nicht in der Liste: Tür von Hand eintragen"
+    );
+    expect(labelsIn(card)).toEqual(["Bezeichnung"]);
+  });
+
+  it("fills the Bezeichnung from the pick and saves the door by its id", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+
+    await choose(wrapper, "Werkstatttür");
+
+    expect(labelValue(wrapper)).toBe("Werkstatttür");
+    expect(await savePoint(wrapper)).toEqual({
+      label: "Werkstatttür",
+      type: "door",
+      provider: "nuki",
+      externalId: "lock-2",
+      providerLocationId: "Konto 48213",
+      mode: "remote",
+      config: {},
+      location: null,
+    });
+  });
+
+  it("keeps a Bezeichnung typed by hand when another lock is picked", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+
+    await choose(wrapper, "Haupteingang");
+    await choose(wrapper, "Werkstatttür");
+    expect(labelValue(wrapper)).toBe("Werkstatttür");
+
+    await pointDialog(wrapper).find(".label-field input").setValue("Werkstatt");
+    await choose(wrapper, "Haupteingang");
+    expect(labelValue(wrapper)).toBe("Werkstatt");
+  });
+
+  it("greys out what is created already and does not take it", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [DOOR] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+
+    const taken = pickEntry(wrapper, "Haupteingang");
+    expect(taken.text()).toContain("schon angelegt");
+    expect(pickEntry(wrapper, "Werkstatttür").text()).not.toContain(
+      "schon angelegt"
+    );
+
+    await choose(wrapper, "Haupteingang");
+
+    expect(labelValue(wrapper)).toBe("");
+    expect(
+      pointDialog(wrapper).find(".save-access-point").attributes("disabled")
+    ).toBe("disabled");
+  });
+
+  it("shows the id field only once the door is entered by hand", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+    expect(pointDialog(wrapper).find(".external-id-field").exists()).toBe(
+      false
+    );
+
+    await shown(wrapper, "pick-manual").trigger("click");
+    await settle(wrapper);
+
+    expect(labelsIn(pointDialog(wrapper))).toEqual([
+      "ID beim Anbieter",
+      "Bezeichnung",
+    ]);
+    await pointDialog(wrapper)
+      .find(".external-id-field input")
+      .setValue("lock-9");
+    await pointDialog(wrapper).find(".label-field input").setValue("Seitentür");
+    expect(await savePoint(wrapper)).toMatchObject({
+      provider: "nuki",
+      externalId: "lock-9",
+      label: "Seitentür",
+      providerLocationId: null,
+    });
+  });
+
+  it("folds the rest with a line that names its state", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+
+    expect(shown(wrapper, "more-settings").text()).toContain(
+      "Weitere Einstellungen"
+    );
+    expect(shown(wrapper, "settings-summary").text()).toBe(
+      "Öffnen per App · Öffnungsart Automatisch · QR-Scan erforderlich · kein Standort"
+    );
+    expect(shown(wrapper, "mode-line").exists()).toBe(false);
+  });
+
+  it("names the next step in the footer", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    await create(wrapper, "Nuki");
+
+    expect(shown(wrapper, "next-step").text()).toBe(
+      "Danach: zuordnen und QR-Code drucken"
+    );
+    expect(pointDialog(wrapper).find(".save-access-point").text()).toBe(
+      "Tür anlegen"
+    );
+  });
+
+  /** A Salto lock whose IQ is not activated lists no modes. */
+  describe("a Salto KS door", () => {
+    const SALTO_LISTING = [
+      listed("salto-ks", "c0ffee12-77a1", "Gemeinschaftsraum", {
+        supportedModes: [],
+      }),
+      listed("salto-ks", "c0ffee12-81b3", "Stadtteilbüro"),
+    ];
+
+    it("marks a lock whose IQ is not activated, and warns once it is picked", async () => {
+      const wrapper = await mountAccessPointsPage({
+        providers: [SALTO],
+        accessPoints: [],
+      });
+      answerListings({ "salto-ks": SALTO_LISTING });
+      await create(wrapper, "Salto KS");
+
+      expect(pickEntry(wrapper, "Gemeinschaftsraum").text()).toContain(
+        "IQ nicht aktiviert"
+      );
+      expect(pickEntry(wrapper, "Stadtteilbüro").text()).not.toContain(
+        "IQ nicht aktiviert"
+      );
+      expect(shown(wrapper, "iq-warning").exists()).toBe(false);
+
+      await choose(wrapper, "Gemeinschaftsraum");
+
+      expect(shown(wrapper, "iq-warning").text()).toContain(
+        "Der IQ dieser Tür ist nicht aktiviert."
+      );
+      expect(await savePoint(wrapper)).toMatchObject({
+        provider: "salto-ks",
+        externalId: "c0ffee12-77a1",
+        mode: "remote",
+      });
+    });
+
+    it("folds the rest without an Öffnungsart", async () => {
+      const wrapper = await mountAccessPointsPage({
+        providers: [SALTO],
+        accessPoints: [],
+      });
+      await create(wrapper, "Salto KS");
+
+      expect(shown(wrapper, "settings-summary").text()).toBe(
+        "Öffnen per App · QR-Scan erforderlich · kein Standort"
+      );
+    });
+  });
+
+  it("asks a Pareva Schließfachanlage for its Produkt-ID and Bezeichnung alone", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    await create(wrapper, "Pareva");
+
+    const card = pointDialog(wrapper);
+    expect(card.text()).toContain("Schließfachanlage anlegen");
+    expect(shown(wrapper, "pick-list").exists()).toBe(false);
+    expect(labelsIn(card)).toEqual(["Produkt-ID", "Bezeichnung"]);
+    expect(
+      card.find(".external-id-field input").attributes("placeholder")
+    ).toBe("z. B. 66570d1a1f9b6357ed971746");
+    expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    expect(shown(wrapper, "settings-summary").text()).toBe("kein Standort");
+    expect(shown(wrapper, "next-step").text()).toBe("Danach: zuordnen");
+  });
+
+  it("offers an iFBS Schließfachanlage from the list or by hand", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [IFBS],
+      accessPoints: [],
+    });
+    answerListings({
+      ifbs: [
+        listed("ifbs", "LOC-4711", "Bahnhof Nord", { type: "locker" }),
+        listed("ifbs", "LOC-4712", "Rathausplatz", { type: "locker" }),
+      ],
+    });
+    await create(wrapper, "iFBS");
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Schließfachanlage aus der Liste von iFBS wählen"
+    );
+    expect(shown(wrapper, "pick-manual").text()).toBe(
+      "Nicht in der Liste: Schließfachanlage von Hand eintragen"
+    );
+    expect(shown(wrapper, "settings-summary").text()).toBe(
+      "Öffnen per App · kein Standort"
+    );
+
+    await choose(wrapper, "Rathausplatz");
+
+    expect(await savePoint(wrapper)).toMatchObject({
+      provider: "ifbs",
+      type: "locker",
+      externalId: "LOC-4712",
+      label: "Rathausplatz",
+      providerLocationId: null,
+      validationRules: [],
+    });
+  });
+
+  it("enters an iFBS Schließfachanlage by its Standort-ID", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [IFBS],
+      accessPoints: [],
+    });
+    await create(wrapper, "iFBS");
+
+    await shown(wrapper, "pick-manual").trigger("click");
+    await settle(wrapper);
+
+    expect(labelsIn(pointDialog(wrapper))).toEqual([
+      "Standort-ID",
+      "Bezeichnung",
+    ]);
+  });
+
+  /**
+   * Open Locker asks first for its Schließfachanlage or a fixed Fach, then
+   * offers its Fächer by Schließfachschrank.
+   */
+  describe("at Open Locker", () => {
+    const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
+    const HAFEN = { id: "bank-hafen", name: "Quartiersschrank Hafen" };
+
+    function listedFach(id, lockerBank, number) {
+      return listed("open-locker", id, `${lockerBank.name} · Fach ${number}`, {
+        locationId: lockerBank.id,
+        metadata: { id, number, lockerBank },
+      });
+    }
+
+    const FAECHER = [
+      listedFach("uuid-1", LABOR, 1),
+      listedFach("uuid-2", LABOR, 2),
+      listedFach("uuid-3", HAFEN, 3),
+    ];
+
+    async function createAtOpenLocker(accessPoints = []) {
+      const wrapper = await mountAccessPointsPage({
+        providers: [OPEN_LOCKER],
+        accessPoints,
+      });
+      answerListings({ "open-locker": FAECHER });
+      await create(wrapper, "Open Locker");
+      return wrapper;
+    }
+
+    async function chooseType(wrapper, type) {
+      await shown(wrapper, `type-choice-${type}`).trigger("click");
+      await settle(wrapper);
+    }
+
+    function compartmentRow(wrapper, id) {
+      return pointDialog(wrapper).find(
+        `.compartment-row[data-compartment-id='${id}']`
+      );
+    }
+
+    it("starts as a Schließfachanlage, with a sentence on the choice", async () => {
+      const wrapper = await createAtOpenLocker();
+
+      expect(pointDialog(wrapper).text()).toContain(
+        "Schließfachanlage anlegen"
+      );
+      expect(shown(wrapper, "type-choice").text()).toContain("Festes Fach");
+      expect(shown(wrapper, "type-hint").text()).toBe(
+        "Biletado teilt jeder Buchung ein freies Fach der Schließfachanlage zu."
+      );
+      expect(
+        pointDialog(wrapper)
+          .findAll(".compartment-group-title")
+          .wrappers.map((title) => title.text())
+      ).toEqual(["Schrank Labor Fachbank 1", "Schrank Quartiersschrank Hafen"]);
+      expect(shown(wrapper, "settings-summary").text()).toBe(
+        "Öffnen per App · ohne QR-Scan · kein Standort"
+      );
+    });
+
+    it("saves the Fächer ticked for the Schließfachanlage", async () => {
+      const wrapper = await createAtOpenLocker();
+
+      await compartmentRow(wrapper, "uuid-1").find("input").trigger("click");
+      await compartmentRow(wrapper, "uuid-3").find("input").trigger("click");
+      await pointDialog(wrapper).find(".label-field input").setValue("Garage");
+
+      expect(await savePoint(wrapper)).toMatchObject({
+        provider: "open-locker",
+        type: "locker",
+        externalId: "",
+        label: "Garage",
+        config: {
+          compartments: [
+            { id: "uuid-1", number: 1, lockerBank: LABOR, outOfService: false },
+            { id: "uuid-3", number: 3, lockerBank: HAFEN, outOfService: false },
+          ],
+        },
+      });
+      expect(
+        ApiAccessPointService.storeAccessPoint.mock.calls[0][0]
+      ).not.toHaveProperty("validationRules");
+    });
+
+    it("demands the scan at all Fächer where it is switched on", async () => {
+      const wrapper = await createAtOpenLocker();
+      await compartmentRow(wrapper, "uuid-1").find("input").trigger("click");
+      await pointDialog(wrapper).find(".label-field input").setValue("Garage");
+
+      await shown(wrapper, "more-settings")
+        .find(".v-expansion-panel-header")
+        .trigger("click");
+      await settle(wrapper);
+      expect(shown(wrapper, "qr-scan-hint").text()).toBe(
+        "Gilt für alle Fächer, jedes mit seinem eigenen QR-Code. Standard bei Open Locker: ohne QR-Scan."
+      );
+      await shown(wrapper, "qr-scan").find("input").trigger("click");
+      await settle(wrapper);
+
+      expect(shown(wrapper, "settings-summary").text()).toBe(
+        "Öffnen per App · QR-Scan erforderlich · kein Standort"
+      );
+      expect(await savePoint(wrapper)).toMatchObject({
+        validationRules: [{ type: "qrScan" }],
+      });
+    });
+
+    it("offers a fixed Fach from the Fächer by Schrank, without a QR switch", async () => {
+      const wrapper = await createAtOpenLocker([
+        { ...OPEN_LOCKER_FACH, externalId: "uuid-2" },
+      ]);
+
+      await chooseType(wrapper, "door");
+
+      expect(pointDialog(wrapper).text()).toContain("Festes Fach anlegen");
+      expect(shown(wrapper, "type-hint").text()).toBe(
+        "Alle Buchungen des Buchungsobjekts teilen sich dieses eine Fach."
+      );
+      expect(pointDialog(wrapper).text()).toContain(
+        "Fach aus der Liste von Open Locker wählen"
+      );
+      expect(
+        pointDialog(wrapper)
+          .findAll("[data-test='pick-group']")
+          .wrappers.map((group) => group.text())
+      ).toEqual(["Schrank Labor Fachbank 1", "Schrank Quartiersschrank Hafen"]);
+      expect(pickEntry(wrapper, "Fach 2").text()).toContain("schon angelegt");
+      expect(shown(wrapper, "pick-manual").exists()).toBe(false);
+      expect(shown(wrapper, "settings-summary").text()).toBe(
+        "Öffnen per App · kein Standort"
+      );
+
+      await choose(wrapper, "Fach 3");
+
+      expect(await savePoint(wrapper)).toMatchObject({
+        provider: "open-locker",
+        type: "door",
+        externalId: "uuid-3",
+        label: "Quartiersschrank Hafen · Fach 3",
+        providerLocationId: null,
+      });
+    });
+  });
+});
+
+async function editPoint(wrapper, label) {
+  await clickRowAction(wrapper, label, ".edit-access-point");
+}
+
+/**
+ * Editing is the same dialog: the lock as one line with „Tauschen“, the
+ * settings unfolded (ECCdigital/tickets#1109).
+ */
+describe("AccessPoints edits an access point in the same dialog", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+  });
+
+  it("shows the door as one line with name, id and „Tauschen“", async () => {
+    const wrapper = await mountAccessPointsPage();
+    answerListings({ nuki: NUKI_LISTING });
+
+    await editPoint(wrapper, "Haupteingang");
+
+    const line = shown(wrapper, "lock-line");
+    expect(line.text()).toContain("Haupteingang");
+    expect(line.text()).toContain("ID beim Anbieter lock-1");
+    expect(line.text()).toContain("Tauschen");
+    expect(shown(wrapper, "pick-list").exists()).toBe(false);
+    expect(pointDialog(wrapper).find(".external-id-field").exists()).toBe(
+      false
+    );
+    expect(shown(wrapper, "next-step").exists()).toBe(false);
+  });
+
+  it("shows the settings unfolded", async () => {
+    const wrapper = await mountAccessPointsPage();
+    answerListings({ nuki: NUKI_LISTING });
+
+    await editPoint(wrapper, "Haupteingang");
+
+    expect(shown(wrapper, "mode-line").text()).toContain("Öffnen per App");
+    expect(shown(wrapper, "mode-line").text()).toContain("Bald verfügbar");
+    expect(labelsIn(pointDialog(wrapper))).toEqual(
+      expect.arrayContaining([
+        "Öffnungsart",
+        "QR-Scan erforderlich",
+        "Standort-ID beim Anbieter",
+        "Anbieter-Konfiguration (JSON)",
+      ])
+    );
+    expect(pointDialog(wrapper).text()).toContain("Technik");
+  });
+
+  it("swaps the lock from the list and keeps the Bezeichnung", async () => {
+    const wrapper = await mountAccessPointsPage();
+    answerListings({ nuki: NUKI_LISTING });
+    await editPoint(wrapper, "Haupteingang");
+
+    await shown(wrapper, "swap").trigger("click");
+    await settle(wrapper);
+
+    expect(shown(wrapper, "swap-hint").text()).toBe(
+      "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken."
+    );
+    expect(pickEntry(wrapper, "Werkstatttür").exists()).toBe(true);
+    expect(pickEntry(wrapper, "Haupteingang").text()).not.toContain(
+      "schon angelegt"
+    );
+
+    await choose(wrapper, "Werkstatttür");
+
+    expect(shown(wrapper, "lock-line").text()).toContain("Werkstatttür");
+    expect(labelValue(wrapper)).toBe("Haupteingang");
+    expect(await savePoint(wrapper)).toMatchObject({
+      id: "ap-door",
+      externalId: "lock-2",
+      label: "Haupteingang",
+      validationRules: [{ type: "qrScan" }],
+    });
+  });
+
+  it("swaps a Pareva Produkt-ID in the field, with its hint", async () => {
+    const wrapper = await mountAccessPointsPage();
+    await editPoint(wrapper, "Schließfächer Rathaus");
+
+    expect(shown(wrapper, "lock-line").text()).toContain(
+      "Produkt-ID 66570d1a1f9b6357ed971746"
+    );
+    await shown(wrapper, "swap").trigger("click");
+    await settle(wrapper);
+
+    const field = pointDialog(wrapper).find(".external-id-field");
+    expect(field.text()).toContain(
+      "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen."
+    );
+    await field.find("input").setValue("66570d1a1f9b6357ed971799");
+    expect(await savePoint(wrapper)).toMatchObject({
+      id: "ap-pareva",
+      externalId: "66570d1a1f9b6357ed971799",
+      validationRules: [],
+    });
+  });
+
+  it("names a door not in the list as entered by hand", async () => {
+    const wrapper = await mountAccessPointsPage();
+    answerListings({ nuki: [] });
+
+    await editPoint(wrapper, "Haupteingang");
+
+    expect(shown(wrapper, "lock-line").text()).toContain(
+      "Von Hand eingetragen"
+    );
+  });
+
+  it("shows the Fächer of an Open Locker Schließfachanlage, the stored one ticked", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE],
+    });
+    answerListings({
+      "open-locker": [
+        listed(
+          "open-locker",
+          "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+          "Labor Fachbank 1 · Fach 1",
+          {
+            metadata: {
+              number: 1,
+              lockerBank: { id: "bank-labor", name: "Labor Fachbank 1" },
+            },
+          }
+        ),
+      ],
+    });
+
+    await editPoint(wrapper, "Fahrradgarage Süd");
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Schließfachanlage bearbeiten"
+    );
+    expect(shown(wrapper, "type-choice").exists()).toBe(false);
+    expect(shown(wrapper, "lock-line").exists()).toBe(false);
+    expect(
+      pointDialog(wrapper)
+        .find(".compartment-row input[type='checkbox']")
+        .element.getAttribute("aria-checked")
+    ).toBe("true");
+  });
+});
+
+/**
+ * What the dialog did before it went slim, it still does
+ * (ECCdigital/tickets#1109): the Öffnungsart owns its key of the
+ * configuration, the backend's faults stand where they belong, the location
+ * comes from the provider.
+ */
+describe("AccessPoints keeps the settings of an access point", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+  });
+
+  async function editDoor(door, listing = NUKI_LISTING) {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [door] });
+    answerListings({ nuki: listing });
+    await editPoint(wrapper, door.label);
+    return wrapper;
+  }
+
+  /** The options carry their explanation, so the title is what is read. */
+  async function chooseOpenAction(wrapper, title) {
+    await selectByLabel(pointDialog(wrapper), "Öffnungsart")
+      .find(".v-input__slot")
+      .trigger("click");
+    await settle(wrapper);
+    [...document.querySelectorAll(".menuable__content__active .v-list-item")]
+      .find(
+        (item) =>
+          item.querySelector(".v-list-item__title").textContent.trim() === title
+      )
+      .click();
+    await settle(wrapper);
+  }
+
+  function openActionOptions(wrapper) {
+    return selectByLabel(pointDialog(wrapper), "Öffnungsart").props("items");
+  }
+
+  describe("the Öffnungsart of a Nuki door", () => {
+    it("takes the stored one out of the JSON text and saves it back", async () => {
+      const wrapper = await editDoor({
+        ...DOOR,
+        config: { openAction: "unlatch", tolerance: 5 },
+      });
+
+      expect(
+        selectByLabel(pointDialog(wrapper), "Öffnungsart").props("value")
+      ).toBe("unlatch");
+      const text = pointDialog(wrapper).find(".config-field textarea").element
+        .value;
+      expect(text).toContain("tolerance");
+      expect(text).not.toContain("openAction");
+      expect((await savePoint(wrapper)).config).toEqual({
+        tolerance: 5,
+        openAction: "unlatch",
+      });
+    });
+
+    it("writes no key for Automatisch", async () => {
+      const wrapper = await editDoor({
+        ...DOOR,
+        config: { openAction: "unlatch" },
+      });
+
+      await chooseOpenAction(wrapper, "Automatisch");
+
+      expect((await savePoint(wrapper)).config).toEqual({});
+    });
+
+    it("greys out what the lock cannot do, as the listing says", async () => {
+      const wrapper = await editDoor(DOOR, [
+        listed("nuki", "lock-1", "Haupteingang", {
+          supportedOpenActions: ["auto", "unlock"],
+        }),
+      ]);
+
+      expect(
+        openActionOptions(wrapper)
+          .filter((option) => option.disabled)
+          .map((option) => option.value)
+      ).toEqual(["unlatch", "lock_n_go", "lock_n_go_unlatch"]);
+    });
+
+    it("puts the backend's fault at the field", async () => {
+      ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+        validationError([
+          { field: "config.openAction", code: "unknown_open_action" },
+        ])
+      );
+      const wrapper = await editDoor(DOOR);
+
+      await savePoint(wrapper);
+
+      expect(
+        selectByLabel(pointDialog(wrapper), "Öffnungsart").props(
+          "errorMessages"
+        )
+      ).toBe("Öffnungsart: Unzulässiger Wert");
+    });
+
+    it("is not asked of a Salto KS door", async () => {
+      const wrapper = await mountAccessPointsPage({
+        providers: [SALTO],
+        accessPoints: [{ ...DOOR, provider: "salto-ks" }],
+      });
+      await editPoint(wrapper, "Haupteingang");
+
+      expect(labelsIn(pointDialog(wrapper))).not.toContain("Öffnungsart");
+    });
+  });
+
+  it("proposes Öffnen per App for a Salto door stored on a PIN mode", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [SALTO],
+      accessPoints: [{ ...DOOR, provider: "salto-ks", mode: "both" }],
+    });
+    await editPoint(wrapper, "Haupteingang");
+
+    expect(shown(wrapper, "mode-line").text()).toContain("Öffnen per App");
+    expect(shown(wrapper, "stored-mode-hint").text()).toBe(
+      "Gespeichert ist „PIN-Code & App“, das Salto KS nicht unterstützt. Mit Speichern wird „Öffnen per App“ übernommen."
+    );
+    expect((await savePoint(wrapper)).mode).toBe("remote");
+  });
+
+  it("keeps the mode of a stored Pareva Schließfachanlage", async () => {
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [{ ...PAREVA_LOCKER, mode: "authorization" }],
+    });
+    await editPoint(wrapper, "Schließfächer Rathaus");
+
+    expect(shown(wrapper, "mode-line").exists()).toBe(false);
+    expect((await savePoint(wrapper)).mode).toBe("authorization");
+  });
+
+  it("refuses a configuration that is no JSON object, and says so at the field", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    answerListings({ nuki: NUKI_LISTING });
+    await create(wrapper, "Nuki");
+    await choose(wrapper, "Werkstatttür");
+    await shown(wrapper, "more-settings")
+      .find(".v-expansion-panel-header")
+      .trigger("click");
+    await settle(wrapper);
+    await pointDialog(wrapper).find(".config-field textarea").setValue("[1]");
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+    expect(pointDialog(wrapper).find(".config-field").text()).toContain(
+      "Die Konfiguration muss ein JSON-Objekt sein."
+    );
+  });
+
+  it("shows the failure of the save under the form", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      lifecycleError(502, "provider_unreachable", { provider: "nuki" })
+    );
+    const wrapper = await editDoor(DOOR);
+
+    await savePoint(wrapper);
+
+    expect(pointDialog(wrapper).find(".v-alert").exists()).toBe(true);
+    expect(addToast).not.toHaveBeenCalled();
+  });
+
+  it("requires the Bezeichnung", async () => {
+    const wrapper = await editDoor(DOOR);
+
+    await pointDialog(wrapper).find(".label-field input").setValue(" ");
+
+    expect(
+      pointDialog(wrapper).find(".save-access-point").attributes("disabled")
+    ).toBe("disabled");
+  });
+
+  /** NUKI knows where a door is: „Standort vom Anbieter übernehmen“. */
+  it("takes the location of a Nuki door from the provider", async () => {
+    ApiAccessPointService.getLocationPrefill.mockResolvedValue({
+      data: { coordinates: { type: "Point", points: [14.7161, 51.9512] } },
+    });
+    ApiGeoService.reverse.mockResolvedValue(null);
+    const wrapper = await mountAccessPointsPage({
+      providers: [
+        { ...NUKI, providerCapabilities: ["listAccessPoints", "getLocation"] },
+      ],
+      accessPoints: [DOOR],
+    });
+    await editPoint(wrapper, "Haupteingang");
+
+    await shown(wrapper, "prefill-location").trigger("click");
+    await settle(wrapper);
+
+    expect(ApiAccessPointService.getLocationPrefill).toHaveBeenCalledWith(
+      "ap-door",
+      "t1"
+    );
+    expect(pointDialog(wrapper).text()).toContain(
+      "Der Punkt des Anbieters wurde übernommen."
+    );
+    const { location } = await savePoint(wrapper);
+    expect(location.coordinates.points).toEqual([14.7161, 51.9512]);
+    expect(location.meta.source).toBe("nuki");
+  });
+
+  it("offers the location of the provider only when editing a door that has one", async () => {
+    const wrapper = await mountAccessPointsPage();
+    await editPoint(wrapper, "Haupteingang");
+
+    expect(shown(wrapper, "prefill-location").exists()).toBe(false);
+  });
+});
+
+/**
+ * Saving an Open Locker Schließfachanlage that takes a Fach out first asks
+ * about the bookings there (ECCdigital/tickets#1043). Unchanged until the
+ * Fächer show their bookings themselves (ECCdigital/tickets#1113).
+ */
+describe("AccessPoints asks about the bookings at a Fach that leaves", () => {
+  const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
+  const UUID_1 = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
+  const UUID_2 = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+  const FACH_1 = { id: UUID_1, number: 1, lockerBank: LABOR };
+  const ANLAGE = {
+    ...OPEN_LOCKER_ANLAGE,
+    config: {
+      compartments: [
+        { ...FACH_1, outOfService: false },
+        { id: UUID_2, number: 2, lockerBank: LABOR, outOfService: false },
+      ],
+    },
+  };
+
+  function booking(id, state) {
+    return {
+      id,
+      name: `Person ${id}`,
+      timeBegin: Date.UTC(2026, 10, 20, 9, 0),
+      timeEnd: Date.UTC(2026, 10, 20, 11, 0),
+      state,
+      compartment: FACH_1,
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+      data: { total: 0, bookings: [] },
+    });
+  });
+
+  async function takeOutFach1() {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [ANLAGE],
+    });
+    answerListings({ "open-locker": [] });
+    await editPoint(wrapper, "Fahrradgarage Süd");
+    await pointDialog(wrapper)
+      .find(`.compartment-row[data-compartment-id='${UUID_1}'] input`)
+      .trigger("click");
+    await settle(wrapper);
+    return wrapper;
+  }
+
+  function question(wrapper) {
+    return dialogCard(wrapper, "AccessPointCompartmentBookingsDialog");
+  }
+
+  async function click(wrapper, selector) {
+    await question(wrapper).find(selector).trigger("click");
+    await settle(wrapper);
+  }
+
+  it("names the bookings and saves only once confirmed", async () => {
+    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+      data: {
+        total: 2,
+        bookings: [
+          booking("b-running", "running"),
+          booking("b-future", "future"),
+        ],
+      },
+    });
+    const wrapper = await takeOutFach1();
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.getCompartmentBookings).toHaveBeenCalledWith(
+      ANLAGE.id,
+      [UUID_1],
+      "t1"
+    );
+    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+    const text = question(wrapper).text();
+    expect(text).toContain("läuft – behält das Fach");
+    expect(text).toContain("künftig – bekommt ein freies Fach");
+
+    await click(wrapper, ".confirm-compartments-leave");
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    expect(
+      ApiAccessPointService.storeAccessPoint.mock.calls[0][0].config
+        .compartments
+    ).toEqual([
+      { id: UUID_2, number: 2, lockerBank: LABOR, outOfService: false },
+    ]);
+  });
+
+  it("saves nothing when the question is cancelled", async () => {
+    ApiAccessPointService.getCompartmentBookings.mockResolvedValue({
+      data: { total: 1, bookings: [booking("b-future", "future")] },
+    });
+    const wrapper = await takeOutFach1();
+    await savePoint(wrapper);
+
+    await click(wrapper, ".cancel-compartments-leave");
+
+    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+  });
+
+  it("saves without asking when no booking hangs at the Fach", async () => {
+    const wrapper = await takeOutFach1();
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+  });
+
+  it("still asks when the bookings cannot be read, and says so", async () => {
+    ApiAccessPointService.getCompartmentBookings.mockRejectedValue(
+      lifecycleError(403, "forbidden")
+    );
+    const wrapper = await takeOutFach1();
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+    expect(question(wrapper).text()).toContain(
+      "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen."
+    );
+  });
+
+  it("names after the save the bookings that could not move", async () => {
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+      data: { id: ANLAGE.id, unmovedBookings: [booking("b-stuck")] },
+    });
+    const wrapper = await takeOutFach1();
+
+    await savePoint(wrapper);
+
+    expect(question(wrapper).text()).toContain(
+      "Kein freies Fach für diese künftigen Buchungen"
+    );
+    expect(addToast).not.toHaveBeenCalled();
+
+    await click(wrapper, ".close-unmoved");
+
+    expect(addToast).toHaveBeenCalled();
   });
 });
