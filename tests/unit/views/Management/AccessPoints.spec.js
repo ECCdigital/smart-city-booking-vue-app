@@ -4031,6 +4031,9 @@ describe("AccessPoints searches over all sections", () => {
     ["the id at the provider", "lock-1", "Haupteingang"],
     ["the Standort", "holstenstraße", "Haupteingang"],
     ["the kind", "festes fach", "Labor Fachbank 1 · Fach 2"],
+    // Story 65 of ECCdigital/tickets#1082: the row of a door names no kind,
+    // the search knows it all the same.
+    ["the kind of a door", "tür", "Haupteingang"],
     ["the bookables", "besprechung", "Fahrradgarage Süd"],
   ])("finds an access point by %s", async (_, text, label) => {
     const wrapper = await mountForSearch();

@@ -1,5 +1,5 @@
 import i18n from "@/language/index";
-import { accessPointFields } from "@/utilities/access-point-fields";
+import { accessPointFields, kindNoun } from "@/utilities/access-point-fields";
 import {
   DOOR_TYPE,
   isLockerAccessPoint,
@@ -237,7 +237,9 @@ export function deviations(accessPoint, listing = null) {
 /**
  * Whether the access point matches the search: every word of the query in
  * its label, id at the provider, Standort, kind or the titles of its
- * bookables, regardless of case. An empty query matches everything.
+ * bookables, regardless of case. The kind is searched as named in the row
+ * and as its noun, so „Tür“ finds the doors, whose row names no kind. An
+ * empty query matches everything.
  *
  * @param {Object} accessPoint The access point
  * @param {string} query What was typed
@@ -252,6 +254,7 @@ export function matches(accessPoint, query, bookables) {
     accessPoint?.externalId,
     locationLabel(accessPoint),
     kindLabel(accessPoint),
+    kindNoun(accessPoint),
     ...(bookables || []).map((bookable) => bookable.title),
   ]
     .filter(Boolean)

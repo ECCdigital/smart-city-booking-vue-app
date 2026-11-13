@@ -137,6 +137,30 @@ export function accessPointFields(provider, type) {
 }
 
 /**
+ * The kind of an access point, by its provider and type: `door`,
+ * `lockerSystem` or `fixedCompartment` (`DOOR_KIND`, …).
+ *
+ * @param {Object} accessPoint The access point, with `provider` and `type`
+ * @returns {string}
+ */
+export function accessPointKind(accessPoint) {
+  return accessPointFields(accessPoint?.provider, accessPoint?.type).kind;
+}
+
+/**
+ * What the kind of an access point is called: „Tür“, „Schließfachanlage“ or
+ * „Fach“.
+ *
+ * @param {Object} accessPoint The access point
+ * @returns {string} A translated noun
+ */
+export function kindNoun(accessPoint) {
+  return i18n.t(
+    `accessPoint.management.dialog.kinds.${accessPointKind(accessPoint)}.noun`
+  );
+}
+
+/**
  * What a location says in one line: its address, else that a point is set,
  * else that there is none.
  *
