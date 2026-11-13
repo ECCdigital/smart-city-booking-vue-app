@@ -3040,6 +3040,12 @@
         "assign": "Buchungsobjekt zuordnen",
         "next": "Angelegt. Als Nächstes: einem Buchungsobjekt zuordnen.",
         "nextWithQr": "Angelegt. Als Nächstes: QR-Code drucken und einem Buchungsobjekt zuordnen.",
+        "withoutCompartment": {
+          "label": "1 Buchung ohne Fach | {count} Buchungen ohne Fach",
+          "tooltip": "Beim Speichern war kein Fach in Betrieb frei. Sie stehen noch am alten Fach.",
+          "lead": "Kein freies Fach für",
+          "tail": "Sie bleiben am alten Fach, bis Sie sie lösen, etwa in den Details der Buchung."
+        },
         "more": "Weitere Aktionen",
         "markers": {
           "withQrScan": {
@@ -3138,19 +3144,17 @@
         "empty": "Keine Fächer zur Wahl.",
         "selected": "Gewählte Fächer: {count}",
         "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern.",
-        "leave": {
-          "title": "Fächer mit Buchungen",
-          "question": "An diesen Fächern hängen Buchungen. Künftige Buchungen bekommen beim Speichern das erste freie Fach in Betrieb, auch unbezahlte. Laufende Buchungen behalten ihr Fach, weil schon Sachen darin liegen können.",
-          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach.",
-          "states": {
-            "running": "läuft – behält das Fach",
-            "future": "künftig – bekommt ein freies Fach"
-          },
-          "more": "… und {count} weitere.",
-          "confirm": "Trotzdem speichern",
-          "unmovedTitle": "Nicht alle Buchungen haben ein neues Fach",
-          "unmovedText": "Die Anlage ist gespeichert. Kein freies Fach für diese künftigen Buchungen: Sie bleiben an ihrem alten Fach. Lösen Sie sie von Hand, etwa in den Details der Buchung.",
-          "close": "Schließen"
+        "bookings": {
+          "legendRunning": "laufende Buchung",
+          "legendFuture": "künftige Buchung",
+          "runningUntil": "läuft bis {end}, bleibt",
+          "running": "läuft, bleibt",
+          "moving": "{count} zieht um | {count} ziehen um",
+          "summary": "Beim Speichern: {consequences}.",
+          "keep": "1 laufende Buchung behält ihr Fach | {count} laufende Buchungen behalten ihr Fach",
+          "move": "1 künftige Buchung bekommt ein freies Fach in Betrieb | {count} künftige Buchungen bekommen ein freies Fach in Betrieb",
+          "moveAfterKeep": "1 künftige bekommt ein freies Fach in Betrieb | {count} künftige bekommen ein freies Fach in Betrieb",
+          "unreadable": "Welche Buchungen an diesen Fächern hängen, ließ sich nicht lesen. Künftige Buchungen bekommen beim Speichern trotzdem das erste freie Fach in Betrieb, laufende behalten ihr Fach."
         }
       },
       "ruleTypes": {

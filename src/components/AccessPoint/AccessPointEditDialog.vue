@@ -4,7 +4,6 @@ import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
-import AccessPointCompartmentBookingsDialog from "@/components/AccessPoint/AccessPointCompartmentBookingsDialog.vue";
 import {
   formatAccessPointErrorMessage,
   splitAccessPointFieldError,
@@ -63,23 +62,6 @@ const OPEN_ACTION_FIELD = "config.openAction";
 // The index of „Weitere Einstellungen“ in its panels, open or not.
 const MORE_OPEN = 0;
 
-/**
- * The question about the bookings at Fächer that leave the Anlage, and the
- * notice about the ones that could not move (ECCdigital/tickets#1043).
- */
-function closedLeave() {
-  return {
-    open: false,
-    mode: "confirm",
-    bookings: [],
-    total: 0,
-    unreadable: false,
-    // The answer of a save that left bookings behind, handed on as `saved`
-    // once the notice is read.
-    answer: null,
-  };
-}
-
 function emptyForm() {
   return {
     id: null,
@@ -106,7 +88,6 @@ function emptyForm() {
 export default {
   name: "AccessPointEditDialog",
   components: {
-    AccessPointCompartmentBookingsDialog,
     AccessPointCompartmentPicker,
     LocationInput,
   },
@@ -121,6 +102,10 @@ export default {
     // The provider a new access point is created for, settled by the
     // section the creation started in.
     provider: { type: String, default: "" },
+    // The bookings at the Fächer of the Anlage, as `compartmentBookings`
+    // reads them; `bookingsUnreadable` where they could not be read.
+    compartmentBookings: { type: Array, default: () => [] },
+    bookingsUnreadable: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -135,7 +120,6 @@ export default {
       compartments: [],
       // Why the backend refused a Fach, by its UUID.
       compartmentErrors: {},
-      leave: closedLeave(),
       configText: "{}",
       configError: "",
       // The switch as the admin set it, or as a stored access point has it.
@@ -405,6 +389,11 @@ export default {
           this.$t("accessPoint.management.required"),
       ];
     },
+    // The Fächer the save takes out of the stored Anlage or out of service.
+    leavingIds() {
+      if (!this.isEdit || !this.fields.compartments) return [];
+      return leavingCompartmentIds(this.accessPoint, this.compartments);
+    },
     // Required are the choice or the id, and the Bezeichnung.
     canSave() {
       if (!this.form.label.trim()) return false;
@@ -452,7 +441,6 @@ export default {
         delete config.compartments;
       }
       this.compartmentErrors = {};
-      this.leave = closedLeave();
       // A stored value outside the five is kept and saved back unchanged,
       // rather than being read as "Automatisch".
       this.openAction =
@@ -681,46 +669,11 @@ export default {
       this.saveError = "";
       this.openActionError = "";
       this.compartmentErrors = {};
-
-      const leaving =
-        this.isEdit && this.fields.compartments
-          ? leavingCompartmentIds(this.accessPoint, this.compartments)
-          : [];
-      if (leaving.length > 0 && (await this.askAboutLeaving(leaving))) {
-        return;
-      }
       await this.store();
     },
-    /**
-     * Reads the bookings at the Fächer that leave the Anlage and, where any
-     * hang there - or they cannot be read -, asks before the save. The
-     * backend moves the future ones on the save; the question names them.
-     *
-     * @param {string[]} compartmentIds The leaving Fächer
-     * @returns {Promise<boolean>} Whether the question is open now
-     */
-    async askAboutLeaving(compartmentIds) {
-      this.saving = true;
-      try {
-        const { data } = await ApiAccessPointService.getCompartmentBookings(
-          this.form.id,
-          compartmentIds,
-          this.tenantId
-        );
-        if (!data?.total) return false;
-        this.leave = {
-          ...closedLeave(),
-          open: true,
-          bookings: data.bookings || [],
-          total: data.total,
-        };
-      } catch (error) {
-        this.leave = { ...closedLeave(), open: true, unreadable: true };
-      } finally {
-        this.saving = false;
-      }
-      return true;
-    },
+    // The Fächer show what the save does to their bookings, so it asks
+    // nothing (ECCdigital/tickets#1113). A future booking no Fach was free
+    // for shows at the row of the Anlage.
     async store() {
       this.saving = true;
       try {
@@ -728,33 +681,12 @@ export default {
           this.buildPayload(),
           this.tenantId
         );
-        const unmoved = response.data?.unmovedBookings || [];
-        if (unmoved.length > 0) {
-          this.leave = {
-            ...closedLeave(),
-            open: true,
-            mode: "unmoved",
-            bookings: unmoved,
-            total: unmoved.length,
-            answer: response.data,
-          };
-          return;
-        }
-        this.leave = closedLeave();
         this.$emit("saved", response.data);
       } catch (error) {
-        this.leave = closedLeave();
         this.applySaveError(error);
       } finally {
         this.saving = false;
       }
-    },
-    // Cancelling the question saves nothing; closing the notice after a
-    // save hands the answer on.
-    closeLeave() {
-      const { answer } = this.leave;
-      this.leave = closedLeave();
-      if (answer) this.$emit("saved", answer);
     },
     // The Öffnungsart's own faults belong at the select, a Fach's at the
     // Fach; everything else in the alert below, which names the refused
@@ -980,6 +912,9 @@ export default {
               :errors="compartmentErrors"
               :loading="loadingListing"
               :provider-title="providerTitle"
+              :bookings="compartmentBookings"
+              :leaving="leavingIds"
+              :bookings-unreadable="bookingsUnreadable"
               @input="onCompartmentsChange"
             />
           </div>
@@ -1223,16 +1158,6 @@ export default {
         </v-btn>
       </v-card-actions>
     </v-card>
-    <AccessPointCompartmentBookingsDialog
-      :open="leave.open"
-      :mode="leave.mode"
-      :bookings="leave.bookings"
-      :total="leave.total"
-      :unreadable="leave.unreadable"
-      :saving="saving"
-      @confirm="store"
-      @close="closeLeave"
-    />
   </v-dialog>
 </template>
 
