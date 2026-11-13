@@ -4861,6 +4861,12 @@ describe("AccessPoints speaks of Tür and Schließfachanlage", () => {
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
   });
 
+  it("names neither a lock nor an Anlage alone in the sections and rows", async () => {
+    const wrapper = await mountEveryKind();
+
+    expect(foreignWords(wrapper.text())).toEqual([]);
+  });
+
   const KINDS = [
     { label: "Haupteingang", providers: [NUKI], accessPoints: [DOOR] },
     {
