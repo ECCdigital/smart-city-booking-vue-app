@@ -8,6 +8,19 @@ export default {
       credentials
     );
   },
+  // Saves the access application of one provider and nothing else; a
+  // secret left out keeps the stored one. Answers the application without
+  // its secrets, with the state of its connection.
+  saveApp(tenantID, provider, settings) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.put(`/api/${t}/access-apps/${provider}`, settings);
+  },
+  // Removes the access application of one provider with its credentials;
+  // `409 access_app_has_access_points` while it has access points.
+  removeApp(tenantID, provider) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.delete(`/api/${t}/access-apps/${provider}`);
+  },
   getProviders(tenantID) {
     const t = tenantID || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`/api/${t}/access-apps/providers`);

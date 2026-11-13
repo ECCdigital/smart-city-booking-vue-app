@@ -2854,8 +2854,6 @@
   },
   "accessPoint": {
     "management": {
-      "tab": "Zugangspunkte",
-      "providersTab": "Schließsysteme",
       "edit": "Bearbeiten",
       "save": "Speichern",
       "cancel": "Abbrechen",
@@ -2865,7 +2863,93 @@
       "empty": "Es ist noch kein Zugangspunkt angelegt.",
       "section": {
         "createDoor": "Tür anlegen",
-        "createLockerSystem": "Schließfachanlage anlegen"
+        "createLockerSystem": "Schließfachanlage anlegen",
+        "settings": "Einstellungen",
+        "states": {
+          "connected": "Verbunden",
+          "unchecked": "Nicht geprüft",
+          "failing": "Gestört",
+          "disabled": "Ausgeschaltet"
+        }
+      },
+      "settings": {
+        "connection": "Verbindung",
+        "lastTest": "Zuletzt geprüft am {at}",
+        "never": "Noch nie geprüft",
+        "test": "Verbindung testen",
+        "remove": "Verbindung entfernen",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "more": "Weitere Einstellungen",
+        "allStandard": "alles auf Standard",
+        "standard": "Standard: {value}",
+        "stored": "gespeichert",
+        "changed": "geändert",
+        "given": "angegeben",
+        "storedSecret": "Gespeichert",
+        "changeSecret": "Ändern",
+        "keepSecret": "Gespeichertes behalten",
+        "saveFailed": "Die Einstellungen ließen sich nicht speichern.",
+        "removeFailed": "Die Verbindung ließ sich nicht entfernen.",
+        "caption": {
+          "checked": "Geprüft.",
+          "unchecked": "Ungeprüft. Speichern geht trotzdem.",
+          "failed": "Test gescheitert. Speichern markiert es als gestört."
+        },
+        "faults": {
+          "missing": "Bitte ausfüllen.",
+          "notStored": "Nicht gespeichert. Bitte eingeben.",
+          "changed": "Gehört zu den bisherigen Angaben. Bitte neu eingeben.",
+          "refused": "Vom Anbieter abgelehnt."
+        },
+        "result": {
+          "missing_fields": "Es fehlen Angaben: {fields}.",
+          "missing_secret": "Es fehlt: {fields}.",
+          "codes": {
+            "invalid_credentials": "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht.",
+            "terms_not_accepted": "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert. Melden Sie sich mit dem Konto bei Open Locker an und akzeptieren Sie sie.",
+            "email_not_verified": "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt. Bestätigen Sie sie über den Link in der Mail von Open Locker."
+          }
+        },
+        "toasts": {
+          "saved": {
+            "title": "Gespeichert",
+            "message": "Die Einstellungen von {provider} sind gespeichert."
+          }
+        },
+        "help": {
+          "nuki": "Welche Rechte braucht der Token?",
+          "salto": "Voraussetzungen in Salto KS",
+          "openLocker": "Was das technische Konto braucht"
+        },
+        "fields": {
+          "apiToken": "API-Token",
+          "apiBaseUrl": "API-Adresse",
+          "clientId": "Client-ID",
+          "clientSecret": "Client-Secret",
+          "siteId": "Site-ID",
+          "saltoUsername": "System-User (E-Mail)",
+          "saltoPassword": "Passwort des System-Users",
+          "environment": "Umgebung",
+          "serverUrl": "Server-Adresse",
+          "openLockerEmail": "E-Mail des technischen Kontos",
+          "password": "Passwort",
+          "apiKeyID": "API Key ID",
+          "apiKey": "API Key",
+          "secretPhrase": "Secret Phrase",
+          "lockerId": "Locker-ID",
+          "user": "Benutzername"
+        },
+        "hints": {
+          "saltoUsername": "Ein eigener User nur für Biletado. An dieses Postfach schickt Salto die PIN zum Aktivieren eines IQ.",
+          "secretPhrase": "Nur, wenn iFBS sie für den Mandanten vergeben hat."
+        },
+        "choices": {
+          "environment": {
+            "production": "Production",
+            "accept": "Accept (Sandbox)"
+          }
+        }
       },
       "search": {
         "fields": "Bezeichnung, ID, Standort, Art oder Buchungsobjekt",
@@ -3151,14 +3235,6 @@
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",
           "message": "Der QR-Code konnte nicht erzeugt werden."
-        },
-        "tenantSaved": {
-          "title": "Gespeichert",
-          "message": "Änderungen wurden erfolgreich gespeichert."
-        },
-        "tenantSaveFailed": {
-          "title": "Speichern fehlgeschlagen",
-          "message": "Fehler beim Speichern der Änderungen."
         }
       },
       "hints": {
@@ -3170,28 +3246,12 @@
       "badge": "Bald verfügbar"
     },
     "tenant": {
-      "title": "Türsteuerung & Zugang",
-      "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",
-      "providerTitle": "Smarte Türschlösser",
-      "providerDescription": "Mit Nuki öffnen und schließen Sie Türen aus der Ferne. Buchende erhalten während ihres Buchungszeitraums automatisch Zugang.",
-      "providerLink": "Mehr über Nuki",
-      "activate": "Nuki aktivieren",
-      "apiCredentials": "API-Zugangsdaten",
-      "apiToken": "API-Token",
-      "apiTokenPlaceholder": "Nuki Web API Token",
-      "apiTokenUnchanged": "•••••••• (unverändert)",
-      "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
-      "apiBaseUrl": "API Base-URL",
-      "permissionsTitle": "Benötigte Token-Berechtigungen",
       "permissionsIntro": "Der Nuki Web API-Token muss beim Anlegen in Nuki Web (MENÜ → API) mit den passenden Berechtigungen versehen werden. Tokens erhalten dauerhaft genau die Rechte, die beim Erstellen angehakt wurden, und werden ungültig, sobald das Passwort des Nuki-Web-Accounts geändert wird.",
-      "permissionsMinTitle": "Minimum (öffnen/schließen + Status)",
       "permissionReadOnly": "Geräte anzeigen (smartlock.readOnly) – Verbindungstest, Türen auflisten, Status lesen",
       "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
-      "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
       "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
       "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Tür-Events",
       "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
-      "testConnection": "Verbindung testen",
       "connectionSuccess": "Verbindung erfolgreich!",
       "customerService": {
         "title": "Kundenservice",
@@ -3203,48 +3263,10 @@
         "invalidPhone": "Muss eine gültige Telefonnummer sein."
       },
       "openLocker": {
-        "providerTitle": "Fächer per App öffnen",
-        "providerDescription": "Mit Open Locker öffnen Buchende ein Fach während ihres Buchungszeitraums per App. Biletado meldet sich dafür mit einem technischen Konto bei Ihrer Open-Locker-Instanz an. Jedes Fach wählen Sie beim Anlegen eines Zugangspunkts aus der Liste der Fächer, auf die das Konto Zugriff hat.",
-        "activate": "Open Locker aktivieren",
-        "server": "Serverkonfiguration",
-        "serverUrl": "Server-URL",
-        "serverUrlPlaceholder": "z. B. https://locker.example.org",
-        "account": "Technisches Konto",
-        "email": "E-Mail des technischen Kontos",
-        "password": "Passwort",
-        "accountHint": "Das technische Konto muss in Open Locker seine E-Mail-Adresse bestätigt und die aktuellen Nutzungsbedingungen akzeptiert haben, sonst ist es gesperrt. Es braucht Zugriff auf die Fächer, die Sie als Zugangspunkte anlegen.",
-        "testFailed": "Verbindung fehlgeschlagen: {message}",
-        "testErrors": {
-          "invalid_credentials": "Anmeldung fehlgeschlagen: E-Mail oder Passwort des technischen Kontos stimmen nicht.",
-          "terms_not_accepted": "Das technische Konto ist gesperrt: Es hat die aktuellen Nutzungsbedingungen von Open Locker nicht akzeptiert. Melden Sie sich mit dem Konto bei Open Locker an und akzeptieren Sie sie.",
-          "email_not_verified": "Das technische Konto ist gesperrt: Seine E-Mail-Adresse ist nicht bestätigt. Bestätigen Sie sie über den Link in der Mail von Open Locker."
-        }
+        "accountHint": "Das technische Konto muss in Open Locker seine E-Mail-Adresse bestätigt und die aktuellen Nutzungsbedingungen akzeptiert haben, sonst ist es gesperrt. Es braucht Zugriff auf die Fächer, die Sie als Zugangspunkte anlegen."
       },
       "salto": {
-        "providerTitle": "Salto KS – Cloud-Schließanlage",
-        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende öffnen die Tür während ihres Buchungszeitraums per App.",
-        "providerLink": "Mehr über Salto KS",
-        "activate": "Salto KS aktivieren",
-        "clientId": "Client-ID",
-        "clientSecret": "Client-Secret",
-        "clientSecretPlaceholder": "Salto KS Client-Secret",
-        "clientSecretUnchanged": "•••••••• (unverändert)",
-        "clientSecretHint": "Es ist bereits ein Secret hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
-        "username": "System-User (E-Mail)",
-        "usernamePlaceholder": "z. B. service-user@example.com",
-        "usernameHint": "E-Mail des Salto-KS-System-Users mit der Rolle „site_admin“ für alle relevanten Sites.",
-        "password": "System-User-Passwort",
-        "passwordPlaceholder": "Salto KS System-User-Passwort",
-        "passwordUnchanged": "•••••••• (unverändert)",
-        "passwordHint": "Es ist bereits ein Passwort hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
-        "systemUserMissing": "System-User fehlt – ohne E-Mail und Passwort ist keine Verbindung möglich. Bitte tragen Sie die Zugangsdaten des KS-System-Users ein und speichern Sie.",
-        "siteId": "Site-ID",
-        "environment": "Umgebung",
-        "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
-        "environmentAccept": "Accept (Sandbox)",
-        "environmentProduction": "Production",
         "prerequisites": {
-          "title": "Voraussetzungen in Salto KS",
           "intro": "Biletado meldet sich bei Salto KS als System-User an. Richten Sie ihn in Salto KS so ein, bevor Sie die Zugangsdaten unten eintragen:",
           "systemUser": "Ein eigener System-User nur für Biletado, kein persönliches Konto. Sein Name zeigt den Zweck, etwa „Biletado – nicht löschen“.",
           "role": "Die Rolle „site_admin“ für alle Sites, deren Türen Biletado öffnen soll.",

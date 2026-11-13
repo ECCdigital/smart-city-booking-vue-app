@@ -4,9 +4,11 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import AccessPointProviderSection from "@/components/AccessPoint/AccessPointProviderSection.vue";
+import AccessAppSettings from "@/components/AccessPoint/AccessAppSettings.vue";
 import AccessPointRow from "@/components/AccessPoint/AccessPointRow.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
@@ -17,7 +19,11 @@ import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 import { downloadQrCode } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
-import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
+import {
+  createLockAndAccessAppDefaults,
+  findTenantApp,
+  LOCK_AND_ACCESS_APP_IDS,
+} from "@/utilities/access-apps";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 import { matches, needsAction } from "@/utilities/access-point-rows";
@@ -26,6 +32,7 @@ export default {
   name: "AccessPointManagement",
   components: {
     AccessPointProviderSection,
+    AccessAppSettings,
     AccessPointRow,
     AccessPointEditDialog,
     AccessPointDeleteDialog,
@@ -43,6 +50,13 @@ export default {
       bookables: [],
       bookablesForbidden: false,
       providers: [],
+      // The tenant's stored access applications by provider, each with the
+      // state of its connection.
+      apps: {},
+      // The providers whose settings are unfolded, and those among them
+      // whose settings hold changes not saved yet.
+      openSettings: [],
+      dirtySettings: [],
       editDialog: false,
       // The provider of the section whose creation opened the dialog; empty
       // while an access point is edited.
@@ -79,9 +93,10 @@ export default {
       return map;
     },
     // One section per connected provider, in the order the backend lists
-    // them, each with its access points. An access point whose provider is
-    // not among them - one switched off - keeps a section of its own, so
-    // that it stays reachable.
+    // the active ones, each with its access points and its stored
+    // application. A provider switched off is not among them; it keeps a
+    // section of its own, as does a provider that only has access points
+    // left, so that they stay reachable.
     sections() {
       const byProvider = new Map(
         this.providers.map((provider) => [
@@ -89,21 +104,25 @@ export default {
           { provider, accessPoints: [] },
         ])
       );
-      this.accessPoints.forEach((accessPoint) => {
-        if (!byProvider.has(accessPoint.provider)) {
-          byProvider.set(accessPoint.provider, {
+      const ensure = (id) => {
+        if (!byProvider.has(id)) {
+          byProvider.set(id, {
             provider: {
-              id: accessPoint.provider,
-              title:
-                createLockAndAccessAppDefaults()[accessPoint.provider]?.title,
+              id,
+              title: createLockAndAccessAppDefaults()[id]?.title,
             },
             accessPoints: [],
           });
         }
-        byProvider.get(accessPoint.provider).accessPoints.push(accessPoint);
+        return byProvider.get(id);
+      };
+      Object.keys(this.apps).forEach(ensure);
+      this.accessPoints.forEach((accessPoint) => {
+        ensure(accessPoint.provider).accessPoints.push(accessPoint);
       });
       return [...byProvider.values()].map((section) => ({
         ...section,
+        app: this.apps[section.provider.id] || null,
         rows: section.accessPoints.filter((accessPoint) =>
           this.shows(accessPoint)
         ),
@@ -144,6 +163,9 @@ export default {
     tenantId() {
       this.fetchAll();
     },
+    dirtySettings(dirty) {
+      this.$emit("update:dirty", dirty.length > 0);
+    },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
@@ -167,7 +189,26 @@ export default {
         this.loading = false;
       }
 
-      await Promise.all([this.fetchBookables(), this.fetchProviders()]);
+      await Promise.all([
+        this.fetchBookables(),
+        this.fetchProviders(),
+        this.fetchApps(),
+      ]);
+    },
+    // The access applications travel with the tenant.
+    async fetchApps() {
+      try {
+        const response = await ApiTenantService.getTenant(this.tenantId);
+        const applications = response.data?.applications || [];
+        const apps = {};
+        LOCK_AND_ACCESS_APP_IDS.forEach((id) => {
+          const app = findTenantApp(applications, id);
+          if (app) apps[id] = app;
+        });
+        this.apps = apps;
+      } catch (error) {
+        this.apps = {};
+      }
     },
     async fetchBookables() {
       this.bookablesForbidden = false;
@@ -196,6 +237,28 @@ export default {
       } catch (error) {
         this.providers = [];
       }
+    },
+    toggleSettings(provider) {
+      if (this.openSettings.includes(provider)) this.closeSettings(provider);
+      else this.openSettings = [...this.openSettings, provider];
+    },
+    closeSettings(provider) {
+      this.openSettings = this.openSettings.filter((id) => id !== provider);
+    },
+    onSettingsDirty(provider, dirty) {
+      const others = this.dirtySettings.filter((id) => id !== provider);
+      this.dirtySettings = dirty ? [...others, provider] : others;
+    },
+    async onAppRemoved(provider) {
+      const apps = { ...this.apps };
+      delete apps[provider];
+      this.apps = apps;
+      this.closeSettings(provider);
+      await this.fetchProviders();
+    },
+    onAppSaved(provider, app) {
+      this.apps = { ...this.apps, [provider]: app };
+      this.closeSettings(provider);
     },
     // The creation starts in the section of a provider, so the provider is
     // settled before the dialog opens.
@@ -404,9 +467,22 @@ export default {
       v-for="section in sections"
       :key="section.provider.id"
       :provider="section.provider"
+      :state="section.app ? section.app.connectionState : ''"
+      :settings-open="openSettings.includes(section.provider.id)"
       class="mb-5"
       @create="openCreate(section.provider.id)"
+      @settings="toggleSettings(section.provider.id)"
     >
+      <template #settings>
+        <AccessAppSettings
+          :provider="section.provider"
+          :app="section.app"
+          @cancel="closeSettings(section.provider.id)"
+          @saved="onAppSaved(section.provider.id, $event)"
+          @dirty="onSettingsDirty(section.provider.id, $event)"
+          @removed="onAppRemoved(section.provider.id)"
+        />
+      </template>
       <div
         v-if="filtering && !section.rows.length"
         class="access-point-none"
