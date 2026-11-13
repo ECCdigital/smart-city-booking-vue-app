@@ -245,6 +245,19 @@ const routes = [
       requiresAuth: false,
     },
   },
+  // PROTOTYPE — Schließsystem verbinden (ECCdigital/tickets#1087).
+  // Throwaway route on branch `prototype/1087-schliesssystem-verbinden`, never
+  // merged. Public so it runs without a backend.
+  {
+    path: "/prototype/schliesssystem-verbinden",
+    name: "prototype-schliesssystem-verbinden",
+    component: () =>
+      import("@/views/Prototype/SchliesssystemVerbindenPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Schließsystem verbinden",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
