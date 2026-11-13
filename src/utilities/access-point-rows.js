@@ -24,7 +24,7 @@ const tc = (key, count) =>
   i18n.tc(`accessPoint.management.row.${key}`, count, { count });
 
 /** An Open Locker door is a single Fach, without an Anlage around it. */
-function isFixedCompartment(accessPoint) {
+export function isFixedCompartment(accessPoint) {
   return (
     accessPoint?.provider === "open-locker" && accessPoint?.type === DOOR_TYPE
   );

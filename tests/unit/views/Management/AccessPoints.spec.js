@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import AccessPoints from "@/views/Management/AccessPoints.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -34,6 +34,11 @@ vi.mock("@/services/api/ApiAccessPointService", () => ({
     storeAccessPoint: vi.fn(),
     deleteAccessPoint: vi.fn(),
     getQrCode: vi.fn(),
+    getCompartmentQrCode: vi.fn(),
+    getCompartmentQrSheet: vi.fn(),
+    rotateScanCode: vi.fn(),
+    rotateCompartmentScanCode: vi.fn(),
+    rotateAllCompartmentScanCodes: vi.fn(),
     getCompartmentBookings: vi.fn(),
     getLocationPrefill: vi.fn(),
   },
@@ -840,16 +845,6 @@ describe("AccessPoints offers the actions of each access point", () => {
     ]);
   });
 
-  it("asks before rotating the scan code of a door", async () => {
-    const wrapper = await mountAccessPointsPage();
-
-    await clickRowAction(wrapper, "Haupteingang", "rotate");
-
-    expect(dialogCard(wrapper, "AccessPointRotateDialog").text()).toContain(
-      "Scan-Code rotieren"
-    );
-  });
-
   it("opens „QR-Codes der Fächer“ of a Schließfachanlage from the QR code", async () => {
     const wrapper = await mountEveryKind();
 
@@ -858,18 +853,6 @@ describe("AccessPoints offers the actions of each access point", () => {
     const text = dialogCard(wrapper, "AccessPointCompartmentQrDialog").text();
     expect(text).toContain("QR-Codes der Fächer");
     expect(text).toContain("Fahrradgarage Süd");
-  });
-
-  // Until the dialog opens on „Alle Fächer“ with the question
-  // (ECCdigital/tickets#1111), all are rotated from the same dialog.
-  it("opens „QR-Codes der Fächer“ from „Alle Scan-Codes rotieren …“", async () => {
-    const wrapper = await mountEveryKind();
-
-    await clickRowAction(wrapper, "Fahrradgarage Süd", "rotate-all");
-
-    expect(
-      dialogCard(wrapper, "AccessPointCompartmentQrDialog").text()
-    ).toContain("Fahrradgarage Süd");
   });
 
   /**
@@ -2351,5 +2334,541 @@ describe("AccessPoints asks about the bookings at a Fach that leaves", () => {
     await click(wrapper, ".close-unmoved");
 
     expect(addToast).toHaveBeenCalled();
+  });
+});
+
+const FACH_HAFEN_1 = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+const FACH_LABOR_2 = "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d";
+const FACH_LABOR_10 = "1d2e3f4a-5b6c-4d7e-9f8a-0b1c2d3e4f5a";
+
+/** An Open Locker Schließfachanlage with three Fächer in two Schränke. */
+function qrAnlage(extra = {}) {
+  const labor = { id: "bank-labor", name: "Labor Fachbank 1" };
+  const hafen = { id: "bank-hafen", name: "Quartiersschrank Hafen" };
+  return {
+    id: "ap-anlage",
+    type: "locker",
+    mode: "remote",
+    provider: "open-locker",
+    label: "Fahrradgarage Süd",
+    validationRules: [],
+    config: {
+      compartments: [
+        { id: FACH_HAFEN_1, number: 1, lockerBank: hafen, outOfService: false },
+        {
+          id: FACH_LABOR_10,
+          number: 10,
+          lockerBank: labor,
+          outOfService: true,
+        },
+        { id: FACH_LABOR_2, number: 2, lockerBank: labor, outOfService: false },
+      ],
+    },
+    ...extra,
+  };
+}
+
+const QR_SCAN = [{ type: "qrScan" }];
+
+function qrDialog(wrapper) {
+  return dialogCard(wrapper, "AccessPointCompartmentQrDialog");
+}
+
+/** The entries of the list „QR-Codes der Fächer“, top to bottom. */
+function compartmentEntries(wrapper) {
+  return qrDialog(wrapper)
+    .findAll("[data-test='compartment-qr-list'] > *")
+    .wrappers.map((entry) => entry.text().replace(/\s+/g, " ").trim());
+}
+
+function chosenEntry(wrapper) {
+  return qrDialog(wrapper)
+    .find("[data-test='compartment-qr-list'] [aria-current='true']")
+    .text()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Clicks the button or link in `card` whose text is `text`. */
+async function clickIn(card, text) {
+  const target = card
+    .findAll("button, a")
+    .wrappers.find((candidate) => candidate.text().trim() === text);
+  if (!target) throw new Error(`No „${text}“ in ${card.text()}`);
+  await target.trigger("click");
+  await flushPromises();
+  await card.vm.$nextTick();
+  await flushPromises();
+}
+
+async function chooseCompartment(wrapper, compartmentId) {
+  await qrDialog(wrapper)
+    .find(`[data-compartment-id='${compartmentId}']`)
+    .trigger("click");
+  await settle(wrapper);
+}
+
+/**
+ * The question before a rotation as it reads: its text, whether the
+ * consequence is a yellow warning, and whether a tick is asked for.
+ */
+function rotationQuestion(wrapper, card = qrDialog(wrapper)) {
+  const question = card.find("[data-test='rotate-question']");
+  if (!question.exists()) return null;
+  return {
+    text: question
+      .findAll("[data-test='rotate-text']")
+      .wrappers.map((part) => part.text().replace(/\s+/g, " ").trim())
+      .join(" "),
+    warning: question.find(".v-alert.warning--text").exists(),
+    tick: question.find("input[type='checkbox']").exists(),
+  };
+}
+
+/** The backend's answer without `STORE_FRONT_URL`, in the blob body. */
+function storeFrontMissing() {
+  const error = new Error("Request failed with status code 503");
+  error.response = {
+    status: 503,
+    data: new Blob(
+      [
+        JSON.stringify({
+          error: "BaseError",
+          code: "store_front_url_missing",
+          statusCode: 503,
+          params: {},
+        }),
+      ],
+      { type: "application/json" }
+    ),
+  };
+  return error;
+}
+
+async function mountAnlage(anlage = qrAnlage()) {
+  return mountAccessPointsPage({
+    providers: [OPEN_LOCKER],
+    accessPoints: [anlage],
+  });
+}
+
+/**
+ * QR-Codes and Rotieren (ECCdigital/tickets#1111): a door and a fixed Fach
+ * load their PDF at once and rotate in a small dialog; a Schließfachanlage
+ * of Open Locker has „QR-Codes der Fächer“, the list left, preview and print
+ * right, and rotating asks there too. The warning is loud only where the QR
+ * scan locks bookers out.
+ */
+describe("AccessPoints prints and rotates the QR codes of the Fächer", () => {
+  let saved;
+  let click;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved = [];
+    click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function () {
+        saved.push(this.getAttribute("download"));
+      });
+    window.URL.createObjectURL = vi.fn(() => "blob:qr");
+    window.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    click.mockRestore();
+    delete window.URL.createObjectURL;
+    delete window.URL.revokeObjectURL;
+  });
+
+  it("opens on „Alle Fächer“, the Fächer by Schrank under it", async () => {
+    const wrapper = await mountAnlage();
+
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    expect(qrDialog(wrapper).text()).toContain("QR-Codes der Fächer");
+    expect(compartmentEntries(wrapper)).toEqual([
+      "Alle Fächer (3)",
+      "Schrank Labor Fachbank 1",
+      "Fach 2",
+      "Fach 10 außer Betrieb",
+      "Schrank Quartiersschrank Hafen",
+      "Fach 1",
+    ]);
+    expect(chosenEntry(wrapper)).toBe("Alle Fächer (3)");
+  });
+
+  it("prints all Fächer as the Sammel-PDF, the Etikettenbogen in the preview", async () => {
+    ApiAccessPointService.getCompartmentQrSheet.mockResolvedValue({
+      data: "%PDF",
+      headers: {
+        "content-disposition":
+          'inline; filename="qr-fahrradgarage-sued-alle-faecher.pdf"',
+      },
+    });
+    const wrapper = await mountAnlage();
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    expect(qrDialog(wrapper).find("[data-test='qr-sheet']").text()).toContain(
+      "Fach 2"
+    );
+    await clickIn(qrDialog(wrapper), "Sammel-PDF drucken");
+
+    expect(ApiAccessPointService.getCompartmentQrSheet).toHaveBeenCalledWith(
+      "ap-anlage",
+      "t1"
+    );
+    expect(saved).toEqual(["qr-fahrradgarage-sued-alle-faecher.pdf"]);
+  });
+
+  it("shows the QR code of a chosen Fach and prints it as PDF, SVG or PNG", async () => {
+    ApiAccessPointService.getCompartmentQrCode.mockImplementation(
+      (id, compartmentId, format) =>
+        Promise.resolve({
+          data: "qr",
+          headers: {
+            "content-disposition": `inline; filename="fach-10.${format}"`,
+          },
+        })
+    );
+    const wrapper = await mountAnlage();
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    await chooseCompartment(wrapper, FACH_LABOR_10);
+
+    expect(chosenEntry(wrapper)).toBe("Fach 10 außer Betrieb");
+    expect(qrDialog(wrapper).text()).toContain(
+      "Schrank Labor Fachbank 1 · Fach 10"
+    );
+    expect(
+      qrDialog(wrapper).find("[data-test='qr-preview'] img").attributes("src")
+    ).toBe("blob:qr");
+    expect(saved).toEqual([]);
+
+    await clickIn(qrDialog(wrapper), "Drucken (PDF, A4)");
+    await clickIn(qrDialog(wrapper), "SVG");
+    await clickIn(qrDialog(wrapper), "PNG");
+
+    expect(ApiAccessPointService.getCompartmentQrCode.mock.calls).toEqual([
+      ["ap-anlage", FACH_LABOR_10, "png", "t1"],
+      ["ap-anlage", FACH_LABOR_10, "pdf", "t1"],
+      ["ap-anlage", FACH_LABOR_10, "svg", "t1"],
+      ["ap-anlage", FACH_LABOR_10, "png", "t1"],
+    ]);
+    expect(saved).toEqual(["fach-10.pdf", "fach-10.svg", "fach-10.png"]);
+    expect(qrDialog(wrapper).text()).toContain("Für eigene Layouts: SVG · PNG");
+  });
+
+  it("asks on the right before rotating all, softly without the QR scan", async () => {
+    ApiAccessPointService.rotateAllCompartmentScanCodes.mockResolvedValue({});
+    const wrapper = await mountAnlage();
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    await clickIn(qrDialog(wrapper), "Alle rotieren …");
+
+    expect(rotationQuestion(wrapper)).toEqual({
+      text: "Alle Scan-Codes rotieren? Der Scan-Code aller 3 Fächer wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Buchende öffnen weiter über die App, nur die alten Aufkleber führen ins Leere.",
+      warning: false,
+      tick: false,
+    });
+    expect(qrDialog(wrapper).text()).not.toContain("Sammel-PDF drucken");
+
+    await clickIn(qrDialog(wrapper), "3 rotieren");
+
+    expect(
+      ApiAccessPointService.rotateAllCompartmentScanCodes
+    ).toHaveBeenCalledWith("ap-anlage", "t1");
+    expect(compartmentEntries(wrapper)).toEqual([
+      "Alle Fächer (3)",
+      "Schrank Labor Fachbank 1",
+      "Fach 2 neu",
+      "Fach 10 außer Betrieb neu",
+      "Schrank Quartiersschrank Hafen",
+      "Fach 1 neu",
+    ]);
+    expect(
+      qrDialog(wrapper).find("[data-test='compartment-qr-print']").text()
+    ).toBe("Sammel-PDF drucken");
+  });
+
+  it("warns in yellow and asks for the tick before rotating all with the QR scan", async () => {
+    ApiAccessPointService.rotateAllCompartmentScanCodes.mockResolvedValue({});
+    const wrapper = await mountAnlage(qrAnlage({ validationRules: QR_SCAN }));
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    await clickIn(qrDialog(wrapper), "Alle rotieren …");
+
+    expect(rotationQuestion(wrapper)).toEqual({
+      text: "Alle Scan-Codes rotieren? Der Scan-Code aller 3 Fächer wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Bis die neuen Aufkleber hängen, öffnet keines der 3 Fächer für Buchende.",
+      warning: true,
+      tick: true,
+    });
+    const confirm = () =>
+      qrDialog(wrapper)
+        .findAll("[data-test='rotate-question'] button")
+        .wrappers.find((button) => button.text() === "3 rotieren");
+    expect(confirm().attributes("disabled")).toBe("disabled");
+
+    await qrDialog(wrapper)
+      .find("[data-test='rotate-question'] input[type='checkbox']")
+      .trigger("click");
+    await settle(wrapper);
+    expect(qrDialog(wrapper).text()).toContain(
+      "Ich drucke alle Aufkleber neu und bringe sie an."
+    );
+    await clickIn(qrDialog(wrapper), "3 rotieren");
+
+    expect(
+      ApiAccessPointService.rotateAllCompartmentScanCodes
+    ).toHaveBeenCalledWith("ap-anlage", "t1");
+  });
+
+  it("rotates one Fach without the tick, even with the QR scan, and then prints it anew", async () => {
+    ApiAccessPointService.rotateCompartmentScanCode.mockResolvedValue({});
+    ApiAccessPointService.getCompartmentQrCode.mockResolvedValue({
+      data: "qr",
+      headers: {},
+    });
+    const wrapper = await mountAnlage(qrAnlage({ validationRules: QR_SCAN }));
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+    await chooseCompartment(wrapper, FACH_LABOR_2);
+
+    await clickIn(qrDialog(wrapper), "Scan-Code rotieren …");
+
+    expect(rotationQuestion(wrapper)).toEqual({
+      text: "Scan-Code rotieren? Der Scan-Code von Fach 2 wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Bis der neue Aufkleber hängt, öffnet Fach 2 nicht für Buchende.",
+      warning: true,
+      tick: false,
+    });
+
+    await clickIn(qrDialog(wrapper), "Rotieren");
+
+    expect(
+      ApiAccessPointService.rotateCompartmentScanCode
+    ).toHaveBeenCalledWith("ap-anlage", FACH_LABOR_2, "t1");
+    expect(rotationQuestion(wrapper)).toBeNull();
+    expect(chosenEntry(wrapper)).toBe("Fach 2 neu");
+    expect(compartmentEntries(wrapper)).toContain("Fach 1");
+    // The preview shows the new code.
+    expect(
+      ApiAccessPointService.getCompartmentQrCode.mock.calls.filter(
+        (call) => call[2] === "png"
+      )
+    ).toHaveLength(2);
+
+    await clickIn(qrDialog(wrapper), "Neuen QR-Code drucken");
+
+    expect(ApiAccessPointService.getCompartmentQrCode).toHaveBeenLastCalledWith(
+      "ap-anlage",
+      FACH_LABOR_2,
+      "pdf",
+      "t1"
+    );
+  });
+
+  it("opens on „Alle Fächer“ with the question from „Alle Scan-Codes rotieren …“", async () => {
+    const wrapper = await mountAnlage();
+
+    await clickRowAction(wrapper, "Fahrradgarage Süd", "rotate-all");
+
+    expect(chosenEntry(wrapper)).toBe("Alle Fächer (3)");
+    expect(rotationQuestion(wrapper).text).toContain(
+      "Alle Scan-Codes rotieren?"
+    );
+
+    await clickIn(qrDialog(wrapper), "Abbrechen");
+
+    expect(rotationQuestion(wrapper)).toBeNull();
+    expect(
+      qrDialog(wrapper).find("[data-test='compartment-qr-print']").text()
+    ).toBe("Sammel-PDF drucken");
+  });
+
+  it("names the failure of a rotation and stays at the question", async () => {
+    ApiAccessPointService.rotateAllCompartmentScanCodes.mockRejectedValue(
+      new Error("Network Error")
+    );
+    const wrapper = await mountAnlage();
+    await clickRowAction(wrapper, "Fahrradgarage Süd", "rotate-all");
+
+    await clickIn(qrDialog(wrapper), "3 rotieren");
+
+    expect(qrDialog(wrapper).text()).toContain(
+      "Die Scan-Codes konnten nicht rotiert werden."
+    );
+    expect(rotationQuestion(wrapper)).not.toBeNull();
+    expect(compartmentEntries(wrapper).join(" ")).not.toContain("neu");
+  });
+
+  it("names the missing store-front address when a print fails for it", async () => {
+    ApiAccessPointService.getCompartmentQrCode.mockImplementation(
+      (id, compartmentId, format) =>
+        format === "png"
+          ? Promise.resolve({ data: "qr", headers: {} })
+          : Promise.reject(storeFrontMissing())
+    );
+    const wrapper = await mountAnlage();
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+    await chooseCompartment(wrapper, FACH_LABOR_2);
+
+    await clickIn(qrDialog(wrapper), "Drucken (PDF, A4)");
+
+    expect(saved).toEqual([]);
+    expect(qrDialog(wrapper).text()).toContain(
+      "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL), der QR-Code lässt sich deshalb nicht erzeugen. Bitte wenden Sie sich an den Betrieb."
+    );
+  });
+
+  it("forgets what was „neu“ once the dialog opens anew", async () => {
+    ApiAccessPointService.rotateAllCompartmentScanCodes.mockResolvedValue({});
+    const wrapper = await mountAnlage();
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+    await clickIn(qrDialog(wrapper), "Alle rotieren …");
+    await clickIn(qrDialog(wrapper), "3 rotieren");
+
+    await clickIn(qrDialog(wrapper), "Schließen");
+    await clickRowIcon(wrapper, "Fahrradgarage Süd", "qr");
+
+    expect(compartmentEntries(wrapper).join(" ")).not.toContain("neu");
+    expect(rowOf(wrapper, "Fahrradgarage Süd").text()).not.toContain("neu");
+  });
+});
+
+function rotateDialog(wrapper) {
+  return dialogCard(wrapper, "AccessPointRotateDialog");
+}
+
+/**
+ * Rotating at a door or a fixed Fach (ECCdigital/tickets#1111) is a small
+ * dialog: the question, then the new code with „Neuen QR-Code drucken“.
+ */
+describe("AccessPoints rotates the scan code of a door", () => {
+  let saved;
+  let click;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved = [];
+    click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function () {
+        saved.push(this.getAttribute("download"));
+      });
+    window.URL.createObjectURL = vi.fn(() => "blob:qr");
+    window.URL.revokeObjectURL = vi.fn();
+    ApiAccessPointService.rotateScanCode.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    click.mockRestore();
+    delete window.URL.createObjectURL;
+    delete window.URL.revokeObjectURL;
+  });
+
+  it("warns in yellow at a door with the QR scan, and rotates without a tick", async () => {
+    const wrapper = await mountAccessPointsPage();
+
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+
+    expect(rotateDialog(wrapper).text()).toContain("Scan-Code rotieren");
+    expect(rotationQuestion(wrapper, rotateDialog(wrapper))).toEqual({
+      text: "Der Scan-Code von „Haupteingang“ wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Bis der neue Aufkleber hängt, öffnet die Tür nicht für Buchende.",
+      warning: true,
+      tick: false,
+    });
+
+    await clickIn(rotateDialog(wrapper), "Rotieren");
+
+    expect(ApiAccessPointService.rotateScanCode).toHaveBeenCalledWith(
+      "ap-door",
+      "t1"
+    );
+  });
+
+  it("says softly at a fixed Fach without the QR scan that bookers keep opening", async () => {
+    const wrapper = await mountEveryKind();
+
+    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "rotate");
+
+    expect(rotationQuestion(wrapper, rotateDialog(wrapper))).toEqual({
+      text: "Der Scan-Code von „Labor Fachbank 1 · Fach 2“ wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Buchende öffnen weiter über die App, nur der alte Aufkleber führt ins Leere.",
+      warning: false,
+      tick: false,
+    });
+  });
+
+  it("names a fixed Fach with the QR scan as the Fach that does not open", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [{ ...OPEN_LOCKER_FACH, validationRules: QR_SCAN }],
+    });
+
+    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "rotate");
+
+    expect(rotationQuestion(wrapper, rotateDialog(wrapper)).text).toContain(
+      "Bis der neue Aufkleber hängt, öffnet das Fach nicht für Buchende."
+    );
+  });
+
+  it("shows the new code and prints it as PDF, SVG or PNG", async () => {
+    ApiAccessPointService.getQrCode.mockImplementation((id, format) =>
+      Promise.resolve({
+        data: "qr",
+        headers: {
+          "content-disposition": `inline; filename="haupteingang.${format}"`,
+        },
+      })
+    );
+    const wrapper = await mountAccessPointsPage();
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+
+    await clickIn(rotateDialog(wrapper), "Rotieren");
+
+    expect(rotationQuestion(wrapper, rotateDialog(wrapper))).toBeNull();
+    expect(
+      rotateDialog(wrapper)
+        .find("[data-test='qr-preview'] img")
+        .attributes("src")
+    ).toBe("blob:qr");
+
+    await clickIn(rotateDialog(wrapper), "Neuen QR-Code drucken");
+    await clickIn(rotateDialog(wrapper), "SVG");
+    await clickIn(rotateDialog(wrapper), "PNG");
+
+    expect(saved).toEqual([
+      "haupteingang.pdf",
+      "haupteingang.svg",
+      "haupteingang.png",
+    ]);
+    expect(rowOf(wrapper, "Haupteingang").text()).not.toContain("neu");
+  });
+
+  it("names the failure of the rotation and stays at the question", async () => {
+    ApiAccessPointService.rotateScanCode.mockRejectedValue(
+      new Error("Network Error")
+    );
+    const wrapper = await mountAccessPointsPage();
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+
+    await clickIn(rotateDialog(wrapper), "Rotieren");
+
+    expect(rotateDialog(wrapper).text()).toContain(
+      "Der Scan-Code konnte nicht rotiert werden."
+    );
+    expect(rotationQuestion(wrapper, rotateDialog(wrapper))).not.toBeNull();
+  });
+
+  it("names the missing store-front address when the reprint fails for it", async () => {
+    ApiAccessPointService.getQrCode.mockRejectedValue(storeFrontMissing());
+    const wrapper = await mountAccessPointsPage();
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+    await clickIn(rotateDialog(wrapper), "Rotieren");
+
+    await clickIn(rotateDialog(wrapper), "Neuen QR-Code drucken");
+
+    expect(saved).toEqual([]);
+    expect(rotateDialog(wrapper).text()).toContain(
+      "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL)"
+    );
   });
 });
