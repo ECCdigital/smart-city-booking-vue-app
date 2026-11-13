@@ -4,7 +4,7 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiEventService", () => ({
-  default: { getTags: vi.fn(), addEvent: vi.fn() },
+  default: { getTags: vi.fn(), getFlags: vi.fn(), addEvent: vi.fn() },
 }));
 
 import ApiEventService from "@/services/api/ApiEventService";
@@ -105,6 +105,7 @@ const find = (wrapper, name) => wrapper.find(`[data-test='${name}']`);
 beforeEach(() => {
   vi.clearAllMocks();
   ApiEventService.getTags.mockResolvedValue({ data: [] });
+  ApiEventService.getFlags.mockResolvedValue({ data: [] });
   ApiEventService.addEvent.mockResolvedValue({});
 });
 
@@ -159,5 +160,37 @@ describe("SimpleEventCreator - location", () => {
     expect(find(wrapper, "location-refusal").text()).toBe(
       "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
     );
+  });
+});
+
+describe("SimpleEventCreator - Schlagwörter (the event's flags)", () => {
+  const flagsField = (wrapper) =>
+    wrapper
+      .findAllComponents({ name: "v-combobox" })
+      .wrappers.find((field) => field.props("label") === "Schlagwörter");
+
+  it("suggests the flags of the tenant's events", async () => {
+    ApiEventService.getFlags.mockResolvedValue({
+      data: ["Kinder", "Draußen"],
+    });
+
+    const { wrapper } = await mountCreator();
+
+    expect(ApiEventService.getFlags).toHaveBeenCalled();
+    expect(flagsField(wrapper).props("items")).toEqual(["Kinder", "Draußen"]);
+  });
+
+  it("drops a flag with the cross of its chip", async () => {
+    const { wrapper, store } = await mountCreator();
+    await store.dispatch("events/updateForm", {
+      parent: "information",
+      field: "flags",
+      value: ["Kinder", "Draußen"],
+    });
+    await wrapper.vm.$nextTick();
+
+    await flagsField(wrapper).findAll(".v-chip__close").at(0).trigger("click");
+
+    expect(store.state.events.form.information.flags).toEqual(["Draußen"]);
   });
 });

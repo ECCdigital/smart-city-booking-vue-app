@@ -42,6 +42,7 @@
       <div class="bookable-basics__field" data-field="flags">
         <ChipCombobox
           :value="bookable.flags || []"
+          :items="flagsAvailable"
           :label="$t('bookable.identity.flags')"
           :hint="$t('bookable.identity.flags-hint')"
           :empty-text="$t('bookable.identity.chips-empty')"
@@ -196,8 +197,8 @@ import { externalReferenceOf } from "@/utils/mediaReference";
  * beneath. The groups are the sections of the tab's sub-nav.
  *
  * The type is chosen only while the bookable is created (`isNew`); after
- * that it is read only. Events and tag suggestions come from the bookable's
- * own tenant, not the one currently selected.
+ * that it is read only. Events and the suggestions of tags and Merkmale come
+ * from the bookable's own tenant, not the one currently selected.
  */
 export default {
   name: "BookableEditIdentity",
@@ -207,7 +208,7 @@ export default {
     isNew: { type: Boolean, default: false },
   },
   data() {
-    return { events: [], tagsAvailable: [] };
+    return { events: [], tagsAvailable: [], flagsAvailable: [] };
   },
   computed: {
     typeItems() {
@@ -263,6 +264,9 @@ export default {
       },
     },
   },
+  created() {
+    this.fetchFlags();
+  },
   methods: {
     sectionElementId(id) {
       return bookableEditSectionElementId(id);
@@ -276,6 +280,14 @@ export default {
       } catch (error) {
         console.error(error);
         this.events = [];
+      }
+    },
+    async fetchFlags() {
+      try {
+        const response = await ApiTagsService.getFlags(this.bookable.tenantId);
+        this.flagsAvailable = (response?.data || []).filter(Boolean);
+      } catch (error) {
+        console.error(error);
       }
     },
     async fetchTags() {
