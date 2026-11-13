@@ -1490,14 +1490,13 @@
   "tenant": {
     "customerUploads": {
       "title": "Nachweise von Buchenden",
-      "intro": "Ermöglichen Sie Buchenden, bei einer Buchung oder im Anschluss Nachweise hochzuladen. Dazu kann ein Vereinsausweis, ein Sozialpass oder auch eine unterzeichnete Nutzungsvereinbarung gehören. Welche Nachweise ein Buchungsobjekt verlangt, legen Sie jeweils im Buchungsobjekt unter „Upload-Felder“ fest.",
-      "enabled": "Nachweise freischalten",
-      "enabled-hint": "Erst dann zeigen die Buchungsobjekte die Upload-Felder.",
+      "intro": "Ermöglichen Sie Buchenden, zu einer Buchung bestimmte Nachweise hochzuladen. Dazu kann ein Vereinsausweis, ein Sozialpass oder auch eine unterzeichnete Nutzungsvereinbarung gehören. Welche Nachweise ein Buchungsobjekt verlangt und wann diese erbracht werden müssen, legen Sie jeweils im Buchungsobjekt unter „Upload-Felder“ fest.",
+      "enabled": "Nachweis-Upload freischalten",
       "instance-off": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Erst nach der Freigabe unter „Instanz verwalten“ können Sie Nachweise freischalten.",
       "instance-off-enabled": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Bis zur Freigabe nimmt dieser Mandant keine Nachweise an.",
       "formats": {
         "label": "Erlaubte Formate",
-        "hint": "Ein Upload-Feld kann nur diese Formate verlangen.",
+        "hint": "Legen Sie fest, welche Formate insgesamt zulässig sind. Pro Upload-Feld können aus diesen Formaten die passenden Optionen gewählt werden.",
         "pdf": "PDF",
         "jpeg": "JPEG",
         "png": "PNG"
@@ -1506,13 +1505,14 @@
       "retentionDays-hint": "So viele Tage nach dem Ende der Buchung löscht das System ungeprüfte, besonders schutzwürdige Nachweise. Bei Tickets zählt das Ende der Veranstaltung, ohne Buchungszeit der Upload. Höchstens {max} Tage. Normale Nachweise bleiben bei der Buchung.",
       "days": "Tage",
       "reminderDays": "Erinnerung an Buchende vor der Einreichfrist",
-      "reminderDays-hint": "So viele Tage vor der Einreichfrist erinnert eine E-Mail die Buchenden an einen fehlenden Pflicht-Nachweis.",
+      "reminderDays-hint": "So viele Tage vor der Einreichfrist erinnert eine E-Mail die Buchenden an einen fehlenden Pflicht-Nachweis. Bei optionalen Nachweisen erfolgt keine Erinnerung.",
+      "staff-mails": "Benachrichtigungen für die Verwaltung",
       "notifyOnSubmitted": "E-Mail „Nachweis eingereicht“",
       "notifyOnSubmitted-hint": "Die gewählten Rollen erhalten eine E-Mail mit Link, wenn Nachweise eingereicht werden.",
       "notifyOnOverdue": "E-Mail „Nachweis überfällig“",
       "notifyOnOverdue-hint": "Die gewählten Rollen erhalten eine E-Mail mit Link, wenn die Frist eines Pflicht-Nachweises abläuft.",
       "notifyRoles": "Empfänger der E-Mails zu Nachweisen",
-      "notifyRoles-hint": "Alle aktiven Mitglieder dieser Rollen erhalten die E-Mails „Nachweis eingereicht“ und „Nachweis überfällig“. Die E-Mail-Adresse des Mandanten erhält sie nicht.",
+      "notifyRoles-hint": "Alle aktiven Mitglieder dieser Rollen erhalten die E-Mails „Nachweis eingereicht“ und „Nachweis überfällig“.",
       "notifyRoles-missing": "Ohne Rolle erhält niemand diese E-Mails.",
       "validation": {
         "formats": "Wählen Sie mindestens ein Format.",

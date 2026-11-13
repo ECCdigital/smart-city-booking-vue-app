@@ -126,14 +126,12 @@ export default {
       :disabled="!instanceCleared && !settings.enabled"
       color="primary"
       :label="$t('tenant.customerUploads.enabled')"
-      :hint="$t('tenant.customerUploads.enabled-hint')"
-      persistent-hint
       class="mt-2"
       @change="change({ enabled: !!$event })"
     />
 
     <template v-if="settings.enabled">
-      <div class="text-subtitle-2 mt-6 mb-1">
+      <div class="text-subtitle-2 customer-uploads__heading mt-6 mb-1">
         {{ $t("tenant.customerUploads.formats.label") }}
       </div>
       <p class="text-caption text--secondary mb-1">
@@ -197,6 +195,12 @@ export default {
         </v-col>
       </v-row>
 
+      <div
+        class="text-subtitle-2 customer-uploads__heading mt-6 mb-1"
+        data-test="customer-uploads-staff-mails"
+      >
+        {{ $t("tenant.customerUploads.staff-mails") }}
+      </div>
       <v-switch
         data-test="customer-uploads-notify-submitted"
         :input-value="settings.notifyOnSubmitted"
@@ -204,7 +208,7 @@ export default {
         :label="$t('tenant.customerUploads.notifyOnSubmitted')"
         :hint="$t('tenant.customerUploads.notifyOnSubmitted-hint')"
         persistent-hint
-        class="mt-4"
+        class="mt-0"
         @change="change({ notifyOnSubmitted: !!$event })"
       />
       <v-switch
@@ -248,3 +252,9 @@ export default {
     </template>
   </SubSection>
 </template>
+
+<style scoped>
+.customer-uploads__heading {
+  font-weight: var(--scb-font-weight-semibold) !important;
+}
+</style>
