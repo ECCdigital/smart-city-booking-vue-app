@@ -243,16 +243,6 @@ describe("AccessPoints shows a section per connected provider", () => {
     expect(pareva.find("[data-test='row-menu']").exists()).toBe(true);
   });
 
-  it("says so when there is nothing to show", async () => {
-    const wrapper = await mountAccessPointsPage({
-      providers: [],
-      accessPoints: [],
-    });
-
-    expect(sections(wrapper)).toHaveLength(0);
-    expect(wrapper.text()).toContain("Es ist noch kein Zugangspunkt angelegt.");
-  });
-
   it("names in the head what the creation makes", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [NUKI, PAREVA, OPEN_LOCKER],
@@ -268,6 +258,366 @@ describe("AccessPoints shows a section per connected provider", () => {
     expect(createLabel("Open Locker")).toBe("Schließfachanlage anlegen");
   });
 });
+
+/** The groups of providers on the empty page, each with its providers. */
+function startGroups(wrapper) {
+  return wrapper
+    .findAll("[data-test='provider-pick-group']")
+    .wrappers.map((group) => ({
+      title: group.find("[data-test='provider-pick-group-title']").text(),
+      providers: group
+        .findAll("[data-test='provider-pick']")
+        .wrappers.map((pick) => [
+          pick.find("[data-test='provider-pick-title']").text(),
+          pick.find("button").text(),
+        ]),
+    }));
+}
+
+/**
+ * A new tenant is led through the page (ECCdigital/tickets#1106): the empty
+ * page asks for the providers, „Verbinden“ starts a section in the UI alone,
+ * and „Speichern und aktivieren“ stores the provider switched on.
+ */
+describe("AccessPoints leads a new tenant to its first provider", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("asks for the providers in two groups while none is connected", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [],
+      accessPoints: [],
+    });
+
+    expect(sections(wrapper)).toHaveLength(0);
+    expect(wrapper.text()).toContain("Welche Anbieter nutzt der Mandant?");
+    expect(startGroups(wrapper)).toEqual([
+      {
+        title: "Türen",
+        providers: [
+          ["Nuki", "Verbinden"],
+          ["Salto KS", "Verbinden"],
+        ],
+      },
+      {
+        title: "Schließfächer & Fahrradboxen",
+        providers: [
+          ["Open Locker", "Verbinden"],
+          ["Parkraumservice", "Verbinden"],
+          ["Pareva", "Verbinden"],
+        ],
+      },
+    ]);
+  });
+
+  it("offers the providers not connected beneath the sections", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI],
+      apps: [storedApp("nuki")],
+      accessPoints: [DOOR],
+    });
+
+    expect(wrapper.text()).not.toContain("Welche Anbieter nutzt der Mandant?");
+    const more = wrapper.find("[data-test='provider-picker-more']");
+    expect(more.text()).toContain("Weiteren Anbieter verbinden");
+    expect(
+      more.findAll("[data-test='provider-pick']").wrappers.map((p) => p.text())
+    ).toEqual(["Salto KS", "Open Locker", "Parkraumservice", "Pareva"]);
+    // Beneath the sections, not between them.
+    const html = wrapper.html();
+    expect(html.indexOf("provider-picker-more")).toBeGreaterThan(
+      html.lastIndexOf("provider-section-title")
+    );
+
+    await connectProvider(wrapper, "Salto KS");
+
+    expect(stateOf(wrapper, "Salto KS")).toBe("Nicht verbunden");
+    expect(
+      wrapper
+        .find("[data-test='provider-picker-more']")
+        .findAll("[data-test='provider-pick']")
+        .wrappers.map((p) => p.text())
+    ).toEqual(["Open Locker", "Parkraumservice", "Pareva"]);
+  });
+
+  it("starts a dashed section „Nicht verbunden“ with the form open", async () => {
+    const wrapper = await emptyPage();
+
+    await connectProvider(wrapper, "Nuki");
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(nuki.classes()).toContain("provider-section--draft");
+    expect(stateOf(wrapper, "Nuki")).toBe("Nicht verbunden");
+    expect(formLabels(settingsOf(wrapper, "Nuki"))).toEqual(["API-Token"]);
+    expect(buttonIn(nuki, "Verwerfen")).toBeTruthy();
+    expect(nuki.find("[data-test='provider-section-create']").exists()).toBe(
+      false
+    );
+    expect(wrapper.text()).not.toContain("Welche Anbieter nutzt der Mandant?");
+  });
+
+  it("drops the section with „Verwerfen“, saving nothing", async () => {
+    const wrapper = await emptyPage();
+    await connectProvider(wrapper, "Nuki");
+    await inputLabelled(settingsOf(wrapper, "Nuki"), "API-Token").setValue(
+      "tok"
+    );
+    await settle(wrapper);
+
+    await click(wrapper, sectionOf(wrapper, "Nuki"), "Verwerfen");
+
+    expect(sections(wrapper)).toHaveLength(0);
+    expect(wrapper.text()).toContain("Welche Anbieter nutzt der Mandant?");
+    expect(ApiAccessAppsService.saveApp).not.toHaveBeenCalled();
+    expect(ApiAccessAppsService.testConnection).not.toHaveBeenCalled();
+    expect(ApiAccessAppsService.removeApp).not.toHaveBeenCalled();
+  });
+
+  it("stores the provider switched on with „Speichern und aktivieren“", async () => {
+    ApiAccessAppsService.saveApp.mockResolvedValue({
+      data: storedApp("nuki", {
+        storedSecrets: { apiToken: true },
+        connectionState: "unchecked",
+        lastTest: null,
+      }),
+    });
+    const wrapper = await emptyPage();
+    await connectProvider(wrapper, "Nuki");
+    const settings = settingsOf(wrapper, "Nuki");
+    await inputLabelled(settings, "API-Token").setValue("tok");
+    await settle(wrapper);
+
+    await click(wrapper, settings, "Speichern und aktivieren");
+
+    expect(ApiAccessAppsService.saveApp).toHaveBeenCalledWith("t1", "nuki", {
+      apiToken: "tok",
+      apiBaseUrl: "https://api.nuki.io",
+      customerService: { name: "", email: "", phone: "" },
+    });
+    expect(ApiAccessAppsService.testConnection).not.toHaveBeenCalled();
+    // The active providers, with what they can list, are read anew.
+    expect(ApiAccessAppsService.getProviders).toHaveBeenCalledTimes(2);
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(nuki.classes()).not.toContain("provider-section--draft");
+    expect(stateOf(wrapper, "Nuki")).toBe("Nicht geprüft");
+    expect(settingsOf(wrapper, "Nuki").exists()).toBe(false);
+    expect(nuki.find("[data-test='provider-section-next']").text()).toBe(
+      "Nuki ist verbunden. Als Nächstes: die erste Tür anlegen."
+    );
+  });
+
+  // A test before the first save ran without a stored application, so the
+  // backend kept no last test; the page tests once more on what it stored.
+  it("tests again on the stored secrets when the values were tested before", async () => {
+    const saved = storedApp("nuki", {
+      apiBaseUrl: "https://api.nuki.io",
+      storedSecrets: { apiToken: true },
+      connectionState: "unchecked",
+      lastTest: null,
+    });
+    ApiAccessAppsService.saveApp.mockResolvedValue({ data: saved });
+    const wrapper = await emptyPage();
+    await connectProvider(wrapper, "Nuki");
+    const settings = settingsOf(wrapper, "Nuki");
+    await inputLabelled(settings, "API-Token").setValue("tok");
+    await settle(wrapper);
+    await testConnection(wrapper, settings, { success: true });
+    ApiAccessAppsService.testConnection.mockResolvedValueOnce({
+      data: { success: true },
+    });
+    ApiTenantService.getTenant.mockResolvedValue({
+      data: {
+        id: "t1",
+        applications: [{ ...saved, connectionState: "connected" }],
+      },
+    });
+
+    await click(wrapper, settings, "Speichern und aktivieren");
+
+    expect(ApiAccessAppsService.testConnection).toHaveBeenCalledTimes(2);
+    expect(ApiAccessAppsService.testConnection).toHaveBeenLastCalledWith(
+      "t1",
+      { apiToken: "", apiBaseUrl: "https://api.nuki.io" },
+      "nuki"
+    );
+    expect(stateOf(wrapper, "Nuki")).toBe("Verbunden");
+  });
+
+  it("says in a connected section without access points what comes first", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [storedApp("nuki"), storedApp("pareva")],
+      accessPoints: [PAREVA_LOCKER],
+    });
+
+    expect(
+      sectionOf(wrapper, "Nuki")
+        .find("[data-test='provider-section-empty']")
+        .text()
+    ).toBe("Noch keine Tür. Legen Sie die erste an.");
+    expect(
+      sectionOf(wrapper, "Pareva")
+        .find("[data-test='provider-section-empty']")
+        .exists()
+    ).toBe(false);
+  });
+});
+
+/** The steps of the strip: number or check, title, state. */
+function setupSteps(wrapper) {
+  return wrapper.findAll("[data-test='setup-step']").wrappers.map((step) => ({
+    done: step.classes().includes("setup-strip__step--done"),
+    mark: step.find("[data-test='setup-step-mark']").text(),
+    title: step.find("[data-test='setup-step-title']").text(),
+    state: step.find("[data-test='setup-step-state']").text(),
+  }));
+}
+
+function setupDone(wrapper) {
+  const line = wrapper.find("[data-test='setup-done']");
+  return line.exists() ? line.text() : null;
+}
+
+/**
+ * A strip over the sections says how far the setup is
+ * (ECCdigital/tickets#1106), derived from providers, IQs, access points and
+ * assignments alone; once all three steps are done one line stays.
+ */
+describe("AccessPoints shows how far the setup is", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("numbers the three steps, each with its state", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [storedApp("nuki")],
+      providers: [NUKI],
+      accessPoints: [],
+    });
+
+    expect(setupSteps(wrapper)).toEqual([
+      {
+        done: true,
+        mark: "",
+        title: "Anbieter verbinden",
+        state: "1 verbunden",
+      },
+      {
+        done: false,
+        mark: "2",
+        title: "Zugangspunkte anlegen",
+        state: "Noch keiner angelegt",
+      },
+      {
+        done: false,
+        mark: "3",
+        title: "Buchungsobjekten zuordnen",
+        state: "Kommt nach dem Anlegen",
+      },
+    ]);
+    expect(setupDone(wrapper)).toBeNull();
+  });
+
+  it("counts the access points created and assigned", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [storedApp("nuki"), storedApp("pareva")],
+      providers: [NUKI, PAREVA, OPEN_LOCKER],
+      accessPoints: [DOOR, PAREVA_LOCKER, OPEN_LOCKER_FACH, OPEN_LOCKER_ANLAGE],
+      bookables: [
+        {
+          id: "b1",
+          title: "Besprechungsraum",
+          accessPointDetails: { accessPointIds: [DOOR.id, PAREVA_LOCKER.id] },
+        },
+      ],
+    });
+
+    expect(setupSteps(wrapper).map(({ done, state }) => [done, state])).toEqual(
+      [
+        [true, "3 verbunden"],
+        [true, "4 angelegt"],
+        [false, "2 von 4 zugeordnet"],
+      ]
+    );
+    expect(openToggle(wrapper).text()).toBe("Offen (2)");
+  });
+
+  it("leaves one line once everything is set up", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [storedApp("nuki"), storedApp("pareva")],
+      bookables: [
+        {
+          id: "b1",
+          title: "Besprechungsraum",
+          accessPointDetails: { accessPointIds: [DOOR.id, PAREVA_LOCKER.id] },
+        },
+      ],
+    });
+
+    expect(setupSteps(wrapper)).toEqual([]);
+    expect(setupDone(wrapper)).toBe(
+      "Eingerichtet: 2 Anbieter, 2 Zugangspunkte, alle einem Buchungsobjekt zugeordnet."
+    );
+  });
+
+  it("does not count a provider switched off", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI],
+      apps: [
+        storedApp("nuki"),
+        storedApp("pareva", { active: false, connectionState: "disabled" }),
+      ],
+      accessPoints: [],
+    });
+
+    expect(setupSteps(wrapper)[0].state).toBe("1 verbunden");
+  });
+
+  // The page knows the IQs once they were listed - today in the settings of
+  // Salto KS; the list loaded in the background (ECCdigital/tickets#1107)
+  // feeds the same count.
+  it("counts the IQs of Salto KS still open", async () => {
+    const wrapper = await mountSalto({
+      iqs: [
+        { ...IQ, id: "1", state: "not_activated" },
+        { ...IQ, id: "2", state: "pending_pin" },
+        { ...IQ, id: "3" },
+      ],
+    });
+    await click(wrapper, saltoSettings(wrapper), "Abbrechen");
+
+    expect(setupSteps(wrapper)[0]).toMatchObject({
+      done: false,
+      state: "1 verbunden, 2 IQs offen",
+    });
+  });
+
+  it("claims no assignment when the bookables are forbidden", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [storedApp("nuki"), storedApp("pareva")],
+      bookables: forbiddenError(),
+    });
+
+    expect(setupSteps(wrapper)[2]).toMatchObject({
+      done: false,
+      state: "Zuordnung nicht lesbar",
+    });
+  });
+});
+
+async function emptyPage() {
+  return mountAccessPointsPage({ providers: [], accessPoints: [] });
+}
+
+/** Clicks „Verbinden“ of a provider, on the empty page or beneath. */
+async function connectProvider(wrapper, title) {
+  const pick = wrapper
+    .findAll("[data-test='provider-pick']")
+    .wrappers.find((p) => p.text().startsWith(title));
+  const button = pick.find("button");
+  await (button.exists() ? button : pick).trigger("click");
+  await settle(wrapper);
+}
 
 /**
  * An access application of the tenant as the backend answers it since

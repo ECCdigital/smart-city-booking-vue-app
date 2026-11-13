@@ -13,6 +13,7 @@ import {
   newSettings,
   secretStored,
   savePayload,
+  storedTestPayload,
   testFaults,
   testPayload,
 } from "@/utilities/access-app-settings";
@@ -31,9 +32,16 @@ const T = "accessPoint.management.settings";
  * tested; once a field changes it lapses. What was saved goes out as
  * `saved`, with the application as the backend answered it.
  *
+ * A provider saved the first time (ECCdigital/tickets#1106) is tested once
+ * more on what was stored when the form was tested before with the same
+ * values: that test ran without a stored application, so the backend kept
+ * no last test of it. `saved` then says `retested`, and the state of the
+ * connection is to be read anew.
+ *
  * Salto KS keeps its checklist of the test and, while it is switched on,
  * the activation of its IQs here, and asks before a save that lets
- * activations rest (ECCdigital/tickets#574).
+ * activations rest (ECCdigital/tickets#574). The IQs as they were last
+ * listed go out as `iqs`.
  */
 export default {
   name: "AccessAppSettings",
@@ -221,18 +229,26 @@ export default {
       if (!(await this.confirmIdentity())) return;
       this.saving = true;
       this.saveError = "";
+      const retest = !this.app && !!this.currentResult;
       try {
         const response = await ApiAccessAppsService.saveApp(
           this.tenantId,
           this.provider.id,
           savePayload(this.provider.id, this.settings)
         );
+        if (retest) {
+          await runConnectionTest(
+            this.tenantId,
+            storedTestPayload(this.provider.id, this.settings),
+            this.provider.id
+          );
+        }
         await this.addToast(
           ToastService.createToast(`${T}.toasts.saved`, "success", 5000, {
             provider: this.provider.title || this.provider.id,
           })
         );
-        this.$emit("saved", response.data);
+        this.$emit("saved", response.data, { retested: retest });
       } catch (error) {
         this.saveError = getApiErrorMessage(error, this.$t(`${T}.saveFailed`));
       } finally {
@@ -313,6 +329,7 @@ export default {
       class="mx-5"
       :tenant-id="tenantId"
       @update:activated-count="activatedIqCount = $event"
+      @update:iqs="$emit('iqs', $event)"
     />
     <v-alert
       v-if="removeError"
@@ -363,7 +380,11 @@ export default {
         :disabled="saving"
         @click="save"
       >
-        {{ $t("accessPoint.management.settings.save") }}
+        {{
+          app
+            ? $t("accessPoint.management.settings.save")
+            : $t("accessPoint.management.settings.saveAndActivate")
+        }}
       </v-btn>
     </div>
 

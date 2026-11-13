@@ -100,6 +100,8 @@ export default {
         const response = await ApiAccessAppsService.getSaltoIqs(this.tenantId);
         this.iqs = Array.isArray(response.data) ? response.data : [];
         this.loaded = true;
+        // The Zugangspunkte page counts the IQs still open.
+        this.$emit("update:iqs", this.iqs);
       } catch (error) {
         this.loadErrorCode = error.response?.data?.code || null;
         this.loadErrorMessage = this.errorMessage(error);

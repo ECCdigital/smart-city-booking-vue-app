@@ -4,6 +4,7 @@ import {
   DOOR_TYPE,
   LOCKER_TYPE,
 } from "@/utilities/access-points";
+import { emptySection, nextAfterConnect } from "@/utilities/access-setup";
 
 // What the creation in the head says it makes, by the type the provider's
 // access points start as: an Open Locker one starts as a Schließfachanlage.
@@ -40,6 +41,15 @@ export default {
     // Whether the settings of the provider are unfolded beneath the head;
     // the page hands them in through the slot `settings`.
     settingsOpen: { type: Boolean, default: false },
+    // A provider being connected (ECCdigital/tickets#1106): nothing stored
+    // yet, so the head offers „Verwerfen“ alone.
+    draft: { type: Boolean, default: false },
+    // Whether the provider has no access point yet, and whether it was just
+    // connected: the section then names the next step.
+    empty: { type: Boolean, default: false },
+    fresh: { type: Boolean, default: false },
+    // The IQs of the provider not activated yet.
+    openIqs: { type: Number, default: 0 },
   },
   computed: {
     knownState() {
@@ -47,6 +57,12 @@ export default {
     },
     stateColor() {
       return STATES[this.state];
+    },
+    emptyText() {
+      return emptySection(this.provider.id);
+    },
+    nextText() {
+      return nextAfterConnect(this.provider, this.openIqs);
     },
     createLabel() {
       const type = providerAccessPointDefaults(this.provider.id)?.type;
@@ -57,13 +73,26 @@ export default {
 </script>
 
 <template>
-  <section class="provider-section" data-test="provider-section">
+  <section
+    class="provider-section"
+    :class="{ 'provider-section--draft': draft }"
+    data-test="provider-section"
+  >
     <header class="provider-section__head">
       <h3 class="provider-section__title" data-test="provider-section-title">
         {{ provider.title || provider.id }}
       </h3>
       <v-chip
-        v-if="knownState"
+        v-if="draft"
+        small
+        label
+        outlined
+        data-test="provider-section-state"
+      >
+        {{ $t("accessPoint.management.section.notConnected") }}
+      </v-chip>
+      <v-chip
+        v-else-if="knownState"
         small
         label
         :color="stateColor"
@@ -74,6 +103,16 @@ export default {
       </v-chip>
       <v-spacer />
       <v-btn
+        v-if="draft"
+        small
+        text
+        data-test="provider-section-discard"
+        @click="$emit('discard')"
+      >
+        {{ $t("accessPoint.management.section.discard") }}
+      </v-btn>
+      <v-btn
+        v-if="!draft"
         small
         text
         data-test="provider-section-settings"
@@ -86,6 +125,7 @@ export default {
         </v-icon>
       </v-btn>
       <v-btn
+        v-if="!draft"
         small
         depressed
         color="primary"
@@ -97,6 +137,23 @@ export default {
       </v-btn>
     </header>
     <slot v-if="settingsOpen" name="settings" />
+    <template v-if="!draft && empty">
+      <div
+        v-if="fresh"
+        class="provider-section__note provider-section__note--next"
+        data-test="provider-section-next"
+      >
+        <v-icon small color="primary" class="mr-2">mdi-check-circle</v-icon>
+        <span>{{ nextText }}</span>
+      </div>
+      <div
+        v-else
+        class="provider-section__note"
+        data-test="provider-section-empty"
+      >
+        {{ emptyText }}
+      </div>
+    </template>
     <slot />
   </section>
 </template>
@@ -107,6 +164,10 @@ export default {
   border-radius: var(--scb-radius-surface);
 }
 
+.provider-section--draft {
+  border-style: dashed;
+}
+
 .provider-section__head {
   display: flex;
   align-items: center;
@@ -114,6 +175,19 @@ export default {
   padding: 10px 12px 10px 16px;
   background: var(--scb-surface-tint);
   border-bottom: 1px solid var(--scb-rule-strong);
+}
+
+.provider-section__note {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-muted);
+}
+
+.provider-section__note--next {
+  color: var(--scb-text);
+  background: var(--scb-selected-tint-faint);
 }
 
 .provider-section__title {
