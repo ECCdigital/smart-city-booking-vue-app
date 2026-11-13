@@ -1904,7 +1904,7 @@ describe("AccessPoints shows the checks of the Salto KS test", () => {
       "salto-check-row salto-check-remoteLockingRight",
       "salto-check-row salto-check-iqs",
     ]);
-    expect(checkRow(wrapper, "site").text()).toContain("4 Schlösser");
+    expect(checkRow(wrapper, "site").text()).toContain("4 Türen");
   });
 
   it("heads a working connection with its environment and the number of hints", async () => {
@@ -4539,7 +4539,7 @@ describe("AccessPoints edits an access point in the same dialog", () => {
     await settle(wrapper);
 
     expect(shown(wrapper, "swap-hint").text()).toBe(
-      "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken."
+      "Ändern Sie diese ID, um die Tür beim Anbieter auszutauschen, ohne den QR-Code neu zu drucken."
     );
     expect(pickEntry(wrapper, "Werkstatttür").exists()).toBe(true);
     expect(pickEntry(wrapper, "Haupteingang").text()).not.toContain(
@@ -4570,7 +4570,7 @@ describe("AccessPoints edits an access point in the same dialog", () => {
 
     const field = pointDialog(wrapper).find(".external-id-field");
     expect(field.text()).toContain(
-      "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen."
+      "Ändern Sie die Produkt-ID, um die Schließfachanlage bei Pareva auszutauschen."
     );
     await field.find("input").setValue("66570d1a1f9b6357ed971799");
     expect(await savePoint(wrapper)).toMatchObject({
@@ -4837,6 +4837,117 @@ describe("AccessPoints keeps the settings of an access point", () => {
     await editPoint(wrapper, "Haupteingang");
 
     expect(shown(wrapper, "prefill-location").exists()).toBe(false);
+  });
+});
+
+/**
+ * Words the page does not use (stories 125 and 127 of
+ * ECCdigital/tickets#1082): „Anbieter“, not „Schließsystem“, „Anwendung“ or
+ * „Schloss“; „Schließfachanlage“, never „Anlage“ alone.
+ */
+const FOREIGN_WORDS = /Schloss|Schlöss|Schließsystem|Anwendung|\bAnlagen?\b/g;
+
+function foreignWords(text) {
+  return text.match(FOREIGN_WORDS) || [];
+}
+
+/**
+ * The page speaks of Anbieter, Tür, Schließfachanlage and Fach
+ * (ECCdigital/tickets#1082), in its dialogs and its faults too.
+ */
+describe("AccessPoints speaks of Tür and Schließfachanlage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+  });
+
+  const KINDS = [
+    { label: "Haupteingang", providers: [NUKI], accessPoints: [DOOR] },
+    {
+      label: "Schließfächer Rathaus",
+      providers: [PAREVA],
+      accessPoints: [PAREVA_LOCKER],
+    },
+    {
+      label: "Fahrradboxen Bahnhof",
+      providers: [IFBS],
+      accessPoints: [IFBS_LOCKER],
+    },
+    {
+      label: "Fahrradgarage Süd",
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE],
+    },
+  ];
+  for (const { label, providers, accessPoints } of KINDS) {
+    it(`names neither a lock nor an Anlage alone in the dialog of „${label}“`, async () => {
+      const wrapper = await mountAccessPointsPage({ providers, accessPoints });
+      answerListings({});
+      await editPoint(wrapper, label);
+      if (shown(wrapper, "swap").exists()) {
+        await shown(wrapper, "swap").trigger("click");
+        await settle(wrapper);
+      }
+
+      expect(foreignWords(pointDialog(wrapper).text())).toEqual([]);
+    });
+  }
+
+  it("names the Fächer of the Schließfachanlage", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE],
+    });
+    answerListings({});
+
+    await editPoint(wrapper, "Fahrradgarage Süd");
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Fächer der Schließfachanlage"
+    );
+  });
+
+  it("names neither a lock nor an Anlage alone in the faults of a save", async () => {
+    ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+      validationError([
+        { field: "mode", code: "unsupported_mode" },
+        { field: "config.compartments", code: "unsupported_by_provider" },
+        {
+          field: "config.openAction",
+          code: "unsupported_open_action",
+          params: { openAction: "unlatch", supportedOpenActions: ["auto"] },
+        },
+      ])
+    );
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI],
+      accessPoints: [DOOR],
+    });
+    await editPoint(wrapper, "Haupteingang");
+
+    await savePoint(wrapper);
+
+    const text = pointDialog(wrapper).text();
+    expect(text).toContain("unterstützt diese Tür nicht");
+    expect(foreignWords(text)).toEqual([]);
+  });
+
+  it("names neither a lock nor an Anlage alone when the provider knows no location", async () => {
+    ApiAccessPointService.getLocationPrefill.mockResolvedValue({ data: null });
+    const wrapper = await mountAccessPointsPage({
+      providers: [
+        { ...NUKI, providerCapabilities: ["listAccessPoints", "getLocation"] },
+      ],
+      accessPoints: [DOOR],
+    });
+    await editPoint(wrapper, "Haupteingang");
+
+    await shown(wrapper, "prefill-location").trigger("click");
+    await settle(wrapper);
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Der Anbieter kennt für diesen Zugangspunkt keinen Standort."
+    );
   });
 });
 

@@ -174,7 +174,7 @@
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
-      "access_provider_rejected": "{provider} hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+      "access_provider_rejected": "{provider} hat den Zugriff abgelehnt. Bitte die Zugangsdaten beim Anbieter prüfen."
     },
     "unavailable-codes": {
       "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
@@ -3110,13 +3110,13 @@
       },
       "openActionHint": "Welche Aktion Nuki beim Öffnen ausführt. Die Wartezeit von Lock'n'Go wird in der Nuki-App eingestellt.",
       "openActionUnsupported": "Für diesen Gerätetyp nicht verfügbar",
-      "openActionMismatch": "Dieses Schloss unterstützt die gewählte Öffnungsart nicht.",
+      "openActionMismatch": "Diese Tür unterstützt die gewählte Öffnungsart nicht.",
       "fields": {
         "label": "Bezeichnung",
         "type": "Typ",
         "provider": "Anbieter",
         "externalId": "ID beim Anbieter",
-        "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
+        "externalIdHint": "Ändern Sie diese ID, um die Tür beim Anbieter auszutauschen, ohne den QR-Code neu zu drucken.",
         "providerLocationId": "Standort-ID beim Anbieter",
         "mode": "Modus",
         "config": {
@@ -3124,19 +3124,19 @@
         },
         "location": "Standort",
         "validationRules": "Validierungsregeln",
-        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Schließfachanlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
-        "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
+        "locationIdHint": "Ändern Sie die Standort-ID, um die Schließfachanlage bei iFBS auszutauschen.",
         "productId": "Produkt-ID",
-        "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
+        "productIdHint": "Ändern Sie die Produkt-ID, um die Schließfachanlage bei Pareva auszutauschen.",
         "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
         "compartmentUuid": "UUID des Fachs",
         "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen.",
         "bookableIds": "Buchungsobjekte"
       },
       "compartments": {
-        "title": "Fächer der Anlage",
-        "hint": "Wählen Sie die Fächer der Anlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Anlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
+        "title": "Fächer der Schließfachanlage",
+        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Schließfachanlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
         "lockerBank": "Schrank {name}",
         "compartment": "Fach {number}",
         "outOfService": "außer Betrieb",
@@ -3168,7 +3168,7 @@
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
         "prefillApplied": "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern.",
-        "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
+        "prefillEmpty": "Der Anbieter kennt für diesen Zugangspunkt keinen Standort."
       },
       "config": {
         "label": "Anbieter-Konfiguration (JSON)",
@@ -3330,14 +3330,14 @@
           "validate": "Unzulässiger Wert",
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet",
-          "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
+          "unsupported_mode": "Dieser Zugangspunkt unterstützt den gewählten Modus nicht.",
           "duplicate_compartment": "Das Fach ist doppelt gewählt.",
-          "unsupported_by_provider": "Die Anlagen dieses Anbieters tragen keine eigenen Fächer.",
+          "unsupported_by_provider": "Die Schließfachanlagen dieses Anbieters tragen keine eigenen Fächer.",
           "unknown_open_action": "Unzulässiger Wert",
           "locker_system_one_bookable": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt."
         },
-        "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
-        "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
+        "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt diese Tür nicht. Möglich sind: {supportedOpenActions}.",
+        "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt diese Tür nicht.",
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
         "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
@@ -3466,7 +3466,7 @@
             "remote_access_off": "Der System-User darf nicht fernöffnen. Erlauben Sie in Salto KS „Remote Opening“ unter Lock Options.",
             "other": "Salto meldet: {message}"
           },
-          "site": "{count} Schloss | {count} Schlösser",
+          "site": "{count} Tür | {count} Türen",
           "iqs": {
             "summary": "{total} IQs, {ready} von {needed} aktiviert",
             "none": "Keine IQs an dieser Site",

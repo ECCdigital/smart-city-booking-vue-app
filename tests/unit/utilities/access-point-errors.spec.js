@@ -71,7 +71,7 @@ describe("formatAccessPointErrorMessage", () => {
         ],
       });
       expect(formatAccessPointErrorMessage(error)).toBe(
-        "Modus: Dieses Schloss unterstützt den gewählten Modus nicht."
+        "Modus: Dieser Zugangspunkt unterstützt den gewählten Modus nicht."
       );
     });
 
@@ -112,7 +112,7 @@ describe("formatAccessPointErrorMessage", () => {
         ],
       });
       expect(formatAccessPointErrorMessage(error)).toBe(
-        "Die Öffnungsart „Lock'n'Go“ unterstützt dieses Schloss nicht. " +
+        "Die Öffnungsart „Lock'n'Go“ unterstützt diese Tür nicht. " +
           "Möglich sind: Automatisch, Aufschließen."
       );
     });
@@ -172,7 +172,7 @@ describe("formatAccessPointErrorMessage", () => {
         ],
       });
       expect(formatAccessPointErrorMessage(error)).toBe(
-        "Die Öffnungsart „hyperspace“ unterstützt dieses Schloss nicht. " +
+        "Die Öffnungsart „hyperspace“ unterstützt diese Tür nicht. " +
           "Möglich sind: Automatisch, warp."
       );
     });
@@ -191,7 +191,7 @@ describe("formatAccessPointErrorMessage", () => {
         ],
       });
       expect(formatAccessPointErrorMessage(error)).toBe(
-        "Die Öffnungsart „Falle ziehen“ unterstützt dieses Schloss nicht."
+        "Die Öffnungsart „Falle ziehen“ unterstützt diese Tür nicht."
       );
     });
   });
@@ -330,7 +330,7 @@ describe("splitAccessPointFieldError", () => {
 
     expect(split.fieldMessage).toBe("");
     expect(split.message).toBe(
-      "Modus: Dieses Schloss unterstützt den gewählten Modus nicht."
+      "Modus: Dieser Zugangspunkt unterstützt den gewählten Modus nicht."
     );
   });
 
@@ -345,7 +345,7 @@ describe("splitAccessPointFieldError", () => {
 
     expect(split.fieldMessage).toBe("Öffnungsart: Unzulässiger Wert");
     expect(split.message).toBe(
-      "Modus: Dieses Schloss unterstützt den gewählten Modus nicht."
+      "Modus: Dieser Zugangspunkt unterstützt den gewählten Modus nicht."
     );
   });
 
