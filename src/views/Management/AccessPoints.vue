@@ -1,265 +1,69 @@
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
-import ApiTenantService from "@/services/api/ApiTenantService";
-import SaveBar from "@/components/commons/SaveBar.vue";
 import AccessPointManagement from "@/components/AccessPoint/AccessPointManagement.vue";
-import TenantEditAccessLocks from "@/components/Tenant/Edit/TenantEditAccessLocks.vue";
+import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
+import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import AccessPointPermissionService from "@/services/permissions/AccessPointPermissionService";
-import ToastService from "@/services/ToastService";
-import {
-  createLockAndAccessAppDefaults,
-  findTenantApp,
-  withoutUnchangedSecrets,
-  LOCK_AND_ACCESS_APP_IDS,
-} from "@/utilities/access-apps";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
+/**
+ * The Zugangspunkte page: one section per provider with its settings and
+ * access points, and the export of the access log at the end
+ * (ECCdigital/tickets#1103, #1104). Each provider saves on its own from its
+ * settings; the page only asks before unsaved settings are left.
+ */
 export default {
   name: "AccessPoints",
   components: {
     AdminLayout,
-    SaveBar,
     AccessPointManagement,
-    TenantEditAccessLocks,
+    AccessAuditExport,
+    UnsavedChangesDialog,
   },
+  mixins: [unsavedChangesGuard],
   data() {
     return {
-      activeTab: 0,
-      isLoading: false,
-      inProgress: false,
-      tenant: {},
-      apps: {},
-      originalSnapshot: null,
-      nukiTokenConfigured: false,
-      saltoSecretConfigured: false,
-      saltoPasswordConfigured: false,
-      defaultApps: createLockAndAccessAppDefaults(),
+      // Whether the settings of a provider hold changes not saved yet.
+      settingsDirty: false,
     };
   },
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
-    // No read-only management page: users who may not write doors simply do
-    // not get the tab.
+    // No read-only management page: users who may not write doors do not
+    // get the sections.
     allowAccessPointManagement() {
       return AccessPointPermissionService.allowWrite();
     },
-    tabs() {
-      const tabs = [];
-      if (this.allowAccessPointManagement) {
-        tabs.push({
-          key: "accesspoints",
-          label: this.$t("accessPoint.management.tab"),
-          icon: "mdi-door-closed-lock",
-        });
-      }
-      tabs.push({
-        key: "providers",
-        label: this.$t("accessPoint.management.providersTab"),
-        icon: "mdi-lock",
-      });
-      return tabs;
-    },
-    currentTabKey() {
-      return this.tabs[this.activeTab]?.key;
+    allowAuditExport() {
+      return BookingPermissionService.allowAuditExport();
     },
     hasUnsavedChanges() {
-      return (
-        JSON.stringify({ tenant: this.tenant, apps: this.apps }) !==
-        this.originalSnapshot
-      );
+      return this.settingsDirty;
     },
-  },
-  watch: {
-    activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex]?.key;
-      if (!tabKey || this.$route.query.tab === tabKey) return;
-      this.$router.replace({ query: { ...this.$route.query, tab: tabKey } });
-    },
-    tenantId() {
-      this.fetchTenant();
-    },
-  },
-  methods: {
-    ...mapActions({ addToast: "toasts/add" }),
-    async fetchTenant() {
-      if (!this.tenantId) return;
-
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.getTenant(this.tenantId);
-        this.tenant = response.data || {};
-        this.initializeApps();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-
-      this.$nextTick(() => {
-        this.originalSnapshot = JSON.stringify({
-          tenant: this.tenant,
-          apps: this.apps,
-        });
-      });
-    },
-    initializeApps() {
-      const existing = this.tenant.applications || [];
-      const map = {};
-      LOCK_AND_ACCESS_APP_IDS.forEach((id) => {
-        const found = findTenantApp(existing, id);
-        map[id] = found ? { ...found } : { ...this.defaultApps[id] };
-      });
-
-      // Only remember *that* a secret is stored, so an empty field can mean
-      // "leave the existing one alone".
-      this.nukiTokenConfigured = !!map.nuki.apiToken;
-      this.saltoSecretConfigured = !!map["salto-ks"].clientSecret;
-      this.saltoPasswordConfigured = !!map["salto-ks"].password;
-
-      this.apps = map;
-    },
-    /**
-     * The tenant's applications with the managed apps merged back in.
-     * Merging rather than replacing matters: the payment apps are edited on
-     * another page and must survive a save here.
-     */
-    mergedApps() {
-      const untouched = (this.tenant.applications || []).filter(
-        (app) => !LOCK_AND_ACCESS_APP_IDS.includes(app.id)
-      );
-
-      const managed = Object.values(this.apps).map(withoutUnchangedSecrets);
-
-      return [...untouched, ...managed];
-    },
-    onUpdateTenant(next) {
-      this.tenant = { ...this.tenant, ...next };
-    },
-    onUpdateApps(next) {
-      this.apps = { ...this.apps, ...next };
-    },
-    async validateProviders() {
-      const ref = this.$refs.providers;
-      if (ref && typeof ref.validate === "function") {
-        return await ref.validate();
-      }
-      return true;
-    },
-    async submitChanges() {
-      const ok = await this.validateProviders();
-      if (!ok) {
-        setTimeout(() => {
-          this.$refs.providers?.resetValidation?.();
-        }, 4000);
-        return;
-      }
-
-      const providers = this.$refs.providers;
-      if (providers?.confirmSave && !(await providers.confirmSave())) return;
-
-      // The tenant keeps what is stored until the save succeeds: the
-      // providers compare against it.
-      const applications = this.mergedApps();
-      this.inProgress = true;
-
-      try {
-        await ApiTenantService.submitTenant({ ...this.tenant, applications });
-        this.tenant.applications = applications;
-        this.originalSnapshot = JSON.stringify({
-          tenant: this.tenant,
-          apps: this.apps,
-        });
-        await this.addToast(
-          ToastService.createToast(
-            "accessPoint.management.toasts.tenantSaved",
-            "success"
-          )
-        );
-      } catch (e) {
-        await this.addToast(
-          ToastService.createToast(
-            "accessPoint.management.toasts.tenantSaveFailed",
-            "error"
-          )
-        );
-      } finally {
-        this.inProgress = false;
-      }
-    },
-  },
-  async mounted() {
-    const queryTabKey = this.$route.query.tab;
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
-    this.activeTab = foundIndex !== -1 ? foundIndex : 0;
-
-    await this.fetchTenant();
   },
 };
 </script>
 
 <template>
   <AdminLayout>
-    <div class="page-content" ref="contentCol">
-      <v-progress-linear :active="isLoading" indeterminate color="primary" />
+    <AccessPointManagement
+      v-if="allowAccessPointManagement"
+      @update:dirty="settingsDirty = $event"
+    />
 
-      <v-row>
-        <v-col class="col-12 col-md-auto">
-          <v-tabs
-            v-model="activeTab"
-            color="primary"
-            show-arrows
-            :vertical="$vuetify.breakpoint.mdAndUp"
-          >
-            <v-tab
-              v-for="t in tabs"
-              :key="t.key"
-              class="d-flex justify-start"
-              style="text-transform: none"
-            >
-              <v-icon left small>{{ t.icon }}</v-icon>
-              {{ t.label }}
-            </v-tab>
-          </v-tabs>
-        </v-col>
-        <v-col class="col-12 col-md-9">
-          <AccessPointManagement v-if="currentTabKey === 'accesspoints'" />
-
-          <TenantEditAccessLocks
-            v-else-if="tenant.id"
-            ref="providers"
-            :tenant="tenant"
-            :apps="apps"
-            :nuki-token-configured="nukiTokenConfigured"
-            :salto-secret-configured="saltoSecretConfigured"
-            :salto-password-configured="saltoPasswordConfigured"
-            @update:tenant="onUpdateTenant"
-            @update:apps="onUpdateApps"
-          />
-        </v-col>
-      </v-row>
+    <div v-if="allowAuditExport && tenantId" class="mt-8">
+      <v-divider class="mb-6" />
+      <AccessAuditExport :tenant="tenantId" />
     </div>
 
-    <SaveBar
-      v-if="currentTabKey === 'providers'"
-      :anchor-el="
-        $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
-      "
-      @submit="submitChanges"
-      @cancel="fetchTenant"
-      show-restore
-      :active="hasUnsavedChanges"
-      :in-progress="inProgress"
+    <UnsavedChangesDialog
+      v-model="leaveDialogOpen"
+      @stay="resolveLeaveConfirm(false)"
+      @discard="resolveLeaveConfirm(true)"
     />
   </AdminLayout>
 </template>
-
-<style scoped>
-.page-content {
-  padding-bottom: calc(
-    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
-      /* extra spacing */
-  );
-}
-</style>
