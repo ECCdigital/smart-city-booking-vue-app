@@ -6,8 +6,7 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
-import BaseSection from "@/components/commons/BaseSection.vue";
-import SearchBar from "@/components/commons/SearchBar.vue";
+import AccessPointProviderSection from "@/components/AccessPoint/AccessPointProviderSection.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
@@ -16,35 +15,23 @@ import { downloadQrCode, QR_FORMATS } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
-  accessPointTypeLabel,
-  accessPointTypeName,
-  canListAccessPoints,
   isLockerAccessPoint,
-  requiresQrScan,
-  DOOR_TYPE,
-  LOCKER_TYPE,
 } from "@/utilities/access-points";
+import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
-
-// The values of the type filter behind the funnel: both kinds, or one.
-const TYPE_FILTER = { all: "all", door: DOOR_TYPE, locker: LOCKER_TYPE };
 
 export default {
   name: "AccessPointManagement",
   components: {
-    BaseSection,
+    AccessPointProviderSection,
     AccessPointEditDialog,
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
     AccessPointCompartmentQrDialog,
-    SearchBar,
   },
   data() {
     return {
-      search: "",
-      // "all" | "door" | "locker" - the type behind the search funnel
-      typeFilter: TYPE_FILTER.all,
       loading: false,
       loadError: "",
       accessPoints: [],
@@ -52,6 +39,9 @@ export default {
       bookablesForbidden: false,
       providers: [],
       editDialog: false,
+      // The provider of the section whose creation opened the dialog; empty
+      // while an access point is edited.
+      createProvider: "",
       selectedAccessPoint: null,
       deleteDialog: false,
       deleting: false,
@@ -68,35 +58,6 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
-    headers() {
-      return [
-        {
-          text: this.$t("accessPoint.management.fields.label"),
-          value: "displayLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.fields.provider"),
-          value: "provider",
-        },
-        {
-          text: this.$t("accessPoint.management.fields.type"),
-          value: "typeLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.table.origin"),
-          value: "originLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.table.assignment"),
-          value: "assignmentLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.rules.qrScanShort"),
-          value: "qrScanRequired",
-        },
-        { text: "", value: "controls", sortable: false, align: "end" },
-      ];
-    },
     // Which bookables point at which access point - the reference lives on
     // the bookable, so the assignment is resolved here rather than asked for.
     bookablesByAccessPointId() {
@@ -113,104 +74,50 @@ export default {
     items() {
       return this.accessPoints.map((accessPoint) => {
         const assigned = this.bookablesByAccessPointId[accessPoint.id] || [];
-        const isLocker = isLockerAccessPoint(accessPoint);
         return {
           ...accessPoint,
           displayLabel: accessPointLabel(accessPoint),
-          typeLabel: accessPointTypeLabel(accessPoint),
-          typeName: accessPointTypeName(accessPoint),
-          isLocker,
-          // Where the row comes from - derived, since nothing stores it: a
-          // locker system of a provider that lists access points is taken
-          // over from that listing; a door, and a Pareva Anlage typed in by
-          // its Produkt-ID, are entered by hand.
-          originLabel:
-            isLocker && this.listableProviderIds.has(accessPoint.provider)
-              ? this.$t("accessPoint.management.table.originProvider")
-              : this.$t("accessPoint.management.table.originManual"),
-          assignedBookables: assigned,
-          assignmentLabel: assigned.length
-            ? assigned.map((bookable) => bookable.title).join(", ")
-            : this.assignmentUnknownLabel,
-          qrScanRequired: requiresQrScan(accessPoint),
+          isLocker: isLockerAccessPoint(accessPoint),
+          assignmentLabel: assigned
+            .map((bookable) => bookable.title)
+            .join(", "),
           // An Anlage that carries its own Fächer prints a QR code per Fach
           // (ECCdigital/tickets#1056); iFBS and Pareva Anlagen carry none.
           hasCompartmentQr: carriesOwnCompartments(accessPoint),
         };
       });
     },
-    listableProviderIds() {
-      return new Set(
-        this.providers.filter(canListAccessPoints).map((p) => p.id)
+    // One section per connected provider, in the order the backend lists
+    // them, each with its access points. An access point whose provider is
+    // not among them - one switched off - keeps a section of its own, so
+    // that it stays reachable.
+    sections() {
+      const byProvider = new Map(
+        this.providers.map((provider) => [
+          provider.id,
+          { provider, accessPoints: [] },
+        ])
       );
-    },
-    // One list for doors and locker systems, narrowed to one kind on demand.
-    // Everything that is not a locker system counts as a door - that is the
-    // schema's default for a row without a type.
-    filteredItems() {
-      if (this.typeFilter === TYPE_FILTER.locker) {
-        return this.items.filter((item) => item.isLocker);
-      }
-      if (this.typeFilter === TYPE_FILTER.door) {
-        return this.items.filter((item) => !item.isLocker);
-      }
-      return this.items;
-    },
-    // The filter for doors holds every access point that is not a locker
-    // system - an Open Locker compartment too, which is a door by type but a
-    // Fach on site (ECCdigital/tickets#1036). So it is named by what it
-    // holds: „Türen“, „Fächer“ or both, and „Türen“ while it holds nothing.
-    doorFilterLabel() {
-      const names = new Set(
-        this.items.filter((item) => !item.isLocker).map((item) => item.typeName)
-      );
-      if (!names.delete("compartment")) {
-        return this.$t("accessPoint.management.table.filterDoors");
-      }
-      return names.size
-        ? this.$t("accessPoint.management.table.filterDoorsAndCompartments")
-        : this.$t("accessPoint.management.table.filterCompartments");
-    },
-    /** The type behind the funnel: all, doors or lockers. */
-    filterSections() {
-      return [
-        {
-          key: "type",
-          label: this.$t("accessPoint.management.table.typeFilter"),
-          multiple: false,
-          segmented: true,
-          empty: TYPE_FILTER.all,
-          selected: this.typeFilter,
-          options: [
-            {
-              value: TYPE_FILTER.all,
-              label: this.$t("accessPoint.management.table.filterAll"),
+      this.items.forEach((item) => {
+        if (!byProvider.has(item.provider)) {
+          byProvider.set(item.provider, {
+            provider: {
+              id: item.provider,
+              title: createLockAndAccessAppDefaults()[item.provider]?.title,
             },
-            {
-              value: TYPE_FILTER.door,
-              label: this.doorFilterLabel,
-            },
-            {
-              value: TYPE_FILTER.locker,
-              label: this.$t("accessPoint.management.table.filterLockers"),
-            },
-          ],
-        },
-      ];
+            accessPoints: [],
+          });
+        }
+        byProvider.get(item.provider).accessPoints.push(item);
+      });
+      return [...byProvider.values()];
     },
     // "Not assigned" is a statement about the bookables; it may only be made
     // when they were actually readable.
     assignmentUnknownLabel() {
       return this.bookablesForbidden
-        ? this.$t("accessPoint.management.table.assignmentForbidden")
-        : this.$t("accessPoint.management.table.unassigned");
-    },
-    // "Nothing created yet" would be wrong while the list is narrowed to one
-    // kind - then it is this filter that finds nothing.
-    emptyText() {
-      return this.typeFilter === TYPE_FILTER.all
-        ? this.$t("accessPoint.management.table.empty")
-        : this.$t("accessPoint.management.table.emptyFiltered");
+        ? this.$t("accessPoint.management.row.assignmentForbidden")
+        : this.$t("accessPoint.management.row.unassigned");
     },
     qrFormats() {
       return QR_FORMATS;
@@ -289,13 +196,15 @@ export default {
         this.providers = [];
       }
     },
-    // One button, one dialog: whether the access point is taken over from
-    // the provider or entered by hand is chosen inside the dialog.
-    openCreate() {
+    // The creation starts in the section of a provider, so the provider is
+    // settled before the dialog opens.
+    openCreate(provider) {
+      this.createProvider = provider;
       this.selectedAccessPoint = null;
       this.editDialog = true;
     },
     openEdit(accessPoint) {
+      this.createProvider = "";
       this.selectedAccessPoint = accessPoint;
       this.editDialog = true;
     },
@@ -401,39 +310,8 @@ export default {
 </script>
 
 <template>
-  <!-- mb-16: room beneath the list for the floating creation. -->
-  <BaseSection
-    :title="$t('accessPoint.management.title')"
-    icon="mdi-door-closed-lock"
-    :hint="$t('accessPoint.management.hint')"
-    class="mb-16"
-  >
-    <template v-slot:actions>
-      <v-btn
-        icon
-        :loading="loading"
-        :disabled="loading"
-        :title="$t('accessPoint.management.reload')"
-        @click="fetchAll"
-      >
-        <v-icon>mdi-refresh</v-icon>
-      </v-btn>
-    </template>
-
-    <!-- The creation floats bottom right, as it does on every main page. -->
-    <v-btn
-      class="create-access-point"
-      color="primary"
-      fixed
-      large
-      bottom
-      right
-      rounded
-      @click="openCreate"
-    >
-      <v-icon>mdi-plus</v-icon>
-      {{ $t("accessPoint.management.create") }}
-    </v-btn>
+  <div>
+    <v-progress-linear :active="loading" indeterminate color="primary" />
 
     <v-alert v-if="loadError" color="error" text dense class="mb-4">
       <v-icon left>mdi-alert-circle</v-icon>
@@ -445,174 +323,140 @@ export default {
       {{ $t("accessPoint.management.hints.assignmentForbidden") }}
     </v-alert>
 
-    <SearchBar
-      v-model="search"
-      :fields="$t('accessPoint.management.search')"
-      :filters="filterSections"
-      data-test="access-point-search"
-      @filter="(key, type) => (typeFilter = type)"
-    />
-
-    <v-data-table
-      :headers="headers"
-      :items="filteredItems"
-      :search="search"
-      :loading="loading"
-      :loading-text="$t('accessPoint.management.table.loading')"
-      :no-data-text="emptyText"
-      :footer-props="{
-        'items-per-page-all-text': 'Alle',
-        'items-per-page-text': $t('accessPoint.management.table.perPage'),
-      }"
-      class="accent elevation-1"
+    <div
+      v-if="!loading && !loadError && !sections.length"
+      class="text--secondary"
     >
-      <template v-slot:item.displayLabel="{ item }">
-        <div class="font-weight-medium">{{ item.displayLabel }}</div>
-        <div class="text-caption text--secondary">{{ item.externalId }}</div>
-      </template>
+      {{ $t("accessPoint.management.empty") }}
+    </div>
 
-      <template v-slot:item.typeLabel="{ item }">
-        <v-chip
-          v-if="item.typeLabel"
-          x-small
-          label
-          :color="item.isLocker ? 'indigo' : 'primary'"
-          dark
-        >
-          {{ item.typeLabel }}
-        </v-chip>
-      </template>
-
-      <template v-slot:item.assignmentLabel="{ item }">
-        <span
-          v-if="item.assignedBookables.length === 0"
-          class="text--secondary"
-        >
-          {{ assignmentUnknownLabel }}
-        </span>
-        <span v-else>{{ item.assignmentLabel }}</span>
-        <!-- How many compartments a locker system hands out is the bookable's
-             capacity, not a property of the access point. -->
-        <div v-if="item.isLocker" class="text-caption text--secondary">
-          {{ $t("accessPoint.management.table.capacityHint") }}
+    <AccessPointProviderSection
+      v-for="section in sections"
+      :key="section.provider.id"
+      :provider="section.provider"
+      class="mb-5"
+      @create="openCreate(section.provider.id)"
+    >
+      <!-- Provisional rows, until the row of an access point gets its own
+           component (ECCdigital/tickets#1108). -->
+      <div
+        v-for="item in section.accessPoints"
+        :key="item.id"
+        class="access-point-row"
+        data-test="access-point-row"
+      >
+        <div class="access-point-row__main">
+          <div class="font-weight-medium">{{ item.displayLabel }}</div>
+          <div class="text-caption text--secondary">{{ item.externalId }}</div>
         </div>
-      </template>
-
-      <template v-slot:item.qrScanRequired="{ item }">
-        <!-- An iFBS or Pareva locker system carries no validation rules, so
-             the QR question does not arise for it. An Open Locker Anlage
-             carries them for all its Fächer (ECCdigital/tickets#1060). -->
-        <span
-          v-if="item.isLocker && !item.hasCompartmentQr"
-          class="text-caption text--secondary"
-        >
-          {{ $t("accessPoint.management.rules.notApplicable") }}
-        </span>
-        <template v-else>
-          <v-chip v-if="item.qrScanRequired" x-small label color="primary">
-            {{ $t("accessPoint.management.rules.required") }}
-          </v-chip>
-          <v-chip v-else x-small label color="grey lighten-1">
-            {{ $t("accessPoint.management.rules.notRequired") }}
-          </v-chip>
-          <div v-if="item.isLocker" class="text-caption text--secondary">
-            {{ $t("accessPoint.management.rules.forAllCompartments") }}
-          </div>
-        </template>
-      </template>
-
-      <template v-slot:item.controls="{ item }">
-        <v-btn
-          v-if="item.hasCompartmentQr"
-          class="compartment-qr mr-1"
-          small
-          text
-          color="primary"
-          @click="openCompartmentQr(item)"
-        >
-          <v-icon left small>mdi-qrcode</v-icon>
-          {{ $t("accessPoint.management.compartmentQr.action") }}
-        </v-btn>
-        <v-menu offset-y>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn class="row-menu" icon small v-bind="attrs" v-on="on">
-              <v-icon>mdi-dots-horizontal</v-icon>
-            </v-btn>
-          </template>
-          <v-list dense>
-            <v-list-item link @click="openEdit(item)">
-              <v-list-item-icon><v-icon>mdi-pencil</v-icon></v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.edit") }}
-              </v-list-item-title>
-            </v-list-item>
-            <!-- The QR codes of the Fächer, the way the door's QR code sits
-                 in this menu (ECCdigital/tickets#1056). -->
-            <v-list-item
-              v-if="item.hasCompartmentQr"
-              class="open-compartment-qr"
-              link
-              @click="openCompartmentQr(item)"
-            >
-              <v-list-item-icon><v-icon>mdi-qrcode</v-icon></v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.compartmentQr.menu") }}
-              </v-list-item-title>
-            </v-list-item>
-            <!-- The QR code and its scan code belong to a door: what they
-                 unlock is a validation rule, and a locker system has none. -->
-            <template v-if="!item.isLocker">
+        <div class="access-point-row__assignment">
+          <span v-if="item.assignmentLabel">{{ item.assignmentLabel }}</span>
+          <span v-else class="text--secondary">
+            {{ assignmentUnknownLabel }}
+          </span>
+        </div>
+        <div class="access-point-row__actions">
+          <v-btn
+            v-if="item.hasCompartmentQr"
+            class="compartment-qr mr-1"
+            small
+            text
+            color="primary"
+            @click="openCompartmentQr(item)"
+          >
+            <v-icon left small>mdi-qrcode</v-icon>
+            {{ $t("accessPoint.management.compartmentQr.action") }}
+          </v-btn>
+          <v-menu offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn class="row-menu" icon small v-bind="attrs" v-on="on">
+                <v-icon>mdi-dots-horizontal</v-icon>
+              </v-btn>
+            </template>
+            <v-list dense>
+              <v-list-item
+                class="edit-access-point"
+                link
+                @click="openEdit(item)"
+              >
+                <v-list-item-icon><v-icon>mdi-pencil</v-icon></v-list-item-icon>
+                <v-list-item-title>
+                  {{ $t("accessPoint.management.edit") }}
+                </v-list-item-title>
+              </v-list-item>
+              <!-- The QR codes of the Fächer, the way the door's QR code sits
+                   in this menu (ECCdigital/tickets#1056). -->
+              <v-list-item
+                v-if="item.hasCompartmentQr"
+                class="open-compartment-qr"
+                link
+                @click="openCompartmentQr(item)"
+              >
+                <v-list-item-icon><v-icon>mdi-qrcode</v-icon></v-list-item-icon>
+                <v-list-item-title>
+                  {{ $t("accessPoint.management.compartmentQr.menu") }}
+                </v-list-item-title>
+              </v-list-item>
+              <!-- The QR code and its scan code belong to a door: what they
+                   unlock is a validation rule, and a locker system has none. -->
+              <template v-if="!item.isLocker">
+                <v-divider />
+                <v-list-item
+                  v-for="format in qrFormats"
+                  :key="format"
+                  :class="`download-qr-${format}`"
+                  link
+                  :disabled="downloadingId === `${item.id}-${format}`"
+                  @click="downloadQr(item, format)"
+                >
+                  <v-list-item-icon>
+                    <v-icon>
+                      {{ format === "pdf" ? "mdi-file-pdf-box" : "mdi-qrcode" }}
+                    </v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-title>
+                    {{ $t(`accessPoint.management.qr.${format}`) }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-divider />
+                <v-list-item
+                  class="rotate-access-point"
+                  link
+                  @click="openRotate(item)"
+                >
+                  <v-list-item-icon>
+                    <v-icon>mdi-autorenew</v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-title>
+                    {{ $t("accessPoint.management.rotate.action") }}
+                  </v-list-item-title>
+                </v-list-item>
+              </template>
               <v-divider />
               <v-list-item
-                v-for="format in qrFormats"
-                :key="format"
-                :class="`download-qr-${format}`"
+                class="delete-access-point"
                 link
-                :disabled="downloadingId === `${item.id}-${format}`"
-                @click="downloadQr(item, format)"
+                @click="openDelete(item)"
               >
                 <v-list-item-icon>
-                  <v-icon>
-                    {{ format === "pdf" ? "mdi-file-pdf-box" : "mdi-qrcode" }}
-                  </v-icon>
+                  <v-icon color="error">mdi-delete</v-icon>
                 </v-list-item-icon>
                 <v-list-item-title>
-                  {{ $t(`accessPoint.management.qr.${format}`) }}
+                  {{ $t("accessPoint.management.delete.action") }}
                 </v-list-item-title>
               </v-list-item>
-              <v-divider />
-              <v-list-item link @click="openRotate(item)">
-                <v-list-item-icon>
-                  <v-icon>mdi-autorenew</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>
-                  {{ $t("accessPoint.management.rotate.action") }}
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-            <v-divider />
-            <v-list-item
-              class="delete-access-point"
-              link
-              @click="openDelete(item)"
-            >
-              <v-list-item-icon>
-                <v-icon color="error">mdi-delete</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.delete.action") }}
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </template>
-    </v-data-table>
+            </v-list>
+          </v-menu>
+        </div>
+      </div>
+    </AccessPointProviderSection>
 
     <AccessPointEditDialog
       :open="editDialog"
       :access-point="selectedAccessPoint"
       :access-points="accessPoints"
       :providers="providers"
+      :provider="createProvider"
       @close="editDialog = false"
       @saved="onSaved"
     />
@@ -640,5 +484,38 @@ export default {
       @close="deleteDialog = false"
       @confirm="confirmDelete"
     />
-  </BaseSection>
+  </div>
 </template>
+
+<style scoped>
+.access-point-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+}
+
+.access-point-row + .access-point-row {
+  border-top: 1px solid var(--scb-rule);
+}
+
+.access-point-row__main,
+.access-point-row__assignment {
+  flex: 1;
+  min-width: 0;
+}
+
+.access-point-row__assignment {
+  font-size: var(--scb-font-size-sm);
+}
+
+.access-point-row__actions {
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .access-point-row {
+    flex-wrap: wrap;
+  }
+}
+</style>

@@ -2856,11 +2856,7 @@
     "management": {
       "tab": "Zugangspunkte",
       "providersTab": "Schließsysteme",
-      "title": "Zugangspunkte",
-      "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
       "edit": "Bearbeiten",
-      "reload": "Neu laden",
-      "search": "Bezeichnung, Anbieter, Typ, Herkunft oder Zuordnung",
       "save": "Speichern",
       "cancel": "Abbrechen",
       "close": "Schließen",
@@ -2872,24 +2868,14 @@
         "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
         "locker": "{provider} ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
       },
-      "table": {
-        "assignment": "Zuordnung",
+      "empty": "Es ist noch kein Zugangspunkt angelegt.",
+      "section": {
+        "createDoor": "Tür anlegen",
+        "createLockerSystem": "Schließfachanlage anlegen"
+      },
+      "row": {
         "unassigned": "Keinem Buchungsobjekt zugeordnet",
-        "loading": "Daten werden geladen...",
-        "empty": "Es ist noch kein Zugangspunkt angelegt.",
-        "perPage": "Zugangspunkte pro Seite",
-        "assignmentForbidden": "Nicht abrufbar",
-        "origin": "Herkunft",
-        "originManual": "Selbst angelegt",
-        "originProvider": "Vom Anbieter",
-        "capacityHint": "Kapazität steht am Buchungsobjekt",
-        "typeFilter": "Typ",
-        "filterAll": "Alle",
-        "filterDoors": "Türen",
-        "filterCompartments": "Fächer",
-        "filterDoorsAndCompartments": "Türen & Fächer",
-        "filterLockers": "Anlagen",
-        "emptyFiltered": "Kein Zugangspunkt dieses Typs."
+        "assignmentForbidden": "Nicht abrufbar"
       },
       "types": {
         "door": "Tür",
@@ -2987,15 +2973,10 @@
       "rules": {
         "title": "Validierungsregeln",
         "qrScan": "QR-Scan erforderlich",
-        "qrScanShort": "QR-Scan",
         "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
         "qrScanHintAnlage": "Gilt für alle Fächer der Anlage: Ein Fach öffnet sich nur, wenn sein eigener QR-Code vor Ort gescannt wurde.",
         "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
-        "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen.",
-        "required": "erforderlich",
-        "notRequired": "nicht nötig",
-        "notApplicable": "entfällt",
-        "forAllCompartments": "für alle Fächer"
+        "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen."
       },
       "location": {
         "title": "Standort",
@@ -3137,7 +3118,7 @@
         }
       },
       "hints": {
-        "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
+        "assignmentForbidden": "Welchen Buchungsobjekten die Zugangspunkte zugeordnet sind, lässt sich nicht anzeigen: Sie haben keinen Zugriff auf Buchungsobjekte."
       },
       "create": "Zugangspunkt anlegen"
     },

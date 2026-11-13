@@ -119,6 +119,10 @@ export default {
     accessPoints: { type: Array, default: () => [] },
     // Active providers incl. their `providerCapabilities`.
     providers: { type: Array, default: () => [] },
+    // The provider a new access point is created for, settled by the section
+    // the creation started in (ECCdigital/tickets#1103): the dialog then asks
+    // for no provider. Empty leaves the choice to the dialog.
+    provider: { type: String, default: "" },
   },
   data() {
     return {
@@ -404,10 +408,12 @@ export default {
     // access points. Pareva is not among them - its listing names size
     // codes, not the products a Pareva Anlage stands for.
     pickerProviderOptions() {
-      return this.providers.filter(canListAccessPoints).map((provider) => ({
-        value: provider.id,
-        text: provider.title || provider.id,
-      }));
+      return this.offeredProviders
+        .filter(canListAccessPoints)
+        .map((provider) => ({
+          value: provider.id,
+          text: provider.title || provider.id,
+        }));
     },
     // The free-text field keeps plain ids, and every active provider: one
     // that lists nothing is still entered by hand here, and a provider may
@@ -415,6 +421,17 @@ export default {
     // migrations).
     providerIds() {
       return this.providers.map((provider) => provider.id);
+    },
+    // The providers a new access point may be created for: the one settled
+    // by `provider` - as it is active, or bare where it is not - or else
+    // every active one.
+    offeredProviders() {
+      if (!this.provider) return this.providers;
+      return [
+        this.providers.find((p) => p.id === this.provider) || {
+          id: this.provider,
+        },
+      ];
     },
     requiredRule() {
       return [(v) => !!v || this.$t("accessPoint.management.required")];
@@ -691,10 +708,10 @@ export default {
     // and mode it brought along.
     chooseWayIn() {
       const listable = this.pickerProviderOptions;
+      const offered = this.offeredProviders;
       const preset =
-        !listable.length && this.providers.length === 1
-          ? this.providers[0].id
-          : "";
+        this.provider ||
+        (!listable.length && offered.length === 1 ? offered[0].id : "");
       const blank = emptyForm();
 
       this.mode = listable.length ? PROVIDER_MODE : MANUAL_MODE;
@@ -1095,7 +1112,7 @@ export default {
             </div>
 
             <v-row dense align="center">
-              <v-col cols="12" md="4">
+              <v-col v-if="!provider" cols="12" md="4">
                 <v-select
                   ref="pickerProviderSelect"
                   v-model="pickerProvider"
@@ -1228,7 +1245,7 @@ export default {
                 </template>
               </div>
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="!provider" cols="12" md="6">
               <v-combobox
                 class="provider-field"
                 v-model="form.provider"
