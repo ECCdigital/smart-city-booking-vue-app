@@ -3656,7 +3656,7 @@
         "unlimited": "Die Anzahl ist unbegrenzt, gleichzeitig buchbar ist aber höchstens das eine Fach der Schließfachanlage „{label}“. | Die Anzahl ist unbegrenzt, gleichzeitig buchbar sind aber höchstens die {count} Fächer der Schließfachanlage „{label}“.",
         "larger": "Die Anzahl ({amount}) ist größer als das eine Fach der Schließfachanlage „{label}“. Gleichzeitig buchbar ist höchstens 1. | Die Anzahl ({amount}) ist größer als die {count} Fächer der Schließfachanlage „{label}“. Gleichzeitig buchbar sind höchstens {count}."
       },
-      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zugangspunkte“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
       "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
       "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",

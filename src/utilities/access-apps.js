@@ -1,7 +1,7 @@
 /**
  * The tenant applications for doors and locker systems.
  *
- * They are configured under "Zutritt & Schließsysteme" but still travel in
+ * They are configured on the page „Zugangspunkte“ but still travel in
  * the tenant's `applications` array, so the tenant page has to carry them
  * through a save unchanged - which only works if both pages agree on their
  * shape.
