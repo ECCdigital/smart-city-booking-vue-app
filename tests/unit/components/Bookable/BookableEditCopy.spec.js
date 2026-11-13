@@ -38,7 +38,10 @@ vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn().mockResolvedValue({ data: [] }) },
 }));
 vi.mock("@/services/api/ApiTagsService", () => ({
-  default: { getTags: vi.fn().mockResolvedValue({ data: [] }) },
+  default: {
+    getTags: vi.fn().mockResolvedValue({ data: [] }),
+    getFlags: vi.fn().mockResolvedValue({ data: [] }),
+  },
 }));
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn().mockResolvedValue({ data: [] }) },

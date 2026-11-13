@@ -69,7 +69,7 @@
             <v-col cols="12" md="6">
               <v-combobox
                 v-model="eventFlags"
-                :items="eventFlags"
+                :items="api.flags"
                 label="Flags"
                 no-data-text="Keine Flags angelegt"
                 background-color="accent"
@@ -199,6 +199,7 @@ export default {
     return {
       api: {
         tags: [],
+        flags: [],
       },
     };
   },
@@ -214,10 +215,19 @@ export default {
       updateValue: "events/updateForm",
     }),
     removeFlags(item) {
-      this.flags.splice(this.flags.indexOf(item), 1);
+      this.eventFlags = this.eventFlags.filter((flag) => flag !== item);
     },
     removeTags(item) {
       this.eventTags.splice(this.eventTags.indexOf(item), 1);
+    },
+    fetchFlags() {
+      ApiEventService.getFlags()
+        .then((response) => {
+          this.api.flags = (response?.data || []).filter(Boolean);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     },
     fetchTags() {
       ApiEventService.getTags()
@@ -364,6 +374,7 @@ export default {
   },
   created() {
     this.fetchTags();
+    this.fetchFlags();
   },
 };
 </script>

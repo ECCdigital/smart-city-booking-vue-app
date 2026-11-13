@@ -13,6 +13,10 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/events/_meta/tags`);
   },
+  getFlags(tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/events/_meta/flags`);
+  },
   addEvent(addTickets = false, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const formData = { ...store.state.events.form };

@@ -9,7 +9,7 @@ vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
 }));
 vi.mock("@/services/api/ApiTagsService", () => ({
-  default: { getTags: vi.fn() },
+  default: { getTags: vi.fn(), getFlags: vi.fn() },
 }));
 
 import ApiEventService from "@/services/api/ApiEventService";
@@ -61,6 +61,8 @@ describe("BookableEditIdentity - the Grunddaten in two groups", () => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockReset();
     ApiTagsService.getTags.mockResolvedValue({ data: [] });
+    ApiTagsService.getFlags.mockReset();
+    ApiTagsService.getFlags.mockResolvedValue({ data: [] });
   });
 
   it("shows what Buchende see in the catalog, then what only the administration sees", () => {
@@ -215,6 +217,8 @@ describe("BookableEditIdentity - Merkmale and Interne Tags", () => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockReset();
     ApiTagsService.getTags.mockResolvedValue({ data: ["Innenstadt", "Saal"] });
+    ApiTagsService.getFlags.mockReset();
+    ApiTagsService.getFlags.mockResolvedValue({ data: ["WLAN", "Beamer"] });
   });
 
   const take = async (wrapper, test, text) => {
@@ -270,14 +274,15 @@ describe("BookableEditIdentity - Merkmale and Interne Tags", () => {
     expect(tags.props("items")).toEqual(["Innenstadt", "Saal"]);
   });
 
-  it("offers no suggestions for the Merkmale", async () => {
-    const { wrapper } = mountBasics();
+  it("suggests the Merkmale of the tenant's bookables", async () => {
+    const { wrapper } = mountBasics({ expertMode: false });
     await flushPromises();
 
+    expect(ApiTagsService.getFlags).toHaveBeenCalledWith("t-own");
     const flags = wrapper
       .findAllComponents({ name: "v-combobox" })
       .wrappers.find((field) => field.props("label") === "Merkmale");
-    expect(flags.props("items")).toEqual([]);
+    expect(flags.props("items")).toEqual(["WLAN", "Beamer"]);
   });
 
   it.each([
