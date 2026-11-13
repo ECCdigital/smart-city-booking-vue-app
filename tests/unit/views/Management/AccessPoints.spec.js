@@ -26,6 +26,7 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: {
     testConnection: vi.fn(),
     saveApp: vi.fn(),
+    setActive: vi.fn(),
     removeApp: vi.fn(),
     getSaltoIqs: vi.fn(),
     startSaltoIqActivation: vi.fn(),
@@ -332,6 +333,197 @@ describe("AccessPoints shows the state of each provider in its head", () => {
     });
 
     expect(stateOf(wrapper, "Pareva")).toBe("Ausgeschaltet");
+  });
+
+  it("names the last fault of a failing provider, with a way to its credentials", async () => {
+    const wrapper = await mountAccessPointsPage({
+      apps: [
+        storedApp("nuki", {
+          connectionState: "failing",
+          lastTest: {
+            success: false,
+            testedAt: 1794571200000,
+            error: "401 Unauthorized",
+          },
+        }),
+        storedApp("pareva"),
+      ],
+    });
+
+    const line = sectionOf(wrapper, "Nuki").find(
+      "[data-test='provider-section-failing']"
+    );
+    expect(line.text()).toContain(
+      "Letzte Prüfung gescheitert: 401 Unauthorized"
+    );
+    expect(
+      sectionOf(wrapper, "Pareva")
+        .find("[data-test='provider-section-failing']")
+        .exists()
+    ).toBe(false);
+
+    await click(wrapper, line, "Zugangsdaten prüfen");
+
+    expect(settingsOf(wrapper, "Nuki").exists()).toBe(true);
+  });
+});
+
+const NUKI_DOOR_2 = {
+  ...DOOR,
+  id: "ap-door-2",
+  label: "Werkstatttür",
+  externalId: "lock-2",
+};
+
+function switchOf(wrapper, title) {
+  // Vuetify hands the attribute on to the input of the switch.
+  return sectionOf(wrapper, title).find(
+    "input[data-test='provider-section-active']"
+  );
+}
+
+function switchOffQuestion(wrapper, title) {
+  return sectionOf(wrapper, title).find(
+    "[data-test='provider-section-switch-off']"
+  );
+}
+
+/** Answers the switch with the application as the backend stores it then. */
+function answerSwitch() {
+  ApiAccessAppsService.setActive.mockImplementation(
+    async (tenant, provider, active) => ({
+      data: storedApp(provider, {
+        active,
+        connectionState: active ? "connected" : "disabled",
+      }),
+    })
+  );
+}
+
+/**
+ * The switch „Aktiv“ in the head turns a provider off and on
+ * (ECCdigital/tickets#1107). Off, it keeps its credentials, access points
+ * and assignments; the section asks first and names what stops opening.
+ */
+describe("AccessPoints switches a provider off and on", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    answerSwitch();
+  });
+
+  it("asks in the section before switching off, naming the doors that stop opening", async () => {
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [DOOR, NUKI_DOOR_2, PAREVA_LOCKER],
+      apps: [storedApp("nuki"), storedApp("pareva")],
+    });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+
+    expect(ApiAccessAppsService.setActive).not.toHaveBeenCalled();
+    const question = switchOffQuestion(wrapper, "Nuki");
+    expect(question.text()).toContain(
+      "Nuki ausschalten? 2 Türen öffnen dann nicht mehr, auch nicht für laufende Buchungen. Alles bleibt gespeichert."
+    );
+
+    await click(wrapper, question, "Ausschalten");
+
+    expect(ApiAccessAppsService.setActive).toHaveBeenCalledWith(
+      "t1",
+      "nuki",
+      false
+    );
+    expect(stateOf(wrapper, "Nuki")).toBe("Ausgeschaltet");
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+  });
+
+  it("names Schließfachanlage and festes Fach apart, in the singular", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      apps: [storedApp("open-locker")],
+    });
+
+    await switchOf(wrapper, "Open Locker").trigger("click");
+    await settle(wrapper);
+
+    expect(switchOffQuestion(wrapper, "Open Locker").text()).toContain(
+      "1 Schließfachanlage und 1 festes Fach öffnen dann nicht mehr"
+    );
+  });
+
+  it("keeps the provider on when the question is cancelled", async () => {
+    const wrapper = await mountAccessPointsPage({ apps: [storedApp("nuki")] });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+    await click(wrapper, switchOffQuestion(wrapper, "Nuki"), "Abbrechen");
+
+    expect(ApiAccessAppsService.setActive).not.toHaveBeenCalled();
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+    expect(switchOf(wrapper, "Nuki").element.checked).toBe(true);
+    expect(stateOf(wrapper, "Nuki")).toBe("Verbunden");
+  });
+
+  it("pales the rows of a provider switched off and bars the creation", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [
+        storedApp("nuki", { active: false, connectionState: "disabled" }),
+        storedApp("pareva"),
+      ],
+    });
+
+    const nuki = sectionOf(wrapper, "Nuki");
+    expect(
+      nuki.find("[data-test='provider-section-rows']").classes()
+    ).toContain("provider-section__rows--off");
+    expect(
+      nuki.find("[data-test='provider-section-create']").attributes("disabled")
+    ).toBe("disabled");
+    const pareva = sectionOf(wrapper, "Pareva");
+    expect(
+      pareva.find("[data-test='provider-section-rows']").classes()
+    ).not.toContain("provider-section__rows--off");
+    expect(
+      pareva
+        .find("[data-test='provider-section-create']")
+        .attributes("disabled")
+    ).toBeUndefined();
+  });
+
+  it("keeps the actions of the pale rows at hand", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [storedApp("nuki", { active: false, connectionState: "disabled" })],
+    });
+
+    await clickRowIcon(wrapper, "Haupteingang", "edit");
+    expect(pointDialog(wrapper).text()).toContain("Tür bearbeiten");
+
+    await clickRowAction(wrapper, "Haupteingang", "rotate");
+    expect(dialogCard(wrapper, "AccessPointRotateDialog").exists()).toBe(true);
+  });
+
+  it("switches on without asking", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [storedApp("nuki", { active: false, connectionState: "disabled" })],
+    });
+    ApiAccessAppsService.getProviders.mockResolvedValue({
+      data: [NUKI, PAREVA],
+    });
+
+    await switchOf(wrapper, "Nuki").trigger("click");
+    await settle(wrapper);
+
+    expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
+    expect(ApiAccessAppsService.setActive).toHaveBeenCalledWith(
+      "t1",
+      "nuki",
+      true
+    );
+    expect(stateOf(wrapper, "Nuki")).toBe("Verbunden");
   });
 });
 
@@ -1651,14 +1843,39 @@ describe("AccessPoints removes the connection of a provider", () => {
     expect(sectionOf(wrapper, "Pareva")).toBeTruthy();
   });
 
-  it("says so when the backend refuses, and keeps the settings", async () => {
+  it("bars the removal while the section has access points, and says why", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [NUKI, OPEN_LOCKER],
+      accessPoints: [DOOR, OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      apps: [NUKI_STORED, storedApp("open-locker")],
+    });
+
+    const nuki = await openSettings(wrapper, "Nuki");
+    expect(buttonIn(nuki, "Verbindung entfernen").attributes("disabled")).toBe(
+      "disabled"
+    );
+    expect(nuki.find("[data-test='access-app-remove-blocked']").text()).toBe(
+      "Erst alle Türen löschen."
+    );
+
+    const openLocker = await openSettings(wrapper, "Open Locker");
+    expect(
+      openLocker.find("[data-test='access-app-remove-blocked']").text()
+    ).toBe("Erst alle Schließfachanlagen und festen Fächer löschen.");
+    expect(ApiAccessAppsService.removeApp).not.toHaveBeenCalled();
+  });
+
+  it("says the same when the backend refuses for access points, and keeps the settings", async () => {
     ApiAccessAppsService.removeApp.mockRejectedValue(
       lifecycleError(409, "access_app_has_access_points", {
         provider: "nuki",
         accessPoints: 1,
       })
     );
-    const wrapper = await mountAccessPointsPage({ apps: [NUKI_STORED] });
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [PAREVA_LOCKER],
+      apps: [NUKI_STORED],
+    });
     const settings = await openSettings(wrapper, "Nuki");
 
     await click(wrapper, settings, "Verbindung entfernen");
@@ -1666,8 +1883,25 @@ describe("AccessPoints removes the connection of a provider", () => {
     expect(
       settingsOf(wrapper, "Nuki")
         .find("[data-test='access-app-remove-error']")
-        .exists()
-    ).toBe(true);
+        .text()
+    ).toBe("Erst alle Türen löschen.");
+  });
+
+  it("names any other refusal in general", async () => {
+    ApiAccessAppsService.removeApp.mockRejectedValue(new Error("Network"));
+    const wrapper = await mountAccessPointsPage({
+      accessPoints: [PAREVA_LOCKER],
+      apps: [NUKI_STORED],
+    });
+    const settings = await openSettings(wrapper, "Nuki");
+
+    await click(wrapper, settings, "Verbindung entfernen");
+
+    expect(
+      settingsOf(wrapper, "Nuki")
+        .find("[data-test='access-app-remove-error']")
+        .text()
+    ).toContain("Die Verbindung ließ sich nicht entfernen.");
   });
 
   it("offers no removal before anything is stored", async () => {

@@ -8,6 +8,7 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import { runConnectionTest } from "@/utilities/access-connection-test";
 import { SALTO_PROVIDER, saltoIdentityChanged } from "@/utilities/access-apps";
+import { removalHint } from "@/utilities/access-app-lifecycle";
 import {
   fieldLabelKey,
   newSettings,
@@ -43,6 +44,9 @@ export default {
     provider: { type: Object, required: true },
     // The stored access application without its secrets, or null.
     app: { type: Object, default: null },
+    // The provider's access points: while there are any, the connection
+    // cannot be removed (ECCdigital/tickets#1107).
+    accessPoints: { type: Array, default: () => [] },
   },
   data() {
     const settings = newSettings(this.provider.id, this.app);
@@ -69,6 +73,11 @@ export default {
     ...mapGetters({ tenantId: "tenants/currentTenantId" }),
     dirty() {
       return JSON.stringify(this.settings.values) !== this.openedValues;
+    },
+    removeBlocked() {
+      return this.accessPoints.length
+        ? removalHint(this.provider.id, this.accessPoints)
+        : "";
     },
     isSalto() {
       return this.provider.id === SALTO_PROVIDER;
@@ -201,7 +210,7 @@ export default {
     },
     // Removes the stored application with its credentials. While the
     // provider has access points the backend refuses (409), and the
-    // settings say so.
+    // settings say what the barred button says.
     async remove() {
       this.removing = true;
       this.removeError = "";
@@ -209,10 +218,10 @@ export default {
         await ApiAccessAppsService.removeApp(this.tenantId, this.provider.id);
         this.$emit("removed");
       } catch (error) {
-        this.removeError = getApiErrorMessage(
-          error,
-          this.$t(`${T}.removeFailed`)
-        );
+        this.removeError =
+          error.response?.data?.code === "access_app_has_access_points"
+            ? removalHint(this.provider.id, this.accessPoints)
+            : getApiErrorMessage(error, this.$t(`${T}.removeFailed`));
       } finally {
         this.removing = false;
       }
@@ -340,11 +349,18 @@ export default {
         small
         text
         :loading="removing"
-        :disabled="removing"
+        :disabled="removing || !!removeBlocked"
         @click="remove"
       >
         {{ $t("accessPoint.management.settings.remove") }}
       </v-btn>
+      <span
+        v-if="app && removeBlocked"
+        class="access-app-settings__caption"
+        data-test="access-app-remove-blocked"
+      >
+        {{ removeBlocked }}
+      </span>
       <v-spacer />
       <span
         class="access-app-settings__caption"

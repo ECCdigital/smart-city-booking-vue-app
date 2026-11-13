@@ -2870,6 +2870,25 @@
           "unchecked": "Nicht geprüft",
           "failing": "Gestört",
           "disabled": "Ausgeschaltet"
+        },
+        "active": "Aktiv",
+        "switchOff": {
+          "question": "{provider} ausschalten?",
+          "stops": "{things} öffnet dann nicht mehr, auch nicht für laufende Buchungen. | {things} öffnen dann nicht mehr, auch nicht für laufende Buchungen.",
+          "kept": "Alles bleibt gespeichert.",
+          "cancel": "Abbrechen",
+          "confirm": "Ausschalten"
+        },
+        "kinds": {
+          "door": "1 Tür | {count} Türen",
+          "lockerSystem": "1 Schließfachanlage | {count} Schließfachanlagen",
+          "fixedCompartment": "1 festes Fach | {count} feste Fächer"
+        },
+        "and": "und",
+        "failing": {
+          "error": "Letzte Prüfung gescheitert: {error}",
+          "noError": "Letzte Prüfung gescheitert.",
+          "check": "Zugangsdaten prüfen"
         }
       },
       "settings": {
@@ -2891,6 +2910,12 @@
         "keepSecret": "Gespeichertes behalten",
         "saveFailed": "Die Einstellungen ließen sich nicht speichern.",
         "removeFailed": "Die Verbindung ließ sich nicht entfernen.",
+        "removeBlocked": "Erst alle {things} löschen.",
+        "removeKinds": {
+          "door": "Türen",
+          "lockerSystem": "Schließfachanlagen",
+          "fixedCompartment": "festen Fächer"
+        },
         "caption": {
           "checked": "Geprüft.",
           "unchecked": "Ungeprüft. Speichern geht trotzdem.",
@@ -3280,6 +3305,10 @@
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",
           "message": "Der QR-Code konnte nicht erzeugt werden."
+        },
+        "switchFailed": {
+          "title": "Nicht geschaltet",
+          "message": "Der Anbieter ließ sich nicht schalten."
         }
       },
       "hints": {

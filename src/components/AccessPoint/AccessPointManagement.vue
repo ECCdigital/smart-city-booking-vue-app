@@ -265,6 +265,27 @@ export default {
       this.closeSettings(provider);
       await this.fetchProviders();
     },
+    // Switching keeps credentials, access points and assignments; the
+    // active providers are read anew, since only they list and create.
+    async switchApp(provider, active) {
+      try {
+        const response = await ApiAccessAppsService.setActive(
+          this.tenantId,
+          provider,
+          active
+        );
+        this.apps = { ...this.apps, [provider]: response.data };
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast(
+            "accessPoint.management.toasts.switchFailed",
+            "error"
+          )
+        );
+        return;
+      }
+      await this.fetchProviders();
+    },
     onAppSaved(provider, app) {
       this.apps = { ...this.apps, [provider]: app };
       this.closeSettings(provider);
@@ -486,14 +507,21 @@ export default {
       :provider="section.provider"
       :state="section.app ? section.app.connectionState : ''"
       :settings-open="openSettings.includes(section.provider.id)"
+      :access-points="section.accessPoints"
+      :last-error="
+        (section.app && section.app.lastTest && section.app.lastTest.error) ||
+        ''
+      "
       class="mb-5"
       @create="openCreate(section.provider.id)"
       @settings="toggleSettings(section.provider.id)"
+      @switch="switchApp(section.provider.id, $event)"
     >
       <template #settings>
         <AccessAppSettings
           :provider="section.provider"
           :app="section.app"
+          :access-points="section.accessPoints"
           @cancel="closeSettings(section.provider.id)"
           @saved="onAppSaved(section.provider.id, $event)"
           @dirty="onSettingsDirty(section.provider.id, $event)"
