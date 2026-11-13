@@ -270,6 +270,19 @@ const routes = [
       requiresAuth: false,
     },
   },
+  // PROTOTYPE — QR-Codes und Rotieren für Tür und Fächer
+  // (ECCdigital/tickets#1094). Throwaway route on branch
+  // `prototype/1094-qr-und-rotieren`, never merged. Public, runs without a
+  // backend.
+  {
+    path: "/prototype/qr-und-rotieren",
+    name: "prototype-qr-und-rotieren",
+    component: () => import("@/views/Prototype/QrUndRotierenPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — QR-Codes und Rotieren",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
