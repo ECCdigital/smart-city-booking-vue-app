@@ -490,6 +490,25 @@ describe("AccessPoints leads a new tenant to its first provider", () => {
         .exists()
     ).toBe(false);
   });
+
+  // Stories 8 and 17 of ECCdigital/tickets#1082: switched off, „Anlegen“
+  // is locked, so the empty section asks for nothing.
+  it("asks for no first access point in a section switched off", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      apps: [
+        storedApp("nuki", { active: false, connectionState: "disabled" }),
+        storedApp("pareva"),
+      ],
+      accessPoints: [PAREVA_LOCKER],
+    });
+
+    expect(
+      sectionOf(wrapper, "Nuki")
+        .find("[data-test='provider-section-empty']")
+        .text()
+    ).toBe("Noch keine Tür.");
+  });
 });
 
 /** The steps of the strip: number or check, title, state. */

@@ -90,7 +90,7 @@ export default {
       );
     },
     emptyText() {
-      return emptySection(this.provider.id);
+      return emptySection(this.provider.id, { active: this.active });
     },
     nextText() {
       return nextAfterConnect(this.provider, this.openIqs);

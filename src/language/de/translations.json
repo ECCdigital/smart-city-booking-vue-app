@@ -2875,6 +2875,10 @@
           "door": "Noch keine Tür. Legen Sie die erste an.",
           "locker": "Noch keine Schließfachanlage. Legen Sie die erste an."
         },
+        "emptyOff": {
+          "door": "Noch keine Tür.",
+          "locker": "Noch keine Schließfachanlage."
+        },
         "next": {
           "sentence": "{provider} ist verbunden. Als Nächstes: {step}.",
           "iqsFirst": "IQs aktivieren, dann {create}",

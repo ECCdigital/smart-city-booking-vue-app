@@ -60,13 +60,15 @@ function kindOf(providerId) {
 
 /**
  * What a connected section without access points says: „Noch keine Tür.
- * Legen Sie die erste an.“
+ * Legen Sie die erste an.“ - switched off, where creating is locked, only
+ * „Noch keine Tür.“
  *
  * @param {string} providerId
+ * @param {{active?: boolean}} [state] Whether the provider is switched on
  * @returns {string} A translated sentence
  */
-export function emptySection(providerId) {
-  return t(`empty.${kindOf(providerId)}`);
+export function emptySection(providerId, { active = true } = {}) {
+  return t(`${active ? "empty" : "emptyOff"}.${kindOf(providerId)}`);
 }
 
 /**
