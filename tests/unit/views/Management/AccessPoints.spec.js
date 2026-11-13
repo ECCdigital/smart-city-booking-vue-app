@@ -4386,6 +4386,32 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
     );
   });
 
+  // Stories 14 and 85 of ECCdigital/tickets#1082: the footer names the QR
+  // code where the new row will, where it is scanned to open.
+  it("names no QR code in the next step of a door that opens without the scan", async () => {
+    const wrapper = await mountAccessPointsPage({ accessPoints: [] });
+    await create(wrapper, "Nuki");
+    await shown(wrapper, "more-settings")
+      .find(".v-expansion-panel-header")
+      .trigger("click");
+    await settle(wrapper);
+
+    await shown(wrapper, "qr-scan").find("input").trigger("click");
+    await settle(wrapper);
+
+    expect(shown(wrapper, "next-step").text()).toBe("Danach: zuordnen");
+  });
+
+  it("names no QR code in the next step of an Open Locker Schließfachanlage without the scan", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [],
+    });
+    await create(wrapper, "Open Locker");
+
+    expect(shown(wrapper, "next-step").text()).toBe("Danach: zuordnen");
+  });
+
   /** A Salto lock whose IQ is not activated lists no modes. */
   describe("a Salto KS door", () => {
     const SALTO_LISTING = [

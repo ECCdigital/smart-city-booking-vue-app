@@ -32,6 +32,7 @@ import {
   accessPointTypes,
   settingsSummary,
 } from "@/utilities/access-point-fields";
+import { printsQr } from "@/utilities/access-point-rows";
 import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
@@ -381,10 +382,16 @@ export default {
       const key = locationRefusal(this.form.location, this.storedLocation);
       return key ? this.$t(key) : "";
     },
+    // The rule of the row the new access point gets (`printsQr`).
     nextStep() {
+      const printing = printsQr({
+        provider: this.form.provider,
+        type: this.form.type,
+        validationRules: this.qrScanShown ? [{ type: QR_SCAN_RULE }] : [],
+      });
       return this.$t(
         `accessPoint.management.dialog.${
-          this.fields.qrCode ? "nextStep" : "nextStepNoQr"
+          printing ? "nextStep" : "nextStepNoQr"
         }`
       );
     },

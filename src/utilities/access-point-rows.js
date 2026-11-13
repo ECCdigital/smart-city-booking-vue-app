@@ -281,6 +281,20 @@ export function needsAction(accessPoint, bookables, listing = null) {
 }
 
 /**
+ * Whether the QR code of the access point is to be printed after creating
+ * it: where it has one and demands the scan to open („QR-Code drucken,
+ * falls nötig“, ECCdigital/tickets#1082). The one rule for the next step,
+ * in the row and in the footer of the dialog.
+ *
+ * @param {Object} accessPoint The access point, or the dialog's form with
+ *   `provider`, `type` and `validationRules`
+ * @returns {boolean}
+ */
+export function printsQr(accessPoint) {
+  return hasQr(accessPoint) && requiresQrScan(accessPoint);
+}
+
+/**
  * The next step of an access point just created, as its row names it
  * (ECCdigital/tickets#1110): print the QR code where it is scanned to open,
  * and assign it.
@@ -289,7 +303,5 @@ export function needsAction(accessPoint, bookables, listing = null) {
  * @returns {string} A translated sentence
  */
 export function nextStep(accessPoint) {
-  return t(
-    hasQr(accessPoint) && requiresQrScan(accessPoint) ? "nextWithQr" : "next"
-  );
+  return t(printsQr(accessPoint) ? "nextWithQr" : "next");
 }
