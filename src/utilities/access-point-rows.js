@@ -1,8 +1,8 @@
 import i18n from "@/language/index";
+import { accessPointFields } from "@/utilities/access-point-fields";
 import {
   DOOR_TYPE,
   isLockerAccessPoint,
-  providerRequiresScanByDefault,
   requiresQrScan,
 } from "@/utilities/access-points";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
@@ -163,9 +163,9 @@ export function moreActions(accessPoint) {
  * "neutral" so far.
  *
  * The QR scan is measured against what a new access point of the provider
- * starts with (`providerRequiresScanByDefault`), wherever there is a QR code
- * to scan (`hasQr`). „von Hand“ and „IQ nicht aktiviert“ need the listing of
- * the provider, which the page does not load.
+ * and type starts with (`qrScanDefault` of `accessPointFields`), wherever
+ * there is a QR code to scan (`hasQr`). „von Hand“ and „IQ nicht aktiviert“
+ * need the listing of the provider, which the page does not load.
  *
  * @param {Object} accessPoint The access point
  * @returns {Array<{key: string, label: string, tooltip: string, tone: string}>}
@@ -174,7 +174,11 @@ export function deviations(accessPoint) {
   const markers = [];
   if (hasQr(accessPoint)) {
     const scan = requiresQrScan(accessPoint);
-    if (scan !== providerRequiresScanByDefault(accessPoint.provider)) {
+    const { qrScanDefault } = accessPointFields(
+      accessPoint.provider,
+      accessPoint.type
+    );
+    if (scan !== qrScanDefault) {
       const key = scan ? "withQrScan" : "withoutQrScan";
       markers.push({
         key,

@@ -2861,13 +2861,7 @@
       "cancel": "Abbrechen",
       "close": "Schließen",
       "required": "Pflichtfeld",
-      "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
       "storedModeUnsupported": "Gespeichert ist „{stored}“, das Salto KS nicht unterstützt. Mit Speichern wird „{proposed}“ übernommen.",
-      "iqNotActivated": "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „{tab}“ › Salto KS › „{section}“. Speichern können Sie schon jetzt.",
-      "providerInactive": {
-        "door": "{provider} ist für diesen Mandanten noch nicht aktiv. Schloss und Modus werden geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt.",
-        "locker": "{provider} ist für diesen Mandanten noch nicht aktiv. Die Anlage wird geprüft, sobald der Anbieter aktiv ist. Speichern können Sie schon jetzt."
-      },
       "empty": "Es ist noch kein Zugangspunkt angelegt.",
       "section": {
         "createDoor": "Tür anlegen",
@@ -2922,11 +2916,6 @@
         "remote": "Öffnen per App",
         "both": "PIN-Code & App"
       },
-      "modeHints": {
-        "authorization": "Der Buchende gibt einen PIN-Code direkt am Schloss ein.",
-        "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
-        "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
-      },
       "openActions": {
         "auto": "Automatisch",
         "unlock": "Aufschließen",
@@ -2957,8 +2946,6 @@
         },
         "location": "Standort",
         "validationRules": "Validierungsregeln",
-        "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
-        "typeChoiceHint": "Bei einer Schließfachanlage teilt Biletado jeder Buchung ein freies Fach aus der Anlage zu. Ein einzelnes Fach teilen sich alle Buchungen des Buchungsobjekts.",
         "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
         "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
@@ -2993,24 +2980,11 @@
           "close": "Schließen"
         }
       },
-      "picker": {
-        "title": "Zugangspunkt vom Anbieter übernehmen",
-        "provider": "Anbieter",
-        "lock": "Zugangspunkt",
-        "apply": "Übernehmen",
-        "alreadyCreated": "bereits angelegt",
-        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür, Fach oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
-      },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
       },
       "rules": {
-        "title": "Validierungsregeln",
-        "qrScan": "QR-Scan erforderlich",
-        "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
-        "qrScanHintAnlage": "Gilt für alle Fächer der Anlage: Ein Fach öffnet sich nur, wenn sein eigener QR-Code vor Ort gescannt wurde.",
-        "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
-        "defaultHintOff": "Unverändert übernommen: Für diesen Anbieter legt der Server den Zugangspunkt ohne Scan-Pflicht an. Schalten Sie den Schalter ein, um hier einen QR-Scan zu verlangen."
+        "qrScan": "QR-Scan erforderlich"
       },
       "location": {
         "title": "Standort",
@@ -3020,10 +2994,8 @@
         "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
       },
       "config": {
-        "title": "Erweiterte Konfiguration",
         "label": "Anbieter-Konfiguration (JSON)",
         "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
-        "hintOpenAction": "Die Öffnungsart wird oben eingestellt.",
         "invalid": "Kein gültiges JSON.",
         "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
       },
@@ -3085,16 +3057,54 @@
         "bookingsMore": "… und {count} weitere."
       },
       "dialog": {
-        "editTitle": "Zugangspunkt bearbeiten",
-        "createTitle": "Zugangspunkt anlegen",
-        "modes": {
-          "provider": "Vom Anbieter übernehmen",
-          "manual": "Manuell anlegen"
+        "kinds": {
+          "door": {
+            "create": "Tür anlegen",
+            "edit": "Tür bearbeiten",
+            "noun": "Tür"
+          },
+          "lockerSystem": {
+            "create": "Schließfachanlage anlegen",
+            "edit": "Schließfachanlage bearbeiten",
+            "noun": "Schließfachanlage",
+            "choice": "Schließfachanlage"
+          },
+          "fixedCompartment": {
+            "create": "Festes Fach anlegen",
+            "edit": "Festes Fach bearbeiten",
+            "noun": "Fach",
+            "choice": "Festes Fach"
+          }
         },
-        "modeHints": {
-          "provider": "Der Anbieter listet seine Türen und Anlagen; das Formular füllt sich aus der Liste.",
-          "manual": "Eine Tür oder eine Pareva-Anlage von Hand eintragen. Eine iFBS-Anlage kommt immer vom Anbieter."
-        }
+        "typeHints": {
+          "lockerSystem": "Biletado teilt jeder Buchung ein freies Fach der Schließfachanlage zu.",
+          "fixedCompartment": "Alle Buchungen des Buchungsobjekts teilen sich dieses eine Fach."
+        },
+        "pickTitle": "{noun} aus der Liste von {provider} wählen",
+        "byHandRow": "Nicht in der Liste: {noun} von Hand eintragen",
+        "byHand": "Von Hand eingetragen",
+        "taken": "schon angelegt",
+        "iqOff": "IQ nicht aktiviert",
+        "iqWarning": "Der IQ dieser Tür ist nicht aktiviert. Sie öffnet erst, wenn er aktiviert ist. Speichern können Sie schon jetzt.",
+        "swap": "Tauschen",
+        "more": "Weitere Einstellungen",
+        "technical": "Technik",
+        "modeHint": "Buchende öffnen per Knopfdruck in der App. Kommt der PIN-Code, wird der Modus eine Auswahl.",
+        "qrScan": {
+          "default": "Standard bei {provider}: {value}.",
+          "defaultAnlage": "Gilt für alle Fächer, jedes mit seinem eigenen QR-Code. Standard bei {provider}: {value}.",
+          "on": "QR-Scan erforderlich",
+          "off": "ohne QR-Scan"
+        },
+        "summary": {
+          "openAction": "Öffnungsart {name}",
+          "qrScan": "QR-Scan erforderlich",
+          "noQrScan": "ohne QR-Scan",
+          "noLocation": "kein Standort",
+          "point": "Standort auf der Karte"
+        },
+        "nextStep": "Danach: zuordnen und QR-Code drucken",
+        "nextStepNoQr": "Danach: zuordnen"
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
@@ -3157,8 +3167,7 @@
       "create": "Zugangspunkt anlegen"
     },
     "comingSoon": {
-      "badge": "Bald verfügbar",
-      "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
+      "badge": "Bald verfügbar"
     },
     "tenant": {
       "title": "Türsteuerung & Zugang",
