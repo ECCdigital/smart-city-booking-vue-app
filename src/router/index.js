@@ -258,6 +258,18 @@ const routes = [
       requiresAuth: false,
     },
   },
+  // PROTOTYPE — Zeilen je Anbieter, Menü, Suche (ECCdigital/tickets#1093).
+  // Throwaway route on branch `prototype/1093-zeilen-je-schliesssystem`,
+  // never merged. Public so it runs without a backend.
+  {
+    path: "/prototype/zeilen-je-anbieter",
+    name: "prototype-zeilen-je-anbieter",
+    component: () => import("@/views/Prototype/ZeilenJeAnbieterPrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Zeilen je Anbieter",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
