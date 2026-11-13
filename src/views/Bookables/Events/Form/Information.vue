@@ -223,10 +223,10 @@ export default {
     fetchFlags() {
       ApiEventService.getFlags()
         .then((response) => {
-          this.api.flags = response.data;
+          this.api.flags = (response?.data || []).filter(Boolean);
         })
         .catch((error) => {
-          console.log(error);
+          console.error(error);
         });
     },
     fetchTags() {

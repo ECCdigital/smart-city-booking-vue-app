@@ -70,6 +70,21 @@ describe("Information - Flags of the event", () => {
     ]);
   });
 
+  it("takes a new flag as it is typed, beside the suggestions", async () => {
+    ApiEventService.getFlags.mockResolvedValue({ data: ["Draußen"] });
+    const { wrapper, store } = await mountInformation({ flags: ["Kinder"] });
+
+    const input = comboboxOf(wrapper, "Flags").find("input");
+    await input.setValue("Abends");
+    await input.trigger("keydown", { key: "Enter", keyCode: 13 });
+    await wrapper.vm.$nextTick();
+
+    expect(store.state.events.form.information.flags).toEqual([
+      "Kinder",
+      "Abends",
+    ]);
+  });
+
   it("drops a flag with the cross of its chip", async () => {
     const { wrapper, store } = await mountInformation({
       flags: ["Kinder", "Draußen"],

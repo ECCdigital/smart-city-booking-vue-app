@@ -197,8 +197,9 @@ import { externalReferenceOf } from "@/utils/mediaReference";
  * beneath. The groups are the sections of the tab's sub-nav.
  *
  * The type is chosen only while the bookable is created (`isNew`); after
- * that it is read only. Events and the suggestions of tags and Merkmale come
- * from the bookable's own tenant, not the one currently selected.
+ * that it is read only. Events and the suggestions of Interne Tags and
+ * Merkmale come from the bookable's own tenant, not the one currently
+ * selected.
  */
 export default {
   name: "BookableEditIdentity",
