@@ -194,6 +194,39 @@ export function compartmentGroups(listing, selected, taken) {
 }
 
 /**
+ * The Fächer of an Anlage grouped by Schließfachschrank, in the order the
+ * backend assigns them (its `inAllocationOrder`): Schrank by name, the same
+ * name by its id, then the number numerically. The dialog „QR-Codes der
+ * Fächer“ lists them so (ECCdigital/tickets#1056), as they stand in the
+ * Schrank.
+ *
+ * @param {Object[]} compartments `config.compartments` of the Anlage
+ * @returns {{lockerBank: {id: string, name: string}, compartments: Object[]}[]}
+ */
+export function compartmentsByLockerBank(compartments) {
+  const text = (value) => (value == null ? "" : String(value));
+  const number = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+  };
+  const sorted = [...(compartments || [])].sort(
+    (a, b) =>
+      text(a.lockerBank?.name).localeCompare(text(b.lockerBank?.name), "de") ||
+      text(a.lockerBank?.id).localeCompare(text(b.lockerBank?.id)) ||
+      number(a.number) - number(b.number)
+  );
+
+  const groups = new Map();
+  sorted.forEach((compartment) => {
+    const lockerBank = compartment.lockerBank || { id: "", name: "" };
+    const key = text(lockerBank.id);
+    if (!groups.has(key)) groups.set(key, { lockerBank, compartments: [] });
+    groups.get(key).compartments.push(compartment);
+  });
+  return [...groups.values()];
+}
+
+/**
  * The Anlagen with their own Fächer that a bookable other than the one being
  * edited already links - its access switched on or off, as the backend
  * counts it. Such an Anlage belongs to one bookable only, so the form does

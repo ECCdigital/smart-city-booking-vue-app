@@ -889,14 +889,16 @@ export default {
 
       if (this.isEdit) payload.id = this.form.id;
 
-      if (this.isLocker) {
-        // A locker system has no rules to validate - the compartment is opened
-        // through the provider, not at a QR code. Left out on create, the
-        // server would apply its `qrScan` default.
+      if (this.isLocker && !this.picksCompartments) {
+        // An iFBS or Pareva Anlage has no rules to validate - the compartment
+        // is opened through the provider, not at a QR code. Left out on
+        // create, the server would apply its `qrScan` default.
         payload.validationRules = [];
       } else if (this.isEdit || this.validationRulesTouched) {
         // Explicitly empty means "no scan needed"; leaving the field out on
-        // create is what makes the server apply its qrScan default.
+        // create is what makes the server apply its default for the
+        // provider. An Anlage that picks its own Fächer carries the rules
+        // for all of them (ECCdigital/tickets#1060).
         payload.validationRules = this.buildValidationRules();
       }
 
@@ -1368,8 +1370,10 @@ export default {
             />
           </template>
 
-          <!-- Mode and QR rules describe a door; a locker system has neither -->
-          <template v-if="!isLocker">
+          <!-- QR rules describe a door, and an Anlage that picks its own
+               Fächer for all of them (ECCdigital/tickets#1060); an iFBS or
+               Pareva Anlage has none -->
+          <template v-if="!isLocker || picksCompartments">
             <!-- Validation rules -->
             <div class="section-title mt-4 mb-2">
               <v-icon small left>mdi-shield-check</v-icon>
@@ -1390,7 +1394,11 @@ export default {
                     {{ $t("accessPoint.management.rules.qrScan") }}
                   </div>
                   <div class="text-caption text--secondary">
-                    {{ $t("accessPoint.management.rules.qrScanHint") }}
+                    {{
+                      picksCompartments
+                        ? $t("accessPoint.management.rules.qrScanHintAnlage")
+                        : $t("accessPoint.management.rules.qrScanHint")
+                    }}
                   </div>
                 </div>
               </template>

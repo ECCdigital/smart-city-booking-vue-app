@@ -56,6 +56,14 @@ vi.mock("@/components/AccessPoint/AccessPointRotateDialog.vue", () => ({
   },
 }));
 
+vi.mock("@/components/AccessPoint/AccessPointCompartmentQrDialog.vue", () => ({
+  default: {
+    name: "AccessPointCompartmentQrDialog",
+    props: ["open", "accessPoint"],
+    render: () => null,
+  },
+}));
+
 import AccessPointManagement from "@/components/AccessPoint/AccessPointManagement.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
@@ -103,6 +111,27 @@ const OPEN_LOCKER_COMPARTMENT = {
   label: "Labor Fachbank 1 · Fach 2",
   externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
   validationRules: [],
+};
+
+// An Open Locker Schließfachanlage (#1037): it carries its own Fächer, each
+// with a scan code of its own the answer never names (#1055).
+const OPEN_LOCKER_ANLAGE = {
+  id: "ap-open-locker-anlage",
+  type: "locker",
+  mode: "remote",
+  provider: "open-locker",
+  label: "Fahrradgarage Süd",
+  validationRules: [],
+  config: {
+    compartments: [
+      {
+        id: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+        number: 1,
+        lockerBank: { id: "bank-labor", name: "Labor Fachbank 1" },
+        outOfService: false,
+      },
+    ],
+  },
 };
 
 // What the backend reports: iFBS lists its locations, Pareva lists nothing
@@ -246,6 +275,57 @@ describe("AccessPointManagement", () => {
       expect(rowFor(wrapper, "Fahrradboxen Bahnhof").text()).toContain(
         "entfällt"
       );
+    });
+
+    /**
+     * An Open Locker Anlage carries the rules for all its Fächer
+     * (ECCdigital/tickets#1060); iFBS and Pareva stay without.
+     */
+    describe("of an Open Locker Schließfachanlage", () => {
+      function anlage(label, validationRules) {
+        return {
+          id: `ap-${label}`,
+          type: "locker",
+          provider: "open-locker",
+          label,
+          externalId: "",
+          mode: "remote",
+          validationRules,
+          config: {
+            compartments: [
+              {
+                id: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+                number: 1,
+                lockerBank: { id: "bank-labor", name: "Labor Fachbank 1" },
+                outOfService: false,
+              },
+            ],
+          },
+        };
+      }
+
+      it("says whether the scan is required, for all Fächer", async () => {
+        ApiAccessPointService.getAccessPoints.mockResolvedValue({
+          data: [
+            anlage("Fahrradgarage", [{ type: "qrScan" }]),
+            anlage("Werkzeugschrank", []),
+            PAREVA_LOCKER,
+          ],
+        });
+
+        const wrapper = await mountManagement();
+
+        const required = rowFor(wrapper, "Fahrradgarage").text();
+        expect(required).toContain("erforderlich");
+        expect(required).toContain("für alle Fächer");
+        expect(required).not.toContain("entfällt");
+        const notRequired = rowFor(wrapper, "Werkzeugschrank").text();
+        expect(notRequired).toContain("nicht nötig");
+        expect(notRequired).toContain("für alle Fächer");
+        const pareva = rowFor(wrapper, "Schließfächer Rathaus").text();
+        expect(pareva).toContain("entfällt");
+        expect(pareva).not.toContain("für alle Fächer");
+      });
     });
 
     it("says where the capacity of a locker system is set", async () => {
@@ -555,6 +635,133 @@ describe("AccessPointManagement", () => {
           message: "Der QR-Code konnte nicht erzeugt werden.",
         })
       );
+    });
+  });
+  /**
+   * „QR-Codes der Fächer“ (ECCdigital/tickets#1056): a button in the row and
+   * an entry in its menu, both only at an Anlage that carries its own Fächer
+   * - an Open Locker one. iFBS and Pareva Anlagen, doors and fixed Fächer
+   * have neither.
+   */
+  describe("the QR codes of the Fächer", () => {
+    beforeEach(() => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [
+          DOOR,
+          LOCKER,
+          PAREVA_LOCKER,
+          OPEN_LOCKER_COMPARTMENT,
+          OPEN_LOCKER_ANLAGE,
+        ],
+      });
+    });
+
+    async function menuOf(wrapper, label) {
+      await rowFor(wrapper, label).find(".row-menu").trigger("click");
+      await wrapper.vm.$nextTick();
+      await wrapper.vm.$nextTick();
+      return document.querySelector(".menuable__content__active");
+    }
+
+    function qrDialog(wrapper) {
+      return wrapper.findComponent({ name: "AccessPointCompartmentQrDialog" });
+    }
+
+    it("offers the button only at an Open Locker Anlage", async () => {
+      const wrapper = await mountManagement();
+
+      const button = rowFor(wrapper, "Fahrradgarage Süd").find(
+        ".compartment-qr"
+      );
+      expect(button.exists()).toBe(true);
+      expect(button.text()).toContain("QR-Codes der Fächer");
+      [
+        "Haupteingang",
+        "Fahrradboxen Bahnhof",
+        "Schließfächer Rathaus",
+        "Labor Fachbank 1 · Fach 2",
+      ].forEach((label) => {
+        expect(rowFor(wrapper, label).find(".compartment-qr").exists()).toBe(
+          false
+        );
+      });
+    });
+
+    it.each([
+      ["an iFBS Anlage", "Fahrradboxen Bahnhof"],
+      ["a Pareva Anlage", "Schließfächer Rathaus"],
+      ["a door", "Haupteingang"],
+      ["a fixed Fach", "Labor Fachbank 1 · Fach 2"],
+    ])("has no menu entry at %s", async (_, label) => {
+      const wrapper = await mountManagement();
+
+      const menu = await menuOf(wrapper, label);
+
+      expect(menu.querySelector(".open-compartment-qr")).toBe(null);
+    });
+
+    it("opens the dialog with the Anlage from the button", async () => {
+      const wrapper = await mountManagement();
+      expect(qrDialog(wrapper).props("open")).toBe(false);
+
+      await rowFor(wrapper, "Fahrradgarage Süd")
+        .find(".compartment-qr")
+        .trigger("click");
+
+      expect(qrDialog(wrapper).props("open")).toBe(true);
+      expect(qrDialog(wrapper).props("accessPoint")).toMatchObject({
+        id: "ap-open-locker-anlage",
+        config: OPEN_LOCKER_ANLAGE.config,
+      });
+    });
+
+    it("opens the same dialog from „QR-Codes der Fächer …“ in the row menu", async () => {
+      const wrapper = await mountManagement();
+
+      const menu = await menuOf(wrapper, "Fahrradgarage Süd");
+      const entry = menu.querySelector(".open-compartment-qr");
+      expect(entry.textContent).toContain("QR-Codes der Fächer …");
+      entry.click();
+      await wrapper.vm.$nextTick();
+
+      expect(qrDialog(wrapper).props("open")).toBe(true);
+      expect(qrDialog(wrapper).props("accessPoint")).toMatchObject({
+        id: "ap-open-locker-anlage",
+      });
+    });
+
+    it("closes the dialog when it asks to", async () => {
+      const wrapper = await mountManagement();
+      await rowFor(wrapper, "Fahrradgarage Süd")
+        .find(".compartment-qr")
+        .trigger("click");
+
+      qrDialog(wrapper).vm.$emit("close");
+      await wrapper.vm.$nextTick();
+
+      expect(qrDialog(wrapper).props("open")).toBe(false);
+    });
+
+    // tickets#1061: a Fach rotated in the dialog reloads the list, as the
+    // door's rotation does; the dialog stays open.
+    it("reloads the access points after a Fach was rotated", async () => {
+      const wrapper = await mountManagement();
+      await rowFor(wrapper, "Fahrradgarage Süd")
+        .find(".compartment-qr")
+        .trigger("click");
+      const loads = ApiAccessPointService.getAccessPoints.mock.calls.length;
+
+      qrDialog(wrapper).vm.$emit(
+        "rotated",
+        OPEN_LOCKER_ANLAGE,
+        OPEN_LOCKER_ANLAGE.config.compartments[0]
+      );
+      await flushPromises();
+
+      expect(ApiAccessPointService.getAccessPoints.mock.calls.length).toBe(
+        loads + 1
+      );
+      expect(qrDialog(wrapper).props("open")).toBe(true);
     });
   });
 });

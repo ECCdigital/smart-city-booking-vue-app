@@ -47,9 +47,10 @@ const PROVIDER_MODES = {
 
 /**
  * The providers whose new access points start without a QR scan - the
- * backend's `requiresScanByDefault`. An Open Locker compartment is opened
- * from the list, not in front of a sticker; the scan is switched on per
- * compartment where it is wanted.
+ * backend's `requiresScanByDefault`. An Open Locker Fach is opened from the
+ * list, not in front of a sticker; the scan is switched on where it is
+ * wanted - at a fixed Fach for that Fach, at a Schließfachanlage for all its
+ * Fächer at once (ECCdigital/tickets#1060).
  */
 const PROVIDERS_WITHOUT_SCAN_BY_DEFAULT = ["open-locker"];
 

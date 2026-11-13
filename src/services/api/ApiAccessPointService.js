@@ -50,9 +50,60 @@ export default {
     );
   },
 
+  /**
+   * The QR code of one Fach of a Schließfachanlage that carries its own
+   * Fächer (ECCdigital/tickets#1056), addressed by the Anlage and the Fach's
+   * UUID, rendered by the server like the door's.
+   */
+  getCompartmentQrCode(id, compartmentId, format = "pdf", tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/accesspoints/${id}/compartments/${compartmentId}/qrcode?format=${format}`,
+      { responseType: "blob" }
+    );
+  },
+
+  /**
+   * The Sammel-PDF of a Schließfachanlage that carries its own Fächer
+   * (ECCdigital/tickets#1062): the QR codes of all its Fächer on an
+   * Etikettenbogen, rendered by the server.
+   */
+  getCompartmentQrSheet(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/accesspoints/${id}/compartments/qrcodes`, {
+      responseType: "blob",
+    });
+  },
+
   rotateScanCode(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(`api/${t}/accesspoints/${id}/rotate-scan-code`, {});
+  },
+
+  /**
+   * Rotate the scan code of one Fach of a Schließfachanlage that carries its
+   * own Fächer (ECCdigital/tickets#1061), addressed by the Anlage and the
+   * Fach's UUID. The answer carries no code.
+   */
+  rotateCompartmentScanCode(id, compartmentId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/accesspoints/${id}/compartments/${compartmentId}/rotate-scan-code`,
+      {}
+    );
+  },
+
+  /**
+   * Rotate the scan codes of all Fächer of a Schließfachanlage that carries
+   * its own Fächer at once (ECCdigital/tickets#1063). The answer carries no
+   * code.
+   */
+  rotateAllCompartmentScanCodes(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/accesspoints/${id}/compartments/rotate-scan-codes`,
+      {}
+    );
   },
 
   /**
