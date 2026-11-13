@@ -5,6 +5,7 @@ import {
   hasQr,
   metaLine,
   moreActions,
+  nextStep,
   qrTitle,
 } from "@/utilities/access-point-rows";
 
@@ -16,7 +17,8 @@ import {
  *
  * Events: `edit`, `qr` (the visible QR code), `assign` (the button or a
  * chip), and from the menu „…“ `download` (with "svg" or "png"), `rotate`,
- * `rotate-all` and `delete`.
+ * `rotate-all` and `delete`. `fresh` marks the row of an access point just
+ * created, with its next step (ECCdigital/tickets#1110).
  */
 export default {
   name: "AccessPointRow",
@@ -25,6 +27,7 @@ export default {
     // The bookables it is assigned to; `null` where they were not readable,
     // so the row makes no claim about them.
     bookables: { type: Array, default: null },
+    fresh: { type: Boolean, default: false },
   },
   computed: {
     label() {
@@ -45,12 +48,19 @@ export default {
     moreActions() {
       return moreActions(this.accessPoint);
     },
+    nextStep() {
+      return nextStep(this.accessPoint);
+    },
   },
 };
 </script>
 
 <template>
-  <div class="access-point-row" data-test="access-point-row">
+  <div
+    class="access-point-row"
+    :class="{ 'access-point-row--fresh': fresh }"
+    data-test="access-point-row"
+  >
     <div class="access-point-row__main">
       <div class="access-point-row__label">
         {{ label }}
@@ -70,6 +80,13 @@ export default {
       </div>
       <div class="access-point-row__meta" data-test="access-point-meta">
         {{ meta }}
+      </div>
+      <div
+        v-if="fresh"
+        class="access-point-row__next"
+        data-test="access-point-next"
+      >
+        {{ nextStep }}
       </div>
     </div>
     <div class="access-point-row__bookables">
@@ -176,6 +193,16 @@ export default {
 
 .access-point-row + .access-point-row {
   border-top: 1px solid var(--scb-rule);
+}
+
+.access-point-row--fresh {
+  background: var(--scb-selected-tint-faint);
+  box-shadow: inset 3px 0 0 var(--v-primary-base);
+}
+
+.access-point-row__next {
+  font-size: var(--scb-font-size-xs);
+  color: var(--v-primary-base);
 }
 
 .access-point-row__label {

@@ -35,6 +35,19 @@ export default {
     });
   },
 
+  /**
+   * Set the bookables that carry the access point (ECCdigital/tickets#1110):
+   * `bookableIds` names every one of them, the backend adds the access point
+   * where it is missing and removes it from every other bookable. A bookable
+   * that gets its first access point has its access switched on.
+   */
+  assignBookables(id, bookableIds, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.put(`api/${t}/accesspoints/${id}/bookables`, {
+      bookableIds,
+    });
+  },
+
   deleteAccessPoint(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.delete(`api/${t}/accesspoints/${id}`);

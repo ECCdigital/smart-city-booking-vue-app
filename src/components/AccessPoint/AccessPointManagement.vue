@@ -11,6 +11,7 @@ import AccessPointProviderSection from "@/components/AccessPoint/AccessPointProv
 import AccessAppSettings from "@/components/AccessPoint/AccessAppSettings.vue";
 import AccessPointRow from "@/components/AccessPoint/AccessPointRow.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
+import AccessPointAssignDialog from "@/components/AccessPoint/AccessPointAssignDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
 import AccessPointCompartmentQrDialog from "@/components/AccessPoint/AccessPointCompartmentQrDialog.vue";
@@ -35,6 +36,7 @@ export default {
     AccessAppSettings,
     AccessPointRow,
     AccessPointEditDialog,
+    AccessPointAssignDialog,
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
     AccessPointCompartmentQrDialog,
@@ -61,6 +63,9 @@ export default {
       // The provider of the section whose creation opened the dialog; empty
       // while an access point is edited.
       createProvider: "",
+      // The access point just created: its row stands out with the next
+      // step until it is assigned.
+      freshId: "",
       selectedAccessPoint: null,
       deleteDialog: false,
       deleting: false,
@@ -70,6 +75,7 @@ export default {
       loadingBookings: false,
       rotateDialog: false,
       compartmentQrDialog: false,
+      assignDialog: false,
       search: "",
       // „Offen“: only the access points with something still to do.
       onlyOpen: false,
@@ -273,6 +279,7 @@ export default {
       if (this.bookablesForbidden) return null;
       return this.bookablesByAccessPointId[accessPoint.id] || [];
     },
+    needsAction,
     // Whether the row of the access point stands under the search and
     // „Offen“.
     shows(accessPoint) {
@@ -282,15 +289,20 @@ export default {
         (!this.onlyOpen || needsAction(accessPoint, bookables))
       );
     },
-    // Until the page assigns itself (ECCdigital/tickets#1110), the
-    // assignment points to the area at the bookable, where it is made today.
-    async openAssign() {
+    openAssign(accessPoint) {
+      this.selectedAccessPoint = accessPoint;
+      this.assignDialog = true;
+    },
+    // The assignment lives on the bookables, so they are read anew.
+    async onAssigned() {
+      this.assignDialog = false;
       await this.addToast(
         ToastService.createToast(
-          "accessPoint.management.toasts.assignAtBookable",
-          "info"
+          "accessPoint.management.toasts.assigned",
+          "success"
         )
       );
+      await this.fetchBookables();
     },
     openEdit(accessPoint) {
       this.createProvider = "";
@@ -341,7 +353,8 @@ export default {
         this.loadingBookings = false;
       }
     },
-    async onSaved() {
+    async onSaved(answer) {
+      if (this.createProvider && answer?.id) this.freshId = answer.id;
       this.editDialog = false;
       await this.addToast(
         ToastService.createToast(
@@ -499,7 +512,8 @@ export default {
         :key="item.id"
         :access-point="item"
         :bookables="bookablesOf(item)"
-        @assign="openAssign"
+        :fresh="item.id === freshId && needsAction(item, bookablesOf(item))"
+        @assign="openAssign(item)"
         @edit="openEdit(item)"
         @qr="openQr(item)"
         @download="(format) => downloadQr(item, format)"
@@ -517,6 +531,13 @@ export default {
       :provider="createProvider"
       @close="editDialog = false"
       @saved="onSaved"
+    />
+    <AccessPointAssignDialog
+      :open="assignDialog"
+      :access-point="selectedAccessPoint"
+      :bookables="bookables"
+      @close="assignDialog = false"
+      @saved="onAssigned"
     />
     <AccessPointRotateDialog
       :open="rotateDialog"
