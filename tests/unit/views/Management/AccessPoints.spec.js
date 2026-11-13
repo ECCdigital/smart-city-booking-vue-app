@@ -1960,8 +1960,9 @@ describe("AccessPoints exports the access log at the end of the page", () => {
 
 /**
  * „Verbindung entfernen“ stands in the foot of the settings
- * (ECCdigital/tickets#1104); when it is barred and what it says then is
- * ECCdigital/tickets#1107's.
+ * (ECCdigital/tickets#1104). It is barred while the section has access
+ * points, with the hint by kind, and a 409 of the backend says the same
+ * (ECCdigital/tickets#1107).
  */
 describe("AccessPoints removes the connection of a provider", () => {
   beforeEach(() => {
