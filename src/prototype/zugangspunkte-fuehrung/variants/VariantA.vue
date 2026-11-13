@@ -175,7 +175,11 @@ export default {
             </div>
             <div class="mt-1">
               Als Nächstes:
-              <a v-if="justCreated.qrRequired" class="primary--text" @click@click="qr(justCreated)">
+              <a
+                v-if="justCreated.qrRequired"
+                class="primary--text"
+                @click="qr(justCreated)"
+              >
                 QR-Code drucken
               </a>
               <span v-if="justCreated.qrRequired"> und </span>
@@ -221,7 +225,9 @@ export default {
                 <span class="warning--text mr-2">Keinem zugeordnet</span>
                 <v-menu offset-y>
                   <template #activator="{ on }">
-                    <a class="primary--text" v-on="on">Am Buchungsobjekt zuordnen</a>
+                    <a class="primary--text" v-on="on"
+                      >Am Buchungsobjekt zuordnen</a
+                    >
                   </template>
                   <v-list dense>
                     <v-subheader>Buchungsobjekt öffnen</v-subheader>
