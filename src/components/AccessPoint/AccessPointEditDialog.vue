@@ -254,9 +254,15 @@ export default {
         (entry) => entry.externalId === String(this.form.externalId)
       );
     },
+    // „Von Hand eingetragen“ only where the provider's listing was asked: a
+    // provider switched off lists nothing, so the access point names itself
+    // without saying where its lock came from.
     lockName() {
       if (this.entry) return this.entry.label || this.entry.externalId;
       if (this.loadingListing) return "";
+      if (this.fields.listing && !this.activeProvider) {
+        return this.accessPoint?.label || this.form.externalId;
+      }
       return this.$t("accessPoint.management.dialog.byHand");
     },
     idLabel() {

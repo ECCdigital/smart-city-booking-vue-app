@@ -4591,6 +4591,27 @@ describe("AccessPoints edits an access point in the same dialog", () => {
     );
   });
 
+  // Stories 51 and 86 of ECCdigital/tickets#1082: a provider switched off
+  // lists nothing, so the dialog cannot tell where the lock came from.
+  it("names the door of a provider switched off as stored, without saying where it came from", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [PAREVA],
+      accessPoints: [DOOR],
+      apps: [
+        storedApp("nuki", { active: false, connectionState: "disabled" }),
+      ],
+    });
+    ApiAccessAppsService.getAccessPoints.mockClear();
+
+    await editPoint(wrapper, "Haupteingang");
+
+    const line = shown(wrapper, "lock-line");
+    expect(line.find(".font-weight-medium").text()).toBe("Haupteingang");
+    expect(line.text()).toContain("ID beim Anbieter lock-1");
+    expect(line.text()).not.toContain("Von Hand eingetragen");
+    expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+  });
+
   it("shows the Fächer of an Open Locker Schließfachanlage, the stored one ticked", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],
