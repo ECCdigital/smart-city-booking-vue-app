@@ -843,12 +843,14 @@ export function alsoForOf(upload) {
  */
 
 /**
- * The tenant and booking a signed link names, read off its payload so the
- * page knows where to ask. Unchecked: the backend checks the signature and
+ * The tenant and booking a signed link names - or the series, `{t, g}`,
+ * whose link opens all its bookings - read off its payload so the page
+ * knows where to ask. Unchecked: the backend checks the signature and
  * refuses a forged one.
  *
- * @param {string} link The token `base64url(JSON {t, b}).signature`
- * @returns {{ tenantId: string, bookingId: string }|null}
+ * @param {string} link The token `base64url(JSON {t, b|g}).signature`
+ * @returns {{ tenantId: string, bookingId: string }|{ tenantId: string,
+ *   groupBookingId: string }|null}
  */
 export function customerUploadLinkTarget(link) {
   const [payload, signature, ...rest] = String(link || "").split(".");
@@ -860,11 +862,12 @@ export function customerUploadLinkTarget(link) {
         .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
         .join("")
     );
-    const { t, b } = JSON.parse(json);
-    if (typeof t !== "string" || typeof b !== "string" || !t || !b) {
-      return null;
-    }
-    return { tenantId: t, bookingId: b };
+    const { t, b, g } = JSON.parse(json);
+    const named = (value) => typeof value === "string" && value !== "";
+    if (!named(t)) return null;
+    if (named(b) && g === undefined) return { tenantId: t, bookingId: b };
+    if (named(g) && b === undefined) return { tenantId: t, groupBookingId: g };
+    return null;
   } catch {
     return null;
   }
@@ -997,6 +1000,7 @@ const CUSTOMER_PROOF_ERROR_KEYS = Object.freeze({
   booking_not_found: "not-found",
   customer_upload_link_invalid: "link-invalid",
   customer_upload_link_expired: "link-expired",
+  customer_upload_target_invalid: "target-invalid",
 });
 
 /** The German message key of a refusal on the page, by its code. */

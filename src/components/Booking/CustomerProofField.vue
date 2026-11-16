@@ -1,21 +1,25 @@
 <template>
   <div
-    :id="`proof-field-${field.fieldId}`"
+    :id="`proof-field-${target.bookingId}-${field.fieldId}`"
     class="customer-proof-field"
     data-test="customer-proof-field"
   >
-    <div class="font-weight-bold">{{ field.label }}</div>
+    <div class="font-weight-bold">{{ member || field.label }}</div>
     <div
       class="d-flex flex-wrap align-center customer-proof-field__badges mt-1"
     >
-      <v-chip small label :outlined="!field.required">
+      <v-chip v-if="!member" small label :outlined="!field.required">
         {{
           field.required
             ? $t("customer-proofs.required")
             : $t("customer-proofs.optional")
         }}
       </v-chip>
-      <v-tooltip v-if="field.category === 'sensitive'" bottom max-width="320">
+      <v-tooltip
+        v-if="!member && field.category === 'sensitive'"
+        bottom
+        max-width="320"
+      >
         <template #activator="{ on, attrs }">
           <v-chip
             small
@@ -46,7 +50,9 @@
       </v-chip>
     </div>
 
-    <p v-if="field.hint" class="text-body-2 mt-1 mb-0">{{ field.hint }}</p>
+    <p v-if="field.hint && !member" class="text-body-2 mt-1 mb-0">
+      {{ field.hint }}
+    </p>
     <p v-if="view.reason" class="text-body-2 error--text mt-1 mb-0">
       {{ $t(view.reasonKey, { reason: view.reason }) }}
     </p>
@@ -105,7 +111,7 @@
       </p>
     </template>
 
-    <div v-if="view.canUpload" class="mt-3">
+    <div v-if="view.canUpload && !member" class="mt-3">
       <v-btn
         color="primary"
         small
@@ -177,6 +183,12 @@ export default {
     target: { type: Object, required: true },
     link: { type: String, required: true },
     tenantName: { type: String, default: "" },
+    /**
+     * A date of a series, as „Termin 2 · 18.11.26“: the row of that date in
+     * the card of the field, without what the card shows once (label,
+     * badges, hint) and without a new file - the card chooses the dates.
+     */
+    member: { type: String, default: "" },
   },
   data() {
     return { replacing: null, busy: false, errorMessage: "" };

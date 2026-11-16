@@ -287,20 +287,34 @@ export default {
     );
   },
   /**
-   * The booking of a signed link of the page „Nachweise einreichen“
-   * (`/booking/proofs`), without a sign-in: provider, time, offers and the
+   * The bookings of a signed link of the page „Nachweise einreichen“
+   * (`/booking/proofs`), without a sign-in: the one of a booking's link,
+   * all of a series' link, each with provider, time, offers and the
    * derived state of its uploads.
    */
-  readCustomerUploadsByLink({ tenantId, bookingId }, link) {
-    return ApiClient.get(customerUploadLinkUrl(tenantId, bookingId), {
-      headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link },
-    });
+  readCustomerUploadsByLink({ tenantId }, link) {
+    return ApiClient.get(
+      `api/v2/${encodeURIComponent(tenantId)}/customer-uploads-by-link`,
+      { headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link } }
+    );
   },
-  /** A file for an upload field, with the signed link. */
-  uploadCustomerUploadByLink({ tenantId, bookingId }, link, fieldId, file) {
+  /**
+   * A file for an upload field, with the signed link; with the link of a
+   * series for the fields of other bookings of it too, `alsoFor` as
+   * `[{ bookingId, fieldId }]`.
+   */
+  uploadCustomerUploadByLink(
+    { tenantId, bookingId },
+    link,
+    fieldId,
+    file,
+    alsoFor = []
+  ) {
+    const form = fileForm(file);
+    if (alsoFor.length > 0) form.append("alsoFor", JSON.stringify(alsoFor));
     return ApiClient.post(
       customerUploadLinkUrl(tenantId, bookingId, fieldId),
-      fileForm(file),
+      form,
       linkMultipart(link)
     );
   },

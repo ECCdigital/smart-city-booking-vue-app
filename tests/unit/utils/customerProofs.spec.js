@@ -45,12 +45,20 @@ describe("customerUploadLinkTarget", () => {
     ).toEqual({ tenantId: "süderbrarup", bookingId: "B1" });
   });
 
+  it("reads tenant and series off the link of a series", () => {
+    expect(customerUploadLinkTarget(tokenOf({ t: "tn", g: "GR-1" }))).toEqual({
+      tenantId: "tn",
+      groupBookingId: "GR-1",
+    });
+  });
+
   it.each([
     ["no link", ""],
     ["no signature", "abc"],
     ["too many parts", "a.b.c"],
     ["no JSON", "bm9qc29u.sig"],
     ["no booking", tokenOf({ t: "tn" })],
+    ["booking and series at once", tokenOf({ t: "tn", b: "B1", g: "G1" })],
   ])("names nothing for %s", (_, link) => {
     expect(customerUploadLinkTarget(link)).toBeNull();
   });

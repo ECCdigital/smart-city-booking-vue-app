@@ -39,19 +39,25 @@ const field = (overrides = {}) => ({
   ...overrides,
 });
 
-const answerWith = (fields) => ({
+const bookingWith = (fields, id = "BK-1") => ({
+  id,
+  tenantId: "tn",
+  timeBegin: Date.UTC(2026, 11, 1, 9),
+  timeEnd: Date.UTC(2026, 11, 1, 12),
+  bookableItems: [{ bookableId: "b1", _bookableUsed: { title: "Saal" } }],
+  customerUploadState: { fields },
+});
+
+const answerWith = (fields, more = []) => ({
   data: {
     tenant: { id: "tn", name: "Amt Süderbrarup" },
-    booking: {
-      id: "BK-1",
-      tenantId: "tn",
-      timeBegin: Date.UTC(2026, 11, 1, 9),
-      timeEnd: Date.UTC(2026, 11, 1, 12),
-      bookableItems: [{ bookableId: "b1", _bookableUsed: { title: "Saal" } }],
-      customerUploadState: { fields },
-    },
+    bookings: [bookingWith(fields), ...more],
   },
 });
+
+const SERIES_LINK = `${Buffer.from(
+  JSON.stringify({ t: "tn", g: "GR-1" })
+).toString("base64url")}.c2ln`;
 
 function refusal(status, code) {
   const error = new Error(`Request failed with status code ${status}`);
@@ -79,8 +85,8 @@ async function mountPage({ link = LINK, answer, error } = {}) {
   return wrapper;
 }
 
-const pick = (wrapper, file) => {
-  const input = wrapper.find("[data-test='customer-proof-input']");
+const pick = (wrapper, file, dataTest = "customer-proof-input") => {
+  const input = wrapper.find(`[data-test='${dataTest}']`);
   Object.defineProperty(input.element, "files", {
     value: [file],
     configurable: true,
@@ -109,6 +115,80 @@ describe("CustomerProofs - „Nachweise einreichen“ without a storefront", () 
     expect(wrapper.text()).toContain("Vorder- und Rückseite");
     expect(wrapper.find("[data-test='customer-proof-state']").text()).toBe(
       "Offen"
+    );
+  });
+
+  it("hands one file in for the dates chosen of a series, as the checkout", async () => {
+    const answer = answerWith([field()], [bookingWith([field()], "BK-2")]);
+    ApiBookingService.uploadCustomerUploadByLink.mockResolvedValue({
+      data: {},
+    });
+    const wrapper = await mountPage({ link: SERIES_LINK, answer });
+
+    expect(ApiBookingService.readCustomerUploadsByLink).toHaveBeenCalledWith(
+      { tenantId: "tn", groupBookingId: "GR-1" },
+      SERIES_LINK
+    );
+    expect(wrapper.find("[data-test='customer-proofs-series']").text()).toBe(
+      "Ihre Serienbuchung umfasst 2 Termine. Wählen Sie bei jedem Nachweis, für welche Termine eine Datei gilt."
+    );
+    const cards = wrapper.findAll("[data-test='customer-proof-series']");
+    expect(cards).toHaveLength(1);
+    const rows = cards.at(0).findAll("[data-test='customer-proof-field']");
+    expect(rows).toHaveLength(2);
+    expect(rows.at(1).text()).toContain("Termin 2");
+    // Each date's own row takes no file: the card chooses the dates.
+    expect(
+      rows.at(0).find("[data-test='customer-proof-choose']").exists()
+    ).toBe(false);
+
+    // No choice of dates before a file is chosen.
+    expect(
+      wrapper.find("[data-test='customer-proof-series-members']").exists()
+    ).toBe(false);
+    await pick(wrapper, pdf, "customer-proof-series-input");
+    expect(ApiBookingService.uploadCustomerUploadByLink).not.toHaveBeenCalled();
+    const card = wrapper.findComponent({ name: "CustomerProofSeriesField" });
+    expect(card.vm.chosen).toEqual(["BK-1", "BK-2"]);
+    await wrapper
+      .find("[data-test='customer-proof-series-send']")
+      .trigger("click");
+    await flushPromises();
+
+    expect(ApiBookingService.uploadCustomerUploadByLink).toHaveBeenCalledWith(
+      { tenantId: "tn", bookingId: "BK-1" },
+      SERIES_LINK,
+      "f1",
+      pdf,
+      [{ bookingId: "BK-2", fieldId: "f1" }]
+    );
+    // The series is read anew for the state of every date.
+    expect(ApiBookingService.readCustomerUploadsByLink).toHaveBeenCalledTimes(
+      2
+    );
+  });
+
+  it("hands in for the dates left chosen alone", async () => {
+    const answer = answerWith([field()], [bookingWith([field()], "BK-2")]);
+    ApiBookingService.uploadCustomerUploadByLink.mockResolvedValue({
+      data: {},
+    });
+    const wrapper = await mountPage({ link: SERIES_LINK, answer });
+    const card = wrapper.findComponent({ name: "CustomerProofSeriesField" });
+
+    await pick(wrapper, pdf, "customer-proof-series-input");
+    card.vm.chosen = ["BK-2"];
+    await wrapper
+      .find("[data-test='customer-proof-series-send']")
+      .trigger("click");
+    await flushPromises();
+
+    expect(ApiBookingService.uploadCustomerUploadByLink).toHaveBeenCalledWith(
+      { tenantId: "tn", bookingId: "BK-2" },
+      SERIES_LINK,
+      "f1",
+      pdf,
+      []
     );
   });
 
