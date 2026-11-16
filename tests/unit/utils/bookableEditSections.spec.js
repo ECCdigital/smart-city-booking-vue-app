@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   EXTERNAL_PROVIDER_SETTING,
+  getBookableEditNavSections,
   getVisibleBookableEditSections,
+  shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 
@@ -142,6 +144,47 @@ describe("bookableEditSections - the Buchungsart tab", () => {
     expect(
       ids({ ...takenOverBy(["availability"]), accessPointDetails: null })
     ).toContain("bookingType-duration");
+  });
+});
+
+/**
+ * „Zusätzliche Felder“ lists „Eigene Felder“ and, while the tenant has
+ * customer uploads enabled, „Upload-Felder“. The sub-tabs of the custom
+ * fields stay targets of links only.
+ */
+describe("bookableEditSections - Zusätzliche Felder", () => {
+  const nav = (customerUploadsEnabled) =>
+    getBookableEditNavSections("customFields", {
+      bookable: { id: "b1" },
+      customerUploadsEnabled,
+    }).map((section) => section.id);
+
+  it("lists Eigene Felder and Upload-Felder while customer uploads are on", () => {
+    expect(nav(true)).toEqual(["customFields-own", "customFields-uploads"]);
+    expect(
+      shouldShowBookableEditSectionNav("customFields", {
+        bookable: { id: "b1" },
+        customerUploadsEnabled: true,
+      })
+    ).toBe(true);
+  });
+
+  it("lists only Eigene Felder without them, and no sub-navigation", () => {
+    expect(nav(false)).toEqual(["customFields-own"]);
+    expect(
+      shouldShowBookableEditSectionNav("customFields", {
+        bookable: { id: "b1" },
+      })
+    ).toBe(false);
+  });
+
+  it("keeps the sub-tabs of the custom fields as targets of links", () => {
+    expect(sectionIds({ id: "b1" }, "customFields")).toEqual(
+      expect.arrayContaining([
+        "customFields-values",
+        "customFields-definitions",
+      ])
+    );
   });
 });
 

@@ -27,6 +27,15 @@ describe("contrastOf", () => {
     expect(contrastOf(color)).toBe(expected);
   });
 
+  it.each([
+    ["#FDD835FF", "#000000"],
+    ["#112233ff", "#ffffff"],
+    ["#fe60", "#000000"],
+    ["#123f", "#ffffff"],
+  ])("reads %s with alpha as the colour without it: %s", (color, expected) => {
+    expect(contrastOf(color)).toBe(expected);
+  });
+
   it("puts black on a colour just above the threshold and white on one at it", () => {
     // luma 181 and 180, grey values give luma = value
     expect(contrastOf("#b5b5b5")).toBe("#000000");
@@ -37,13 +46,13 @@ describe("contrastOf", () => {
     ["white"],
     ["yellow"],
     ["rgb(255, 255, 255)"],
-    ["#ffffffff"],
-    ["#ffff"],
+    ["#fffff"],
+    ["#fffffff"],
     ["ffffff"],
     [""],
     [null],
     [undefined],
-  ])("gives white for %j, which is no #rgb or #rrggbb", (color) => {
+  ])("gives white for %j, which is no hex colour", (color) => {
     expect(contrastOf(color)).toBe("#ffffff");
   });
 });

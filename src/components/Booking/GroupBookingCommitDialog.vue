@@ -30,6 +30,11 @@
           :members="groupBookings"
           :series-allowed="canCommitGroup"
         />
+        <BookingProofReleaseHint
+          :bookings="groupBookings"
+          series
+          class="mt-4 mb-0"
+        />
         <v-alert v-if="error" type="error" border="left" class="mt-4 mb-0">
           {{ error }}
         </v-alert>
@@ -63,10 +68,11 @@
 <script>
 import GroupBookingStatusSummary from "@/components/Booking/GroupBookingStatusSummary.vue";
 import { BOOKING_ACTION, groupAllowsAction } from "@/utils/bookingStatus";
+import BookingProofReleaseHint from "@/components/Booking/BookingProofReleaseHint.vue";
 
 export default {
   name: "GroupBookingCommitDialog",
-  components: { GroupBookingStatusSummary },
+  components: { BookingProofReleaseHint, GroupBookingStatusSummary },
   props: {
     open: {
       type: Boolean,

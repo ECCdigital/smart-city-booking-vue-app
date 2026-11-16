@@ -44,4 +44,14 @@ describe("router", () => {
 
     expect(route.path).toBe(path);
   });
+
+  it("opens „Nachweise einreichen“ of a signed link without a sign-in", () => {
+    const { route } = router.resolve({
+      name: "customer-proofs",
+      query: { link: "abc.def" },
+    });
+
+    expect(route.path).toBe("/booking/proofs");
+    expect(route.meta.requiresAuth).toBe(false);
+  });
 });

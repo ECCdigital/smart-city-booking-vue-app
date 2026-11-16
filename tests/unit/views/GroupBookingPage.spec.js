@@ -27,6 +27,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowDelete: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
     allowReprint: vi.fn(() => true),
+    allowReviewProof: vi.fn(() => true),
   },
 }));
 vi.mock("@/services/api/ApiBookingService", () => ({
@@ -447,6 +448,32 @@ describe("GroupBookingPage", () => {
    * allows it; a member row's action handed to the same module. There is no
    * series-wide Wiederherstellen.
    */
+  describe("the proofs", () => {
+    it("names each booking with its number, date and time", async () => {
+      const fields = [
+        {
+          fieldId: "f1",
+          label: "Vereinsausweis",
+          required: true,
+          state: "open",
+          uploads: [],
+        },
+      ];
+      const { wrapper } = await mountLoaded(
+        series([
+          { customerUploadState: { fields } },
+          { customerUploadState: { fields } },
+        ])
+      );
+
+      const headings = wrapper.findAll("[data-test='group-proofs-member']");
+      expect(headings).toHaveLength(2);
+      expect(headings.at(1).text()).toMatch(
+        /^Buchung #bk-2\s+11\.03\.26, 10:00 – 11\.03\.26, 12:00$/
+      );
+    });
+  });
+
   describe("the series' state", () => {
     it("shows the members' shared state in the headline, captioned as the series' state", async () => {
       const { wrapper } = await mountLoaded(series(["confirmed", "confirmed"]));

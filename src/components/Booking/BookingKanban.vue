@@ -76,6 +76,7 @@
       :open="confirmStatusChange"
       :status="onChangeBookingStatus"
       :status-key="currentStatusKey"
+      :proof-booking="proofBooking"
       @reject="statusChangeRejected"
       @confirm="statusChangeConfirmed"
       :in-progress="isLoading"
@@ -88,6 +89,7 @@ import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingKanbanColumn from "@/components/Booking/KanbanColumn.vue";
 import BookingConfirmStatusChangeDialog from "@/components/Booking/BookingConfirmStatusChangeDialog.vue";
 import { mapActions, mapGetters } from "vuex";
+import { openProofCountOf } from "@/utils/customerUploads";
 
 export default {
   name: "BookingWorkflow",
@@ -123,6 +125,9 @@ export default {
       oldStatusId: null,
       temporaryEvent: null,
       currentStatusKey: null,
+      // The booking a column releases and its proofs open, for the hint.
+      proofBooking: null,
+      openProofCount: 0,
     };
   },
   computed: {
@@ -301,7 +306,17 @@ export default {
           statusChangeActions
         );
 
-        if (this.shouldSkipStatusConfirmation(statusKey)) {
+        // A release with open or unchecked proofs always shows its hint,
+        // even where the user chose not to be asked again.
+        this.proofBooking = this.releasesBooking(statusChangeActions)
+          ? evt.added.element.bookingItem
+          : null;
+        this.openProofCount = openProofCountOf(this.proofBooking);
+
+        if (
+          this.openProofCount === 0 &&
+          this.shouldSkipStatusConfirmation(statusKey)
+        ) {
           this.moveTask(evt, statusId);
         } else {
           this.showStatusChangeConfirmation(
@@ -315,6 +330,13 @@ export default {
       } else {
         this.moveTask(evt, statusId);
       }
+    },
+
+    /** Whether the column's actions release the booking (`commit`). */
+    releasesBooking(actions) {
+      return actions.some((action) =>
+        [action.bookingStatus].flat().includes("commit")
+      );
     },
 
     generateStatusKey(fromStatus, toStatus, actions) {
@@ -365,6 +387,8 @@ export default {
       this.temporaryEvent = null;
       this.newStatusId = null;
       this.oldStatusId = null;
+      this.proofBooking = null;
+      this.openProofCount = 0;
       this.confirmStatusChange = false;
     },
   },

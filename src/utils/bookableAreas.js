@@ -9,6 +9,9 @@ import { expertOptionUsed } from "@/utils/bookableExpertMode";
  * An area that is an expert option names it in `option`: it shows by the
  * expert-mode rule, and „genutzt“ is that rule's table. The others are always
  * there and read „genutzt“ by their own rule below.
+ *
+ * An area that depends on the tenant says so in `available(ctx)`: the
+ * Upload-Felder show only while `ctx.customerUploadsEnabled`.
  */
 
 const AREAS = "bookable.areas";
@@ -58,14 +61,22 @@ function shortened(text, max) {
   return `${(end > 0 ? cut.slice(0, end) : text.slice(0, max)).trim()}…`;
 }
 
+const always = () => true;
+
 const expertArea = (key, option, extra) => ({
   key,
   option,
+  available: always,
   used: (bookable) => expertOptionUsed(option, bookable),
   ...extra,
 });
 
-const area = (key, extra) => ({ key, option: null, ...extra });
+const area = (key, extra) => ({
+  key,
+  option: null,
+  available: always,
+  ...extra,
+});
 
 const AREA_LIST = [
   expertArea("accessLocks", "accessLocks", {
@@ -147,6 +158,18 @@ const AREA_LIST = [
       ];
     },
   }),
+  area("uploadFields", {
+    tabKey: "customFields",
+    sectionId: "customFields-uploads",
+    available: (ctx) => ctx.customerUploadsEnabled === true,
+    used: (bookable) => nonEmpty(bookable.uploadFieldDefinitions),
+    summary: (bookable) => [
+      pluralPart(
+        `${AREAS}.uploadFields.summary`,
+        count(bookable.uploadFieldDefinitions)
+      ),
+    ],
+  }),
   expertArea("requiredFields", "requiredFields", {
     tabKey: "additional",
     sectionId: "additional-required-fields",
@@ -210,33 +233,36 @@ export function areaSummary(key, bookable) {
 
 /**
  * Whether the area `key` shows, given `shown(option)` - the expert-mode rule
- * as the caller asks it. An area that is no expert option always shows.
+ * as the caller asks it - and `ctx` `{ customerUploadsEnabled }`, what the
+ * tenant has switched on. An area that is no expert option and depends on
+ * nothing of the tenant always shows.
  */
-export function areaShown(key, shown) {
-  const { option } = areaOf(key);
-  return !option || shown(option);
+export function areaShown(key, shown, ctx = {}) {
+  const { option, available } = areaOf(key);
+  return available(ctx) && (!option || shown(option));
 }
 
 /**
- * The areas that show, given `shown(option)`, in the order of the tabs: the
- * rows of the step „Weitere Einstellungen“ and the links to it.
+ * The areas that show, given `shown(option)` and `ctx` as `areaShown` takes
+ * them, in the order of the tabs: the rows of the step „Weitere
+ * Einstellungen“ and the links to it.
  */
-export function shownAreas(shown) {
-  return BOOKABLE_AREAS.filter((entry) => areaShown(entry.key, shown));
+export function shownAreas(shown, ctx = {}) {
+  return BOOKABLE_AREAS.filter((entry) => areaShown(entry.key, shown, ctx));
 }
 
 /**
  * The key of the area a place of the editing page lies in, given as
  * `{ tabKey, sectionId }` like `BookableEdit.openSection` takes it: the area
- * of that section, or the area that is the whole tab - so the settings of
- * ParkraumService (`pricing-external`, in Schließsysteme) lie in
- * `accessLocks`. `null` for a place outside the areas.
+ * of that section, or else the area that is the whole tab - so the settings
+ * of ParkraumService (`pricing-external`, in Schließsysteme) lie in
+ * `accessLocks`, the Upload-Felder beside Eigene Felder in their own. `null`
+ * for a place outside the areas.
  */
 export function areaAt({ tabKey, sectionId = null }) {
-  const found = BOOKABLE_AREAS.find(
-    (entry) =>
-      entry.tabKey === tabKey &&
-      (entry.sectionId === null || entry.sectionId === sectionId)
-  );
+  const inTab = BOOKABLE_AREAS.filter((entry) => entry.tabKey === tabKey);
+  const found =
+    inTab.find((entry) => sectionId && entry.sectionId === sectionId) ||
+    inTab.find((entry) => entry.sectionId === null);
   return found ? found.key : null;
 }

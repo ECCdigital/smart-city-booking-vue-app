@@ -1,0 +1,976 @@
+import { describe, expect, it } from "vitest";
+import {
+  checkoutUploadErrorKey,
+  checkoutUploadFieldsOf,
+  checkoutUploadParts,
+  checkoutUploadRefusalOf,
+  formatOfFile,
+  hasCheckoutUploads,
+  missingCheckoutUploads,
+  precheckCheckoutUpload,
+  customerUploadLimitsOf,
+  checkDeletesFile,
+  previewKindOf,
+  customerUploadSettingsIssues,
+  customerUploadSettingsOf,
+  customerUploadsEnabled,
+  customerUploadCeilingsOf,
+  instanceCustomerUploadsEnabled,
+  instanceCustomerUploadsIssues,
+  instanceCustomerUploadsOf,
+  newUploadField,
+  orderedFormats,
+  proofFieldsOf,
+  proofNoteOf,
+  seriesProofsOf,
+  uploadFieldIssues,
+  PROOF_STATE,
+  filterBookingsByProofState,
+  mostUrgentProofStateOf,
+  missingProofLabelsOf,
+  openProofCountOf,
+  openProofCountOfAll,
+  proofStateMarker,
+  proofStatesOf,
+  alsoForOf,
+  customerUploadTargetsOf,
+  defaultGroupAttempts,
+  groupCheckoutUploadParts,
+  groupFilesAt,
+  groupUploadKey,
+  missingGroupCheckoutUploads,
+  precheckGroupCheckoutUpload,
+  staffUploadFieldsOf,
+} from "@/utils/customerUploads";
+
+const CONTEXT = { tenantFormats: ["pdf", "png"] };
+const field = (overrides = {}) => ({
+  ...newUploadField(["pdf"]),
+  label: "Vereinsausweis",
+  ...overrides,
+});
+
+describe("customerUploads - the tenant's settings", () => {
+  it("reads a tenant without settings as off, every format, 30 days and both mails", () => {
+    expect(customerUploadSettingsOf({})).toEqual({
+      enabled: false,
+      formats: ["pdf", "jpeg", "png"],
+      retentionDays: 30,
+      reminderDaysBeforeDeadline: 3,
+      notifyOnSubmitted: true,
+      notifyOnOverdue: true,
+      notifyRoleIds: [],
+    });
+    expect(customerUploadsEnabled({})).toBe(false);
+    expect(customerUploadsEnabled(null)).toBe(false);
+  });
+
+  it("holds only with the tenant's switch on and the instance's clearance", () => {
+    const tenantOn = { customerUploads: { enabled: true } };
+    const cleared = { customerUploads: { enabled: true } };
+
+    expect(customerUploadsEnabled(tenantOn, cleared)).toBe(true);
+    expect(customerUploadsEnabled(tenantOn, {})).toBe(false);
+    expect(customerUploadsEnabled(tenantOn, null)).toBe(false);
+    expect(customerUploadsEnabled({}, cleared)).toBe(false);
+  });
+
+  it("refuses a retention over 30 days and enabling without a format", () => {
+    const settings = {
+      ...customerUploadSettingsOf({}),
+      enabled: true,
+      formats: [],
+      retentionDays: 31,
+    };
+
+    expect(customerUploadSettingsIssues(settings)).toEqual({
+      formats: "tenant.customerUploads.validation.formats",
+      retentionDays: "tenant.customerUploads.validation.retentionDays",
+    });
+  });
+
+  it("drops the reminder before the deletion: nobody is reminded any more", () => {
+    expect(
+      customerUploadSettingsOf({
+        customerUploads: { reviewReminderDaysBeforeDeletion: 3 },
+      })
+    ).not.toHaveProperty("reviewReminderDaysBeforeDeletion");
+  });
+
+  it("takes a shorter retention", () => {
+    expect(
+      customerUploadSettingsIssues({
+        ...customerUploadSettingsOf({}),
+        retentionDays: 7,
+      })
+    ).toEqual({});
+  });
+});
+
+describe("customerUploads - the instance limits", () => {
+  it("default to 10 MB a file, 20 files and 100 MB a booking", () => {
+    expect(customerUploadLimitsOf(null)).toEqual({
+      maxFileSizeMb: 10,
+      maxFilesPerBooking: 20,
+      maxTotalSizeMbPerBooking: 100,
+    });
+  });
+
+  it("are the instance's where it names them", () => {
+    expect(
+      customerUploadLimitsOf({ customerUploadLimits: { maxFileSizeMb: 4 } })
+        .maxFileSizeMb
+    ).toBe(4);
+  });
+});
+
+describe("customerUploads - an upload field", () => {
+  it("orders formats as PDF, JPEG, PNG without doubles", () => {
+    expect(orderedFormats(["png", "pdf", "png"])).toEqual(["pdf", "png"]);
+  });
+
+  it("gets a different id each time", () => {
+    expect(newUploadField().id).not.toBe(newUploadField().id);
+  });
+
+  it("is fine with every property of the spec", () => {
+    expect(
+      uploadFieldIssues(
+        field({
+          required: true,
+          formats: ["pdf", "png"],
+          category: "sensitive",
+          timing: "afterConfirmation",
+          deadlineDaysBeforeStart: 3,
+        }),
+        CONTEXT
+      )
+    ).toEqual({});
+  });
+
+  it("names each refusal of the backend at its property", () => {
+    expect(
+      uploadFieldIssues(
+        field({
+          label: " ",
+          formats: ["jpeg"],
+          timing: "afterConfirmation",
+          deadlineDaysBeforeStart: -1,
+        }),
+        CONTEXT
+      )
+    ).toEqual({
+      label: "bookable.uploadFields.validation.label",
+      formats: "bookable.uploadFields.validation.formatsOutsideTenant",
+      deadlineDaysBeforeStart: "bookable.uploadFields.validation.deadline",
+    });
+  });
+
+  it("needs a format", () => {
+    expect(uploadFieldIssues(field({ formats: [] }), CONTEXT)).toEqual({
+      formats: "bookable.uploadFields.validation.formatsEmpty",
+    });
+  });
+
+  it("starts with one file and no size of its own: the instance's limit holds", () => {
+    expect(newUploadField()).toMatchObject({
+      maxFiles: 1,
+      maxFileSizeMb: null,
+    });
+  });
+
+  it("asks neither number of files nor size per file", () => {
+    expect(
+      uploadFieldIssues(field({ maxFiles: 0, maxFileSizeMb: 999 }), CONTEXT)
+    ).toEqual({});
+  });
+});
+
+const upload = (status, overrides = {}) => ({
+  mediaId: `m-${status}`,
+  originalFileName: `${status}.pdf`,
+  mimeType: "application/pdf",
+  uploadedAt: 1,
+  review: { status, reason: "", reviewedAt: null },
+  ...overrides,
+});
+const proofField = (overrides = {}) => ({
+  fieldId: "field-proof",
+  label: "Vereinsausweis",
+  required: true,
+  state: "submitted",
+  deadline: null,
+  uploads: [],
+  ...overrides,
+});
+const withState = (fields, id = "B1") => ({
+  id,
+  customerUploadState: { state: "toReview", fields },
+});
+
+describe("customerUploads - the section „Nachweise“ of a booking page", () => {
+  it("lists nothing where the answer carries no state: no right, or no customer uploads", () => {
+    expect(proofFieldsOf({ id: "B1" })).toBe(null);
+    expect(proofFieldsOf({ id: "B1", customerUploadState: null })).toBe(null);
+    expect(proofFieldsOf(null)).toBe(null);
+  });
+
+  it("lists nothing where the booked offers have no upload field", () => {
+    expect(
+      proofFieldsOf({ customerUploadState: { state: null, fields: [] } })
+    ).toBe(null);
+  });
+
+  it("lists each field with its uploads, a file downloadable while it is stored", () => {
+    const deleted = (status) =>
+      upload(status, { review: { status, fileDeleted: true } });
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({
+          uploads: [
+            upload("submitted"),
+            // A normal file stays with the booking after its check.
+            upload("accepted", {
+              category: "normal",
+              review: { status: "accepted", fileDeleted: false },
+            }),
+            deleted("accepted"),
+            deleted("rejected"),
+          ],
+        }),
+      ])
+    );
+
+    expect(field.label).toBe("Vereinsausweis");
+    expect(field.uploads.map((u) => u.downloadable)).toEqual([
+      true,
+      true,
+      false,
+      false,
+    ]);
+    expect(field.uploads.map((u) => u.reviewable)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("shows a stored PDF or image in the page, by type or by name", () => {
+    expect(previewKindOf({ mimeType: "application/pdf" })).toBe("pdf");
+    expect(previewKindOf({ mimeType: "image/png" })).toBe("image");
+    expect(previewKindOf({ originalFileName: "ausweis.JPG" })).toBe("image");
+    expect(previewKindOf({ mimeType: "application/zip" })).toBe(null);
+
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({
+          uploads: [
+            upload("submitted"),
+            upload("accepted", {
+              review: { status: "accepted", fileDeleted: true },
+            }),
+          ],
+        }),
+      ])
+    );
+    expect(field.uploads.map((u) => u.viewable)).toEqual([true, false]);
+  });
+
+  it("hands each field the tenant's deletion deadline, null where the backend names none", () => {
+    const [field] = proofFieldsOf({
+      customerUploadState: {
+        state: "toReview",
+        fields: [proofField()],
+        retentionDays: 14,
+      },
+    });
+    expect(field.retentionDays).toBe(14);
+    expect(proofFieldsOf(withState([proofField()]))[0].retentionDays).toBe(
+      null
+    );
+  });
+
+  it("deletes the file with the check of a sensitive upload alone", () => {
+    expect(checkDeletesFile({ category: "sensitive" })).toBe(true);
+    expect(checkDeletesFile({ category: "normal" })).toBe(false);
+    expect(checkDeletesFile({}, { category: "sensitive" })).toBe(true);
+    expect(
+      checkDeletesFile({ category: "normal" }, { category: "sensitive" })
+    ).toBe(false);
+  });
+
+  it("keeps the category of a field, so „besonders schutzwürdig“ can be marked", () => {
+    const [sensitive, normal] = proofFieldsOf(
+      withState([
+        proofField({ fieldId: "id-card", category: "sensitive" }),
+        proofField({ fieldId: "club", category: "normal" }),
+      ])
+    );
+
+    expect(sensitive.category).toBe("sensitive");
+    expect(normal.category).toBe("normal");
+  });
+
+  it("offers no download for an upload without a medium", () => {
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("submitted", { mediaId: null })] }),
+      ])
+    );
+
+    expect(field.uploads[0].downloadable).toBe(false);
+  });
+
+  it("lists the members of a series that carry proofs, in their order", () => {
+    const members = [
+      withState([proofField()], "B1"),
+      { id: "B2", customerUploadState: null },
+      withState([proofField({ state: "open" })], "B3"),
+    ];
+
+    expect(seriesProofsOf(members).map((m) => m.bookingId)).toEqual([
+      "B1",
+      "B3",
+    ]);
+    expect(seriesProofsOf([{ id: "B2" }])).toEqual([]);
+    expect(seriesProofsOf(undefined)).toEqual([]);
+  });
+});
+
+describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
+  it("offers the check for a file that waits, not for a note", () => {
+    const [field] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("submitted"), upload("rejected")] }),
+      ])
+    );
+
+    expect(field.uploads.map((u) => u.reviewable)).toEqual([true, false]);
+    expect(field.canRequestAgain).toBe(false);
+  });
+
+  it("offers „Erneut anfordern“ at a fulfilled field alone", () => {
+    const [fulfilled] = proofFieldsOf(
+      withState([
+        proofField({ state: "fulfilled", uploads: [upload("accepted")] }),
+      ])
+    );
+    const [waiting] = proofFieldsOf(
+      withState([
+        proofField({ uploads: [upload("accepted"), upload("submitted")] }),
+      ])
+    );
+    const [openAgain] = proofFieldsOf(
+      withState([
+        proofField({
+          state: "rejected",
+          uploads: [upload("accepted"), upload("rejected")],
+        }),
+      ])
+    );
+
+    expect(fulfilled.canRequestAgain).toBe(true);
+    expect(waiting.canRequestAgain).toBe(false);
+    expect(openAgain.canRequestAgain).toBe(false);
+  });
+
+  it("offers „Nachreichen anfordern“ at a field not handed in yet", () => {
+    const states = ["open", "rejected", "overdue", "submitted", "fulfilled"];
+    const fields = proofFieldsOf(
+      withState(
+        states.map((state) =>
+          proofField({ fieldId: `f-${state}`, state, required: false })
+        )
+      )
+    );
+
+    expect(fields.map((field) => field.canRequest)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+    ]);
+  });
+
+  it("lists the notes of a field renamed away or deleted under its old label", () => {
+    const fields = proofFieldsOf({
+      customerUploadState: {
+        state: null,
+        fields: [],
+        otherFields: [
+          {
+            fieldId: "gone",
+            label: "Alter Ausweis",
+            uploads: [upload("accepted"), upload("submitted")],
+            requests: [],
+          },
+        ],
+      },
+    });
+
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ label: "Alter Ausweis", former: true });
+    expect(fields[0].uploads.map((u) => u.reviewable)).toEqual([false, true]);
+    expect(fields[0].canRequestAgain).toBe(false);
+  });
+
+  it("reads the note of a checked upload: result, reviewer, time, reason, deletion", () => {
+    expect(proofNoteOf(upload("submitted"))).toBe(null);
+    expect(
+      proofNoteOf(
+        upload("rejected", {
+          review: {
+            status: "rejected",
+            reason: "Unleserlich",
+            reviewedAt: 5,
+            reviewedByName: "Sabine Sachbearbeiterin",
+            autoDeleted: false,
+            fileDeleted: true,
+          },
+        })
+      )
+    ).toEqual({
+      result: "rejected",
+      reviewedByName: "Sabine Sachbearbeiterin",
+      reviewedAt: 5,
+      reason: "Unleserlich",
+      autoDeleted: false,
+      fileDeleted: true,
+    });
+  });
+
+  it("reads an upload the deletion deadline deleted unchecked as a note, no longer to check (ECCdigital/tickets#832)", () => {
+    const deleted = upload("submitted", {
+      review: {
+        status: "submitted",
+        reason: "",
+        reviewedAt: null,
+        autoDeleted: true,
+        fileDeleted: true,
+      },
+    });
+    const [field] = proofFieldsOf(
+      withState([proofField({ uploads: [deleted] })])
+    );
+
+    expect(field.uploads[0]).toMatchObject({
+      downloadable: false,
+      reviewable: false,
+    });
+    expect(proofNoteOf(deleted)).toEqual({
+      result: "submitted",
+      reviewedByName: "",
+      reviewedAt: null,
+      reason: "",
+      autoDeleted: true,
+      fileDeleted: true,
+    });
+  });
+
+  it("hands each member of a series to its own checks", () => {
+    const member = withState([proofField()], "B1");
+    expect(seriesProofsOf([member])[0].booking).toBe(member);
+  });
+});
+
+describe("customerUploads - the upload fields of the legacy checkout (ECCdigital/tickets#827)", () => {
+  const MB = 1024 * 1024;
+  const checkoutField = (overrides = {}) => ({
+    id: "f1",
+    label: "Vereinsausweis",
+    hint: "",
+    consentText: "",
+    required: true,
+    maxFiles: 2,
+    formats: ["pdf", "jpeg"],
+    maxFileSizeMb: 1,
+    ...overrides,
+  });
+  const pdf = (size = 1000, name = "ausweis.pdf") => ({
+    name,
+    type: "application/pdf",
+    size,
+  });
+
+  it("reads the fields off the public offer, none where it names none", () => {
+    expect(
+      checkoutUploadFieldsOf({ checkoutUploadFields: [checkoutField()] })
+    ).toHaveLength(1);
+    expect(checkoutUploadFieldsOf({})).toEqual([]);
+    expect(checkoutUploadFieldsOf(undefined)).toEqual([]);
+  });
+
+  it("reads the format off the type, else off the extension", () => {
+    expect(formatOfFile({ name: "a.JPG", type: "" })).toBe("jpeg");
+    expect(formatOfFile({ name: "a.bin", type: "image/png" })).toBe("png");
+    expect(formatOfFile({ name: "a.txt", type: "text/plain" })).toBeNull();
+  });
+
+  it("checks size, number and format before a file is taken", () => {
+    const f = checkoutField();
+    expect(precheckCheckoutUpload(pdf(), f, 0)).toBeNull();
+    expect(precheckCheckoutUpload(pdf(2 * MB), f, 0).code).toBe(
+      "customer_upload_too_large"
+    );
+    expect(precheckCheckoutUpload(pdf(), f, 2).code).toBe(
+      "customer_upload_field_full"
+    );
+    expect(
+      precheckCheckoutUpload(
+        { name: "a.png", type: "image/png", size: 1 },
+        f,
+        0
+      ).code
+    ).toBe("customer_upload_format_not_allowed");
+  });
+
+  it("names the required fields without a file", () => {
+    const fields = [
+      checkoutField(),
+      checkoutField({ id: "f2", required: false }),
+    ];
+    expect(missingCheckoutUploads(fields, {}).map((f) => f.id)).toEqual(["f1"]);
+    expect(missingCheckoutUploads(fields, { f1: [pdf()] })).toEqual([]);
+  });
+
+  it("puts the checkout as JSON first, then each file under its field", () => {
+    const a = pdf(10, "a.pdf");
+    expect(checkoutUploadParts({ mail: "x" }, { f1: [a], f2: [] })).toEqual([
+      ["checkout", JSON.stringify({ mail: "x" })],
+      ["customerUpload:f1", a],
+    ]);
+    expect(hasCheckoutUploads({ f1: [a] })).toBe(true);
+    expect(hasCheckoutUploads({ f1: [] })).toBe(false);
+  });
+
+  it("reads a refused customer upload off the legacy checkout's answer", () => {
+    expect(
+      checkoutUploadRefusalOf({
+        error: "checkout.customer_upload_refused",
+        params: { code: "customer_upload_virus_found", fieldId: "f1" },
+      }).code
+    ).toBe("customer_upload_virus_found");
+    expect(
+      checkoutUploadRefusalOf({
+        error: "checkout.customer_upload_required",
+        params: { code: "customer_upload_required_missing", labels: ["A"] },
+      }).code
+    ).toBe("customer_upload_required_missing");
+    expect(
+      checkoutUploadRefusalOf({
+        error: "TooManyRequestsError",
+        code: "customer_upload_rate_limited",
+      }).code
+    ).toBe("customer_upload_rate_limited");
+    expect(checkoutUploadRefusalOf("Booking conflict")).toBeNull();
+    expect(
+      checkoutUploadRefusalOf({ error: "checkout.address_blacklisted" })
+    ).toBeNull();
+  });
+
+  it("has a message for every refusal, a generic one for the unknown", () => {
+    expect(checkoutUploadErrorKey("customer_upload_virus_found")).toBe(
+      "checkout.customer-uploads.errors.virus"
+    );
+    expect(checkoutUploadErrorKey("something_else")).toBe(
+      "checkout.customer-uploads.errors.generic"
+    );
+  });
+});
+
+describe("customerUploads - the proof chips (ECCdigital/tickets#831)", () => {
+  const proofField = (state, overrides = {}) => ({
+    fieldId: `field-${state}-${Math.random()}`,
+    required: true,
+    state,
+    pastDeadline: false,
+    ...overrides,
+  });
+  const withFields = (fields, state = null) => ({
+    id: "b-1",
+    customerUploadState: { state, fields, otherFields: [] },
+  });
+
+  it("has no chip without a state", () => {
+    expect(proofStatesOf({ id: "b-1" })).toEqual([]);
+    expect(proofStatesOf({ id: "b-1", customerUploadState: null })).toEqual([]);
+    expect(proofStatesOf(null)).toEqual([]);
+    expect(mostUrgentProofStateOf({ id: "b-1" })).toBeNull();
+  });
+
+  it("has no chip without required fields or when all are fulfilled", () => {
+    expect(
+      proofStatesOf(withFields([proofField("open", { required: false })]))
+    ).toEqual([]);
+    expect(
+      proofStatesOf(withFields([proofField("fulfilled")], "fulfilled"))
+    ).toEqual([]);
+  });
+
+  it("orders the chips overdue, missing, to review", () => {
+    const booking = withFields([
+      proofField("submitted"),
+      proofField("open"),
+      proofField("overdue"),
+      proofField("submitted"),
+    ]);
+    expect(proofStatesOf(booking)).toEqual([
+      PROOF_STATE.OVERDUE,
+      PROOF_STATE.MISSING,
+      PROOF_STATE.TO_REVIEW,
+    ]);
+    expect(mostUrgentProofStateOf(booking)).toBe(PROOF_STATE.OVERDUE);
+  });
+
+  it("takes the most urgent chip in each order of the fields", () => {
+    expect(
+      mostUrgentProofStateOf(
+        withFields([proofField("submitted"), proofField("rejected")])
+      )
+    ).toBe(PROOF_STATE.MISSING);
+    expect(
+      mostUrgentProofStateOf(
+        withFields([proofField("fulfilled"), proofField("submitted")])
+      )
+    ).toBe(PROOF_STATE.TO_REVIEW);
+  });
+
+  it("counts an open or rejected field past its deadline as overdue", () => {
+    expect(
+      proofStatesOf(
+        withFields([proofField("rejected", { pastDeadline: true })])
+      )
+    ).toEqual([PROOF_STATE.OVERDUE]);
+  });
+
+  it("falls back on the booking's state when no fields are answered", () => {
+    expect(proofStatesOf(withFields([], "toReview"))).toEqual([
+      PROOF_STATE.TO_REVIEW,
+    ]);
+  });
+
+  it("presents each chip with a label key and none for fulfilled", () => {
+    expect(proofStateMarker(PROOF_STATE.OVERDUE)).toMatchObject({
+      labelKey: "booking.proofState.marker.overdue",
+      color: "error",
+    });
+    expect(proofStateMarker(PROOF_STATE.FULFILLED)).toBeNull();
+    expect(proofStateMarker(null)).toBeNull();
+  });
+
+  it("filters the bookings with any chip among the selection", () => {
+    const missing = { ...withFields([proofField("open")]), id: "missing" };
+    const review = { ...withFields([proofField("submitted")]), id: "review" };
+    const none = { id: "none" };
+    expect(
+      filterBookingsByProofState(
+        [missing, review, none],
+        [PROOF_STATE.TO_REVIEW]
+      ).map((b) => b.id)
+    ).toEqual(["review"]);
+  });
+
+  it("counts the proofs open or unchecked for the release", () => {
+    const booking = withFields([
+      proofField("open"),
+      proofField("rejected"),
+      proofField("overdue"),
+      proofField("fulfilled"),
+      proofField("submitted", { required: false }),
+      proofField("open", { required: false }),
+    ]);
+    expect(openProofCountOf(booking)).toBe(4);
+    expect(openProofCountOf({ id: "b-2" })).toBe(0);
+    expect(
+      openProofCountOfAll([booking, withFields([proofField("submitted")])])
+    ).toBe(5);
+    expect(openProofCountOfAll(undefined)).toBe(0);
+  });
+
+  it("names the required proofs still missing, for the release", () => {
+    const booking = {
+      customerUploadState: {
+        fields: [
+          { label: "A", required: true, state: "open" },
+          { label: "B", required: true, state: "overdue" },
+          { label: "C", required: false, state: "open" },
+          { label: "D", required: true, state: "submitted" },
+        ],
+      },
+    };
+    expect(missingProofLabelsOf(booking)).toEqual(["A", "B"]);
+    expect(missingProofLabelsOf({ id: "x" })).toEqual([]);
+  });
+});
+
+describe("customerUploads - the files of a group checkout (ECCdigital/tickets#833)", () => {
+  const card = {
+    id: "card",
+    label: "Vereinsausweis",
+    required: true,
+    maxFiles: 1,
+    formats: ["pdf"],
+    maxFileSizeMb: 1,
+  };
+  const social = {
+    ...card,
+    id: "social",
+    label: "Sozialpass",
+    required: false,
+  };
+  const pdf = (name = "ausweis.pdf", size = 1024) => ({
+    name,
+    type: "application/pdf",
+    size,
+  });
+  const upload = (key, fieldId, attempts) => ({
+    key,
+    fieldId,
+    file: pdf(`${key}.pdf`),
+    attempts,
+  });
+
+  it("gives each new file a key of its own", () => {
+    expect(groupUploadKey([])).toBe("file-1");
+    expect(groupUploadKey([upload("file-2", "card", [0])])).toBe("file-3");
+    expect(
+      groupUploadKey([upload("file-2", "card", [0]), upload("x", "card", [1])])
+    ).toBe("file-3");
+  });
+
+  it("counts the files of a field at each booking", () => {
+    const uploads = [upload("a", "card", [0, 1]), upload("b", "social", [1])];
+    expect(groupFilesAt(uploads, 1, "card")).toHaveLength(1);
+    expect(groupFilesAt(uploads, 2, "card")).toHaveLength(0);
+    expect(groupFilesAt(uploads, 1, "social")).toHaveLength(1);
+  });
+
+  it("puts a new file at every booking with room, a guest's at the first", () => {
+    const uploads = [upload("a", "card", [1])];
+    expect(defaultGroupAttempts(card, uploads, 3, false)).toEqual([0, 2]);
+    expect(defaultGroupAttempts(card, uploads, 3, true)).toEqual([0]);
+    expect(
+      defaultGroupAttempts(card, [upload("a", "card", [0, 1])], 2, false)
+    ).toEqual([]);
+  });
+
+  it("checks size and format first, then the number at each booking", () => {
+    expect(
+      precheckGroupCheckoutUpload(
+        pdf("big.pdf", 2 * 1024 * 1024),
+        card,
+        [0],
+        []
+      ).code
+    ).toBe("customer_upload_too_large");
+    expect(
+      precheckGroupCheckoutUpload(
+        { name: "a.png", type: "image/png", size: 10 },
+        card,
+        [0],
+        []
+      ).code
+    ).toBe("customer_upload_format_not_allowed");
+    expect(
+      precheckGroupCheckoutUpload(
+        pdf(),
+        card,
+        [0, 1],
+        [upload("a", "card", [1])]
+      )
+    ).toEqual({
+      code: "customer_upload_field_full",
+      params: { maxFiles: 1, attempt: 1 },
+    });
+    expect(precheckGroupCheckoutUpload(pdf(), card, [], []).code).toBe(
+      "customer_upload_field_full"
+    );
+    expect(precheckGroupCheckoutUpload(pdf(), card, [0, 1], [])).toBeNull();
+  });
+
+  it("names the required fields still missing at each booking", () => {
+    const missing = missingGroupCheckoutUploads(
+      [card, social],
+      [upload("a", "card", [0, 2])],
+      3
+    );
+    expect(missing).toEqual([{ attempt: 1, field: card }]);
+    expect(missingGroupCheckoutUploads([card], [], 0)).toEqual([]);
+  });
+
+  it("sends the payload with the targets of each file, then each file under its key", () => {
+    const uploads = [upload("a", "card", [0, 1]), upload("b", "social", [1])];
+    expect(customerUploadTargetsOf(uploads)).toEqual({
+      a: [
+        { attempt: 0, fieldId: "card" },
+        { attempt: 1, fieldId: "card" },
+      ],
+      b: [{ attempt: 1, fieldId: "social" }],
+    });
+
+    const parts = groupCheckoutUploadParts({ paymentProvider: "x" }, uploads);
+    expect(parts[0][0]).toBe("checkout");
+    expect(JSON.parse(parts[0][1])).toEqual({
+      paymentProvider: "x",
+      customerUploadTargets: customerUploadTargetsOf(uploads),
+    });
+    expect(parts.slice(1).map(([name, file]) => [name, file.name])).toEqual([
+      ["customerUpload:a", "a.pdf"],
+      ["customerUpload:b", "b.pdf"],
+    ]);
+  });
+
+  it("reads the other bookings an upload counts for", () => {
+    const alsoFor = [{ bookingId: "B2", fieldId: "card", fieldLabel: "X" }];
+    expect(alsoForOf({ alsoFor })).toEqual(alsoFor);
+    expect(alsoForOf({})).toEqual([]);
+    expect(alsoForOf(null)).toEqual([]);
+  });
+
+  it("keeps the other bookings in the fields of the section „Nachweise“", () => {
+    const alsoFor = [{ bookingId: "B2", fieldId: "card", fieldLabel: "X" }];
+    const [field] = proofFieldsOf({
+      customerUploadState: {
+        state: "toReview",
+        fields: [
+          {
+            fieldId: "card",
+            label: "Vereinsausweis",
+            state: "submitted",
+            uploads: [
+              { mediaId: "m1", review: { status: "submitted" }, alsoFor },
+            ],
+          },
+        ],
+      },
+    });
+    expect(field.uploads[0].alsoFor).toEqual(alsoFor);
+  });
+
+  it("names a refused target of the group", () => {
+    expect(checkoutUploadErrorKey("customer_upload_target_invalid")).toBe(
+      "checkout.customer-uploads.errors.target-invalid"
+    );
+  });
+});
+
+describe("customerUploads - the instance's settings", () => {
+  const CEILINGS = {
+    maxFileSizeMb: 10,
+    maxFilesPerBooking: 20,
+    maxTotalSizeMbPerBooking: 100,
+  };
+
+  it("reads an instance without settings as not cleared, without limits of its own", () => {
+    expect(instanceCustomerUploadsOf({})).toEqual({
+      enabled: false,
+      maxFileSizeMb: null,
+      maxFilesPerBooking: null,
+      maxTotalSizeMbPerBooking: null,
+    });
+    expect(instanceCustomerUploadsEnabled({})).toBe(false);
+    expect(instanceCustomerUploadsEnabled(null)).toBe(false);
+  });
+
+  it("reads the ceilings of the server, the defaults without them", () => {
+    expect(customerUploadCeilingsOf({})).toEqual(CEILINGS);
+    expect(
+      customerUploadCeilingsOf({
+        customerUploadCeilings: { ...CEILINGS, maxFileSizeMb: 25 },
+      }).maxFileSizeMb
+    ).toBe(25);
+  });
+
+  it("takes an empty limit and whole numbers from 1 up to the ceiling", () => {
+    expect(
+      instanceCustomerUploadsIssues(
+        { enabled: true, maxFileSizeMb: "", maxFilesPerBooking: 20 },
+        CEILINGS
+      )
+    ).toEqual({});
+  });
+
+  it("refuses 0, a fraction and a limit above the ceiling", () => {
+    expect(
+      Object.keys(
+        instanceCustomerUploadsIssues(
+          {
+            enabled: true,
+            maxFileSizeMb: 11,
+            maxFilesPerBooking: 0,
+            maxTotalSizeMbPerBooking: 1.5,
+          },
+          CEILINGS
+        )
+      )
+    ).toEqual([
+      "maxFileSizeMb",
+      "maxFilesPerBooking",
+      "maxTotalSizeMbPerBooking",
+    ]);
+  });
+});
+
+describe("staffUploadFieldsOf - the proofs the staff hands in with a booking", () => {
+  const tenant = { customerUploads: { enabled: true, formats: ["pdf"] } };
+  const instance = { customerUploads: { enabled: true, maxFileSizeMb: 5 } };
+  const item = (fields) => ({
+    _bookableUsed: { uploadFieldDefinitions: fields },
+  });
+
+  it("takes every field of every offer once, one file each, at most the instance's size", () => {
+    const fields = staffUploadFieldsOf(
+      [
+        item([
+          {
+            id: "a",
+            label: "Ausweis",
+            required: true,
+            formats: ["pdf"],
+            timing: "beforeRelease",
+          },
+          { id: "b", label: "Pass", formats: ["pdf"], maxFileSizeMb: 2 },
+        ]),
+        item([
+          { id: "a", label: "Ausweis", formats: ["pdf"], maxFileSizeMb: 50 },
+        ]),
+      ],
+      tenant,
+      instance
+    );
+
+    expect(fields).toEqual([
+      expect.objectContaining({
+        id: "a",
+        required: true,
+        maxFiles: 1,
+        maxFileSizeMb: 5,
+      }),
+      expect.objectContaining({
+        id: "b",
+        required: false,
+        maxFiles: 1,
+        maxFileSizeMb: 2,
+      }),
+    ]);
+  });
+
+  it("offers none while the tenant or the instance takes no proofs", () => {
+    const items = [item([{ id: "a", label: "Ausweis", formats: ["pdf"] }])];
+
+    expect(
+      staffUploadFieldsOf(
+        items,
+        { customerUploads: { enabled: false } },
+        instance
+      )
+    ).toEqual([]);
+    expect(
+      staffUploadFieldsOf(items, tenant, {
+        customerUploads: { enabled: false },
+      })
+    ).toEqual([]);
+  });
+});

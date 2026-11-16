@@ -83,4 +83,58 @@ describe("ApiBookingService", () => {
       name: "Alt",
     });
   });
+
+  it("creates a manual booking with proofs as multipart, the booking in `checkout`", async () => {
+    const file = new File(["%PDF"], "ausweis.pdf", { type: "application/pdf" });
+
+    await ApiBookingService.createBooking({ name: "Neu" }, { f1: [file] });
+
+    const [url, form, options] = global.ApiClient.post.mock.calls[0];
+    expect(url).toBe("api/t1/bookings");
+    expect(JSON.parse(form.get("checkout"))).toEqual({ name: "Neu" });
+    expect(form.get("customerUpload:f1").name).toBe("ausweis.pdf");
+    expect(options.headers["Content-Type"]).toBe("multipart/form-data");
+  });
+
+  it("asks the booker for one proof not handed in yet", async () => {
+    await ApiBookingService.requestCustomerUpload("t1", "bk-1", "f1");
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith(
+      "api/v2/t1/bookings/bk-1/customer-uploads/f1/request",
+      {}
+    );
+  });
+
+  // A check of an upload of a series names the
+  // other bookings ticked in the dialog; one of a single booking none.
+  it("posts a check with the other bookings of a series it counts for", async () => {
+    await ApiBookingService.reviewCustomerUpload(
+      "t1",
+      "B1",
+      "f1",
+      "m1",
+      "accepted",
+      "",
+      ["B2"]
+    );
+    await ApiBookingService.reviewCustomerUpload(
+      "t1",
+      "B1",
+      "f1",
+      "m1",
+      "accepted",
+      ""
+    );
+
+    expect(global.ApiClient.post.mock.calls).toEqual([
+      [
+        "api/v2/t1/bookings/B1/customer-uploads/f1/m1/review",
+        { result: "accepted", reason: "", alsoFor: ["B2"] },
+      ],
+      [
+        "api/v2/t1/bookings/B1/customer-uploads/f1/m1/review",
+        { result: "accepted", reason: "" },
+      ],
+    ]);
+  });
 });

@@ -8,6 +8,10 @@ import ToastService from "@/services/ToastService";
 import { paymentLabel, statusExportValue } from "@/utils/bookingStatus";
 import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
 import { paymentProviderLabel } from "@/utils/paymentLabels";
+import {
+  mostUrgentProofStateOf,
+  proofStateMarker,
+} from "@/utils/customerUploads";
 import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 
 export default {
@@ -36,6 +40,14 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    /**
+     * The column "Nachweise": the most urgent proof state, as the kanban
+     * card's one chip; empty without one.
+     */
+    proofExportValue(booking) {
+      const marker = proofStateMarker(mostUrgentProofStateOf(booking));
+      return marker ? this.$t(marker.labelKey) : "";
+    },
     async exportBookings() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Buchungen");
@@ -60,6 +72,7 @@ export default {
         { header: "Startzeit", key: "Startzeit", width: 20 },
         { header: "Endzeit", key: "Endzeit", width: 20 },
         { header: "Status", key: "Status", width: 14 },
+        { header: "Nachweise", key: "Nachweise", width: 20 },
 
         { header: "Endpreis (brutto in EUR)", key: "Preis", width: 20 },
         { header: "End-MwSt (EUR)", key: "MwSt", width: 15 },
@@ -121,6 +134,7 @@ export default {
           Startzeit: booking.timeBegin ? new Date(booking.timeBegin) : "",
           Endzeit: booking.timeEnd ? new Date(booking.timeEnd) : "",
           Status: statusExportValue(booking),
+          Nachweise: this.proofExportValue(booking),
 
           Preis: booking.priceEur || 0,
           MwSt: booking.vatIncludedEur || 0,
@@ -144,7 +158,7 @@ export default {
 
       worksheet.autoFilter = {
         from: "A1",
-        to: "AB1",
+        to: "AC1",
       };
 
       const buffer = await workbook.xlsx.writeBuffer();

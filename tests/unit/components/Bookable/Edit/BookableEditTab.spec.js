@@ -36,6 +36,7 @@ const AREAS = [
   "BookableEditCustomFields",
   "BookableEditRequiredFields",
   "BookableEditBookingNotes",
+  "BookableEditUploadFields",
 ];
 const stubs = Object.fromEntries(AREAS.map((name) => [name, area(name)]));
 
@@ -52,13 +53,41 @@ const bookable = (overrides = {}) =>
     ...overrides,
   }).toPlain();
 
-const mountTab = (key, { overrides, expertMode, sectionTarget } = {}) =>
+const mountTab = (
+  key,
+  { overrides, expertMode, sectionTarget, store = new Vuex.Store({}) } = {}
+) =>
   mountEditing(BookableEditTab, {
     bookable: bookable(overrides),
     expertMode,
     propsData: { tab: tab(key), sectionTarget },
-    store: new Vuex.Store({}),
+    store,
     stubs,
+  });
+
+/**
+ * A store whose current tenant has customer uploads on or off, under an
+ * instance that has cleared them (or not).
+ */
+const tenantStore = (enabled, cleared = true) =>
+  new Vuex.Store({
+    modules: {
+      instance: {
+        namespaced: true,
+        getters: {
+          instance: () => ({ customerUploads: { enabled: cleared } }),
+        },
+      },
+      tenants: {
+        namespaced: true,
+        getters: {
+          currentTenant: () => ({
+            id: "t1",
+            customerUploads: { enabled, formats: ["pdf"] },
+          }),
+        },
+      },
+    },
   });
 
 /** The cards of the tab: their headings, in order. */
@@ -161,6 +190,31 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
         .find("[data-test='area-BookableEditCustomFields']")
         .attributes("data-section-target")
     ).toBe("customFields-definitions");
+  });
+});
+
+describe("BookableEditTab - Upload-Felder", () => {
+  it("shows the upload fields after Eigene Felder while the tenant has customer uploads enabled", () => {
+    const { wrapper } = mountTab("customFields", { store: tenantStore(true) });
+
+    expect(cardTitles(wrapper)).toEqual(["Eigene Felder", "Upload-Felder"]);
+  });
+
+  it("shows no upload fields without the tenant's switch", () => {
+    const { wrapper } = mountTab("customFields", { store: tenantStore(false) });
+
+    expect(cardTitles(wrapper)).toEqual(["Eigene Felder"]);
+    expect(
+      wrapper.find("[data-test='area-BookableEditUploadFields']").exists()
+    ).toBe(false);
+  });
+
+  it("shows no upload fields while the instance has not cleared customer uploads", () => {
+    const { wrapper } = mountTab("customFields", {
+      store: tenantStore(true, false),
+    });
+
+    expect(cardTitles(wrapper)).toEqual(["Eigene Felder"]);
   });
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="pb-10">
     <v-form ref="form" v-model="valid">
       <v-alert outlined v-if="isRestrictedBookable && !user" color="warning">
         Sie können dieses Angebot nur buchen, wenn Sie angemeldet sind. Bitte
@@ -198,6 +198,27 @@
       <v-divider class="mt-5"></v-divider>
       <span class="caption">* Pflichtfelder</span>
 
+      <h2 v-if="hasDocuments" class="mt-10 mb-8">
+        {{ $t("checkout.documents-title") }}
+      </h2>
+
+      <!-- Directly above the agreements. -->
+      <checkout-group-customer-uploads
+        v-if="uploadFields.length > 0 && groupMembers"
+        class="mt-8"
+        :fields="uploadFields"
+        :members="groupMembers"
+        :uploads="groupCustomerUploads"
+        :guest="!me"
+        @update:uploads="$emit('update:group-customer-uploads', $event)"
+      ></checkout-group-customer-uploads>
+      <checkout-customer-uploads
+        v-else-if="uploadFields.length > 0"
+        :fields="uploadFields"
+        :files="customerUploadFiles"
+        @update:files="$emit('update:customer-upload-files', $event)"
+      ></checkout-customer-uploads>
+
       <checkout-agreements
         v-if="leadItem && leadItem.bookable.attachments.length > 0"
         :agreements="leadItem.bookable.attachments"
@@ -222,14 +243,26 @@
 
 <script>
 import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
+import CheckoutCustomerUploads from "@/components/Checkout/CheckoutCustomerUploads.vue";
+import CheckoutGroupCustomerUploads from "@/components/Checkout/CheckoutGroupCustomerUploads.vue";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBusinessBooking } from "@/utils/businessBooking";
+import {
+  checkoutUploadFieldsOf,
+  missingCheckoutUploads,
+  missingGroupCheckoutUploads,
+} from "@/utils/customerUploads";
 
 export default {
   name: "CheckoutContactDetails",
-  components: { LoginCard, CheckoutAgreements },
+  components: {
+    LoginCard,
+    CheckoutAgreements,
+    CheckoutCustomerUploads,
+    CheckoutGroupCustomerUploads,
+  },
 
   props: {
     leadItem: {
@@ -242,6 +275,27 @@ export default {
     contactDetails: {
       type: Object,
       required: true,
+    },
+    /**
+     * The files of the upload fields "in the checkout" by field id;
+     * `update:customer-upload-files`.
+     */
+    customerUploadFiles: {
+      type: Object,
+      default: () => ({}),
+    },
+    /**
+     * The booking attempts of a series; null for
+     * a single booking. With them the files are the group's,
+     * `update:group-customer-uploads`.
+     */
+    groupMembers: {
+      type: Array,
+      default: null,
+    },
+    groupCustomerUploads: {
+      type: Array,
+      default: () => [],
     },
   },
 
@@ -327,7 +381,32 @@ export default {
       );
     },
     isNextButtonDisabled() {
-      return !this.valid || (this.isRestrictedBookable && !this.user);
+      return (
+        !this.valid ||
+        (this.isRestrictedBookable && !this.user) ||
+        this.missingUploads.length > 0
+      );
+    },
+    /** The required upload fields still without a file. */
+    missingUploads() {
+      return this.groupMembers
+        ? missingGroupCheckoutUploads(
+            this.uploadFields,
+            this.groupCustomerUploads,
+            this.groupMembers.length
+          )
+        : missingCheckoutUploads(this.uploadFields, this.customerUploadFiles);
+    },
+    uploadFields() {
+      return checkoutUploadFieldsOf(this.leadItem.bookable);
+    },
+    /** Whether the section „Dokumente“ has proofs or agreements to show. */
+    hasDocuments() {
+      const agreements = this.leadItem?.bookable?.attachments || [];
+      return (
+        this.uploadFields.length > 0 ||
+        agreements.some((agreement) => agreement.show)
+      );
     },
     commentRequired() {
       return this.leadItem.bookable.requiredFields?.includes("comment");

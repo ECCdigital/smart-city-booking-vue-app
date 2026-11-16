@@ -203,6 +203,59 @@
         </v-card>
 
         <v-card
+          v-if="proofFields"
+          outlined
+          class="booking-page__proofs section-card"
+        >
+          <v-card-title class="section-header">
+            <v-icon>mdi-file-certificate-outline</v-icon>
+            <span>{{ $t("booking.page.proofs.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <BookingProofs
+              :fields="proofFields"
+              :can-review="canReviewProofs()"
+              @view="viewProof"
+              @download="requestProofDownload"
+              @review="openProofReview(booking, $event)"
+              @request-again="openProofReview(booking, $event)"
+              @request="requestProof(booking, $event)"
+            />
+            <BookingProofReviewDialog
+              :open="proofReview.open"
+              :target="proofReview.target"
+              :loading="proofReview.loading"
+              :error="proofReview.error"
+              @close="closeProofReview"
+              @submit="submitProofReview"
+            />
+            <BookingProofViewer
+              :open="proofView.open"
+              :field="proofView.field"
+              :upload="proofView.upload"
+              @close="closeProofView"
+              @download="requestProofDownload"
+            />
+            <BookingProofDownloadNotice
+              :open="proofDownloadNotice.open"
+              :file-name="
+                proofDownloadNotice.upload
+                  ? proofDownloadNotice.upload.originalFileName
+                  : ''
+              "
+              :retention-days="
+                proofDownloadNotice.field
+                  ? proofDownloadNotice.field.retentionDays
+                  : null
+              "
+              @close="closeProofDownloadNotice"
+              @confirm="confirmProofDownload"
+            />
+          </v-card-text>
+        </v-card>
+
+        <v-card
           v-if="comments.length > 0"
           outlined
           class="booking-page__comments section-card"
@@ -437,6 +490,10 @@ import AdminLayout from "@/layouts/Admin.vue";
 import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vue";
 import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
+import BookingProofs from "@/components/Booking/BookingProofs.vue";
+import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
+import BookingProofViewer from "@/components/Booking/BookingProofViewer.vue";
+import BookingProofDownloadNotice from "@/components/Booking/BookingProofDownloadNotice.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
@@ -465,6 +522,7 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import { proofFieldsOf } from "@/utils/customerUploads";
 import {
   bookedViaLabel,
   bookedViaTitle,
@@ -492,6 +550,10 @@ export default {
     BookedViaBadge,
     BookingAccessPoints,
     BookingDocumentActions,
+    BookingProofs,
+    BookingProofReviewDialog,
+    BookingProofViewer,
+    BookingProofDownloadNotice,
     BookingPageEmptyState,
     BookingPageToolbar,
     BookingPaymentLink,
@@ -649,6 +711,10 @@ export default {
     },
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
+    },
+    /** The section „Nachweise“: only where the answer carries their state. */
+    proofFields() {
+      return proofFieldsOf(this.booking);
     },
   },
   beforeRouteEnter(to, from, next) {

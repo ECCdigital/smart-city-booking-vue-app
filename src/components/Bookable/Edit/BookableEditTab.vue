@@ -27,6 +27,7 @@ export default {
         bookable: this.bookable,
         shown: this.expertOptionShown,
         accessPoints: this.bookableAccessPoints.list,
+        customerUploadsEnabled: this.customerUploadsEnabled,
       }).map((section) => section.id);
     },
     cards() {

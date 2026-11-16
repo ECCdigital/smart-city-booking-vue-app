@@ -145,7 +145,10 @@
       "blacklist_entry_exists": "Für diese Adresse oder Domain gibt es schon einen Eintrag.",
       "report_target_already_suspended": "Der User ist bereits instanzweit gesperrt.",
       "report_not_open": "Die Meldung ist nicht mehr offen. Sie wurde inzwischen erledigt oder zurückgezogen.",
-      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung."
+      "report_target_already_blacklisted": "Die Adresse steht bereits auf der Sperrliste. Es entstand keine Meldung.",
+      "customer_upload_already_reviewed": "Dieser Nachweis wurde inzwischen schon geprüft. Bitte laden Sie die Seite neu.",
+      "customer_upload_field_not_reviewed": "Dieses Feld ist nicht geprüft oder hat noch ungeprüfte Nachweise.",
+      "customer_upload_nothing_missing": "Für diese Buchung fehlt kein Pflicht-Nachweis mehr."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
@@ -153,9 +156,31 @@
       "tenant_not_found": "Der Mandant existiert nicht mehr.",
       "blacklist_entry_not_found": "Der Eintrag steht nicht mehr auf der Sperrliste.",
       "report_none_open": "Zu diesem User oder dieser Adresse ist keine Meldung mehr offen.",
-      "report_not_found": "Die Meldung wurde nicht gefunden."
+      "report_not_found": "Die Meldung wurde nicht gefunden.",
+      "customer_upload_not_found": "Der Nachweis wurde nicht gefunden. Bitte laden Sie die Seite neu."
     },
     "bad-request-codes": {
+      "customer_upload_settings_invalid": "Die Einstellungen zu Nachweisen sind ungültig.",
+      "customer_upload_limit_out_of_range": "Eine Grenze für Nachweise muss eine ganze Zahl von 1 bis {max} sein.",
+      "customer_upload_reason_missing": "Bitte nennen Sie einen Grund.",
+      "customer_upload_reason_too_long": "Der Grund ist zu lang.",
+      "customer_upload_review_result_invalid": "Das Ergebnis der Prüfung ist ungültig.",
+      "customer_upload_formats_invalid": "Die Formate der Nachweise sind ungültig.",
+      "customer_upload_format_not_supported": "Nachweise können nur PDF, JPEG oder PNG sein.",
+      "customer_upload_formats_empty": "Wählen Sie für Nachweise mindestens ein Format.",
+      "customer_upload_retention_out_of_range": "Die Löschfrist für Nachweise ist höchstens {max} Tage.",
+      "customer_upload_reminder_out_of_range": "Die Erinnerung an Buchende vor der Einreichfrist muss eine ganze Zahl von Tagen ab 0 sein.",
+      "upload_field_invalid": "Ein Upload-Feld ist ungültig.",
+      "upload_field_duplicate_id": "Zwei Upload-Felder haben dieselbe Id.",
+      "upload_field_label_required": "Jedes Upload-Feld braucht eine Bezeichnung.",
+      "upload_field_max_files_out_of_range": "Ein Upload-Feld nimmt {min} bis {max} Dateien.",
+      "upload_field_format_not_allowed": "Ein Upload-Feld verlangt ein Format, das der Mandant nicht erlaubt.",
+      "upload_field_formats_empty": "Jedes Upload-Feld braucht mindestens ein Format.",
+      "upload_field_max_size_invalid": "Die Höchstgröße eines Upload-Felds muss über 0 MB liegen.",
+      "upload_field_max_size_above_instance": "Die Höchstgröße eines Upload-Felds liegt über der Grenze der Instanz von {max} MB.",
+      "upload_field_category_invalid": "Die Kategorie eines Upload-Felds ist ungültig.",
+      "upload_field_timing_invalid": "Der Zeitpunkt eines Upload-Felds ist ungültig.",
+      "upload_field_deadline_invalid": "Die Frist eines Upload-Felds muss eine ganze Zahl von Tagen ab 0 sein.",
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
@@ -187,7 +212,128 @@
     "required": "Pflichtfeld",
     "integerRequired": "Ganzzahl erforderlich"
   },
+  "customer-proofs": {
+    "title": "Nachweise einreichen",
+    "intro": "{name} benötigt für Ihre Buchung noch Nachweise. Sie können sie bis zum Ende der Buchung einreichen und bis zur Prüfung ersetzen oder löschen. Besonders schutzwürdige Nachweise werden nach der Prüfung gelöscht.",
+    "booking": "Buchung #{id}",
+    "series": "Ihre Serienbuchung umfasst {count} Termine. Wählen Sie bei jedem Nachweis, für welche Termine eine Datei gilt.",
+    "for": "Gilt für die Termine",
+    "member": "Termin {n} · {date}",
+    "loading": "Buchung wird geladen …",
+    "none": "Für diese Buchung werden keine Nachweise benötigt.",
+    "required": "Pflicht",
+    "optional": "Optional",
+    "sensitive": "Besonders schutzwürdig",
+    "sensitive-hint": "Dieser Nachweis enthält besonders schützenswerte Daten. Die Datei wird deshalb sofort nach der Prüfung gelöscht.",
+    "state": {
+      "open": "Offen · bis {deadline} (noch {days} Tag) | Offen · bis {deadline} (noch {days} Tage)",
+      "open-without-deadline": "Offen",
+      "open-before-release": "Offen · vor Freigabe einzureichen",
+      "submitted": "Eingereicht · wird geprüft",
+      "rejected": "Abgelehnt · neu hochladen",
+      "requested-again": "Erneut angefordert · neu hochladen",
+      "overdue": "Frist abgelaufen am {deadline}",
+      "fulfilled": "Geprüft am {reviewedAt} · Datei gelöscht",
+      "fulfilled-kept": "Geprüft am {reviewedAt}"
+    },
+    "rejection-reason": "Grund der Ablehnung: {reason}",
+    "request-again-reason": "Grund: {reason}",
+    "late-hint": "Die Frist ist vorbei. Sie können trotzdem einreichen, {tenant} entscheidet, ob der Nachweis noch angenommen wird.",
+    "replace": "Ersetzen",
+    "delete": "Löschen",
+    "change-until-review": "Bis zur Prüfung können Sie die Datei ersetzen oder löschen.",
+    "change-until-review-sensitive": "Bis zur Prüfung können Sie die Datei ersetzen oder löschen. Nach der Prüfung wird sie gelöscht.",
+    "choose": "Datei hochladen",
+    "discard": "Verwerfen",
+    "send": "Einreichen",
+    "limits": "{formats} · max. {size} MB",
+    "uploaded": "Der Nachweis ist eingereicht.",
+    "deleted": "Die Datei ist gelöscht.",
+    "link": {
+      "invalid": {
+        "title": "Link ungültig",
+        "text": "Dieser Link ist ungültig. Bitte nutzen Sie den Link aus Ihrer letzten E-Mail zur Buchung."
+      },
+      "expired": {
+        "title": "Link abgelaufen",
+        "text": "Die Buchung ist beendet. Über diesen Link können Sie keine Nachweise mehr einreichen."
+      },
+      "error": {
+        "title": "Buchung nicht geladen",
+        "text": "Die Buchung konnte gerade nicht geladen werden. Bitte versuchen Sie es später noch einmal.",
+        "retry": "Erneut versuchen"
+      }
+    },
+    "errors": {
+      "format": "Diese Datei hat kein erlaubtes Format. Erlaubt: {formats}.",
+      "size": "Die Datei ist zu groß. Erlaubt sind höchstens {size} MB.",
+      "field-full": "Für diesen Nachweis sind höchstens {count} Dateien erlaubt. Ersetzen oder löschen Sie eine eingereichte Datei.",
+      "booking-limit": "Für diese Buchung sind schon so viele Nachweise gespeichert wie erlaubt.",
+      "virus": "In der Datei wurde Schadsoftware gefunden. Sie wurde nicht gespeichert.",
+      "scanner": "Die Datei kann gerade nicht geprüft werden. Bitte versuchen Sie es später erneut.",
+      "rate-limit": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
+      "not-open": "Für diese Buchung können Sie gerade keine Nachweise einreichen.",
+      "already-reviewed": "Dieser Nachweis wurde schon geprüft und kann nicht mehr geändert werden.",
+      "file-missing": "Bitte wählen Sie eine Datei aus.",
+      "not-found": "Dieser Nachweis wurde nicht gefunden. Bitte laden Sie die Seite neu.",
+      "link-invalid": "Dieser Link ist ungültig. Bitte nutzen Sie den Link aus Ihrer letzten E-Mail zur Buchung.",
+      "link-expired": "Die Buchung ist beendet. Über diesen Link können Sie keine Nachweise mehr einreichen.",
+      "target-invalid": "Diese Datei kann nicht für die gewählten Termine gelten. Bitte laden Sie die Seite neu.",
+      "generic": "Die Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+    }
+  },
   "bookable": {
+    "uploadFields": {
+      "title": "Upload-Felder",
+      "intro": "Nachweise, die Buchende zu einer Buchung hochladen. Buchende sehen die Felder erst, wenn Checkout und Nachreichen sie anbieten.",
+      "limits": "Grenzen der Instanz: höchstens {fileSize} MB je Datei, {files} Dateien und {totalSize} MB je Buchung.",
+      "empty": "Noch keine Upload-Felder",
+      "untitled": "Neues Upload-Feld",
+      "add": "Upload-Feld hinzufügen",
+      "new": "Neues Upload-Feld anlegen",
+      "edit": "Upload-Feld bearbeiten",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "files": "höchstens eine Datei | höchstens {count} Dateien",
+      "remove": "Upload-Feld löschen",
+      "remove-title": "Upload-Feld löschen?",
+      "remove-text": "Das Upload-Feld „{label}“ wird entfernt. Vermerke zu bereits eingereichten Nachweisen an Buchungen bleiben lesbar.",
+      "label": "Bezeichnung",
+      "hint": "Beschreibung",
+      "hint-hint": "Beschreiben Sie für Buchende, was sie hochladen sollen. Der Hinweis erscheint unter dem Titel am Upload-Feld.",
+      "required": "Pflicht",
+      "required-label": "Pflicht-Nachweis",
+      "required-hint": "Ein Pflicht-Nachweis gilt als Voraussetzung für die Buchung. Nur in dem Fall werden Nachweise als „fehlend“ oder „überfällig“ markiert.",
+      "formats": "Zulässige Formate",
+      "category": "Kategorie",
+      "categories": {
+        "normal": "Normal",
+        "sensitive": "Besonders schutzwürdig"
+      },
+      "sensitive-info": "Was heißt besonders schutzwürdig?",
+      "sensitive-warning": "Besonders schutzwürdig sind etwa Ausweise oder Gesundheitsdaten. Die Datei wird sofort nach der Prüfung automatisch gelöscht. Wägen Sie ab, ob eine Sichtprüfung vor Ort zum Zeitpunkt der Buchung ausreichend wäre.",
+      "timing": "Zeitpunkt des Uploads",
+      "timings": {
+        "checkout": "Während des Checkouts",
+        "beforeRelease": "Vor Freigabe der Buchung",
+        "afterConfirmation": "Nach Freigabe der Buchung"
+      },
+      "timing-hints": {
+        "checkout": "Der Pflicht-Nachweis muss hochgeladen werden, bevor die Buchung abgeschlossen werden kann. Optionale Nachweise können auch nach dem Checkout hochgeladen werden.",
+        "beforeRelease": "Der Nachweis kann nach Abschluss der Buchung hochgeladen werden. Ein Pflicht-Nachweis ist Voraussetzung für die manuelle Freigabe. (Funktioniert nicht bei automatischer Freigabe)",
+        "afterConfirmation": "Der Nachweis kann erst hochgeladen werden, sobald die Buchung freigegeben wurde. Bis zu Beginn der Buchung muss der Nachweis erfolgt sein."
+      },
+      "timing-auto-commit": "Dieses Buchungsobjekt gibt Buchungen automatisch frei. Der Nachweis kann dann erst nach der Freigabe hochgeladen werden.",
+      "deadline": "Frist vor Buchungsbeginn",
+      "deadline-hint": "Legen Sie fest, bis wann der Nachweis eingereicht werden soll. Ohne Angabe gilt der Buchungsbeginn als Frist.",
+      "validation": {
+        "label": "Geben Sie eine Bezeichnung an.",
+        "formatsEmpty": "Wählen Sie mindestens ein Format.",
+        "formatsOutsideTenant": "Der Mandant erlaubt nicht alle gewählten Formate.",
+        "deadline": "Geben Sie eine ganze Zahl von Tagen ab 0 an."
+      }
+    },
     "flow": {
       "enter": "Zum geführten Ablauf",
       "leave": "Zur Bearbeitungsseite",
@@ -565,7 +711,8 @@
         "pricing": "Preise & Kapazität",
         "relatedBookables": "Abhängigkeiten",
         "permissions": "Berechtigungen",
-        "additional": "Sonstiges"
+        "additional": "Sonstiges",
+        "additionalFields": "Zusätzliche Felder"
       },
       "nav": {
         "tabs": "Bereiche des Buchungsobjekts",
@@ -855,6 +1002,11 @@
         "hint": "Werte für die Felder von Instanz und Mandant, und Felder nur für dieses Objekt.",
         "summaryValues": "{count} Wert gesetzt | {count} Werte gesetzt",
         "summaryDefinitions": "{count} Feld definiert | {count} Felder definiert"
+      },
+      "uploadFields": {
+        "title": "Upload-Felder",
+        "hint": "Welche Nachweise Buchende zu einer Buchung hochladen.",
+        "summary": "{count} Upload-Feld | {count} Upload-Felder"
       },
       "requiredFields": {
         "title": "Pflichtfelder",
@@ -1313,10 +1465,67 @@
       },
       "cards": {
         "title": "Karten"
+      },
+      "customerUploads": {
+        "title": "Nachweise von Buchenden",
+        "intro": "Geben Sie frei, dass von den Buchenden für Buchungen Nachweise hochgeladen werden können. Nach Aktivierung der Funktion kann jeder Mandant die Nachweise für sich freischalten und für seine Buchungsobjekte Upload-Felder definieren.",
+        "enabled": "Upload-Funktion für Mandanten freigeben",
+        "enabled-hint": "Ohne Freigabe nimmt kein Mandant Nachweise an, auch wenn er sie freigeschaltet hat. Bereits hochgeladene, besonders schutzwürdige Nachweise werden weiter fristgerecht gelöscht.",
+        "limits": "Grenzen",
+        "limits-hint": "Legen Sie Begrenzungen für alle Mandanten fest. Ohne Angabe wird die angegebene Maximalgrenze genutzt.",
+        "maxFileSizeMb": "Maximale Dateigröße",
+        "maxFilesPerBooking": "Max. Anzahl je Buchung",
+        "maxTotalSizeMbPerBooking": "Max. Gesamtgröße je Buchung",
+        "limit-hint": "Maximalgrenze: {max}",
+        "deletion": {
+          "title": "So werden Nachweise gelöscht",
+          "normal": "Normale Nachweise bleiben auch nach der Prüfung bei der Buchung gespeichert und können heruntergeladen werden.",
+          "sensitive": "Besonders schutzwürdige Nachweise, etwa Ausweise oder Gesundheitsdaten, werden sofort gelöscht, sobald sie akzeptiert oder abgelehnt sind. Ungeprüfte löscht das System nach der Löschfrist, die jeder Mandant festlegt (höchstens {max} Tage).",
+          "start": "Die Löschfrist beginnt:",
+          "start-ticket": "bei Tickets mit dem Ende der Veranstaltung,",
+          "start-booking": "sonst mit dem Ende der Buchungszeit,",
+          "start-upload": "bei Buchungen ohne Buchungszeit mit dem Upload.",
+          "cancelled": "Wird eine Buchung vorher storniert, zurückgezogen oder abgelehnt, beginnt die Frist schon dann."
+        },
+        "validation": {
+          "limit": "Geben Sie eine ganze Zahl von 1 bis {max} an oder lassen Sie das Feld leer."
+        }
       }
     }
   },
   "tenant": {
+    "customerUploads": {
+      "title": "Nachweise von Buchenden",
+      "intro": "Ermöglichen Sie Buchenden, zu einer Buchung bestimmte Nachweise hochzuladen. Dazu kann ein Vereinsausweis, ein Sozialpass oder auch eine unterzeichnete Nutzungsvereinbarung gehören. Welche Nachweise ein Buchungsobjekt verlangt und wann diese erbracht werden müssen, legen Sie jeweils im Buchungsobjekt unter „Upload-Felder“ fest.",
+      "enabled": "Nachweis-Upload freischalten",
+      "instance-off": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Erst nach der Freigabe unter „Instanz verwalten“ können Sie Nachweise freischalten.",
+      "instance-off-enabled": "Die Instanz hat Nachweise von Buchenden nicht freigegeben. Bis zur Freigabe nimmt dieser Mandant keine Nachweise an.",
+      "formats": {
+        "label": "Erlaubte Formate",
+        "hint": "Legen Sie fest, welche Formate insgesamt zulässig sind. Pro Upload-Feld können aus diesen Formaten die passenden Optionen gewählt werden.",
+        "pdf": "PDF",
+        "jpeg": "JPEG",
+        "png": "PNG"
+      },
+      "retentionDays": "Löschfrist für besonders schutzwürdige Nachweise",
+      "retentionDays-hint": "So viele Tage nach dem Ende der Buchung löscht das System ungeprüfte, besonders schutzwürdige Nachweise. Bei Tickets zählt das Ende der Veranstaltung, ohne Buchungszeit der Upload. Höchstens {max} Tage. Normale Nachweise bleiben bei der Buchung.",
+      "days": "Tage",
+      "reminderDays": "Erinnerung an Buchende vor der Einreichfrist",
+      "reminderDays-hint": "So viele Tage vor der Einreichfrist erinnert eine E-Mail die Buchenden an einen fehlenden Pflicht-Nachweis. Bei optionalen Nachweisen erfolgt keine Erinnerung.",
+      "staff-mails": "Benachrichtigungen für die Verwaltung",
+      "notifyOnSubmitted": "E-Mail „Nachweis eingereicht“",
+      "notifyOnSubmitted-hint": "Die gewählten Rollen erhalten eine E-Mail mit Link, wenn Nachweise eingereicht werden.",
+      "notifyOnOverdue": "E-Mail „Nachweis überfällig“",
+      "notifyOnOverdue-hint": "Die gewählten Rollen erhalten eine E-Mail mit Link, wenn die Frist eines Pflicht-Nachweises abläuft.",
+      "notifyRoles": "Empfänger der E-Mails zu Nachweisen",
+      "notifyRoles-hint": "Alle aktiven Mitglieder dieser Rollen erhalten die E-Mails „Nachweis eingereicht“ und „Nachweis überfällig“.",
+      "notifyRoles-missing": "Ohne Rolle erhält niemand diese E-Mails.",
+      "validation": {
+        "formats": "Wählen Sie mindestens ein Format.",
+        "retentionDays": "Geben Sie 0 bis 30 Tage an.",
+        "reminderDays": "Geben Sie eine ganze Zahl von Tagen ab 0 an."
+      }
+    },
     "reports": {
       "title": "Meldungen",
       "open-count": "{count} offen",
@@ -1680,6 +1889,11 @@
     }
   },
   "booking": {
+    "staff-uploads": {
+      "title": "Nachweise",
+      "intro": "Liegen Ihnen Nachweise vor, laden Sie sie hier hoch: Sie gelten mit der Buchung als geprüft und akzeptiert. Fehlende Nachweise können Sie auf der Buchungsseite anfordern.",
+      "choose": "Datei wählen"
+    },
     "owner-change": {
       "title": "Buchung einem anderen Konto zuordnen?",
       "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
@@ -1789,6 +2003,24 @@
         "title": "Rückerstattung nicht gespeichert",
         "message": "Der Stand der Rückerstattung konnte nicht gespeichert werden."
       }
+    },
+    "proofState": {
+      "label": "Nachweise",
+      "marker": {
+        "overdue": "Nachweis überfällig",
+        "missing": "Nachweis fehlt",
+        "toReview": "Nachweis zu prüfen"
+      },
+      "release-hint": "Es ist {count} Nachweis offen bzw. ungeprüft. | Es sind {count} Nachweise offen bzw. ungeprüft.",
+      "release-hint-series": "In der Serie ist {count} Nachweis offen bzw. ungeprüft. Freigeben ist trotzdem möglich. | In der Serie sind {count} Nachweise offen bzw. ungeprüft. Freigeben ist trotzdem möglich.",
+      "release-missing": "Es fehlt noch: {labels}.",
+      "release-missing-series": "Es fehlen noch:",
+      "release-missing-booking": "Buchung #{id}: {labels}",
+      "remind": "Nachweis anfordern | Nachweise anfordern",
+      "remind-sent": "Die Buchenden wurden per E-Mail an die fehlenden Nachweise erinnert.",
+      "remind-error": "Die Erinnerung konnte nicht gesendet werden.",
+      "release-title": "Buchung freigeben",
+      "release-question": "Buchung {id} trotzdem freigeben?"
     },
     "create": {
       "success": {
@@ -1935,7 +2167,8 @@
       "typeSingle": "Einzel",
       "typeSeries": "Serie",
       "status": "Status",
-      "refund": "Rückerstattung"
+      "refund": "Rückerstattung",
+      "proof": "Nachweise"
     },
     "action": {
       "confirm": "Freigeben",
@@ -2172,6 +2405,99 @@
           "message": "Das Dokument konnte nicht heruntergeladen werden."
         }
       },
+      "proofs": {
+        "title": "Nachweise",
+        "required": "Pflicht",
+        "optional": "optional",
+        "sensitive": "Besonders schutzwürdig",
+        "sensitive-hint": "Dazu gehören beispielsweise personenbezogene Daten. Die Datei wird sofort nach der Prüfung gelöscht.",
+        "none": "noch nichts eingereicht",
+        "deadline": "Frist: {date}",
+        "submitted-at": "Eingereicht am {date}, ungeprüft",
+        "view": "Ansehen",
+        "download": "Herunterladen",
+        "state": {
+          "open": "Offen",
+          "submitted": "Eingereicht",
+          "rejected": "Abgelehnt",
+          "overdue": "Überfällig",
+          "fulfilled": "Erfüllt",
+          "requestedAgain": "Erneut angefordert"
+        },
+        "note": {
+          "accepted": "Akzeptiert",
+          "rejected": "Abgelehnt",
+          "submitted": "Nicht geprüft",
+          "deleted": "Datei gelöscht",
+          "deleted-auto": "Datei automatisch gelöscht",
+          "reason": "Grund: {reason}"
+        },
+        "accept": "Akzeptieren",
+        "reject": "Ablehnen",
+        "request-again": "Erneut anfordern",
+        "request": "Nachreichen anfordern",
+        "requested": "„{label}“ ist bei den Buchenden angefordert.",
+        "request-error": "Der Nachweis konnte nicht angefordert werden.",
+        "requested-again-by": "Erneut angefordert von {name} am {date}: {reason}",
+        "requested-again-at": "Erneut angefordert am {date}: {reason}",
+        "dialog": {
+          "deletes": "Die Datei wird danach gelöscht.",
+          "reason": "Grund",
+          "reason-required": "Bitte nennen Sie einen Grund.",
+          "reason-too-long": "Höchstens {max} Zeichen.",
+          "cancel": "Abbrechen",
+          "error": "Die Prüfung konnte nicht gespeichert werden.",
+          "accepted": {
+            "title": "Nachweis akzeptieren",
+            "text": "„{file}“ als Nachweis für „{field}“ akzeptieren?",
+            "submit": "Akzeptieren",
+            "done": "Nachweis akzeptiert",
+            "done-deleted": "Nachweis akzeptiert, Datei gelöscht"
+          },
+          "rejected": {
+            "title": "Nachweis ablehnen",
+            "text": "„{file}“ als Nachweis für „{field}“ ablehnen?",
+            "consequence": "Eine E-Mail mit der Begründung wird an den Buchenden gesendet. Danach ist ein erneuter Upload möglich.",
+            "submit": "Ablehnen",
+            "done": "Nachweis abgelehnt",
+            "done-deleted": "Nachweis abgelehnt, Datei gelöscht"
+          },
+          "requestAgain": {
+            "title": "Nachweis erneut anfordern",
+            "text": "Den Nachweis „{field}“ erneut anfordern?",
+            "consequence": "Die bisherigen Vermerke bleiben bestehen. Der Buchende bekommt eine Mail mit dem Grund für die erneute Anforderung.",
+            "submit": "Erneut anfordern",
+            "done": "Nachweis erneut angefordert"
+          },
+          "also-for": "Der Nachweis gilt auch für:",
+          "also-for-booking": "Buchung #{id} · {time}",
+          "also-for-booking-field": "Buchung #{id} · {time} · {field}",
+          "also-for-note": {
+            "accepted": "Der Nachweis wird für alle markierten Buchungen akzeptiert.",
+            "rejected": "Der Nachweis wird für alle markierten Buchungen abgelehnt."
+          },
+          "also-for-own": "Buchung #{id} · {time} (diese Buchung)",
+          "also-for-open": "Buchung in neuem Tab öffnen",
+          "deletes-series": "Die Datei wird für die markierte Buchung gelöscht. | Die Datei wird für alle {count} markierten Buchungen gelöscht."
+        },
+        "download-progress": "Stelle Nachweis bereit...",
+        "download-error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Der Nachweis konnte nicht heruntergeladen werden."
+        },
+        "viewer": {
+          "close": "Schließen",
+          "error": "Der Nachweis konnte nicht angezeigt werden."
+        },
+        "download-notice": {
+          "title": "Besonders schutzwürdige Daten",
+          "text": "Dieser Nachweis enthält sensible Daten, etwa personenbezogene Angaben. Wenn Sie ihn herunterladen, sind Sie für die Kopie auf Ihrem Gerät verantwortlich.",
+          "deletion": "Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist.",
+          "deletion-days": "Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist von einem Tag. | Löschen Sie die Datei, sobald Sie den Nachweis akzeptiert oder abgelehnt haben, spätestens aber nach Ablauf der Löschfrist von {days} Tagen.",
+          "confirm": "Verstanden, herunterladen"
+        },
+        "also-for": "Gilt auch für {bookings}"
+      },
       "details": {
         "title": "Details",
         "number": "Nummer",
@@ -2397,6 +2723,10 @@
         "invoice-recreate": "Erneut nur erstellen",
         "reprint": "Neu ausstellen"
       },
+      "proofs": {
+        "title": "Nachweise",
+        "member": "Buchung #{id}"
+      },
       "details": {
         "title": "Details",
         "number": "Nummer",
@@ -2408,6 +2738,47 @@
   "checkout": {
     "no-permission": {
       "message": "Dieses Angebot ist für Sie nicht buchbar. Entweder ist es nicht verfügbar, oder Ihnen fehlt die Berechtigung dafür."
+    },
+    "documents-title": "Dokumente",
+    "customer-uploads": {
+      "title": "Nachweise",
+      "intro": "Für Ihre Buchung werden folgende Nachweise benötigt:",
+      "required": "Pflicht",
+      "optional": "optional",
+      "drop-hint": "Datei hierher ziehen oder",
+      "choose": "Datei auswählen",
+      "remove": "Entfernen",
+      "limits": "{formats} · max. {size} MB",
+      "max-files": "höchstens {count} Dateien",
+      "summary-none": "keine Datei",
+      "errors": {
+        "format": "Diese Datei hat kein erlaubtes Format. Erlaubt: {formats}.",
+        "size": "Die Datei ist zu groß. Erlaubt sind höchstens {size} MB.",
+        "field-full": "Für dieses Feld sind höchstens {count} Dateien erlaubt.",
+        "booking-limit": "Für diese Buchung sind nicht mehr Nachweise erlaubt.",
+        "virus": "In der Datei wurde Schadsoftware gefunden.",
+        "scanner": "Die Datei kann gerade nicht geprüft werden. Bitte versuchen Sie es später erneut.",
+        "rate-limit": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
+        "file-missing": "Bitte wählen Sie eine Datei aus.",
+        "not-found": "Dieses Nachweisfeld gibt es nicht mehr. Bitte laden Sie die Seite neu.",
+        "required-missing": "Bitte fügen Sie die verlangten Nachweise hinzu: {fields}.",
+        "generic": "Die Datei konnte nicht angenommen werden. Bitte versuchen Sie es erneut.",
+        "target-invalid": "Diese Datei kann nicht für die gewählten Termine gelten. Bitte wählen Sie die Termine erneut."
+      },
+      "refused": {
+        "title": "Nachweis nicht angenommen",
+        "message": "{message} Es wurde nichts gebucht."
+      },
+      "group": {
+        "intro": "Der Anbieter benötigt diese Nachweise zu jedem Termin der Serie. Eine Datei können Sie für mehrere Termine verwenden. Sie werden mit Ihrer Buchung gesendet.",
+        "intro-guest": "Der Anbieter benötigt diese Nachweise zu jedem Termin der Serie. Ohne Anmeldung laden Sie für jeden Termin eine eigene Datei hoch. Sie werden mit Ihrer Buchung gesendet.",
+        "for": "Gilt für die Termine",
+        "for-one": "Gilt für den Termin",
+        "member": "Termin {n} · {date}",
+        "member-undated": "Termin {n}",
+        "missing": "Fehlt noch für: {members}",
+        "max-files": "höchstens {count} Dateien je Termin"
+      }
     },
     "error": {
       "booking-conflict": {

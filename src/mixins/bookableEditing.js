@@ -2,6 +2,7 @@ import _ from "lodash";
 import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
 import { expertOptionShownIn } from "@/utils/bookableExpertMode";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
+import { customerUploadsEnabled } from "@/utils/customerUploads";
 import { BOOKABLE_RULE_NAMES, bookableRules } from "@/utils/bookableValidation";
 
 /**
@@ -46,6 +47,16 @@ export default {
       return BOOKABLE_RULE_NAMES.reduce(
         (rules, name) => ({ ...rules, [name]: bookableRules(name, translate) }),
         {}
+      );
+    },
+    /**
+     * Whether customer uploads hold for the tenant - switched on by it and
+     * cleared by the instance: only then do the Upload-Felder show.
+     */
+    customerUploadsEnabled() {
+      return customerUploadsEnabled(
+        this.$store?.getters["tenants/currentTenant"],
+        this.$store?.getters["instance/instance"]
       );
     },
   },

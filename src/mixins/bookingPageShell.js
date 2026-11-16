@@ -3,11 +3,13 @@ import FormatService from "@/services/FormatService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   getApiErrorMessage,
   unpackBlobErrorBody,
 } from "@/services/api/apiErrorMessage";
+import { checkDeletesFile } from "@/utils/customerUploads";
 import { saveBlob } from "@/utils/fileDownload";
 import { isTenantMember } from "@/utils/tenantMembership";
 
@@ -46,6 +48,13 @@ export default {
       linkCopied: false,
       linkCopiedTimer: null,
       tenantSwitchTimer: null,
+      // The dialog before a check of a customer upload or „Erneut
+      // anfordern“.
+      proofReview: { open: false, target: null, loading: false, error: null },
+      // A proof shown in the page, and the notice before a sensitive one is
+      // downloaded.
+      proofView: { open: false, field: null, upload: null },
+      proofDownloadNotice: { open: false, field: null, upload: null },
     };
   },
   computed: {
@@ -184,6 +193,180 @@ export default {
         });
       } finally {
         ProcessingService.hide(operationId);
+      }
+    },
+    /**
+     * Saves a customer upload (section „Nachweise“) under its file name. The
+     * backend hands it out only as a download to whoever may read the
+     * tenant's bookings; a refusal toasts like a failed document.
+     */
+    async downloadProof(upload) {
+      const operationId = ProcessingService.showSnackbar(
+        this.$t("booking.page.proofs.download-progress")
+      );
+      try {
+        const response = await ApiMediaService.getMediaFileBlob(
+          MEDIA_SCOPE.TENANT,
+          upload.mediaId
+        );
+        saveBlob(
+          new Blob([response.data], {
+            type: upload.mimeType || "application/octet-stream",
+          }),
+          upload.originalFileName || upload.mediaId
+        );
+      } catch (error) {
+        const unpacked = await unpackBlobErrorBody(error);
+        await this.addToast({
+          title: this.$t("booking.page.proofs.download-error.title"),
+          message: getApiErrorMessage(
+            unpacked,
+            this.$t("booking.page.proofs.download-error.message")
+          ),
+          type: "error",
+        });
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
+    /** Shows a proof (`{ field, upload }` of `BookingProofs`) in the page. */
+    viewProof({ field, upload }) {
+      this.proofView = { open: true, field, upload };
+    },
+    closeProofView() {
+      this.proofView = { open: false, field: null, upload: null };
+    },
+    /**
+     * „Herunterladen“ of a proof: a sensitive one first shows the notice
+     * that its data is to be deleted, a normal one downloads at once.
+     */
+    requestProofDownload({ field, upload }) {
+      if (checkDeletesFile(upload, field)) {
+        this.proofDownloadNotice = { open: true, field, upload };
+        return;
+      }
+      return this.downloadProof(upload);
+    },
+    closeProofDownloadNotice() {
+      this.proofDownloadNotice = { open: false, field: null, upload: null };
+    },
+    confirmProofDownload() {
+      const upload = this.proofDownloadNotice.upload;
+      this.closeProofDownloadNotice();
+      if (upload) return this.downloadProof(upload);
+    },
+    /** Whether the viewer may check customer uploads of this tenant. */
+    canReviewProofs() {
+      return BookingPermissionService.allowReviewProof();
+    },
+    /**
+     * Opens the dialog for a check (`{ field, upload, result }` of
+     * `BookingProofs`) or „Erneut anfordern“ (`{ field }`, `result` absent)
+     * at one booking.
+     */
+    openProofReview(booking, { field, upload = null, result = null }) {
+      this.proofReview = {
+        open: true,
+        target: {
+          action: result || "requestAgain",
+          bookingId: booking.id,
+          tenantId: booking.tenantId || this.tenantId,
+          // The booking's time, for the list of a series in the dialog.
+          timeBegin: booking.timeBegin ?? null,
+          timeEnd: booking.timeEnd ?? null,
+          field,
+          upload,
+        },
+        loading: false,
+        error: null,
+      };
+    },
+    closeProofReview() {
+      this.proofReview = {
+        open: false,
+        target: null,
+        loading: false,
+        error: null,
+      };
+    },
+    /**
+     * Sends the check or „Erneut anfordern“, then reloads the page: the
+     * note, the state and the chips are the backend's. A refusal stays in
+     * the dialog. `alsoFor`: the other bookings of a series the check
+     * counts for, null for an upload of one.
+     */
+    async submitProofReview(reason, alsoFor = null) {
+      const target = this.proofReview.target;
+      if (!target) return;
+      this.proofReview.loading = true;
+      this.proofReview.error = null;
+      try {
+        if (target.action === "requestAgain") {
+          await ApiBookingService.requestCustomerUploadAgain(
+            target.tenantId,
+            target.bookingId,
+            target.field.fieldId,
+            reason
+          );
+        } else {
+          await ApiBookingService.reviewCustomerUpload(
+            target.tenantId,
+            target.bookingId,
+            target.field.fieldId,
+            target.upload.mediaId,
+            target.action,
+            reason,
+            alsoFor
+          );
+        }
+        this.closeProofReview();
+        const deleted =
+          target.action !== "requestAgain" &&
+          checkDeletesFile(target.upload, target.field);
+        await this.addToast({
+          title: this.$t(
+            `booking.page.proofs.dialog.${target.action}.${
+              deleted ? "done-deleted" : "done"
+            }`
+          ),
+          type: "success",
+        });
+        await this.reload();
+      } catch (error) {
+        this.proofReview.loading = false;
+        this.proofReview.error = getApiErrorMessage(
+          error,
+          this.$t("booking.page.proofs.dialog.error")
+        );
+      }
+    },
+    /**
+     * „Nachreichen anfordern“ of a field not handed in yet (`{ field }` of
+     * `BookingProofs`) at one booking: the mail goes at once, the page reads
+     * the booking anew.
+     */
+    async requestProof(booking, { field }) {
+      try {
+        await ApiBookingService.requestCustomerUpload(
+          booking.tenantId || this.tenantId,
+          booking.id,
+          field.fieldId
+        );
+        await this.addToast({
+          title: this.$t("booking.page.proofs.requested", {
+            label: field.label,
+          }),
+          type: "success",
+        });
+        await this.reload();
+      } catch (error) {
+        await this.addToast({
+          title: getApiErrorMessage(
+            error,
+            this.$t("booking.page.proofs.request-error")
+          ),
+          type: "error",
+        });
       }
     },
     /** Saves the iCal `request` answers under `filename`; a failure toasts as the list's does. */

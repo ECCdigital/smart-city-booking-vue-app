@@ -114,7 +114,9 @@ export default {
         : `bookable.flow.done.${this.outcome}`;
     },
     areas() {
-      return shownAreas(this.expertOptionShown);
+      return shownAreas(this.expertOptionShown, {
+        customerUploadsEnabled: this.customerUploadsEnabled,
+      });
     },
     paymentRoute: () => tenantTabRoute("payments"),
   },

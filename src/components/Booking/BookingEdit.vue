@@ -619,6 +619,18 @@
             </v-row>
           </BaseSection>
 
+          <BaseSection
+            v-if="staffUploadFields.length"
+            :title="$t('booking.staff-uploads.title')"
+            icon="mdi-file-certificate-outline"
+            data-test="booking-staff-uploads"
+          >
+            <BookingStaffUploads
+              :fields="staffUploadFields"
+              :files.sync="staffUploadFiles"
+            />
+          </BaseSection>
+
           <BaseSection title="Admin-Optionen" icon="mdi-cog-outline">
             <v-row v-if="selectedBooking._populated && workflow.active" dense>
               <v-col cols="12">
@@ -900,6 +912,8 @@ import BookingCustomFieldsSection from "@/components/Booking/BookingCustomFields
 import BookingEditSummary from "@/components/Booking/BookingEditSummary.vue";
 import BookingOwnerChangeDialog from "@/components/Booking/BookingOwnerChangeDialog.vue";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
+import BookingStaffUploads from "@/components/Booking/BookingStaffUploads.vue";
+import { staffUploadFieldsOf } from "@/utils/customerUploads";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
@@ -933,6 +947,7 @@ export default {
   name: "BookingEdit",
   components: {
     BookableTypeChip,
+    BookingStaffUploads,
     BaseSection,
     SaveBar,
     BookingInitialState,
@@ -964,6 +979,8 @@ export default {
     return {
       valid: true,
       inProgress: false,
+      /** The proofs the staff hands in with a new booking, by field id. */
+      staffUploadFiles: {},
       /** The addresses the blacklist warning names. */
       blacklistedAddresses: [],
       test: null,
@@ -1090,6 +1107,23 @@ export default {
     };
   },
   computed: {
+    /**
+     * The upload fields of the offers of a new booking, for the proofs the
+     * staff hands in with it; none for a booking already made or while the
+     * tenant takes no proofs.
+     */
+    staffUploadFields() {
+      if (this.selectedBooking?.id) return [];
+      return staffUploadFieldsOf(
+        this.bookableItems,
+        this.$store?.getters["tenants/currentTenant"],
+        this.$store?.getters["instance/instance"]
+      );
+    },
+    /**
+     * The fields the booker can be asked for as soon as the booking is
+     * saved: a request waits for its release, so not a field due after it.
+     */
     /**
      * Private or business: the stored answer, or without it the company's
      * reading. Only a change by the admin writes it; a booking without the
@@ -1930,6 +1964,11 @@ export default {
             this.selectedBooking,
             this.initialState,
             this.totalPriceEur
+          ),
+          // Only the files of fields the booking still has.
+          _.pick(
+            this.staffUploadFiles,
+            this.staffUploadFields.map((field) => field.id)
           )
         )
           .then(async () => {

@@ -181,6 +181,80 @@
           </v-card-text>
         </v-card>
 
+        <v-card
+          v-if="memberProofs.length"
+          outlined
+          class="group-booking-page__proofs section-card"
+        >
+          <v-card-title class="section-header">
+            <v-icon>mdi-file-certificate-outline</v-icon>
+            <span>{{ $t("group-booking.page.proofs.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <div
+              v-for="member in memberProofs"
+              :key="member.bookingId"
+              class="group-booking-page__proofs-member"
+            >
+              <div
+                class="group-booking-page__proofs-heading"
+                data-test="group-proofs-member"
+              >
+                <span class="group-booking-page__proofs-number">
+                  {{
+                    $t("group-booking.page.proofs.member", {
+                      id: member.bookingId,
+                    })
+                  }}
+                </span>
+                <span class="group-booking-page__proofs-period">
+                  {{ periodOf(member.booking) }}
+                </span>
+              </div>
+              <BookingProofs
+                :fields="member.fields"
+                :can-review="canReviewProofs()"
+                @view="viewProof"
+                @download="requestProofDownload"
+                @review="openProofReview(member.booking, $event)"
+                @request-again="openProofReview(member.booking, $event)"
+                @request="requestProof(member.booking, $event)"
+              />
+            </div>
+            <BookingProofReviewDialog
+              :open="proofReview.open"
+              :target="proofReview.target"
+              :loading="proofReview.loading"
+              :error="proofReview.error"
+              @close="closeProofReview"
+              @submit="submitProofReview"
+            />
+            <BookingProofViewer
+              :open="proofView.open"
+              :field="proofView.field"
+              :upload="proofView.upload"
+              @close="closeProofView"
+              @download="requestProofDownload"
+            />
+            <BookingProofDownloadNotice
+              :open="proofDownloadNotice.open"
+              :file-name="
+                proofDownloadNotice.upload
+                  ? proofDownloadNotice.upload.originalFileName
+                  : ''
+              "
+              :retention-days="
+                proofDownloadNotice.field
+                  ? proofDownloadNotice.field.retentionDays
+                  : null
+              "
+              @close="closeProofDownloadNotice"
+              @confirm="confirmProofDownload"
+            />
+          </v-card-text>
+        </v-card>
+
         <v-card outlined class="group-booking-page__comments section-card">
           <v-card-title class="section-header">
             <v-icon>mdi-comment-text-outline</v-icon>
@@ -388,6 +462,11 @@ import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vu
 import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import GroupBookingDocumentActions from "@/components/Booking/GroupBookingDocumentActions.vue";
+import BookingProofs from "@/components/Booking/BookingProofs.vue";
+import BookingProofReviewDialog from "@/components/Booking/BookingProofReviewDialog.vue";
+import BookingProofViewer from "@/components/Booking/BookingProofViewer.vue";
+import BookingProofDownloadNotice from "@/components/Booking/BookingProofDownloadNotice.vue";
+import { seriesProofsOf } from "@/utils/customerUploads";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
@@ -446,6 +525,10 @@ export default {
     BookingStatusPath,
     BookingTransitions,
     GroupBookingDocumentActions,
+    BookingProofs,
+    BookingProofReviewDialog,
+    BookingProofViewer,
+    BookingProofDownloadNotice,
   },
   mixins: [bookingPageShell],
   data() {
@@ -469,6 +552,10 @@ export default {
     /** The members from the populated `bookings`. */
     members() {
       return (this.groupBooking?.bookings || []).filter(Boolean);
+    },
+    /** The section „Nachweise“: the members whose answer carries their state. */
+    memberProofs() {
+      return seriesProofsOf(this.members);
     },
     /** The series' customer: the members share one; the first stands for all. */
     customer() {
@@ -721,6 +808,31 @@ export default {
 </script>
 
 <style scoped>
+/* The members of the section „Nachweise“, one block per booking. */
+.group-booking-page__proofs-member + .group-booking-page__proofs-member {
+  margin-top: var(--scb-space-4);
+}
+
+.group-booking-page__proofs-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--scb-space-2);
+  margin-top: var(--scb-space-3);
+  margin-bottom: var(--scb-space-2);
+  padding-bottom: var(--scb-space-1);
+  border-bottom: 1px solid var(--scb-rule);
+}
+
+.group-booking-page__proofs-number {
+  font-weight: var(--scb-font-weight-semibold);
+}
+
+.group-booking-page__proofs-period {
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-caption);
+}
+
 /* Two columns as the media library draws them: the series in the wide
    column, its facts in a sticky panel beside it. */
 .group-booking-page__body {

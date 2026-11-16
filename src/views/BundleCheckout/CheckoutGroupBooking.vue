@@ -73,6 +73,12 @@ import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import {
+  checkoutUploadErrorKey,
+  checkoutUploadFieldsOf,
+  checkoutUploadRefusalOf,
+  formatsLabel,
+} from "@/utils/customerUploads";
+import {
   addressBlacklistedRefusal,
   formatCheckoutValidationError,
   getGroupCheckoutErrorToastKey,
@@ -129,6 +135,10 @@ export default {
       activePaymentApps: [],
       selectedPaymentApp: null,
       subsequentItems: [],
+      // The files of the upload fields "in the checkout" of the series,
+      // each for the bookings chosen; they go
+      // with the group checkout.
+      groupCustomerUploads: [],
 
       coupon: null,
       couponError: null,
@@ -173,6 +183,18 @@ export default {
     },
     selectedSeriesTimeEnd() {
       return this.bookingAttempts[0]?.timeEnd || null;
+    },
+    /** The series as its times: a file of the group names its bookings by position. */
+    seriesSignature() {
+      return this.bookingAttempts
+        .map((attempt) => `${attempt.timeBegin}-${attempt.timeEnd}`)
+        .join(",");
+    },
+  },
+  watch: {
+    // Another series: the files chosen for the bookings of the old one go.
+    seriesSignature() {
+      this.groupCustomerUploads = [];
     },
   },
   methods: {
@@ -225,10 +247,15 @@ export default {
           leadItem: this.leadItem,
           me: this.me,
           contactDetails: this.contactDetails,
+          groupMembers: this.bookingAttempts,
+          groupCustomerUploads: this.groupCustomerUploads,
         },
         events: {
           back: () => this.currentStep--,
           submit: () => this.currentStep++,
+          "update:group-customer-uploads": (uploads) => {
+            this.groupCustomerUploads = uploads;
+          },
         },
       };
 
@@ -802,6 +829,15 @@ export default {
           this.blacklistRefusal = blacklistedAddress;
           return;
         }
+        // A file refused or a required one missing:
+        // nothing was booked; back to the contact step with the files.
+        const uploadRefusal = booked
+          ? null
+          : checkoutUploadRefusalOf(error.response?.data);
+        if (uploadRefusal) {
+          this.showCustomerUploadRefusal(uploadRefusal);
+          return;
+        }
         const toastKey = booked
           ? "checkout.error.unexpected"
           : getGroupCheckoutErrorToastKey(error);
@@ -822,7 +858,8 @@ export default {
           bookingAttempts: this.bookingAttempts,
           paymentProvider: this.selectedPaymentApp,
         },
-        false
+        false,
+        this.groupCustomerUploads
       );
 
       if (response.status !== 200) {
@@ -830,6 +867,31 @@ export default {
       }
 
       return response.data;
+    },
+
+    /** The refusal of a customer upload, its field named; back to the files. */
+    showCustomerUploadRefusal({ code, params = {} }) {
+      const field = checkoutUploadFieldsOf(this.leadItem.bookable).find(
+        (candidate) => candidate.id === params.fieldId
+      );
+      const reason = this.$t(checkoutUploadErrorKey(code), {
+        formats: formatsLabel(params.formats ?? field?.formats ?? []),
+        size: params.maxFileSizeMb ?? field?.maxFileSizeMb,
+        count: params.maxFiles ?? field?.maxFiles,
+        fields: (params.labels || []).join(", "),
+      });
+      this.addToast(
+        ToastService.createToast(
+          "checkout.customer-uploads.refused",
+          "error",
+          8000,
+          { message: field ? `${field.label}: ${reason}` : reason }
+        )
+      );
+      const contactStep = this.steps.findIndex(
+        (step) => step.component === CheckoutContactDetails
+      );
+      if (contactStep !== -1) this.currentStep = contactStep + 1;
     },
 
     async processGroupPayment(bookingsToPay) {

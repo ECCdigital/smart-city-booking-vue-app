@@ -39,6 +39,23 @@ class BookingPermissionService {
   }
 
   /**
+   * Checking a customer upload and „Erneut anfordern“:
+   * the backend's `booking.reviewCustomerUpload` - `manageBookings.updateAny`
+   * or the tenant owner. Not the instance owner by the special position: a
+   * proof is no business of the instance, only what they hold in the tenant
+   * counts.
+   */
+  static allowReviewProof() {
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+    return !!permissions.manageBookings?.updateAny;
+  }
+
+  /**
    * Reissuing a receipt or cancellation receipt (spec E8): the backend's
    * `booking.reprint` - the booking's own user, or `manageBookings.updateAny`.
    */

@@ -206,7 +206,7 @@ describe("BookableEdit - the areas without a step", () => {
       "Abhängigkeiten",
       "Berechtigungen",
       "Anhänge",
-      "Eigene Felder",
+      "Zusätzliche Felder",
       "Sonstiges",
     ]) {
       await tab(wrapper, label).trigger("click");

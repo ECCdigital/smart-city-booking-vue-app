@@ -4,7 +4,10 @@ import TenantCancellationRefundTiersEditor from "@/components/Tenant/Edit/Tenant
 
 export default {
   name: "TenantEditBooking",
-  components: { TenantCancellationRefundTiersEditor, BaseSection },
+  components: {
+    TenantCancellationRefundTiersEditor,
+    BaseSection,
+  },
   props: {
     tenant: { type: Object, required: true },
   },

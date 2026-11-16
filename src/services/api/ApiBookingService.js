@@ -1,4 +1,8 @@
 import store from "@/store";
+import {
+  checkoutUploadParts,
+  hasCheckoutUploads,
+} from "@/utils/customerUploads";
 export default {
   getBookings(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
@@ -35,13 +39,25 @@ export default {
       `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`
     );
   },
-  /** A manual booking of the administration (`POST`). */
-  createBooking(booking) {
+  /**
+   * A manual booking of the administration (`POST`). With files the staff
+   * hands in for its upload fields (`files` by field id) it goes as
+   * multipart, as the checkout does: they are accepted with the booking.
+   */
+  createBooking(booking, files = {}) {
     const cleansedBooking = Object.assign(new Object(), booking);
-    return ApiClient.post(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings`,
-      cleansedBooking
-    );
+    const url = `api/${store.getters["tenants/currentTenantId"]}/bookings`;
+    if (!hasCheckoutUploads(files)) {
+      return ApiClient.post(url, cleansedBooking);
+    }
+    const form = new FormData();
+    for (const [name, value] of checkoutUploadParts(cleansedBooking, files)) {
+      if (typeof value === "string") form.append(name, value);
+      else form.append(name, value, value.name);
+    }
+    return ApiClient.post(url, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
   updateBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
@@ -240,4 +256,140 @@ export default {
       }
     );
   },
+  /**
+   * Checks a customer upload: `accepted`, or
+   * `rejected` with a reason. The backend deletes the file and answers the
+   * booking's `customerUploadState`.
+   */
+  reviewCustomerUpload(
+    tenantId,
+    bookingId,
+    fieldId,
+    mediaId,
+    result,
+    reason,
+    alsoFor = null
+  ) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/${encodeURIComponent(
+        mediaId
+      )}/review`,
+      // An upload of a series: the other bookings the check counts for;
+      // the backend takes all without.
+      alsoFor ? { result, reason, alsoFor } : { result, reason }
+    );
+  },
+  /** „Erneut anfordern“ of a checked upload field, with a reason. */
+  requestCustomerUploadAgain(tenantId, bookingId, fieldId, reason) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/request-again`,
+      { reason }
+    );
+  },
+  /** „Nachreichen anfordern“: mails the booker the one proof not handed in. */
+  requestCustomerUpload(tenantId, bookingId, fieldId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/request`,
+      {}
+    );
+  },
+  /** „Nachweise anfordern“: mails the booker the required proofs missing. */
+  remindCustomerUploads(tenantId, bookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/remind`,
+      {}
+    );
+  },
+  /**
+   * The bookings of a signed link of the page „Nachweise einreichen“
+   * (`/booking/proofs`), without a sign-in: the one of a booking's link,
+   * all of a series' link, each with provider, time, offers and the
+   * derived state of its uploads.
+   */
+  readCustomerUploadsByLink({ tenantId }, link) {
+    return ApiClient.get(
+      `api/v2/${encodeURIComponent(tenantId)}/customer-uploads-by-link`,
+      { headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link } }
+    );
+  },
+  /**
+   * A file for an upload field, with the signed link; with the link of a
+   * series for the fields of other bookings of it too, `alsoFor` as
+   * `[{ bookingId, fieldId }]`.
+   */
+  uploadCustomerUploadByLink(
+    { tenantId, bookingId },
+    link,
+    fieldId,
+    file,
+    alsoFor = []
+  ) {
+    const form = fileForm(file);
+    if (alsoFor.length > 0) form.append("alsoFor", JSON.stringify(alsoFor));
+    return ApiClient.post(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId),
+      form,
+      linkMultipart(link)
+    );
+  },
+  /** A file in place of one not checked yet, with the signed link. */
+  replaceCustomerUploadByLink(
+    { tenantId, bookingId },
+    link,
+    fieldId,
+    mediaId,
+    file
+  ) {
+    return ApiClient.put(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId, mediaId),
+      fileForm(file),
+      linkMultipart(link)
+    );
+  },
+  /** Deletes a file not checked yet, with the signed link. */
+  removeCustomerUploadByLink({ tenantId, bookingId }, link, fieldId, mediaId) {
+    return ApiClient.delete(
+      customerUploadLinkUrl(tenantId, bookingId, fieldId, mediaId),
+      { headers: { [CUSTOMER_UPLOAD_LINK_HEADER]: link } }
+    );
+  },
 };
+
+/** The header the signed link of a booking goes in, in place of a sign-in. */
+const CUSTOMER_UPLOAD_LINK_HEADER = "X-Customer-Upload-Link";
+
+function customerUploadLinkUrl(tenantId, bookingId, ...rest) {
+  return [
+    `api/v2/${encodeURIComponent(tenantId)}/bookings/${encodeURIComponent(
+      bookingId
+    )}/customer-uploads-by-link`,
+    ...rest.map(encodeURIComponent),
+  ].join("/");
+}
+
+function fileForm(file) {
+  const form = new FormData();
+  form.append("file", file);
+  return form;
+}
+
+function linkMultipart(link) {
+  return {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      [CUSTOMER_UPLOAD_LINK_HEADER]: link,
+    },
+  };
+}
