@@ -219,6 +219,7 @@
                 @download="requestProofDownload"
                 @review="openProofReview(member.booking, $event)"
                 @request-again="openProofReview(member.booking, $event)"
+                @request="requestProof(member.booking, $event)"
               />
             </div>
             <BookingProofReviewDialog

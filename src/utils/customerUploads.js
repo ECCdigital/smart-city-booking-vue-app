@@ -320,6 +320,9 @@ export function proofFieldsOf(booking) {
       uploads,
       // Only a fulfilled field: one already open again asks for nothing new.
       canRequestAgain: !field.former && field.state === "fulfilled",
+      // „Nachreichen anfordern“: a field the booker has not handed in yet.
+      canRequest:
+        !field.former && ["open", "rejected", "overdue"].includes(field.state),
     };
   });
 }
@@ -480,6 +483,42 @@ export function missingCheckoutUploads(fields, files) {
   return fields.filter(
     (field) => field.required && !(files?.[field.id]?.length > 0)
   );
+}
+
+/**
+ * The upload fields of the offers of a manual booking, for the proofs the
+ * staff hands in with it, in the form of the checkout's fields: every
+ * field of every offer once, whatever its timing, one file each, the size
+ * at most the instance's; none while the tenant takes no proofs. The staff
+ * need not hand any in, so none is required here; `required` only shows.
+ *
+ * @param {Object[]} bookableItems With `_bookableUsed`, the offer
+ * @param {Object} tenant
+ * @param {Object} instance
+ * @returns {Object[]}
+ */
+export function staffUploadFieldsOf(bookableItems, tenant, instance) {
+  if (!customerUploadsEnabled(tenant, instance)) return [];
+  const ceiling =
+    instanceCustomerUploadsOf(instance).maxFileSizeMb ??
+    DEFAULT_CUSTOMER_UPLOAD_LIMITS.maxFileSizeMb;
+  const fields = new Map();
+  for (const item of bookableItems || []) {
+    for (const field of item?._bookableUsed?.uploadFieldDefinitions || []) {
+      if (!field?.id || fields.has(field.id)) continue;
+      fields.set(field.id, {
+        id: field.id,
+        label: field.label,
+        hint: field.hint || "",
+        consentText: "",
+        required: Boolean(field.required),
+        formats: field.formats || [],
+        maxFiles: MIN_FILES_PER_FIELD,
+        maxFileSizeMb: Math.min(field.maxFileSizeMb ?? ceiling, ceiling),
+      });
+    }
+  }
+  return [...fields.values()];
 }
 
 /** Whether there is any file to send with the checkout. */

@@ -51,6 +51,51 @@ const noteOf = (upload) =>
     propsData: { fields: fieldsWith(upload) },
   });
 
+describe("BookingProofs - „Nachreichen anfordern“", () => {
+  const openField = (state) =>
+    proofFieldsOf({
+      customerUploadState: {
+        state: "missing",
+        fields: [
+          {
+            fieldId: "f",
+            label: "Satzung",
+            required: true,
+            state,
+            deadline: null,
+            uploads: [],
+          },
+        ],
+      },
+    });
+
+  it("offers it at a field not handed in, to whoever checks", async () => {
+    const wrapper = mountComponent(BookingProofs, {
+      propsData: { fields: openField("open"), canReview: true },
+    });
+
+    await wrapper.find("[data-test='booking-proofs-request']").trigger("click");
+
+    expect(wrapper.emitted("request")[0][0].field.fieldId).toBe("f");
+  });
+
+  it("offers it neither at a field waiting for its check nor to a reader", () => {
+    const waiting = mountComponent(BookingProofs, {
+      propsData: { fields: openField("submitted"), canReview: true },
+    });
+    const reader = mountComponent(BookingProofs, {
+      propsData: { fields: openField("open"), canReview: false },
+    });
+
+    expect(waiting.find("[data-test='booking-proofs-request']").exists()).toBe(
+      false
+    );
+    expect(reader.find("[data-test='booking-proofs-request']").exists()).toBe(
+      false
+    );
+  });
+});
+
 describe("BookingProofs - the note of a checked proof", () => {
   it("keeps a normal file downloadable and says nothing of a deletion", () => {
     const wrapper = noteOf(checked("normal", false));

@@ -340,6 +340,35 @@ export default {
         );
       }
     },
+    /**
+     * „Nachreichen anfordern“ of a field not handed in yet (`{ field }` of
+     * `BookingProofs`) at one booking: the mail goes at once, the page reads
+     * the booking anew.
+     */
+    async requestProof(booking, { field }) {
+      try {
+        await ApiBookingService.requestCustomerUpload(
+          booking.tenantId || this.tenantId,
+          booking.id,
+          field.fieldId
+        );
+        await this.addToast({
+          title: this.$t("booking.page.proofs.requested", {
+            label: field.label,
+          }),
+          type: "success",
+        });
+        await this.reload();
+      } catch (error) {
+        await this.addToast({
+          title: getApiErrorMessage(
+            error,
+            this.$t("booking.page.proofs.request-error")
+          ),
+          type: "error",
+        });
+      }
+    },
     /** Saves the iCal `request` answers under `filename`; a failure toasts as the list's does. */
     async downloadCalendar(request, filename) {
       try {

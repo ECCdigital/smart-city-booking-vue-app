@@ -1889,6 +1889,11 @@
     }
   },
   "booking": {
+    "staff-uploads": {
+      "title": "Nachweise",
+      "intro": "Liegen Ihnen Nachweise vor, laden Sie sie hier hoch: Sie gelten mit der Buchung als geprüft und akzeptiert. Fehlende Nachweise können Sie auf der Buchungsseite anfordern.",
+      "choose": "Datei wählen"
+    },
     "owner-change": {
       "title": "Buchung einem anderen Konto zuordnen?",
       "subtitle": "Die zugewiesene E-Mail-Adresse wurde geändert",
@@ -2430,6 +2435,9 @@
         "accept": "Akzeptieren",
         "reject": "Ablehnen",
         "request-again": "Erneut anfordern",
+        "request": "Nachreichen anfordern",
+        "requested": "„{label}“ ist bei den Buchenden angefordert.",
+        "request-error": "Der Nachweis konnte nicht angefordert werden.",
         "requested-again-by": "Erneut angefordert von {name} am {date}: {reason}",
         "requested-again-at": "Erneut angefordert am {date}: {reason}",
         "dialog": {

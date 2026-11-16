@@ -72,6 +72,18 @@
       >
         {{ $t("booking.page.proofs.none") }}
       </div>
+      <!-- „Nachreichen anfordern“ of a field not handed in yet: a mail to
+           the booker naming it, as „Erneut anfordern“ of a checked one -->
+      <button
+        v-if="canReview && field.canRequest"
+        type="button"
+        class="booking-proofs__request primary--text text-body-2"
+        data-test="booking-proofs-request"
+        @click="$emit('request', { field })"
+      >
+        <v-icon x-small color="primary">mdi-email-fast-outline</v-icon>
+        {{ $t("booking.page.proofs.request") }}
+      </button>
       <v-list v-else dense class="pa-0">
         <v-list-item
           v-for="upload in field.uploads"
@@ -373,8 +385,14 @@ export default {
   white-space: nowrap;
 }
 
+.booking-proofs__request {
+  margin-top: var(--scb-space-1);
+}
+
 .booking-proofs__request-again:hover,
-.booking-proofs__request-again:focus-visible {
+.booking-proofs__request-again:focus-visible,
+.booking-proofs__request:hover,
+.booking-proofs__request:focus-visible {
   text-decoration: underline;
 }
 </style>

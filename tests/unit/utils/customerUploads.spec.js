@@ -40,6 +40,7 @@ import {
   groupUploadKey,
   missingGroupCheckoutUploads,
   precheckGroupCheckoutUpload,
+  staffUploadFieldsOf,
 } from "@/utils/customerUploads";
 
 const CONTEXT = { tenantFormats: ["pdf", "png"] };
@@ -372,6 +373,25 @@ describe("customerUploads - checking a proof (ECCdigital/tickets#826)", () => {
     expect(fulfilled.canRequestAgain).toBe(true);
     expect(waiting.canRequestAgain).toBe(false);
     expect(openAgain.canRequestAgain).toBe(false);
+  });
+
+  it("offers „Nachreichen anfordern“ at a field not handed in yet", () => {
+    const states = ["open", "rejected", "overdue", "submitted", "fulfilled"];
+    const fields = proofFieldsOf(
+      withState(
+        states.map((state) =>
+          proofField({ fieldId: `f-${state}`, state, required: false })
+        )
+      )
+    );
+
+    expect(fields.map((field) => field.canRequest)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+    ]);
   });
 
   it("lists the notes of a field renamed away or deleted under its old label", () => {
@@ -890,5 +910,67 @@ describe("customerUploads - the instance's settings", () => {
       "maxFilesPerBooking",
       "maxTotalSizeMbPerBooking",
     ]);
+  });
+});
+
+describe("staffUploadFieldsOf - the proofs the staff hands in with a booking", () => {
+  const tenant = { customerUploads: { enabled: true, formats: ["pdf"] } };
+  const instance = { customerUploads: { enabled: true, maxFileSizeMb: 5 } };
+  const item = (fields) => ({
+    _bookableUsed: { uploadFieldDefinitions: fields },
+  });
+
+  it("takes every field of every offer once, one file each, at most the instance's size", () => {
+    const fields = staffUploadFieldsOf(
+      [
+        item([
+          {
+            id: "a",
+            label: "Ausweis",
+            required: true,
+            formats: ["pdf"],
+            timing: "beforeRelease",
+          },
+          { id: "b", label: "Pass", formats: ["pdf"], maxFileSizeMb: 2 },
+        ]),
+        item([
+          { id: "a", label: "Ausweis", formats: ["pdf"], maxFileSizeMb: 50 },
+        ]),
+      ],
+      tenant,
+      instance
+    );
+
+    expect(fields).toEqual([
+      expect.objectContaining({
+        id: "a",
+        required: true,
+        maxFiles: 1,
+        maxFileSizeMb: 5,
+      }),
+      expect.objectContaining({
+        id: "b",
+        required: false,
+        maxFiles: 1,
+        maxFileSizeMb: 2,
+      }),
+    ]);
+  });
+
+  it("offers none while the tenant or the instance takes no proofs", () => {
+    const items = [item([{ id: "a", label: "Ausweis", formats: ["pdf"] }])];
+
+    expect(
+      staffUploadFieldsOf(
+        items,
+        { customerUploads: { enabled: false } },
+        instance
+      )
+    ).toEqual([]);
+    expect(
+      staffUploadFieldsOf(items, tenant, {
+        customerUploads: { enabled: false },
+      })
+    ).toEqual([]);
   });
 });

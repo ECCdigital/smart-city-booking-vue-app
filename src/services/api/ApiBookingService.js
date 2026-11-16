@@ -1,4 +1,8 @@
 import store from "@/store";
+import {
+  checkoutUploadParts,
+  hasCheckoutUploads,
+} from "@/utils/customerUploads";
 export default {
   getBookings(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
@@ -35,13 +39,25 @@ export default {
       `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`
     );
   },
-  /** A manual booking of the administration (`POST`). */
-  createBooking(booking) {
+  /**
+   * A manual booking of the administration (`POST`). With files the staff
+   * hands in for its upload fields (`files` by field id) it goes as
+   * multipart, as the checkout does: they are accepted with the booking.
+   */
+  createBooking(booking, files = {}) {
     const cleansedBooking = Object.assign(new Object(), booking);
-    return ApiClient.post(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings`,
-      cleansedBooking
-    );
+    const url = `api/${store.getters["tenants/currentTenantId"]}/bookings`;
+    if (!hasCheckoutUploads(files)) {
+      return ApiClient.post(url, cleansedBooking);
+    }
+    const form = new FormData();
+    for (const [name, value] of checkoutUploadParts(cleansedBooking, files)) {
+      if (typeof value === "string") form.append(name, value);
+      else form.append(name, value, value.name);
+    }
+    return ApiClient.post(url, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
   updateBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
@@ -274,6 +290,16 @@ export default {
         bookingId
       )}/customer-uploads/${encodeURIComponent(fieldId)}/request-again`,
       { reason }
+    );
+  },
+  /** „Nachreichen anfordern“: mails the booker the one proof not handed in. */
+  requestCustomerUpload(tenantId, bookingId, fieldId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/v2/${encodeURIComponent(t)}/bookings/${encodeURIComponent(
+        bookingId
+      )}/customer-uploads/${encodeURIComponent(fieldId)}/request`,
+      {}
     );
   },
   /** „Nachweise anfordern“: mails the booker the required proofs missing. */

@@ -220,6 +220,7 @@
               @download="requestProofDownload"
               @review="openProofReview(booking, $event)"
               @request-again="openProofReview(booking, $event)"
+              @request="requestProof(booking, $event)"
             />
             <BookingProofReviewDialog
               :open="proofReview.open"
