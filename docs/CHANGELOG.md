@@ -7,6 +7,11 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Fixed
+
+-   The PDF template preview renders the templates a new tenant starts with: it failed with „Vorschau-Fehler: The partial pdfPageNumbers could not be found“, because the preview lacked the backend's page number partial that the default templates use in their footer
+-   The visual default of the cancellation receipt names the calculation mode of the refund again, such as „Automatisch nach Mandantenregel“, as the backend's default did; the backend now stores these default blocks for a new tenant
+
 ## [4.4.0] — 2026-11-16
 
 ### Changed
