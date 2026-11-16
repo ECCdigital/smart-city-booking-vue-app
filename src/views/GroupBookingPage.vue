@@ -197,12 +197,20 @@
               :key="member.bookingId"
               class="group-booking-page__proofs-member"
             >
-              <div class="text-caption group-booking-page__proofs-heading">
-                {{
-                  $t("group-booking.page.proofs.member", {
-                    id: member.bookingId,
-                  })
-                }}
+              <div
+                class="group-booking-page__proofs-heading"
+                data-test="group-proofs-member"
+              >
+                <span class="group-booking-page__proofs-number">
+                  {{
+                    $t("group-booking.page.proofs.member", {
+                      id: member.bookingId,
+                    })
+                  }}
+                </span>
+                <span class="group-booking-page__proofs-period">
+                  {{ periodOf(member.booking) }}
+                </span>
               </div>
               <BookingProofs
                 :fields="member.fields"
@@ -805,8 +813,23 @@ export default {
 }
 
 .group-booking-page__proofs-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--scb-space-2);
+  margin-top: var(--scb-space-3);
+  margin-bottom: var(--scb-space-2);
+  padding-bottom: var(--scb-space-1);
+  border-bottom: 1px solid var(--scb-rule);
+}
+
+.group-booking-page__proofs-number {
+  font-weight: var(--scb-font-weight-semibold);
+}
+
+.group-booking-page__proofs-period {
+  font-size: var(--scb-font-size-sm);
   color: var(--scb-text-caption);
-  margin-bottom: var(--scb-space-1);
 }
 
 /* Two columns as the media library draws them: the series in the wide

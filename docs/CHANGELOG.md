@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Series page, section „Nachweise“: each booking is headed by its number in semi-bold with its date and time beside it, above a thin line, instead of a small grey „Buchung #…“
 -   „Nachweise einreichen“ for a series: the link of a series from the mails opens all its bookings, as in the checkout of a series one card per proof with its dates („Termin n · Datum“), each with its state and files to replace or delete; after „Datei hochladen“ the chosen file waits with „Gilt für die Termine“ below it, every date that still takes one chosen at first, and „Einreichen“ sends it to the dates chosen. The page reads its bookings from `GET /api/v2/:tenant/customer-uploads-by-link`. Needs the backend with the link of a series
 -   Colour previews in „Instanz verwalten“ read the contrast colour also from hex with alpha (`#rrggbbaa`, `#rgba`, as the colour picker stores it), like the storefront: a light colour such as `#FDD835FF` previews with black text; „Pauschal“ previews with black text on any colour
 -   „Mandant verwalten“ → „Nachweise von Buchenden“: clearer intro, switch „Nachweis-Upload freischalten“ without its hint, „Erlaubte Formate“ semi-bold with a hint that each upload field picks from them, the reminder says optional proofs get none, and the two mail switches stand under the semi-bold heading „Benachrichtigungen für die Verwaltung“; the hint of the roles no longer mentions the tenant's address
