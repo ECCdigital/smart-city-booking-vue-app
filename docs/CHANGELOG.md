@@ -7,6 +7,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+## [4.4.1] — 2026-11-16
+
 ### Fixed
 
 -   The PDF template preview renders the templates a new tenant starts with: it failed with „Vorschau-Fehler: The partial pdfPageNumbers could not be found“, because the preview lacked the backend's page number partial that the default templates use in their footer
