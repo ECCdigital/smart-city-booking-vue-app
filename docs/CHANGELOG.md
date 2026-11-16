@@ -7,6 +7,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+## [4.4.0] — 2026-11-16
+
 ### Changed
 
 -   Development: the Vuex modules build their state with a factory, so every store gets its own; tests no longer share toasts and other state between stores, and ESLint refuses a plain object as state (`user.js` excepted, the permission services read its state directly). `docs/CHANGELOG.md` merges with `merge=union`, and the README says that a branch catches up with its `version/…` base by a merge
