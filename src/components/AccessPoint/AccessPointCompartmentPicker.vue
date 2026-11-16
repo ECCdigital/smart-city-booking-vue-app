@@ -1,5 +1,9 @@
 <script>
-import { compartmentGroups } from "@/utilities/locker-system-compartments";
+import {
+  compartmentGroups,
+  leavingCompartmentNote,
+  leavingCompartmentsSummary,
+} from "@/utilities/locker-system-compartments";
 
 /**
  * The Fächer of a Schließfachanlage that carries its own, chosen from the
@@ -22,6 +26,13 @@ export default {
     loading: { type: Boolean, default: false },
     // The provider's name, for the Fach its list no longer names.
     providerTitle: { type: String, default: "" },
+    // The bookings at the Fächer, as `compartmentBookings` reads them.
+    bookings: { type: Array, default: () => [] },
+    // The UUIDs of the Fächer the save takes out of the Anlage or out of
+    // service; each says what happens to its bookings.
+    leaving: { type: Array, default: () => [] },
+    // The bookings could not be read, so none can be named.
+    bookingsUnreadable: { type: Boolean, default: false },
   },
   computed: {
     groups() {
@@ -30,8 +41,34 @@ export default {
     selectedCount() {
       return this.value.length;
     },
+    // What the save does to the bookings at the Fächer that leave.
+    summary() {
+      if (!this.leaving.length) return "";
+      if (this.bookingsUnreadable) {
+        return this.$t(
+          "accessPoint.management.compartments.bookings.unreadable"
+        );
+      }
+      return leavingCompartmentsSummary(this.bookings, this.leaving);
+    },
+    // The bookings by the UUID of the Fach they hold.
+    bookingsByCompartment() {
+      const map = {};
+      this.bookings.forEach((booking) => {
+        const id = String(booking.compartment.id);
+        (map[id] = map[id] || []).push(booking);
+      });
+      return map;
+    },
   },
   methods: {
+    bookingsAt(compartment) {
+      return this.bookingsByCompartment[String(compartment.id)] || [];
+    },
+    leavingNote(compartment) {
+      if (!this.leaving.includes(String(compartment.id))) return "";
+      return leavingCompartmentNote(this.bookingsAt(compartment));
+    },
     toggle(compartment, checked) {
       const others = this.value.filter((c) => c.id !== compartment.id);
       if (!checked) {
@@ -102,9 +139,21 @@ export default {
           "
           dense
           hide-details
-          class="mt-0 mr-6"
+          class="mt-0 mr-2"
           @change="toggle(compartment, $event)"
         />
+        <span class="compartment-dots mr-6">
+          <span
+            v-for="(booking, index) in bookingsAt(compartment)"
+            :key="`${booking.id}-${index}`"
+            class="compartment-dot"
+            :class="`compartment-dot--${
+              booking.running ? 'running' : 'future'
+            }`"
+            :data-state="booking.running ? 'running' : 'future'"
+            data-test="booking-dot"
+          />
+        </span>
         <v-switch
           v-if="compartment.selected"
           :input-value="compartment.outOfService"
@@ -126,6 +175,14 @@ export default {
           }}
         </span>
         <div
+          v-if="leavingNote(compartment)"
+          class="compartment-consequence text-caption"
+          style="flex-basis: 100%"
+          data-test="compartment-consequence"
+        >
+          {{ leavingNote(compartment) }}
+        </div>
+        <div
           v-if="errors[compartment.id]"
           class="compartment-error error--text text-caption"
           style="flex-basis: 100%"
@@ -133,6 +190,26 @@ export default {
           {{ errors[compartment.id] }}
         </div>
       </div>
+    </div>
+
+    <div
+      v-if="bookings.length"
+      class="compartment-legend d-flex align-center text-caption text--secondary mb-2"
+      data-test="dot-legend"
+    >
+      <span class="compartment-dot compartment-dot--running mr-1" />
+      {{ $t("accessPoint.management.compartments.bookings.legendRunning") }}
+      <span class="compartment-dot compartment-dot--future ml-3 mr-1" />
+      {{ $t("accessPoint.management.compartments.bookings.legendFuture") }}
+    </div>
+
+    <div
+      v-if="summary"
+      class="compartments-summary d-flex text-caption mb-2"
+      data-test="compartments-summary"
+    >
+      <v-icon small class="mr-2">mdi-information-outline</v-icon>
+      <span>{{ summary }}</span>
     </div>
 
     <div class="text-caption text--secondary">
@@ -144,3 +221,30 @@ export default {
     </div>
   </div>
 </template>
+
+<style scoped>
+.compartment-dots {
+  display: inline-flex;
+  gap: 3px;
+  min-width: 8px;
+}
+
+.compartment-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.compartment-dot--running {
+  background: var(--v-success-base);
+}
+
+.compartment-consequence {
+  color: var(--v-warning-darken2);
+}
+
+.compartment-dot--future {
+  border: 2px solid var(--v-primary-base);
+}
+</style>

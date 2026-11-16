@@ -1,5 +1,7 @@
 import { LOCKER_TYPE, accessPointLabel } from "@/utilities/access-points";
 import { isUnlimitedAmount } from "@/utils/bookableFlow";
+import { isRejectedOrCancelled } from "@/utils/bookingStatus";
+import FormatService from "@/services/FormatService";
 import i18n from "@/language/index";
 
 /**
@@ -16,25 +18,6 @@ import i18n from "@/language/index";
  * Schrank and number come from Open Locker's listing on every save; this UI
  * sends what it shows, the backend takes over its own.
  */
-
-/**
- * The providers whose Schließfachanlage carries its own Fächer: the backend
- * declares `resolveCompartments` for them. Only for a NEW Anlage, which has
- * no data yet to tell - a stored access point carries its own Fächer when
- * its data has the list (`carriesOwnCompartments`), whatever its provider.
- */
-const PROVIDERS_WITH_OWN_COMPARTMENTS = ["open-locker"];
-
-/**
- * Whether a new Schließfachanlage of the provider carries its own Fächer -
- * which picker the dialog shows before anything is stored.
- *
- * @param {string} provider A provider id
- * @returns {boolean}
- */
-export function lockerCarriesCompartments(provider) {
-  return PROVIDERS_WITH_OWN_COMPARTMENTS.includes(provider);
-}
 
 /**
  * Whether the access point is a Schließfachanlage that carries its own
@@ -70,6 +53,167 @@ export function leavingCompartmentIds(stored, compartments) {
       return !kept || (c.outOfService !== true && kept.outOfService === true);
     })
     .map((c) => String(c.id));
+}
+
+/** The Pufferzeit of a bookable in milliseconds, as the backend counts it. */
+function accessBufferMs(bookable) {
+  const buffer = bookable?.accessPointDetails?.accessBuffer || {};
+  const toMs = (minutes) => {
+    const value = Number(minutes ?? 0);
+    return Number.isFinite(value) && value > 0 ? value * 60 * 1000 : 0;
+  };
+  return { beforeMs: toMs(buffer.before), afterMs: toMs(buffer.after) };
+}
+
+/**
+ * The bookings that hold a Fach of the Anlage (ECCdigital/tickets#1113),
+ * read off the tenant's bookings: each not taken back entry in `accessInfo`
+ * at the Anlage with the Fach it was given, of a booking not rejected,
+ * cancelled or withdrawn whose access window - the period with the
+ * Pufferzeit of its bookable - is not over. It is `running` once that window
+ * has begun, and keeps its Fach when the Fach leaves; before, it gets a free
+ * Fach in service on the save. A booking without a period holds its Fach for
+ * good. Mirrors the backend's `LockerSystemRedistribution.bookingsAt`.
+ *
+ * @param {Object} accessPoint The Anlage
+ * @param {Object[]} bookings The tenant's bookings, with `accessInfo`
+ * @param {Object[]} bookables The tenant's bookables, for the Pufferzeit
+ * @param {number} [now=Date.now()]
+ * @returns {{id: string, timeBegin: number|null, timeEnd: number|null,
+ *   compartment: Object, running: boolean}[]} One per Fach held, earliest
+ *   first
+ */
+export function compartmentBookings(
+  accessPoint,
+  bookings,
+  bookables,
+  now = Date.now()
+) {
+  if (!carriesOwnCompartments(accessPoint)) return [];
+  const bookableById = new Map(
+    (bookables || []).map((bookable) => [String(bookable.id), bookable])
+  );
+  return (bookings || [])
+    .filter((booking) => !isRejectedOrCancelled(booking))
+    .flatMap((booking) =>
+      (booking.accessInfo || [])
+        .filter(
+          (entry) =>
+            String(entry?.accessPointId) === String(accessPoint.id) &&
+            !entry.revokedAt &&
+            entry.assignedCompartment?.id
+        )
+        .map((entry) => {
+          const { timeBegin, timeEnd } = booking;
+          const { beforeMs, afterMs } = accessBufferMs(
+            bookableById.get(String(entry.bookableId))
+          );
+          const endless = timeBegin == null || timeEnd == null;
+          if (!endless && now > timeEnd + afterMs) return null;
+          return {
+            id: booking.id,
+            timeBegin: timeBegin ?? null,
+            timeEnd: timeEnd ?? null,
+            compartment: entry.assignedCompartment,
+            running: endless || now >= timeBegin - beforeMs,
+          };
+        })
+    )
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        (a.timeBegin ?? 0) - (b.timeBegin ?? 0) ||
+        String(a.id).localeCompare(String(b.id))
+    );
+}
+
+/**
+ * The future bookings that hold a Fach no longer in the Anlage, or out of
+ * service (ECCdigital/tickets#1113): a save found no free Fach in service
+ * for them, so they stayed at the old one. They count until they are
+ * solved - moved or cancelled, or the Fach is back.
+ *
+ * @param {Object} accessPoint The Anlage as stored
+ * @param {Object[]} bookings The bookings at its Fächer, as
+ *   `compartmentBookings` reads them
+ * @returns {Object[]} Those bookings, earliest first
+ */
+export function bookingsWithoutCompartment(accessPoint, bookings) {
+  if (!carriesOwnCompartments(accessPoint)) return [];
+  const inService = new Set(
+    accessPoint.config.compartments
+      .filter((compartment) => compartment.outOfService !== true)
+      .map((compartment) => String(compartment.id))
+  );
+  return (bookings || []).filter(
+    (booking) =>
+      !booking.running && !inService.has(String(booking.compartment?.id))
+  );
+}
+
+/**
+ * What a save does to the bookings at a Fach that leaves the Anlage, in a
+ * few words at the Fach (ECCdigital/tickets#1113): the running one stays,
+ * the future ones move - „läuft bis 20.11.26, 14:00, bleibt · 2 ziehen um“.
+ *
+ * @param {Object[]} bookings The bookings at the Fach, as
+ *   `compartmentBookings` reads them
+ * @returns {string} Empty without bookings
+ */
+export function leavingCompartmentNote(bookings) {
+  const running = (bookings || []).filter((booking) => booking.running);
+  const moving = (bookings || []).length - running.length;
+  const parts = [];
+  if (running.length) {
+    const end = running[0].timeEnd;
+    parts.push(
+      end == null
+        ? i18n.t("accessPoint.management.compartments.bookings.running")
+        : i18n.t("accessPoint.management.compartments.bookings.runningUntil", {
+            end: FormatService.dateTime(end),
+          })
+    );
+  }
+  if (moving) {
+    parts.push(
+      i18n.tc("accessPoint.management.compartments.bookings.moving", moving, {
+        count: moving,
+      })
+    );
+  }
+  return parts.join(" · ");
+}
+
+/**
+ * What a save does to the bookings at all Fächer that leave the Anlage, as
+ * the sentence under the Fächer says it (ECCdigital/tickets#1113): „Beim
+ * Speichern: 1 laufende Buchung behält ihr Fach, 2 künftige bekommen ein
+ * freies Fach in Betrieb.“ How many find a free Fach only the save knows.
+ *
+ * @param {Object[]} bookings The bookings at the Fächer of the Anlage, as
+ *   `compartmentBookings` reads them
+ * @param {string[]} leavingIds The UUIDs of the Fächer that leave
+ * @returns {string} Empty where no booking hangs at them
+ */
+export function leavingCompartmentsSummary(bookings, leavingIds) {
+  const leaving = new Set((leavingIds || []).map(String));
+  const affected = (bookings || []).filter((booking) =>
+    leaving.has(String(booking.compartment?.id))
+  );
+  if (!affected.length) return "";
+  const key = (name) => `accessPoint.management.compartments.bookings.${name}`;
+  const keeping = affected.filter((booking) => booking.running).length;
+  const moving = affected.length - keeping;
+  const parts = [];
+  if (keeping) parts.push(i18n.tc(key("keep"), keeping, { count: keeping }));
+  if (moving) {
+    parts.push(
+      i18n.tc(key(keeping ? "moveAfterKeep" : "move"), moving, {
+        count: moving,
+      })
+    );
+  }
+  return i18n.t(key("summary"), { consequences: parts.join(", ") });
 }
 
 /**

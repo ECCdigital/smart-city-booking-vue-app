@@ -60,6 +60,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
     transparent
   );
   --scb-warning-tint: rgba(251, 140, 0, 0.12); // the "Experte" badge
+  // A failed and a passed connection test, the line beneath a provider's
+  // head that asks before switching off or names the fault (Zugangspunkte).
+  --scb-error-tint: color-mix(in srgb, var(--v-error-base) 8%, transparent);
+  --scb-success-tint: color-mix(in srgb, var(--v-success-base) 8%, transparent);
 
   // --- Text -----------------------------------------------------------------
   --scb-text: rgba(0, 0, 0, 0.87); // values, row titles

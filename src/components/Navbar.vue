@@ -291,7 +291,7 @@ export default {
             context: "tenant",
           },
           {
-            title: "Zutritt & Schließsysteme",
+            title: "Zugangspunkte",
             link: "access-points",
             icon: "mdi-door-closed-lock",
             interfaceName: "tenants",

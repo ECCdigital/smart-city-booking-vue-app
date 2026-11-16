@@ -4,54 +4,106 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiBookingService from "@/services/api/ApiBookingService";
-import { isForbiddenError } from "@/services/api/apiErrorMessage";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import {
+  getApiErrorMessage,
+  isForbiddenError,
+} from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
-import BaseSection from "@/components/commons/BaseSection.vue";
-import SearchBar from "@/components/commons/SearchBar.vue";
+import AccessPointProviderSection from "@/components/AccessPoint/AccessPointProviderSection.vue";
+import AccessAppSettings from "@/components/AccessPoint/AccessAppSettings.vue";
+import AccessPointIqRow from "@/components/AccessPoint/AccessPointIqRow.vue";
+import AccessPointRow from "@/components/AccessPoint/AccessPointRow.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
+import AccessPointAssignDialog from "@/components/AccessPoint/AccessPointAssignDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
 import AccessPointCompartmentQrDialog from "@/components/AccessPoint/AccessPointCompartmentQrDialog.vue";
-import { downloadQrCode, QR_FORMATS } from "@/utilities/access-point-qr";
+import AccessProviderPicker from "@/components/AccessPoint/AccessProviderPicker.vue";
+import AccessSetupStrip from "@/components/AccessPoint/AccessSetupStrip.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
+import { downloadQrCode } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
-  accessPointLabel,
-  accessPointTypeLabel,
-  accessPointTypeName,
-  canListAccessPoints,
-  isLockerAccessPoint,
-  requiresQrScan,
-  DOOR_TYPE,
-  LOCKER_TYPE,
-} from "@/utilities/access-points";
+  createLockAndAccessAppDefaults,
+  findTenantApp,
+  LOCK_AND_ACCESS_APP_IDS,
+  SALTO_PROVIDER,
+} from "@/utilities/access-apps";
+import {
+  hasActivation,
+  iqSummary,
+} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
-import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
-
-// The values of the type filter behind the funnel: both kinds, or one.
-const TYPE_FILTER = { all: "all", door: DOOR_TYPE, locker: LOCKER_TYPE };
+import { canListAccessPoints } from "@/utilities/access-points";
+import {
+  bookingsWithoutCompartment,
+  carriesOwnCompartments,
+  compartmentBookings,
+} from "@/utilities/locker-system-compartments";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
+import { matches, needsAction } from "@/utilities/access-point-rows";
+import { knownProviders, setupState } from "@/utilities/access-setup";
 
 export default {
   name: "AccessPointManagement",
   components: {
-    BaseSection,
+    AccessPointProviderSection,
+    AccessAppSettings,
+    AccessPointIqRow,
+    AccessPointRow,
     AccessPointEditDialog,
+    AccessPointAssignDialog,
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
     AccessPointCompartmentQrDialog,
+    AccessProviderPicker,
+    AccessSetupStrip,
     SearchBar,
+    ToolbarRow,
+    ToolbarAction,
   },
   data() {
     return {
-      search: "",
-      // "all" | "door" | "locker" - the type behind the search funnel
-      typeFilter: TYPE_FILTER.all,
       loading: false,
       loadError: "",
       accessPoints: [],
       bookables: [],
       bookablesForbidden: false,
       providers: [],
+      // The tenant's stored access applications by provider, each with the
+      // state of its connection.
+      apps: {},
+      // The providers whose settings are unfolded, and those among them
+      // whose settings hold changes not saved yet.
+      openSettings: [],
+      dirtySettings: [],
+      // The IQs of Salto KS while it is switched on, loaded behind the
+      // page (ECCdigital/tickets#1107); `iqsError` names a list that could
+      // not be read.
+      iqs: [],
+      iqsLoaded: false,
+      iqsError: "",
+      iqsOpen: false,
+      // What each active provider lists, by provider, read behind the page
+      // for „von Hand“ and „IQ nicht aktiviert“; a listing that could not
+      // be read is left out (ECCdigital/tickets#1107).
+      listings: {},
+      // The providers being connected: a section in the UI alone until
+      // „Speichern und aktivieren“ stores them.
+      drafts: [],
+      // The provider connected last on this page: its section names the
+      // next step while it has no access point.
+      freshProvider: "",
       editDialog: false,
+      // The provider of the section whose creation opened the dialog; empty
+      // while an access point is edited.
+      createProvider: "",
+      // The access point just created: its row stands out with the next
+      // step until it is assigned.
+      freshId: "",
       selectedAccessPoint: null,
       deleteDialog: false,
       deleting: false,
@@ -61,42 +113,18 @@ export default {
       loadingBookings: false,
       rotateDialog: false,
       compartmentQrDialog: false,
-      downloadingId: "",
+      assignDialog: false,
+      // „QR-Codes der Fächer“ opens with the question to rotate all.
+      rotateAllCompartments: false,
+      search: "",
+      // „Offen“: only the access points with something still to do.
+      onlyOpen: false,
     };
   },
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
-    headers() {
-      return [
-        {
-          text: this.$t("accessPoint.management.fields.label"),
-          value: "displayLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.fields.provider"),
-          value: "provider",
-        },
-        {
-          text: this.$t("accessPoint.management.fields.type"),
-          value: "typeLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.table.origin"),
-          value: "originLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.table.assignment"),
-          value: "assignmentLabel",
-        },
-        {
-          text: this.$t("accessPoint.management.rules.qrScanShort"),
-          value: "qrScanRequired",
-        },
-        { text: "", value: "controls", sortable: false, align: "end" },
-      ];
-    },
     // Which bookables point at which access point - the reference lives on
     // the bookable, so the assignment is resolved here rather than asked for.
     bookablesByAccessPointId() {
@@ -110,114 +138,98 @@ export default {
       });
       return map;
     },
-    items() {
-      return this.accessPoints.map((accessPoint) => {
-        const assigned = this.bookablesByAccessPointId[accessPoint.id] || [];
-        const isLocker = isLockerAccessPoint(accessPoint);
-        return {
-          ...accessPoint,
-          displayLabel: accessPointLabel(accessPoint),
-          typeLabel: accessPointTypeLabel(accessPoint),
-          typeName: accessPointTypeName(accessPoint),
-          isLocker,
-          // Where the row comes from - derived, since nothing stores it: a
-          // locker system of a provider that lists access points is taken
-          // over from that listing; a door, and a Pareva Anlage typed in by
-          // its Produkt-ID, are entered by hand.
-          originLabel:
-            isLocker && this.listableProviderIds.has(accessPoint.provider)
-              ? this.$t("accessPoint.management.table.originProvider")
-              : this.$t("accessPoint.management.table.originManual"),
-          assignedBookables: assigned,
-          assignmentLabel: assigned.length
-            ? assigned.map((bookable) => bookable.title).join(", ")
-            : this.assignmentUnknownLabel,
-          qrScanRequired: requiresQrScan(accessPoint),
-          // An Anlage that carries its own Fächer prints a QR code per Fach
-          // (ECCdigital/tickets#1056); iFBS and Pareva Anlagen carry none.
-          hasCompartmentQr: carriesOwnCompartments(accessPoint),
-        };
+    // One section per connected provider, in the order the backend lists
+    // the active ones, each with its access points and its stored
+    // application. A provider switched off is not among them; it keeps a
+    // section of its own, as does a provider that only has access points
+    // left, so that they stay reachable.
+    sections() {
+      const byProvider = new Map(
+        this.providers.map((provider) => [
+          provider.id,
+          { provider, accessPoints: [] },
+        ])
+      );
+      const ensure = (id) => {
+        if (!byProvider.has(id)) {
+          byProvider.set(id, {
+            provider: {
+              id,
+              title: createLockAndAccessAppDefaults()[id]?.title,
+            },
+            accessPoints: [],
+          });
+        }
+        return byProvider.get(id);
+      };
+      Object.keys(this.apps).forEach(ensure);
+      this.accessPoints.forEach((accessPoint) => {
+        ensure(accessPoint.provider).accessPoints.push(accessPoint);
+      });
+      this.drafts.forEach(ensure);
+      return [...byProvider.values()].map((section) => ({
+        ...section,
+        app: this.apps[section.provider.id] || null,
+        draft:
+          !this.apps[section.provider.id] &&
+          this.drafts.includes(section.provider.id),
+        rows: section.accessPoints.filter((accessPoint) =>
+          this.shows(accessPoint)
+        ),
+      }));
+    },
+    saltoActive() {
+      return !!this.apps[SALTO_PROVIDER]?.active;
+    },
+    showsIqs() {
+      return this.saltoActive && (this.iqsLoaded || !!this.iqsError);
+    },
+    // The settings of Salto KS ask before a save lets these rest.
+    activatedIqCount() {
+      return this.iqs.filter(hasActivation).length;
+    },
+    // The providers without a section, to connect.
+    unconnectedProviders() {
+      const shown = this.sections.map((section) => section.provider.id);
+      return knownProviders().filter(({ id }) => !shown.includes(id));
+    },
+    filtering() {
+      return !!this.search.trim() || this.onlyOpen;
+    },
+    // The providers stored and switched on, or listed as active.
+    connectedCount() {
+      const active = this.providers.map((provider) => provider.id);
+      return this.sections.filter(({ provider, app, draft }) =>
+        app ? app.active : !draft && active.includes(provider.id)
+      ).length;
+    },
+    // The IQs of Salto KS still to activate, from the IQs the page loads.
+    openIqs() {
+      return this.saltoActive ? iqSummary(this.iqs).open : 0;
+    },
+    // How far the setup is, and with it what is open.
+    setup() {
+      return setupState({
+        connected: this.connectedCount,
+        openIqs: this.openIqs,
+        accessPoints: this.accessPoints,
+        bookablesOf: this.bookablesOf,
+        listingOf: this.listingOf,
       });
     },
-    listableProviderIds() {
-      return new Set(
-        this.providers.filter(canListAccessPoints).map((p) => p.id)
+    openCount() {
+      return this.setup.open;
+    },
+    hits() {
+      return this.sections.reduce(
+        (count, section) => count + section.rows.length,
+        0
       );
     },
-    // One list for doors and locker systems, narrowed to one kind on demand.
-    // Everything that is not a locker system counts as a door - that is the
-    // schema's default for a row without a type.
-    filteredItems() {
-      if (this.typeFilter === TYPE_FILTER.locker) {
-        return this.items.filter((item) => item.isLocker);
-      }
-      if (this.typeFilter === TYPE_FILTER.door) {
-        return this.items.filter((item) => !item.isLocker);
-      }
-      return this.items;
-    },
-    // The filter for doors holds every access point that is not a locker
-    // system - an Open Locker compartment too, which is a door by type but a
-    // Fach on site (ECCdigital/tickets#1036). So it is named by what it
-    // holds: „Türen“, „Fächer“ or both, and „Türen“ while it holds nothing.
-    doorFilterLabel() {
-      const names = new Set(
-        this.items.filter((item) => !item.isLocker).map((item) => item.typeName)
-      );
-      if (!names.delete("compartment")) {
-        return this.$t("accessPoint.management.table.filterDoors");
-      }
-      return names.size
-        ? this.$t("accessPoint.management.table.filterDoorsAndCompartments")
-        : this.$t("accessPoint.management.table.filterCompartments");
-    },
-    /** The type behind the funnel: all, doors or lockers. */
-    filterSections() {
-      return [
-        {
-          key: "type",
-          label: this.$t("accessPoint.management.table.typeFilter"),
-          multiple: false,
-          segmented: true,
-          empty: TYPE_FILTER.all,
-          selected: this.typeFilter,
-          options: [
-            {
-              value: TYPE_FILTER.all,
-              label: this.$t("accessPoint.management.table.filterAll"),
-            },
-            {
-              value: TYPE_FILTER.door,
-              label: this.doorFilterLabel,
-            },
-            {
-              value: TYPE_FILTER.locker,
-              label: this.$t("accessPoint.management.table.filterLockers"),
-            },
-          ],
-        },
-      ];
-    },
-    // "Not assigned" is a statement about the bookables; it may only be made
-    // when they were actually readable.
-    assignmentUnknownLabel() {
-      return this.bookablesForbidden
-        ? this.$t("accessPoint.management.table.assignmentForbidden")
-        : this.$t("accessPoint.management.table.unassigned");
-    },
-    // "Nothing created yet" would be wrong while the list is narrowed to one
-    // kind - then it is this filter that finds nothing.
-    emptyText() {
-      return this.typeFilter === TYPE_FILTER.all
-        ? this.$t("accessPoint.management.table.empty")
-        : this.$t("accessPoint.management.table.emptyFiltered");
-    },
-    qrFormats() {
-      return QR_FORMATS;
-    },
+    // `null` where the bookables were not readable, see `bookablesOf`.
     affectedBookables() {
       if (!this.selectedAccessPoint) return [];
-      return this.bookablesByAccessPointId[this.selectedAccessPoint.id] || [];
+      return this.bookablesOf(this.selectedAccessPoint);
     },
     // The bookings that hold a granted, unrevoked access at the access point
     // about to be deleted. There is no route that asks that question directly:
@@ -231,35 +243,183 @@ export default {
       if (!this.selectedAccessPoint) return [];
       return bookingsWithLiveAccess(this.bookings, this.selectedAccessPoint.id);
     },
+    // The bookings at the Fächer of the Anlage the dialog edits.
+    selectedCompartmentBookings() {
+      return this.compartmentBookingsOf(this.selectedAccessPoint);
+    },
   },
   watch: {
     tenantId() {
       this.fetchAll();
     },
+    dirtySettings(dirty) {
+      this.$emit("update:dirty", dirty.length > 0);
+    },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    // The page decides what it shows - the sections or the question for
+    // the providers - only once the access points, the providers and their
+    // connections are read; one that could not be read is named instead
+    // (ECCdigital/tickets#1082).
     async fetchAll() {
       if (!this.tenantId) return;
 
       this.loading = true;
       this.loadError = "";
 
+      const [pointsError, providersError, appsError] = await Promise.all([
+        this.fetchAccessPoints(),
+        this.fetchProviders(),
+        this.fetchApps(),
+      ]);
+      if (pointsError) {
+        this.loadError = formatAccessPointErrorMessage(pointsError, {
+          fallbackKey: "accessPoint.management.errors.loadFailed",
+        });
+      } else if (providersError || appsError) {
+        this.loadError = formatAccessPointErrorMessage(
+          providersError || appsError,
+          { fallbackKey: "accessPoint.management.errors.providersFailed" }
+        );
+      }
+      this.loading = false;
+
+      await Promise.all([
+        this.fetchBookables(),
+        this.fetchCompartmentBookings(),
+      ]);
+      // Behind the page: it stands before these are read.
+      this.fetchIqs();
+      this.listings = {};
+      this.providers.forEach((provider) => this.fetchListing(provider.id));
+    },
+    // A listing that cannot be read leaves its markers out, silently.
+    async fetchListing(id) {
+      const provider = this.providers.find((known) => known.id === id);
+      if (!provider || !canListAccessPoints(provider)) {
+        this.$delete(this.listings, id);
+        return;
+      }
+      try {
+        const response = await ApiAccessAppsService.getAccessPoints(
+          this.tenantId,
+          id
+        );
+        this.$set(
+          this.listings,
+          id,
+          Array.isArray(response?.data) ? response.data : []
+        );
+      } catch (error) {
+        this.$delete(this.listings, id);
+      }
+    },
+    listingOf(accessPoint) {
+      return this.listings[accessPoint.provider] || null;
+    },
+    // After a provider is saved or switched: the active providers anew, and
+    // behind them its listing and, for Salto KS, its IQs.
+    async refreshProvider(provider) {
+      await this.fetchProviders();
+      this.fetchListing(provider);
+      if (this.isSalto(provider)) await this.fetchIqs();
+    },
+    // An IQ activated changes what Salto KS lists of its locks.
+    async reloadIqs() {
+      this.fetchListing(SALTO_PROVIDER);
+      await this.fetchIqs();
+    },
+    async fetchIqs() {
+      if (!this.saltoActive) {
+        this.iqs = [];
+        this.iqsLoaded = false;
+        this.iqsError = "";
+        return;
+      }
+      try {
+        const response = await ApiAccessAppsService.getSaltoIqs(this.tenantId);
+        this.iqs = Array.isArray(response?.data) ? response.data : [];
+        this.iqsLoaded = true;
+        this.iqsError = "";
+      } catch (error) {
+        this.iqs = [];
+        this.iqsLoaded = false;
+        this.iqsError = getApiErrorMessage(
+          error,
+          this.$t("accessPoint.tenant.salto.iq.errors.generic")
+        );
+      }
+    },
+    isSalto(provider) {
+      return provider === SALTO_PROVIDER;
+    },
+    // The jump from the test of Salto KS to its IQs.
+    async showIqs() {
+      this.iqsOpen = true;
+      await this.$nextTick();
+      [].concat(this.$refs.iqRow || [])[0]?.$el.scrollIntoView?.({
+        behavior: "smooth",
+        block: "start",
+      });
+    },
+    // The bookings at the Fächer of an Anlage live in the tenant's bookings,
+    // so they are read only where an Anlage carries its own Fächer.
+    async fetchCompartmentBookings() {
+      if (this.accessPoints.some(carriesOwnCompartments)) {
+        await this.fetchBookings();
+      }
+    },
+    compartmentBookingsOf(accessPoint) {
+      return compartmentBookings(accessPoint, this.bookings, this.bookables);
+    },
+    // The future bookings a save found no free Fach for, with the link to
+    // each.
+    withoutCompartmentOf(accessPoint) {
+      return bookingsWithoutCompartment(
+        accessPoint,
+        this.compartmentBookingsOf(accessPoint)
+      ).map((booking) => ({
+        ...booking,
+        href: this.$router?.resolve?.(this.bookingRoute(booking.id))?.href,
+      }));
+    },
+    bookingRoute(bookingId) {
+      return bookingPageRoute(bookingId, this.tenantId);
+    },
+    openBooking(bookingId) {
+      this.$router.push(this.bookingRoute(bookingId));
+    },
+    // The access points of the tenant; answers the error that kept them.
+    async fetchAccessPoints() {
       try {
         const response = await ApiAccessPointService.getAccessPoints(
           this.tenantId
         );
         this.accessPoints = response.data || [];
+        return null;
       } catch (error) {
         this.accessPoints = [];
-        this.loadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.errors.loadFailed",
-        });
-      } finally {
-        this.loading = false;
+        return error;
       }
-
-      await Promise.all([this.fetchBookables(), this.fetchProviders()]);
+    },
+    // The access applications travel with the tenant; answers the error
+    // that kept them.
+    async fetchApps() {
+      try {
+        const response = await ApiTenantService.getTenant(this.tenantId);
+        const applications = response.data?.applications || [];
+        const apps = {};
+        LOCK_AND_ACCESS_APP_IDS.forEach((id) => {
+          const app = findTenantApp(applications, id);
+          if (app) apps[id] = app;
+        });
+        this.apps = apps;
+        return null;
+      } catch (error) {
+        this.apps = {};
+        return error;
+      }
     },
     async fetchBookables() {
       this.bookablesForbidden = false;
@@ -281,30 +441,152 @@ export default {
         this.bookablesForbidden = isForbiddenError(error);
       }
     },
+    // The active providers; answers the error that kept them.
     async fetchProviders() {
       try {
         const response = await ApiAccessAppsService.getProviders(this.tenantId);
         this.providers = response.data || [];
+        return null;
       } catch (error) {
         this.providers = [];
+        return error;
       }
     },
-    // One button, one dialog: whether the access point is taken over from
-    // the provider or entered by hand is chosen inside the dialog.
-    openCreate() {
+    // Only Salto KS has IQs.
+    openIqsOf(provider) {
+      return this.isSalto(provider) ? this.openIqs : 0;
+    },
+    // „Verbinden“: a section of the provider with its settings open, in the
+    // UI alone.
+    connect(provider) {
+      if (!this.drafts.includes(provider)) {
+        this.drafts = [...this.drafts, provider];
+      }
+      if (!this.openSettings.includes(provider)) {
+        this.openSettings = [...this.openSettings, provider];
+      }
+    },
+    // „Verwerfen“: the section goes, nothing was stored.
+    discard(provider) {
+      this.drafts = this.drafts.filter((id) => id !== provider);
+      this.closeSettings(provider);
+    },
+    cancelSettings(provider) {
+      if (this.drafts.includes(provider)) this.discard(provider);
+      else this.closeSettings(provider);
+    },
+    toggleSettings(provider) {
+      if (this.openSettings.includes(provider)) this.closeSettings(provider);
+      else this.openSettings = [...this.openSettings, provider];
+    },
+    closeSettings(provider) {
+      this.openSettings = this.openSettings.filter((id) => id !== provider);
+    },
+    onSettingsDirty(provider, dirty) {
+      const others = this.dirtySettings.filter((id) => id !== provider);
+      this.dirtySettings = dirty ? [...others, provider] : others;
+    },
+    async onAppRemoved(provider) {
+      const apps = { ...this.apps };
+      delete apps[provider];
+      this.apps = apps;
+      this.closeSettings(provider);
+      await this.refreshProvider(provider);
+    },
+    // Switching keeps credentials, access points and assignments; the
+    // active providers are read anew, since only they list and create.
+    async switchApp(provider, active) {
+      try {
+        const response = await ApiAccessAppsService.setActive(
+          this.tenantId,
+          provider,
+          active
+        );
+        this.apps = { ...this.apps, [provider]: response.data };
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast(
+            "accessPoint.management.toasts.switchFailed",
+            "error"
+          )
+        );
+        return;
+      }
+      await this.refreshProvider(provider);
+    },
+    // A provider saved the first time is among the active ones now, and
+    // with Salto KS its IQs stand right after (ECCdigital/tickets#1107).
+    // Tested again after the save (ECCdigital/tickets#1106), the
+    // connection is read anew, so head and IQs say its state.
+    async onAppSaved(provider, app, { retested = false } = {}) {
+      const first = !this.apps[provider];
+      if (first) this.freshProvider = provider;
+      this.apps = { ...this.apps, [provider]: app };
+      this.drafts = this.drafts.filter((id) => id !== provider);
+      this.closeSettings(provider);
+      await this.refreshProvider(provider);
+      if (retested) await this.fetchApps();
+    },
+    // The creation starts in the section of a provider, so the provider is
+    // settled before the dialog opens.
+    openCreate(provider) {
+      this.createProvider = provider;
       this.selectedAccessPoint = null;
       this.editDialog = true;
     },
+    // "Not assigned" is a statement about the bookables; it may only be made
+    // when they were actually readable.
+    bookablesOf(accessPoint) {
+      if (this.bookablesForbidden) return null;
+      return this.bookablesByAccessPointId[accessPoint.id] || [];
+    },
+    needsAction,
+    // Whether the row of the access point stands under the search and
+    // „Offen“.
+    shows(accessPoint) {
+      const bookables = this.bookablesOf(accessPoint);
+      return (
+        matches(accessPoint, this.search, bookables) &&
+        (!this.onlyOpen ||
+          needsAction(accessPoint, bookables, this.listingOf(accessPoint)))
+      );
+    },
+    openAssign(accessPoint) {
+      this.selectedAccessPoint = accessPoint;
+      this.assignDialog = true;
+    },
+    // The assignment lives on the bookables, so they are read anew.
+    async onAssigned() {
+      this.assignDialog = false;
+      await this.addToast(
+        ToastService.createToast(
+          "accessPoint.management.toasts.assigned",
+          "success"
+        )
+      );
+      await this.fetchBookables();
+    },
     openEdit(accessPoint) {
+      this.createProvider = "";
       this.selectedAccessPoint = accessPoint;
       this.editDialog = true;
+    },
+    // The QR code of a door or a fixed Fach is its PDF, at once; a
+    // Schließfachanlage has one per Fach, in their own dialog.
+    openQr(accessPoint) {
+      if (carriesOwnCompartments(accessPoint)) {
+        this.openCompartmentQr(accessPoint);
+      } else {
+        this.downloadQr(accessPoint, "pdf");
+      }
     },
     openRotate(accessPoint) {
       this.selectedAccessPoint = accessPoint;
       this.rotateDialog = true;
     },
-    openCompartmentQr(accessPoint) {
+    openCompartmentQr(accessPoint, rotateAll = false) {
       this.selectedAccessPoint = accessPoint;
+      this.rotateAllCompartments = rotateAll;
       this.compartmentQrDialog = true;
     },
     async openDelete(accessPoint) {
@@ -334,7 +616,8 @@ export default {
         this.loadingBookings = false;
       }
     },
-    async onSaved() {
+    async onSaved(answer) {
+      if (this.createProvider && answer?.id) this.freshId = answer.id;
       this.editDialog = false;
       await this.addToast(
         ToastService.createToast(
@@ -373,8 +656,6 @@ export default {
       }
     },
     async downloadQr(accessPoint, format) {
-      this.downloadingId = `${accessPoint.id}-${format}`;
-
       try {
         await downloadQrCode(accessPoint, format, this.tenantId);
       } catch (error) {
@@ -389,8 +670,6 @@ export default {
             fallbackKey: "accessPoint.management.toasts.qrFailed.message",
           }),
         });
-      } finally {
-        this.downloadingId = "";
       }
     },
   },
@@ -401,39 +680,8 @@ export default {
 </script>
 
 <template>
-  <!-- mb-16: room beneath the list for the floating creation. -->
-  <BaseSection
-    :title="$t('accessPoint.management.title')"
-    icon="mdi-door-closed-lock"
-    :hint="$t('accessPoint.management.hint')"
-    class="mb-16"
-  >
-    <template v-slot:actions>
-      <v-btn
-        icon
-        :loading="loading"
-        :disabled="loading"
-        :title="$t('accessPoint.management.reload')"
-        @click="fetchAll"
-      >
-        <v-icon>mdi-refresh</v-icon>
-      </v-btn>
-    </template>
-
-    <!-- The creation floats bottom right, as it does on every main page. -->
-    <v-btn
-      class="create-access-point"
-      color="primary"
-      fixed
-      large
-      bottom
-      right
-      rounded
-      @click="openCreate"
-    >
-      <v-icon>mdi-plus</v-icon>
-      {{ $t("accessPoint.management.create") }}
-    </v-btn>
+  <div>
+    <v-progress-linear :active="loading" indeterminate color="primary" />
 
     <v-alert v-if="loadError" color="error" text dense class="mb-4">
       <v-icon left>mdi-alert-circle</v-icon>
@@ -445,176 +693,158 @@ export default {
       {{ $t("accessPoint.management.hints.assignmentForbidden") }}
     </v-alert>
 
-    <SearchBar
-      v-model="search"
-      :fields="$t('accessPoint.management.search')"
-      :filters="filterSections"
-      data-test="access-point-search"
-      @filter="(key, type) => (typeFilter = type)"
+    <AccessProviderPicker
+      v-if="!loading && !loadError && !sections.length"
+      start
+      :providers="unconnectedProviders"
+      @connect="connect"
     />
 
-    <v-data-table
-      :headers="headers"
-      :items="filteredItems"
-      :search="search"
-      :loading="loading"
-      :loading-text="$t('accessPoint.management.table.loading')"
-      :no-data-text="emptyText"
-      :footer-props="{
-        'items-per-page-all-text': 'Alle',
-        'items-per-page-text': $t('accessPoint.management.table.perPage'),
-      }"
-      class="accent elevation-1"
+    <AccessSetupStrip
+      v-if="!loadError && sections.length"
+      :steps="setup.steps"
+      :done="setup.done"
+      class="mb-6"
+    />
+
+    <SearchBar
+      v-if="accessPoints.length"
+      v-model="search"
+      :fields="$t('accessPoint.management.search.fields')"
+      class="mb-4"
+      data-test="access-point-search"
     >
-      <template v-slot:item.displayLabel="{ item }">
-        <div class="font-weight-medium">{{ item.displayLabel }}</div>
-        <div class="text-caption text--secondary">{{ item.externalId }}</div>
-      </template>
-
-      <template v-slot:item.typeLabel="{ item }">
-        <v-chip
-          v-if="item.typeLabel"
-          x-small
-          label
-          :color="item.isLocker ? 'indigo' : 'primary'"
-          dark
-        >
-          {{ item.typeLabel }}
-        </v-chip>
-      </template>
-
-      <template v-slot:item.assignmentLabel="{ item }">
-        <span
-          v-if="item.assignedBookables.length === 0"
-          class="text--secondary"
-        >
-          {{ assignmentUnknownLabel }}
-        </span>
-        <span v-else>{{ item.assignmentLabel }}</span>
-        <!-- How many compartments a locker system hands out is the bookable's
-             capacity, not a property of the access point. -->
-        <div v-if="item.isLocker" class="text-caption text--secondary">
-          {{ $t("accessPoint.management.table.capacityHint") }}
-        </div>
-      </template>
-
-      <template v-slot:item.qrScanRequired="{ item }">
-        <!-- An iFBS or Pareva locker system carries no validation rules, so
-             the QR question does not arise for it. An Open Locker Anlage
-             carries them for all its Fächer (ECCdigital/tickets#1060). -->
-        <span
-          v-if="item.isLocker && !item.hasCompartmentQr"
-          class="text-caption text--secondary"
-        >
-          {{ $t("accessPoint.management.rules.notApplicable") }}
-        </span>
-        <template v-else>
-          <v-chip v-if="item.qrScanRequired" x-small label color="primary">
-            {{ $t("accessPoint.management.rules.required") }}
-          </v-chip>
-          <v-chip v-else x-small label color="grey lighten-1">
-            {{ $t("accessPoint.management.rules.notRequired") }}
-          </v-chip>
-          <div v-if="item.isLocker" class="text-caption text--secondary">
-            {{ $t("accessPoint.management.rules.forAllCompartments") }}
-          </div>
-        </template>
-      </template>
-
-      <template v-slot:item.controls="{ item }">
-        <v-btn
-          v-if="item.hasCompartmentQr"
-          class="compartment-qr mr-1"
-          small
-          text
-          color="primary"
-          @click="openCompartmentQr(item)"
-        >
-          <v-icon left small>mdi-qrcode</v-icon>
-          {{ $t("accessPoint.management.compartmentQr.action") }}
-        </v-btn>
-        <v-menu offset-y>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn class="row-menu" icon small v-bind="attrs" v-on="on">
-              <v-icon>mdi-dots-horizontal</v-icon>
-            </v-btn>
+      <template v-if="filtering || !bookablesForbidden" #actions>
+        <ToolbarRow>
+          <template #actions>
+            <span
+              v-if="filtering"
+              class="access-point-hits mr-2"
+              data-test="access-point-hits"
+            >
+              {{
+                $t("accessPoint.management.search.hits", {
+                  hits,
+                  total: accessPoints.length,
+                })
+              }}
+            </span>
+            <!-- Without the bookables the page cannot tell what is open. -->
+            <ToolbarAction
+              v-if="!bookablesForbidden"
+              icon="mdi-alert-circle-outline"
+              :active="onlyOpen"
+              data-test="access-point-open"
+              @click="onlyOpen = !onlyOpen"
+            >
+              {{
+                $t("accessPoint.management.search.open", { count: openCount })
+              }}
+            </ToolbarAction>
           </template>
-          <v-list dense>
-            <v-list-item link @click="openEdit(item)">
-              <v-list-item-icon><v-icon>mdi-pencil</v-icon></v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.edit") }}
-              </v-list-item-title>
-            </v-list-item>
-            <!-- The QR codes of the Fächer, the way the door's QR code sits
-                 in this menu (ECCdigital/tickets#1056). -->
-            <v-list-item
-              v-if="item.hasCompartmentQr"
-              class="open-compartment-qr"
-              link
-              @click="openCompartmentQr(item)"
-            >
-              <v-list-item-icon><v-icon>mdi-qrcode</v-icon></v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.compartmentQr.menu") }}
-              </v-list-item-title>
-            </v-list-item>
-            <!-- The QR code and its scan code belong to a door: what they
-                 unlock is a validation rule, and a locker system has none. -->
-            <template v-if="!item.isLocker">
-              <v-divider />
-              <v-list-item
-                v-for="format in qrFormats"
-                :key="format"
-                :class="`download-qr-${format}`"
-                link
-                :disabled="downloadingId === `${item.id}-${format}`"
-                @click="downloadQr(item, format)"
-              >
-                <v-list-item-icon>
-                  <v-icon>
-                    {{ format === "pdf" ? "mdi-file-pdf-box" : "mdi-qrcode" }}
-                  </v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>
-                  {{ $t(`accessPoint.management.qr.${format}`) }}
-                </v-list-item-title>
-              </v-list-item>
-              <v-divider />
-              <v-list-item link @click="openRotate(item)">
-                <v-list-item-icon>
-                  <v-icon>mdi-autorenew</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>
-                  {{ $t("accessPoint.management.rotate.action") }}
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-            <v-divider />
-            <v-list-item
-              class="delete-access-point"
-              link
-              @click="openDelete(item)"
-            >
-              <v-list-item-icon>
-                <v-icon color="error">mdi-delete</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>
-                {{ $t("accessPoint.management.delete.action") }}
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        </ToolbarRow>
       </template>
-    </v-data-table>
+    </SearchBar>
+
+    <AccessPointProviderSection
+      v-for="section in sections"
+      :key="section.provider.id"
+      :provider="section.provider"
+      :state="section.app ? section.app.connectionState : ''"
+      :settings-open="openSettings.includes(section.provider.id)"
+      :access-points="section.accessPoints"
+      :last-error="
+        (section.app && section.app.lastTest && section.app.lastTest.error) ||
+        ''
+      "
+      :draft="section.draft"
+      :empty="!section.accessPoints.length"
+      :fresh="section.provider.id === freshProvider"
+      :open-iqs="openIqsOf(section.provider.id)"
+      :shrunk="filtering && !section.rows.length"
+      class="mb-5"
+      @create="openCreate(section.provider.id)"
+      @settings="toggleSettings(section.provider.id)"
+      @switch="switchApp(section.provider.id, $event)"
+      @discard="discard(section.provider.id)"
+    >
+      <template #settings>
+        <AccessAppSettings
+          :provider="section.provider"
+          :app="section.app"
+          :access-points="section.accessPoints"
+          :activated-iq-count="activatedIqCount"
+          @to-iqs="showIqs"
+          @cancel="cancelSettings(section.provider.id)"
+          @saved="(app, how) => onAppSaved(section.provider.id, app, how)"
+          @dirty="onSettingsDirty(section.provider.id, $event)"
+          @removed="onAppRemoved(section.provider.id)"
+        />
+      </template>
+      <template #iqs>
+        <AccessPointIqRow
+          v-if="isSalto(section.provider.id) && showsIqs"
+          ref="iqRow"
+          :tenant-id="tenantId"
+          :iqs="iqs"
+          :error="iqsError"
+          :open.sync="iqsOpen"
+          :reload="reloadIqs"
+        />
+      </template>
+      <div
+        v-if="filtering && !section.rows.length"
+        class="access-point-none"
+        data-test="access-point-none"
+      >
+        {{
+          $t("accessPoint.management.search.none", {
+            provider: section.provider.title || section.provider.id,
+          })
+        }}
+      </div>
+      <AccessPointRow
+        v-for="item in section.rows"
+        :key="item.id"
+        :access-point="item"
+        :bookables="bookablesOf(item)"
+        :listing="listingOf(item)"
+        :fresh="item.id === freshId && needsAction(item, bookablesOf(item))"
+        :without-compartment="withoutCompartmentOf(item)"
+        @assign="openAssign(item)"
+        @edit="openEdit(item)"
+        @qr="openQr(item)"
+        @download="(format) => downloadQr(item, format)"
+        @rotate="openRotate(item)"
+        @rotate-all="openCompartmentQr(item, true)"
+        @delete="openDelete(item)"
+        @open-booking="openBooking"
+      />
+    </AccessPointProviderSection>
+
+    <AccessProviderPicker
+      v-if="sections.length"
+      :providers="unconnectedProviders"
+      @connect="connect"
+    />
 
     <AccessPointEditDialog
       :open="editDialog"
       :access-point="selectedAccessPoint"
       :access-points="accessPoints"
       :providers="providers"
+      :provider="createProvider"
+      :compartment-bookings="selectedCompartmentBookings"
+      :bookings-unreadable="bookingsUnreadable"
       @close="editDialog = false"
       @saved="onSaved"
+    />
+    <AccessPointAssignDialog
+      :open="assignDialog"
+      :access-point="selectedAccessPoint"
+      :bookables="bookables"
+      @close="assignDialog = false"
+      @saved="onAssigned"
     />
     <AccessPointRotateDialog
       :open="rotateDialog"
@@ -625,6 +855,7 @@ export default {
     <AccessPointCompartmentQrDialog
       :open="compartmentQrDialog"
       :access-point="selectedAccessPoint"
+      :rotate-all="rotateAllCompartments"
       @rotated="onRotated"
       @close="compartmentQrDialog = false"
     />
@@ -640,5 +871,18 @@ export default {
       @close="deleteDialog = false"
       @confirm="confirmDelete"
     />
-  </BaseSection>
+  </div>
 </template>
+
+<style scoped>
+.access-point-hits {
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-muted);
+}
+
+.access-point-none {
+  padding: var(--scb-space-2) var(--scb-space-4);
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-muted);
+}
+</style>

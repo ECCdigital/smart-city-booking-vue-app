@@ -112,3 +112,28 @@ export function downloadCompartmentQrSheet(accessPoint, tenant) {
     `qr-${accessPoint.id}-alle-faecher.pdf`
   );
 }
+
+/**
+ * The QR code of a door, a fixed Fach or one Fach of a Schließfachanlage as
+ * an image to look at, rendered by the server as PNG (ECCdigital/tickets#1111).
+ * The caller frees the URL with `URL.revokeObjectURL` once it is no longer
+ * shown.
+ *
+ * @param {Object} accessPoint The access point, the Anlage for a Fach
+ * @param {Object|null} compartment Its Fach, null for the access point itself
+ * @param {string} [tenant] Tenant id, defaults to the selected tenant
+ * @returns {Promise<string>} An object URL of the PNG
+ */
+export async function qrPreviewUrl(accessPoint, compartment, tenant) {
+  const response = compartment
+    ? await ApiAccessPointService.getCompartmentQrCode(
+        accessPoint.id,
+        compartment.id,
+        "png",
+        tenant
+      )
+    : await ApiAccessPointService.getQrCode(accessPoint.id, "png", tenant);
+  return window.URL.createObjectURL(
+    new Blob([response.data], { type: CONTENT_TYPES.png })
+  );
+}

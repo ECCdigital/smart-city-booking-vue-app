@@ -1,17 +1,22 @@
 <script>
 import FormatService from "@/services/FormatService";
 import { accessPointLabel } from "@/utilities/access-points";
+import { accessPointKind } from "@/utilities/access-point-fields";
+import { createLockAndAccessAppDefaults } from "@/utilities/access-apps";
 
-const MAX_LISTED_BOOKINGS = 10;
+// The sentence names this many bookables and counts the rest.
+const MAX_NAMED_BOOKABLES = 3;
 
 /**
  * Deleting an access point is one operation for a door and for a locker
  * system - in the backend both are a row in `accesspoints`, and the delete
  * detaches it from the bookables and drops the row.
  *
- * What it does not do is revoke anything at the provider, so the dialog names
- * two things: the bookables that lose the access point, and the bookings that
- * hold a granted, unrevoked access at it right now.
+ * What it does not do is revoke anything at the provider. So the dialog asks
+ * in its title and says in one sentence per consequence what the deletion
+ * does (ECCdigital/tickets#1112): the bookables that lose the access point,
+ * and the running bookings that keep their access at the provider, folded
+ * out under „Welche?“.
  */
 export default {
   name: "AccessPointDeleteDialog",
@@ -19,7 +24,8 @@ export default {
     open: { type: Boolean, default: false },
     accessPoint: { type: Object, default: null },
     // Bookables that reference this access point, named so the admin sees
-    // what loses its door before confirming.
+    // what loses its door before confirming; `null` where they could not be
+    // read.
     affectedBookables: { type: Array, default: () => [] },
     // Bookings with a live access at this access point (`access-grants.js`).
     runningBookings: { type: Array, default: () => [] },
@@ -30,36 +36,70 @@ export default {
     deleting: { type: Boolean, default: false },
     error: { type: String, default: "" },
   },
+  data() {
+    return {
+      // The running bookings fold out under „Welche?“.
+      showRunning: false,
+    };
+  },
   computed: {
     label() {
       return accessPointLabel(this.accessPoint);
     },
-    // At a busy locker system the list can grow long; the dialog names the
-    // first few and counts the rest, so it stays a warning rather than a
-    // report.
-    bookingRows() {
-      return this.runningBookings
-        .slice(0, MAX_LISTED_BOOKINGS)
-        .map((booking) => ({
-          id: booking.id,
-          subtitle: [booking.name, booking.mail, this.periodOf(booking)]
-            .filter(Boolean)
-            .join(" • "),
-        }));
+    // „door“, „lockerSystem“ or „fixedCompartment“: what the bookables lose.
+    kind() {
+      return accessPointKind(this.accessPoint);
     },
-    unlistedBookingCount() {
-      return Math.max(this.runningBookings.length - MAX_LISTED_BOOKINGS, 0);
+    bookables() {
+      return this.affectedBookables || [];
+    },
+    // „A“, „A und B“, „A, B und C“, „A, B, C und 2 weitere“.
+    bookableNames() {
+      const titles = this.bookables.map(
+        (bookable) => bookable.title || bookable.id
+      );
+      const named = titles.slice(0, MAX_NAMED_BOOKABLES);
+      const rest = titles.length - named.length;
+      if (rest > 0) {
+        return this.t("names.more", { names: named.join(", "), count: rest });
+      }
+      if (named.length < 2) return named.join("");
+      return this.t("names.last", {
+        names: named.slice(0, -1).join(", "),
+        last: named[named.length - 1],
+      });
+    },
+    // Only a check that answered may say that no booking is affected.
+    nothingAffected() {
+      return (
+        !this.loadingBookings &&
+        !this.bookingsUnreadable &&
+        !!this.affectedBookables &&
+        !this.affectedBookables.length &&
+        !this.runningBookings.length
+      );
+    },
+    // Where the grants of the running bookings stay.
+    providerTitle() {
+      const provider = this.accessPoint?.provider;
+      return createLockAndAccessAppDefaults()[provider]?.title || provider;
+    },
+  },
+  watch: {
+    open(open) {
+      if (open) this.showRunning = false;
     },
   },
   methods: {
-    periodOf(booking) {
-      if (!booking.timeBegin || !booking.timeEnd) return "";
-      return `${this.dateTime(booking.timeBegin)} – ${this.dateTime(
-        booking.timeEnd
-      )}`;
+    t(key, params) {
+      return this.$t(`accessPoint.management.delete.${key}`, params);
     },
-    dateTime(value) {
-      return `${FormatService.date(value)} ${FormatService.time(value)}`;
+    // The sentences differ in the verb, so each number has its own key.
+    number(count) {
+      return count === 1 ? "one" : "other";
+    },
+    until(booking) {
+      return this.t("until", { time: FormatService.dateTime(booking.timeEnd) });
     },
   },
 };
@@ -68,7 +108,7 @@ export default {
 <template>
   <v-dialog
     :value="open"
-    max-width="560"
+    max-width="480"
     persistent
     scrollable
     @input="!$event && $emit('close')"
@@ -76,9 +116,7 @@ export default {
     <v-card>
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon left color="error">mdi-alert</v-icon>
-        <span class="text-h5">
-          {{ $t("accessPoint.management.delete.title") }}
-        </span>
+        <span class="text-h5">{{ t("title", { label }) }}</span>
         <v-spacer />
         <v-btn icon :disabled="deleting" @click="$emit('close')">
           <v-icon>mdi-close</v-icon>
@@ -86,83 +124,115 @@ export default {
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
-        <p>{{ $t("accessPoint.management.delete.question", { label }) }}</p>
-
-        <v-alert
-          v-if="affectedBookables.length > 0"
-          color="warning"
-          text
-          dense
-          class="mb-0"
+        <div
+          v-if="nothingAffected"
+          class="consequence"
+          data-test="delete-consequence"
         >
-          <div class="font-weight-medium mb-1">
-            {{ $t("accessPoint.management.delete.affectedTitle") }}
-          </div>
-          <ul class="affected-list">
-            <li v-for="bookable in affectedBookables" :key="bookable.id">
-              {{ bookable.title || bookable.id }}
-            </li>
-          </ul>
-          <div class="text-caption mt-2">
-            {{ $t("accessPoint.management.delete.affectedHint") }}
-          </div>
-        </v-alert>
-        <div v-else class="text-caption text--secondary">
-          {{ $t("accessPoint.management.delete.noneAffected") }}
+          <v-icon small color="success" class="consequence-icon">
+            mdi-check
+          </v-icon>
+          <span>{{ t("nothing") }}</span>
         </div>
 
-        <!-- Bookings whose access this deletion tears apart -->
+        <div
+          v-if="!affectedBookables"
+          class="consequence text--secondary"
+          data-test="delete-consequence"
+        >
+          <v-icon small class="consequence-icon">
+            mdi-help-circle-outline
+          </v-icon>
+          <span>{{ t(`bookablesUnchecked.${kind}`) }}</span>
+        </div>
+        <div
+          v-else-if="affectedBookables.length > 0"
+          class="consequence"
+          data-test="delete-consequence"
+        >
+          <v-icon small class="consequence-icon">mdi-link-variant-off</v-icon>
+          <i18n
+            :path="`accessPoint.management.delete.loses.${number(
+              affectedBookables.length
+            )}.${kind}`"
+            tag="span"
+          >
+            <template #names>
+              <strong>{{ bookableNames }}</strong>
+            </template>
+          </i18n>
+        </div>
+
+        <!-- Confirming waits for the check, see the button. -->
         <div
           v-if="loadingBookings"
-          class="text-caption text--secondary mt-4 d-flex align-center"
+          class="consequence text--secondary"
+          data-test="delete-consequence"
         >
           <v-progress-circular
             indeterminate
             size="14"
             width="2"
-            class="mr-2"
             color="primary"
+            class="consequence-icon"
           />
-          {{ $t("accessPoint.management.delete.bookingsLoading") }}
+          <span>{{ t("checking") }}</span>
         </div>
-        <v-alert
-          v-else-if="bookingRows.length > 0"
-          color="error"
-          text
-          dense
-          class="mt-4 mb-0"
+        <div
+          v-else-if="bookingsUnreadable"
+          class="consequence text--secondary"
+          data-test="delete-consequence"
         >
-          <div class="font-weight-medium mb-1">
-            {{ $t("accessPoint.management.delete.bookingsTitle") }}
+          <v-icon small class="consequence-icon">
+            mdi-help-circle-outline
+          </v-icon>
+          <span>{{ t("unchecked") }}</span>
+        </div>
+        <template v-else-if="runningBookings.length > 0">
+          <div class="consequence" data-test="delete-consequence">
+            <v-icon small color="error" class="consequence-icon">
+              mdi-key-alert
+            </v-icon>
+            <span>
+              <i18n
+                :path="`accessPoint.management.delete.running.${number(
+                  runningBookings.length
+                )}`"
+                tag="span"
+              >
+                <template #bookings>
+                  <strong>{{
+                    $tc(
+                      "accessPoint.management.delete.runningCount",
+                      runningBookings.length
+                    )
+                  }}</strong>
+                </template>
+                <template #provider>{{ providerTitle }}</template>
+              </i18n>
+              {{ " " }}
+              <a
+                class="consequence-toggle"
+                data-test="delete-running-toggle"
+                @click="showRunning = !showRunning"
+                >{{ t(showRunning ? "hide" : "which") }}</a
+              >
+            </span>
           </div>
-          <ul class="affected-list">
-            <li v-for="booking in bookingRows" :key="booking.id">
+          <ul v-if="showRunning" class="consequence-list">
+            <li
+              v-for="booking in runningBookings"
+              :key="booking.id"
+              data-test="delete-running-booking"
+            >
               {{ booking.id }}
-              <span v-if="booking.subtitle" class="text-caption">
-                – {{ booking.subtitle }}
+              <template v-if="booking.name"> · {{ booking.name }}</template>
+              <span v-if="booking.timeEnd" class="text--secondary">
+                · {{ until(booking) }}
               </span>
             </li>
           </ul>
-          <div v-if="unlistedBookingCount > 0" class="text-caption mt-1">
-            {{
-              $t("accessPoint.management.delete.bookingsMore", {
-                count: unlistedBookingCount,
-              })
-            }}
-          </div>
-          <div class="text-caption mt-2">
-            {{ $t("accessPoint.management.delete.bookingsHint") }}
-          </div>
-        </v-alert>
-        <div
-          v-else-if="bookingsUnreadable"
-          class="text-caption text--secondary mt-4"
-        >
-          {{ $t("accessPoint.management.delete.bookingsUnreadable") }}
-        </div>
-        <div v-else class="text-caption text--secondary mt-4">
-          {{ $t("accessPoint.management.delete.bookingsNone") }}
-        </div>
+        </template>
 
         <v-alert v-if="error" color="error" text dense class="mt-4 mb-0">
           <v-icon left>mdi-alert-circle</v-icon>
@@ -175,7 +245,7 @@ export default {
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
         <!-- Confirming before the booking check has answered would be the
-             unnoticed click this warning exists to prevent. -->
+             unnoticed click this question exists to prevent. -->
         <v-btn
           class="confirm-delete"
           color="error"
@@ -184,7 +254,7 @@ export default {
           @click="$emit('confirm')"
         >
           <v-icon left small>mdi-delete</v-icon>
-          {{ $t("accessPoint.management.delete.confirm") }}
+          {{ t("confirm") }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -192,8 +262,29 @@ export default {
 </template>
 
 <style scoped>
-.affected-list {
-  margin: 0;
-  padding-left: 18px;
+.consequence {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 0;
+  line-height: 1.45;
+}
+
+.consequence-icon {
+  flex: none;
+  margin: 2px var(--scb-space-3) 0 0;
+}
+
+.consequence-toggle {
+  white-space: nowrap;
+}
+
+/* A busy Schließfachanlage can have many; the list scrolls. */
+.consequence-list {
+  margin: 0 0 var(--scb-space-1) 28px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--scb-font-size-xs);
+  max-height: 180px;
+  overflow: auto;
 }
 </style>

@@ -214,7 +214,7 @@ const routes = [
     name: "access-points",
     component: AccessPoints,
     meta: {
-      title: "Zutritt & Schließsysteme",
+      title: "Zugangspunkte",
       requiresAuth: true,
       interfaceName: "tenants",
     },

@@ -487,9 +487,8 @@ export default {
         const found = findTenantApp(existing, k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
-      // Die Zugangs- und Schließsystem-Apps werden unter "Zutritt &
-      // Schließsysteme" gepflegt; hier werden sie nur unverändert
-      // mitgespeichert.
+      // Die Zugangs-Anbindungen werden auf der Seite „Zugangspunkte“
+      // gepflegt; hier werden sie nur unverändert mitgespeichert.
       this.apps = map;
     },
     replaceApps() {

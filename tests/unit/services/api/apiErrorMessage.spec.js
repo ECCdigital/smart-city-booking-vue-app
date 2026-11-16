@@ -421,7 +421,7 @@ describe("getApiErrorMessage", () => {
         provider: "nuki",
       });
       expect(getApiErrorMessage(error, FALLBACK)).toBe(
-        "nuki hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+        "nuki hat den Zugriff abgelehnt. Bitte die Zugangsdaten beim Anbieter prüfen."
       );
     });
 
