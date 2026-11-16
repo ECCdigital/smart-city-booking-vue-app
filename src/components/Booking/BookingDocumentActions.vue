@@ -93,7 +93,7 @@
       </template>
       <template #cancellations-footer>
         <v-alert
-          v-if="errors.cancellationReceipt && !withdrawn"
+          v-if="errors.cancellationReceipt"
           type="error"
           dense
           outlined
@@ -117,17 +117,6 @@
           <v-icon left x-small>mdi-file-replace-outline</v-icon>
           {{ $t("booking.page.documents.reprint") }}
         </v-btn>
-      </template>
-      <template #withdrawals-footer>
-        <v-alert
-          v-if="errors.cancellationReceipt && withdrawn"
-          type="error"
-          dense
-          outlined
-          class="mt-2 mb-0"
-        >
-          {{ errors.cancellationReceipt }}
-        </v-alert>
       </template>
     </BookingDocuments>
 
@@ -173,14 +162,14 @@ import documentProduction from "@/mixins/documentProduction";
 
 /**
  * The Dokumente block of a Buchungsseite with its producing actions beside
- * the groups (CONTEXT.md: the actions that produce a document belong to its
- * group): "Beleg erstellen" at Bestätigt (spec E8) - for a series member
- * only while every member is Bestätigt, with the single / aggregated choice
- * -, the "Rechnung" menu over the invoice provider, and the cancellation
- * receipt's "Neu ausstellen" at Abgelehnt / Storniert for `booking.reprint`.
- * The feedback is `documentProduction`'s: the triggering button shows
- * `loading`, an error stays as an alert inside its group until a retry
- * succeeds, a success toasts and asks the page to `reload`.
+ * the heading of Belege (CONTEXT.md): "Beleg erstellen" at Bestätigt (spec
+ * E8) - for a series member only while every member is Bestätigt, with the
+ * single / aggregated choice -, the "Rechnung" menu over the invoice
+ * provider, and the cancellation or withdrawal receipt's "Neu ausstellen" at
+ * Abgelehnt / Storniert / Widerrufen for `booking.reprint`. The feedback is
+ * `documentProduction`'s: the triggering button shows `loading`, an error
+ * stays as an alert under Belege until a retry succeeds, a success toasts
+ * and asks the page to `reload`.
  */
 export default {
   name: "BookingDocumentActions",

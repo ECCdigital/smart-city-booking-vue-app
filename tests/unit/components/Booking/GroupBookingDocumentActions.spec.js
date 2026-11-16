@@ -72,7 +72,8 @@ function toastMessages(store) {
 }
 
 function group(wrapper, key) {
-  return wrapper.find(`.booking-documents__group--${key}`);
+  const section = key === "attachments" ? "attachments" : "receipts";
+  return wrapper.find(`.booking-documents__section--${section}`);
 }
 
 async function openMenu(wrapper, selector) {

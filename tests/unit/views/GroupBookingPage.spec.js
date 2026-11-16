@@ -862,8 +862,9 @@ describe("GroupBookingPage", () => {
       );
 
       const documents = wrapper.find(".group-booking-page__documents").text();
-      expect(documents).toContain("Rechnungen (1)");
-      expect(documents).toContain("Stornobelege (1)");
+      expect(documents).toContain("Belege (2)");
+      expect(documents).toContain("Rechnung ·");
+      expect(documents).toContain("Stornobeleg");
       expect(documents).not.toContain("Anhänge");
 
       await wrapper.find(".booking-documents__download").trigger("click");

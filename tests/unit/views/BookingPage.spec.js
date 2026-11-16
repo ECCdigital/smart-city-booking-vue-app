@@ -756,6 +756,9 @@ describe("BookingPage", () => {
       expect(pending.wrapper.text()).not.toContain(
         "Erstattung bei Stornierung"
       );
+      expect(pending.wrapper.find(".booking-page__refund").exists()).toBe(
+        false
+      );
 
       ApiBookingService.getBooking.mockResolvedValue({
         data: booking({
@@ -773,8 +776,12 @@ describe("BookingPage", () => {
       await settle(cancelled.wrapper);
       const payment = cancelled.wrapper.find(".booking-page__payment").text();
       expect(payment).not.toContain("Zahlungslink");
-      expect(payment).toContain("Erstattung bei Stornierung");
-      expect(payment).toMatch(/20,00\s€/);
+      expect(payment).not.toContain("Erstattung bei Stornierung");
+      const refund = cancelled.wrapper.find(
+        ".booking-page__main .booking-page__refund"
+      );
+      expect(refund.text()).toContain("Erstattung bei Stornierung");
+      expect(refund.text()).toMatch(/20,00\s€/);
     });
 
     it("counts no days before the start in the refund audit of a booking without a time span", async () => {
@@ -798,7 +805,7 @@ describe("BookingPage", () => {
       await settle(wrapper);
 
       const policy = wrapper
-        .find(".booking-page__payment .cancellation-refund-panel__policy")
+        .find(".booking-page__refund .cancellation-refund-panel__policy")
         .text();
       expect(policy).toBe(
         "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
@@ -822,13 +829,13 @@ describe("BookingPage", () => {
       ApiBookingService.setRefundState.mockResolvedValue({ data: {} });
       const { wrapper } = mountPage();
       await settle(wrapper);
-      const payment = wrapper.find(".booking-page__payment");
-      expect(payment.find(".cancellation-refund-state__value").text()).toBe(
+      const refund = wrapper.find(".booking-page__refund");
+      expect(refund.find(".cancellation-refund-state__value").text()).toBe(
         "offen"
       );
       const loads = ApiBookingService.getBooking.mock.calls.length;
 
-      await payment
+      await refund
         .find(".cancellation-refund-state__mark input")
         .trigger("click");
       await settle(wrapper);
@@ -840,7 +847,7 @@ describe("BookingPage", () => {
       expect(ApiBookingService.getBooking.mock.calls.length).toBe(loads + 1);
     });
 
-    it("lists the Dokumente in four groups and downloads a receipt", async () => {
+    it("lists the Dokumente under Belege and Anhänge and downloads a receipt", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
         data: booking({
           attachments: [{ type: "receipt", title: "BELEG-1.pdf" }],
@@ -850,10 +857,15 @@ describe("BookingPage", () => {
       const { wrapper } = mountPage();
       await settle(wrapper);
 
-      const documents = wrapper.find(".booking-page__documents").text();
+      expect(wrapper.find(".booking-page__panel").text()).not.toContain(
+        "Dokumente"
+      );
+      const documents = wrapper
+        .find(".booking-page__main .booking-page__documents")
+        .text();
       expect(documents).toContain("Belege (1)");
-      expect(documents).toContain("Rechnungen (0)");
-      expect(documents).toContain("Stornobelege (0)");
+      expect(documents).not.toContain("Rechnungen");
+      expect(documents).not.toContain("Stornobelege");
       expect(documents).toContain("Anhänge (0)");
       expect(documents).toContain("keine");
 

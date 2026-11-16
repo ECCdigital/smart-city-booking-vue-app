@@ -97,10 +97,10 @@ import { isRejectedOrCancelled } from "@/utils/bookingStatus";
 /**
  * The Dokumente block of a Serienbuchungsseite: the members' Belege,
  * Rechnungen and Stornobelege, an aggregated document counted once, with
- * the series' producing actions beside their groups - the "Sammelrechnung"
- * menu where every member pays by invoice, and "Neu ausstellen" of the
- * aggregated cancellation receipt once every member is cancelled, for
- * `booking.reprint` on each (spec E8). The feedback is
+ * the series' producing actions beside the heading of Belege - the
+ * "Sammelrechnung" menu where every member pays by invoice, and "Neu
+ * ausstellen" of the aggregated cancellation receipt once every member is
+ * cancelled, for `booking.reprint` on each (spec E8). The feedback is
  * `documentProduction`'s; every success asks the page to `reload`.
  */
 export default {
