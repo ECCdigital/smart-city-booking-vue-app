@@ -2,12 +2,13 @@
  * The text colour the storefront puts on a colour of the branding: black when
  * the luma is above 180, otherwise white. A copy of the rule of the
  * storefront's Theme-CSS (map #510), so the previews of the Portal tab show
- * what the portal will show. Only `#rgb` and `#rrggbb` are read; any other
- * value gives white, as it does there.
+ * what the portal will show. `#rgb` and `#rrggbb` are read, also with alpha
+ * (`#rgba`, `#rrggbbaa`, as the colour picker stores them), which is left
+ * out; any other value gives white, as it does there.
  */
 
-const HEX_LONG = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
-const HEX_SHORT = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i;
+const HEX_LONG = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})(?:[0-9a-f]{2})?$/i;
+const HEX_SHORT = /^#([0-9a-f])([0-9a-f])([0-9a-f])[0-9a-f]?$/i;
 
 const CONTRAST_DARK = "#000000";
 const CONTRAST_LIGHT = "#ffffff";

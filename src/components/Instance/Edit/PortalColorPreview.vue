@@ -38,7 +38,7 @@
             <span
               class="portal-color-preview__badge ml-1"
               data-part="badge-flat"
-              :style="filled(flatRate)"
+              :style="{ background: flatRate, color: '#000000' }"
             >
               Pauschal
             </span>
@@ -90,7 +90,7 @@ const MODE_LABELS = Object.freeze({ light: "Hell", dark: "Dunkel" });
  * A few parts of the storefront in one colour mode, drawn from the colours of
  * the form: what primary, secondary and accent carry there. Without an accent
  * each part takes today's colour, badges and stripe primary, „Pauschal“
- * secondary.
+ * secondary. „Pauschal“ has black text on any colour, as in the storefront.
  */
 export default {
   name: "PortalColorPreview",
