@@ -59,10 +59,10 @@ export const EVENT_EDIT_TABS = Object.freeze([
   },
   {
     key: "media",
-    icon: "mdi-image-multiple-outline",
+    icon: "mdi-paperclip",
     labelKey: "event.edit.tabs.media",
     comp: EventEditMedia,
-    sections: ["gallery", "attachments"],
+    sections: [],
   },
   {
     key: "tickets",

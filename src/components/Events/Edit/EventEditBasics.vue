@@ -1,18 +1,30 @@
 <script>
 import Tiptap from "@/components/Tiptap.vue";
-import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
+import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
 import ChipCombobox from "@/components/commons/ChipCombobox.vue";
 import eventEditing from "@/mixins/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import { eventImagesOf, eventImagesPatch } from "@/utils/eventEditing";
 
 /** The tab „Allgemein“: Grunddaten, Beschreibung and Merkmale. */
 export default {
   name: "EventEditBasics",
-  components: { Tiptap, MediaReferenceField, ChipCombobox, SectionCard },
+  components: { Tiptap, MediaReferenceList, ChipCombobox, SectionCard },
   mixins: [eventEditing],
   computed: {
     info() {
       return this.form.information;
+    },
+    // Cover and gallery as one list, as a bookable's images.
+    images() {
+      return eventImagesOf(this.form);
+    },
+  },
+  methods: {
+    setImages(list) {
+      const { teaserImage, images } = eventImagesPatch(list);
+      this.update("information", "teaserImage", teaserImage);
+      this.update(null, "images", images);
     },
   },
 };
@@ -48,17 +60,18 @@ export default {
           {{ $t("event.edit.basics.teaserHint") }}
         </div>
       </div>
-      <div class="event-edit__field">
-        <MediaReferenceField
-          :value="info.teaserImage"
-          :label="$t('event.edit.basics.image')"
-          :empty-label="$t('event.edit.basics.imageEmpty')"
+      <div class="event-edit__field" data-field="images">
+        <div class="event-edit__label">
+          {{ $t("event.edit.basics.images") }}
+        </div>
+        <MediaReferenceList
+          :value="images"
           :public-only="isPublic"
           :public-only-reason="$t('event.edit.basics.publicOnly')"
-          @input="update('information', 'teaserImage', $event)"
+          @input="setImages"
         />
         <div class="event-edit__hint">
-          {{ $t("event.edit.basics.imageHint") }}
+          {{ $t("event.edit.basics.imagesHint") }}
         </div>
       </div>
     </SectionCard>

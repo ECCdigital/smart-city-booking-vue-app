@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Event editing, images and attachments: all images of an event are picked under „Grunddaten“ in one list, as a bookable's; the first is the cover image (`information.teaserImage`), the others the gallery (`images`). The area „Bilder & Anhänge“ is „Anhänge“ and holds the attachments only; with none yet, „Datei hinzufügen“ gives way to „Ersten Anhang hinzufügen“
 -   Event editing, Programm: the hint reads „Legen Sie bei Bedarf einen Ablauf der Veranstaltung fest. Dieser wird auf der Veranstaltungsseite angezeigt. …“
 -   Event editing, Teilnahme: „Ohne Anmeldung“ adds „Teilnahmeplätze und Tickets entfallen.“; „Nur wer den Link hat“ reads „Die Veranstaltung steht nicht in der öffentlichen Liste. Der Link wird manuell verschickt, z. B. an eine Schulklasse.“
 -   Event editing, Veranstalter & Kontakt: the card „Referenten“ reads „Referent:innen“, its hint „Geben Sie optional an, wer die Veranstaltung leitet oder dort spricht. Referent:innen erscheinen mit Namen und Foto auf der Veranstaltungsseite.“

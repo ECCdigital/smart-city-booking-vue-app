@@ -1032,7 +1032,7 @@
         "general": {
           "title": "Inhalt",
           "question": "Worum geht es?",
-          "why": "Name, Kurzbeschreibung und Bild. Daran erkennen Interessierte die Veranstaltung im Katalog."
+          "why": "Name, Kurzbeschreibung und Bilder. Daran erkennen Interessierte die Veranstaltung im Katalog."
         },
         "date": {
           "title": "Termin",
@@ -1060,9 +1060,9 @@
           "why": "Optional. Ein kurzer Ablauf hilft bei der Entscheidung. „Weiter“ geht auch ohne."
         },
         "media": {
-          "title": "Bilder & Dateien",
-          "question": "Gibt es Bilder oder Unterlagen?",
-          "why": "Optional. Eine Galerie und Dateien zum Herunterladen."
+          "title": "Anhänge",
+          "question": "Gibt es Unterlagen?",
+          "why": "Optional. Dateien zum Herunterladen, z. B. eine Materialliste oder die Anfahrt."
         },
         "tickets": {
           "title": "Tickets",
@@ -1096,7 +1096,7 @@
         "people": "Veranstalter & Kontakt",
         "participation": "Teilnahme",
         "program": "Programm",
-        "media": "Bilder & Anhänge",
+        "media": "Anhänge",
         "tickets": "Tickets"
       },
       "cards": {
@@ -1110,7 +1110,6 @@
         "people": "Referent:innen",
         "participation": "Teilnahme",
         "program": "Programm",
-        "gallery": "Bildergalerie",
         "attachments": "Anhänge",
         "tickets": "Tickets"
       },
@@ -1126,9 +1125,8 @@
         "nameHint": "Daran erkennen Buchende die Veranstaltung im Katalog und Sie es in den Listen der Verwaltung.",
         "teaser": "Kurzbeschreibung",
         "teaserHint": "Ein kurzer Teaser-Text mit 1-2 Sätzen, um das Interesse der Teilnehmenden zu wecken.",
-        "image": "Titelbild",
-        "imageEmpty": "Kein Titelbild ausgewählt",
-        "imageHint": "Steht oben auf der Veranstaltungsseite.",
+        "images": "Bilder",
+        "imagesHint": "Das erste Bild ist das Titelbild der Veranstaltung. Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
         "publicOnly": "Diese Veranstaltung ist öffentlich sichtbar. Interne Medien können hier nicht gespeichert werden."
       },
       "description": {
@@ -1234,9 +1232,6 @@
         "remove": "Programmpunkt entfernen",
         "removeSub": "Unterpunkt entfernen"
       },
-      "gallery": {
-        "intro": "Weitere Bilder der Veranstaltung, unter der Beschreibung. Das Titelbild pflegen Sie unter „Grunddaten“."
-      },
       "attachments": {
         "hint": "Dateien zum Herunterladen, z. B. eine Materialliste oder die Anfahrt.",
         "add": "Datei hinzufügen"
@@ -1281,7 +1276,6 @@
         "noTicketNeeded": "Kein Ticket nötig",
         "programNone": "Ohne festgelegtes Programm",
         "programCount": "{count} Programmpunkte",
-        "images": "{count} Bilder",
         "attachments": "{count} Anhänge"
       },
       "issues": {

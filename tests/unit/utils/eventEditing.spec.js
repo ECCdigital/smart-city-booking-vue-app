@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   REGISTRATION,
   eventDays,
+  eventImagesOf,
+  eventImagesPatch,
   eventIssues,
   isMultiDay,
   locationToAdopt,
@@ -238,5 +240,46 @@ describe("locationToAdopt", () => {
     ["an empty text", { location: "  " }],
   ])("takes nothing from %s", (_, bookable) => {
     expect(locationToAdopt(bookable)).toBeNull();
+  });
+});
+
+describe("eventImagesOf / eventImagesPatch", () => {
+  const cover = { source: "library", mediaId: "m1", url: null };
+  const other = { source: "library", mediaId: "m2", url: null };
+
+  it("lists the cover first, then the gallery", () => {
+    const form = { information: { teaserImage: cover }, images: [other] };
+    expect(eventImagesOf(form)).toEqual([cover, other]);
+  });
+
+  it("reads an old cover stored as a URL as an external reference", () => {
+    const form = {
+      information: { teaserImage: "https://example.org/bild.jpg" },
+      images: [],
+    };
+    expect(eventImagesOf(form)).toEqual([
+      {
+        source: "external",
+        mediaId: null,
+        url: "https://example.org/bild.jpg",
+      },
+    ]);
+  });
+
+  it("lists the gallery alone without a cover", () => {
+    expect(eventImagesOf({ information: {}, images: [other] })).toEqual([
+      other,
+    ]);
+  });
+
+  it("stores the first image as the cover, the rest as the gallery", () => {
+    expect(eventImagesPatch([other, cover])).toEqual({
+      teaserImage: other,
+      images: [cover],
+    });
+  });
+
+  it("stores an empty list as no cover and no gallery", () => {
+    expect(eventImagesPatch([])).toEqual({ teaserImage: null, images: [] });
   });
 });

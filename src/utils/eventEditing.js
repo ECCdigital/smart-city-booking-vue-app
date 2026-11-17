@@ -10,6 +10,7 @@ import {
   isHttpsUrl,
   needsParticipationLink,
 } from "@/utils/eventParticipationLink";
+import { toMediaReference } from "@/utils/mediaReference";
 
 /** The answers to „Wie melden sich Teilnehmende an?“. */
 export const REGISTRATION = Object.freeze({
@@ -167,4 +168,20 @@ export function locationToAdopt(bookable) {
   const hasPoint = points.length === 2 && points.every((p) => p !== null);
   if (!hasAddress && !hasPoint && !location.display_address) return null;
   return JSON.parse(JSON.stringify(location));
+}
+
+/**
+ * The images of an event as one list, as a bookable keeps them: the cover
+ * image (`information.teaserImage`) first, then the gallery (`images`). An
+ * old cover stored as a bare URL reads as an external reference.
+ */
+export function eventImagesOf(form) {
+  const cover = toMediaReference(form?.information?.teaserImage);
+  return [...(cover ? [cover] : []), ...(form?.images || [])];
+}
+
+/** The stored fields of such a list: its first image is the cover. */
+export function eventImagesPatch(list) {
+  const [cover = null, ...rest] = list || [];
+  return { teaserImage: cover, images: rest };
 }

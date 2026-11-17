@@ -1,6 +1,6 @@
 <script>
 import eventEditing from "@/mixins/eventEditing";
-import { REGISTRATION } from "@/utils/eventEditing";
+import { REGISTRATION, eventImagesOf } from "@/utils/eventEditing";
 import { EVENT_FORMATS } from "@/utils/eventParticipationLink";
 
 const FORMAT_KEYS = Object.freeze({
@@ -40,6 +40,7 @@ export default {
       const rows = {
         general: [
           ["basics.name", info.name, "name"],
+          ["basics.images", eventImagesOf(f).length || ""],
           ["features.label", (info.flags || []).join(", ")],
         ],
         date: [
@@ -91,17 +92,9 @@ export default {
         media: [
           [
             null,
-            [
-              info.teaserImage ? t("basics.image") : "",
-              (f.images || []).length
-                ? t("overview.images", { count: f.images.length })
-                : "",
-              (f.attachments || []).length
-                ? t("overview.attachments", { count: f.attachments.length })
-                : "",
-            ]
-              .filter(Boolean)
-              .join(", "),
+            (f.attachments || []).length
+              ? t("overview.attachments", { count: f.attachments.length })
+              : "",
           ],
         ],
         tickets: [[null, portal ? "" : t("overview.noTicketNeeded")]],
