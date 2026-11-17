@@ -218,10 +218,8 @@ export function leavingCompartmentsSummary(bookings, leavingIds) {
 
 /**
  * The ids at the provider the other access points of the tenant stand for:
- * each one's `externalId` (a door, a fixed Fach, an iFBS Anlage) and the
- * Fächer of each Anlage that carries its own. A lock of the provider's
- * listing with one of them is created already; a Fach stands in at most one
- * Anlage and is then no fixed Fach, so none of them is to be chosen.
+ * each one's `externalId` (a door, an iFBS Anlage). A lock of the provider's
+ * listing with one of them is created already.
  *
  * @param {Object[]} accessPoints Every access point of the tenant
  * @param {Object} options
@@ -230,16 +228,36 @@ export function leavingCompartmentsSummary(bookings, leavingIds) {
  * @returns {Set<string>}
  */
 export function takenProviderIds(accessPoints, { provider, exceptId }) {
-  const taken = new Set();
-  (accessPoints || [])
-    .filter((point) => point.provider === provider && point.id !== exceptId)
-    .forEach((point) => {
-      if (point.externalId) taken.add(String(point.externalId));
-      if (carriesOwnCompartments(point)) {
-        point.config.compartments.forEach((c) => taken.add(String(c.id)));
-      }
-    });
-  return taken;
+  return new Set(
+    othersOf(accessPoints, { provider, exceptId })
+      .filter((point) => point.externalId)
+      .map((point) => String(point.externalId))
+  );
+}
+
+/**
+ * The Fächer the other Anlagen of the provider hold: a Fach stands in at
+ * most one Anlage, so none of them is to be chosen. Nothing else holds a
+ * Fach (ECCdigital/tickets#1162).
+ *
+ * @param {Object[]} accessPoints Every access point of the tenant
+ * @param {Object} options
+ * @param {string} options.provider The provider whose Anlagen count
+ * @param {string|null} [options.exceptId] The Anlage being edited
+ * @returns {Set<string>} The UUIDs of the Fächer
+ */
+export function heldCompartmentIds(accessPoints, { provider, exceptId }) {
+  return new Set(
+    othersOf(accessPoints, { provider, exceptId })
+      .filter(carriesOwnCompartments)
+      .flatMap((point) => point.config.compartments.map((c) => String(c.id)))
+  );
+}
+
+function othersOf(accessPoints, { provider, exceptId }) {
+  return (accessPoints || []).filter(
+    (point) => point.provider === provider && point.id !== exceptId
+  );
 }
 
 /**

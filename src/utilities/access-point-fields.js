@@ -8,17 +8,18 @@ import {
 /**
  * Which fields the dialog Zugangspunkt shows, by provider and type - the one
  * place for it (ECCdigital/tickets#1109). The section settles the provider,
- * and with it the type; only Open Locker asks for one, its
- * Schließfachanlage or a fixed Fach. The table follows the spec of
+ * and with it the type: every provider hands out one, Open Locker only its
+ * Schließfachanlage, one with a single Fach included
+ * (ECCdigital/tickets#1162). The table follows the spec of
  * ECCdigital/tickets#1082:
  *
- * |                         | Listing         | By hand | Choice | Öffnungsart | QR scan        | Standort-ID |
- * | ----------------------- | --------------- | ------- | ------ | ----------- | -------------- | ----------- |
- * | Nuki (door)             | yes             | yes     | -      | yes         | yes            | yes         |
- * | Salto KS (door)         | yes             | yes     | -      | -           | yes            | yes         |
- * | Pareva (Anlage)         | -               | only    | -      | -           | -              | -           |
- * | iFBS (Anlage)           | yes             | yes     | -      | -           | -              | -           |
- * | Open Locker             | Fächer to tick  | -       | yes    | -           | Anlage only    | -           |
+ * |                         | Listing         | By hand | Öffnungsart | QR scan        | Standort-ID |
+ * | ----------------------- | --------------- | ------- | ----------- | -------------- | ----------- |
+ * | Nuki (door)             | yes             | yes     | yes         | yes            | yes         |
+ * | Salto KS (door)         | yes             | yes     | -           | yes            | yes         |
+ * | Pareva (Anlage)         | -               | only    | -           | -              | -           |
+ * | iFBS (Anlage)           | yes             | yes     | -           | -              | -           |
+ * | Open Locker (Anlage)    | Fächer to tick  | -       | -           | yes            | -           |
  *
  * A provider the table does not know is treated as a door with every field.
  */
@@ -27,7 +28,6 @@ import {
 // `accessPoint.management.dialog.kinds`.
 export const DOOR_KIND = "door";
 export const LOCKER_SYSTEM_KIND = "lockerSystem";
-export const FIXED_COMPARTMENT_KIND = "fixedCompartment";
 
 const DOOR_FIELDS = Object.freeze({
   kind: DOOR_KIND,
@@ -95,30 +95,19 @@ const FIELDS = {
       idLabel: null,
       idHint: null,
     },
-    [DOOR_TYPE]: {
-      ...DOOR_FIELDS,
-      kind: FIXED_COMPARTMENT_KIND,
-      manual: false,
-      qrScan: false,
-      qrScanDefault: false,
-      providerLocationId: false,
-      idLabel: "compartmentUuid",
-      idHint: "compartmentUuidHint",
-    },
   },
 };
 
 /**
- * The types an admin chooses between for a new access point of the
- * provider, the one it starts as first: Open Locker its Schließfachanlage
- * and a fixed Fach, every other provider the one type it hands out.
+ * The type a new access point of the provider gets: the one type the
+ * provider hands out, Open Locker its Schließfachanlage.
  *
  * @param {string} provider A provider id, e.g. "open-locker"
- * @returns {string[]}
+ * @returns {string}
  */
-export function accessPointTypes(provider) {
-  if (FIELDS[provider]) return Object.keys(FIELDS[provider]);
-  return [providerAccessPointDefaults(provider)?.type || DOOR_TYPE];
+export function accessPointType(provider) {
+  if (FIELDS[provider]) return Object.keys(FIELDS[provider])[0];
+  return providerAccessPointDefaults(provider)?.type || DOOR_TYPE;
 }
 
 /**
@@ -130,15 +119,15 @@ export function accessPointTypes(provider) {
  * @returns {Object} The fields, see `DOOR_FIELDS`
  */
 export function accessPointFields(provider, type) {
-  const settled = type || accessPointTypes(provider)[0];
+  const settled = type || accessPointType(provider);
   const known = FIELDS[provider]?.[settled];
   if (known) return known;
   return settled === LOCKER_TYPE ? LOCKER_FIELDS : DOOR_FIELDS;
 }
 
 /**
- * The kind of an access point, by its provider and type: `door`,
- * `lockerSystem` or `fixedCompartment` (`DOOR_KIND`, …).
+ * The kind of an access point, by its provider and type: `door` or
+ * `lockerSystem` (`DOOR_KIND`, `LOCKER_SYSTEM_KIND`).
  *
  * @param {Object} accessPoint The access point, with `provider` and `type`
  * @returns {string}

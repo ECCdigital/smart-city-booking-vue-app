@@ -152,6 +152,45 @@ describe("formatAccessPointErrorMessage", () => {
     });
 
     /**
+     * Open Locker knows only the Schließfachanlage (ECCdigital/tickets#1162):
+     * the backend refuses a door of Open Locker at `type`, from an old
+     * client too.
+     */
+    it("says that Open Locker knows only the Schließfachanlage", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          { field: "type", code: "open_locker_locker_only", params: {} },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Bei Open Locker gibt es nur Schließfachanlagen. Legen Sie eine Schließfachanlage an, auch für ein einzelnes Fach."
+      );
+    });
+
+    it("names the Schließfachanlage a Fach already stands in", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          {
+            field: "config.compartments.0",
+            code: "compartment_in_locker_system",
+            params: {
+              compartmentId: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+              accessPointId: "ap-garage",
+              label: "Fahrradgarage",
+            },
+          },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Das Fach steht schon in der Schließfachanlage „Fahrradgarage“."
+      );
+    });
+
+    /**
      * An older backend may name an Öffnungsart this UI has no label for; the
      * raw value is still something the admin can quote.
      */

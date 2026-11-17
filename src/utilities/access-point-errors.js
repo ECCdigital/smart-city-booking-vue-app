@@ -107,20 +107,23 @@ function formatCompartmentNotAccessible(detail) {
 }
 
 /**
- * A Fach another access point already holds (ECCdigital/tickets#1037): one
- * Fach stands in at most one Schließfachanlage and is then no fixed Fach.
- * The message names the access point that holds it, by its label.
+ * A Fach another Schließfachanlage already holds (ECCdigital/tickets#1037):
+ * one Fach stands in at most one Anlage. The message names the Anlage that
+ * holds it, by its label.
  */
-const COMPARTMENT_CLAIM_KEYS = {
-  compartment_in_locker_system:
-    "accessPoint.management.errors.compartmentInLockerSystem",
-  compartment_is_fixed: "accessPoint.management.errors.compartmentIsFixed",
-};
-
-function formatCompartmentClaim(detail) {
-  return i18n.t(COMPARTMENT_CLAIM_KEYS[detail.code], {
+function formatCompartmentInLockerSystem(detail) {
+  return i18n.t("accessPoint.management.errors.compartmentInLockerSystem", {
     label: detail.params?.label || detail.params?.accessPointId || "",
   });
+}
+
+/**
+ * A door of Open Locker (ECCdigital/tickets#1162): Open Locker knows only
+ * the Schließfachanlage, so the backend refuses any other type - sent by an
+ * old client or over the API. The message says what to set up instead.
+ */
+function formatOpenLockerLockerOnly() {
+  return i18n.t("accessPoint.management.errors.openLockerLockerOnly");
 }
 
 /**
@@ -160,8 +163,12 @@ function formatDetail(detail) {
     return formatLockerSystemInOtherBookable(detail);
   }
 
-  if (COMPARTMENT_CLAIM_KEYS[detail.code]) {
-    return formatCompartmentClaim(detail);
+  if (detail.code === "compartment_in_locker_system") {
+    return formatCompartmentInLockerSystem(detail);
+  }
+
+  if (detail.code === "open_locker_locker_only") {
+    return formatOpenLockerLockerOnly();
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {
