@@ -134,11 +134,14 @@ export default {
         };
       }
       return {
-        tone: "info",
-        icon: "mdi-information-outline",
+        // tickets#1159: no Reserve - a Fach never needed is a mismatch too.
+        tone: "warn",
+        icon: "mdi-alert-outline",
         text: `„${name}“ hat die Anzahl ${a}, in Betrieb sind ${faecher(n)}. ${
-          n - a === 1 ? "1 Fach bleibt" : `${n - a} Fächer bleiben`
-        } frei und springt ein, wenn ein Fach außer Betrieb geht.`,
+          n - a === 1 ? "1 Fach wird" : `${n - a} Fächer werden`
+        } nie gebraucht. Setzen Sie die Anzahl auf ${n}, oder nehmen Sie ${
+          n - a === 1 ? "1 Fach" : `${n - a} Fächer`
+        } heraus.`,
         fix: n,
       };
     },
