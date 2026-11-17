@@ -1,53 +1,118 @@
 <template>
-  <AdminLayout :title="pageTitle" scroll-body>
+  <AdminLayout :title="pageTitle" :hide-page-title="flowMode" scroll-body>
     <div class="event-edit" ref="contentCol">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
-      <div class="event-edit__meta mb-2">
-        <div class="event-edit__meta-info text--secondary">
-          <v-tooltip v-if="eventId" bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <span
-                class="event-edit__id"
-                v-bind="attrs"
-                v-on="on"
-                data-test="event-id"
-                @click="copyId"
-              >
-                {{ $t("event.edit.id", { id: eventId }) }}
-                <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
-              </span>
-            </template>
-            <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
-          </v-tooltip>
-          <span v-else>{{ $t("event.edit.id", { id: "-" }) }}</span>
-          <span class="mx-1">•</span>
-          <span class="event-edit__meta-title">
+      <!-- The guided flow's bar stands in for the page title, the meta row
+           and the publication band, as in the bookable editor. -->
+      <header v-if="flowMode" class="event-edit__flow-bar" data-test="flow-bar">
+        <v-btn
+          small
+          text
+          class="event-edit__flow-back"
+          data-test="flow-leave"
+          @click="leaveFlow"
+        >
+          <v-icon left small>mdi-arrow-left</v-icon>
+          {{ $t("bookable.flow.leave") }}
+        </v-btn>
+        <h1 class="event-edit__flow-name" data-test="flow-bar-name">
+          <template v-if="!eventId && !form.information.name">
+            {{ $t("event.flow.new") }}
+          </template>
+          <template v-else>
+            <span class="event-edit__flow-type">{{
+              $t("event.flow.type")
+            }}</span>
             {{ form.information.name || $t("event.edit.untitled") }}
-          </span>
-        </div>
+          </template>
+        </h1>
         <v-chip
           v-if="hasUnsavedChanges"
           color="warning"
           text-color="black"
           small
           label
+          class="ml-auto"
         >
           {{ $t("bookable.edit.unsavedChanges") }}
         </v-chip>
-      </div>
+      </header>
 
-      <v-sheet class="mb-4 px-4 py-3 event-edit__band" rounded>
-        <EventEditPublication
-          :allow-public="allowPublic"
-          :review="review"
-          :supervision-level="supervisionLevel"
-          :tenant-id="form.tenantId || tenantId"
-          @update:review="setReview"
-        />
-      </v-sheet>
+      <template v-else>
+        <div class="event-edit__meta mb-2">
+          <div class="event-edit__meta-info text--secondary">
+            <v-tooltip v-if="eventId" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span
+                  class="event-edit__id"
+                  v-bind="attrs"
+                  v-on="on"
+                  data-test="event-id"
+                  @click="copyId"
+                >
+                  {{ $t("event.edit.id", { id: eventId }) }}
+                  <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
+                </span>
+              </template>
+              <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
+            </v-tooltip>
+            <span v-else>{{ $t("event.edit.id", { id: "-" }) }}</span>
+            <span class="mx-1">•</span>
+            <span class="event-edit__meta-title">
+              {{ form.information.name || $t("event.edit.untitled") }}
+            </span>
+          </div>
+          <div class="event-edit__meta-actions">
+            <v-btn
+              small
+              text
+              color="primary"
+              data-test="flow-enter"
+              @click="enterFlow"
+            >
+              <v-icon left small>mdi-format-list-checks</v-icon>
+              {{ $t("bookable.flow.enter") }}
+            </v-btn>
+            <v-chip
+              v-if="hasUnsavedChanges"
+              color="warning"
+              text-color="black"
+              small
+              label
+            >
+              {{ $t("bookable.edit.unsavedChanges") }}
+            </v-chip>
+          </div>
+        </div>
 
-      <div v-if="!isLoading" class="event-edit__main">
+        <v-sheet class="mb-4 px-4 py-3 event-edit__band" rounded>
+          <EventEditPublication
+            :allow-public="allowPublic"
+            :review="review"
+            :supervision-level="supervisionLevel"
+            :tenant-id="form.tenantId || tenantId"
+            @update:review="setReview"
+          />
+        </v-sheet>
+      </template>
+
+      <EventFlow
+        v-if="flowMode && !isLoading"
+        ref="flow"
+        :is-new="!eventId"
+        :issues="issues"
+        :in-progress="inProgress"
+        :save-failed="flowSaveFailed"
+        :allow-public="allowPublic"
+        :review="review"
+        :supervision-level="supervisionLevel"
+        :tenant-id="form.tenantId || tenantId"
+        @update:review="setReview"
+        @save="save"
+      />
+
+      <div v-else-if="!isLoading" class="event-edit__main">
         <div class="event-edit__nav">
           <EditorNav
             :tabs="navTabs"
@@ -77,6 +142,7 @@
       </div>
 
       <SaveBar
+        v-if="!flowMode"
         :anchor-el="$refs.contentCol"
         :scroll-root="scrollRoot"
         :active="hasUnsavedChanges"
@@ -111,12 +177,16 @@ import { OFFER_TYPES } from "@/utils/supervision";
 import { eventIssues, normalizedSchedules } from "@/utils/eventEditing";
 import EventEditPublication from "@/components/Events/Edit/EventEditPublication.vue";
 import EventEditOverview from "@/components/Events/Edit/EventEditOverview.vue";
+import EventFlow from "@/components/Events/Edit/EventFlow.vue";
+import { isFlowMode, withMode } from "@/utils/bookableFlow";
 import { EVENT_EDIT_TABS } from "@/components/Events/Edit/eventEditTabs";
 
 /**
- * The editing page of an event, laid out as the bookable editor: tabs left, cards in the
- * middle, the overview right, the publication band above and the save bar
- * below. A new event (no `?id=`) starts empty on the same page.
+ * The editing page of an event, laid out as the bookable editor: tabs left,
+ * cards in the middle, the overview right, the publication band above and
+ * the save bar below. Its guided flow (`EventFlow`) is a mode of the same
+ * page, as the bookable editor's: a new event (no `?id=`) starts in it,
+ * `?mode=flow` opens an existing one there (`isFlowMode`).
  */
 export default {
   name: "EventEdit",
@@ -128,6 +198,7 @@ export default {
     UnsavedChangesDialog,
     EventEditPublication,
     EventEditOverview,
+    EventFlow,
   },
   mixins: [unsavedChangesGuard],
   provide() {
@@ -141,6 +212,8 @@ export default {
       originalSnapshot: null,
       allowPublic: true,
       scrollRoot: null,
+      // A save of the guided flow that failed: its message above the footer.
+      flowSaveFailed: false,
       // What the cards read (`eventEditing`): the issues, each shown at its
       // field.
       issueState: { list: [] },
@@ -157,6 +230,12 @@ export default {
     }),
     eventId() {
       return this.$route.query.id || null;
+    },
+    flowMode() {
+      return isFlowMode({
+        bookableId: this.eventId,
+        mode: this.$route.query.mode,
+      });
     },
     pageTitle() {
       return this.$t(`event.edit.title.${this.eventId ? "edit" : "new"}`);
@@ -284,11 +363,13 @@ export default {
     async save() {
       if (this.issues.length) {
         const [first] = this.issues;
-        this.goTo({ tab: first.tab, field: first.field });
+        if (this.flowMode) this.$refs.flow?.openIssue(first);
+        else this.goTo({ tab: first.tab, field: first.field });
         this.addToast(ToastService.createToast("event.edit.refused", "error"));
         return;
       }
       this.inProgress = true;
+      this.flowSaveFailed = false;
       const isNew = !this.form.id;
       const location = this.form.location;
       try {
@@ -312,7 +393,10 @@ export default {
         this.addToast(
           ToastService.createToast("event.update.success", "success")
         );
+        // The flow of an existing event ends on its editing page.
+        if (this.flowMode) await this.leaveFlow();
       } catch (error) {
+        if (this.flowMode) this.flowSaveFailed = true;
         this.addToast(
           ToastService.createToast("errors.something-wrong", "error")
         );
@@ -339,6 +423,15 @@ export default {
       } catch (error) {
         // The status stays as shown until the event is loaded again.
       }
+    },
+    enterFlow() {
+      this.$router.replace({ query: withMode(this.$route.query, true) });
+    },
+    /** Back to the editing page; what the flow changed stays unsaved. */
+    leaveFlow() {
+      return this.$router
+        .replace({ query: withMode(this.$route.query, false) })
+        .catch(() => {});
     },
     async onRestoreChanges() {
       if (await this.confirmDiscardChanges()) await this.init();
@@ -454,6 +547,44 @@ export default {
   display: flex;
   align-items: center;
   min-width: 0;
+}
+
+.event-edit__meta-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-2);
+}
+
+/* The guided flow's bar, as the bookable editor's (flow-bar). */
+.event-edit__flow-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-gap-columns);
+  min-height: 40px;
+  margin-bottom: var(--scb-space-4);
+  padding-bottom: var(--scb-space-2);
+  border-bottom: 1px solid var(--scb-rule);
+}
+
+.event-edit__flow-back {
+  color: var(--scb-text-muted) !important;
+}
+
+.event-edit__flow-name {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: var(--scb-font-weight-semibold);
+  line-height: var(--scb-line-height-tight);
+  color: var(--scb-text);
+}
+
+.event-edit__flow-type {
+  margin-right: var(--scb-space-2);
+  font-size: var(--scb-font-size-sm);
+  font-weight: normal;
+  color: var(--scb-text-muted);
 }
 
 .event-edit__meta-title {

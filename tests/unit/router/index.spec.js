@@ -3,7 +3,7 @@ import router from "@/router";
 
 // The review queue (`adminPath` of an event row), „Verwendung“ in the media
 // library and „Bearbeiten“ in the event list link an event as
-// `/events/edit?id=<id>`: the event's editing page (ECCdigital/tickets#275).
+// `/events/edit?id=<id>`: the event's editing page.
 describe("router", () => {
   it.each([
     ["the path", "/events/edit?id=e-1"],

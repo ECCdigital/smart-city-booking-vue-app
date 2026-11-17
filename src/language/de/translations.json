@@ -1021,6 +1021,59 @@
     "participation-link": {
       "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Ort & Format“ ein."
     },
+    "flow": {
+      "new": "Neue Veranstaltung",
+      "type": "Veranstaltung",
+      "save-failed": "Die Veranstaltung konnte nicht gespeichert werden.",
+      "save-hint": "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie die Veranstaltung verlassen.",
+      "steps": {
+        "general": {
+          "title": "Inhalt",
+          "question": "Worum geht es?",
+          "why": "Name, Kurzbeschreibung und Bild. Daran erkennen Interessierte die Veranstaltung im Katalog."
+        },
+        "date": {
+          "title": "Termin",
+          "question": "Wann findet sie statt?",
+          "why": "Beginn und Ende, jeweils mit Datum und Uhrzeit."
+        },
+        "place": {
+          "title": "Ort",
+          "question": "Wo findet sie statt?",
+          "why": "Wählen Sie zuerst das Format. Davon hängt ab, ob Sie einen Ort, einen Link oder beides angeben."
+        },
+        "people": {
+          "title": "Veranstalter",
+          "question": "Wer lädt ein?",
+          "why": "Wer veranstaltet, wohin Teilnehmende ihre Fragen schicken und wer dort spricht."
+        },
+        "participation": {
+          "title": "Teilnahme",
+          "question": "Wie kommt man dazu?",
+          "why": "Wie die Anmeldung läuft und wie viele Plätze es gibt."
+        },
+        "program": {
+          "title": "Programm",
+          "question": "Wie läuft sie ab?",
+          "why": "Optional. Ein kurzer Ablauf hilft bei der Entscheidung. „Weiter“ geht auch ohne."
+        },
+        "media": {
+          "title": "Bilder & Dateien",
+          "question": "Gibt es Bilder oder Unterlagen?",
+          "why": "Optional. Eine Galerie und Dateien zum Herunterladen."
+        },
+        "tickets": {
+          "title": "Tickets",
+          "question": "Wie wird sie buchbar?",
+          "why": "Gebucht wird nicht die Veranstaltung selbst, sondern ein Ticket, das mit ihr verknüpft ist."
+        },
+        "publication": {
+          "title": "Veröffentlichung",
+          "question": "Wer kann sie finden?",
+          "why": "Im Katalog erscheint die Veranstaltung erst, wenn Sie das hier einschalten."
+        }
+      }
+    },
     "edit": {
       "title": {
         "edit": "Veranstaltung bearbeiten",
