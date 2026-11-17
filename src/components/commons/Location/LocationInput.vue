@@ -510,6 +510,8 @@ export default {
     readAnew(value) {
       this.state = fromStored(value, this.base);
       this.handedOut = value;
+      // The search field shows the new location's text, as on opening.
+      this.searchText = this.state.oldText;
     },
     /**
      * Runs the request the state asks for and sends the answer back. A

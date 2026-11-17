@@ -1164,9 +1164,9 @@
         "name": "Name des Ortes",
         "nameHint": "So steht der Ort auf der Veranstaltungsseite.",
         "venue": "Veranstaltungsort",
-        "venueHint": "Optional. Ein Veranstaltungsort aus dieser Verwaltung.",
+        "venueHint": "Wählen Sie optional einen Veranstaltungsort aus dieser Verwaltung.",
         "room": "Raum",
-        "roomHint": "Optional. Ein Raum aus dieser Verwaltung.",
+        "roomHint": "Wählen Sie optional einen Raum aus dieser Verwaltung.",
         "location": "Standort",
         "url": "Teilnahmelink",
         "urlHint": "Über diesen Link nehmen Teilnehmende online teil. Beginnt mit https://."

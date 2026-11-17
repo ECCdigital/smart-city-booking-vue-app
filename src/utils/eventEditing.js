@@ -150,3 +150,21 @@ export function eventIssues(form, context = {}) {
   }
   return issues;
 }
+
+/**
+ * The location of a venue or room an event takes as its own, or `null` when
+ * it has none to give: neither an address, a text nor a point.
+ */
+export function locationToAdopt(bookable) {
+  const location = bookable?.location;
+  if (!location) return null;
+  if (typeof location === "string") return location.trim() ? location : null;
+  const address = location.address || {};
+  const points = location.coordinates?.points || [];
+  const hasAddress = Object.values(address).some(
+    (value) => value !== null && value !== undefined && value !== ""
+  );
+  const hasPoint = points.length === 2 && points.every((p) => p !== null);
+  if (!hasAddress && !hasPoint && !location.display_address) return null;
+  return JSON.parse(JSON.stringify(location));
+}

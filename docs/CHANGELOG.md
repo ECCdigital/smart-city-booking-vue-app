@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Event editing, Ort & Format: choosing a Veranstaltungsort or a Raum of this administration takes its location as the event's Standort. The location input shows a location set from outside anew, its search text too
 -   Old checkout, Buchungszeitraum: Startdatum, Startzeit, Enddatum and Endzeit use the same fields as the event editing (`DateField`, `TimeField`), outlined like there; typing, the pickers beneath the field and the checks (not before today, the end not before the start) stay as they were. The checkout's own date parsing is gone, it reads typed dates with `utils/dateInput`
 -   Event editing, Termin and Programm: date and time are picked as elsewhere in the app, with Vuetify's date picker and its 24-hour time picker, each opening just beneath its field; a click on a day takes it. Both can be typed too, as in the old checkout („21.11.2026“, „10:30“, masked); a text that names no real day or time says so when the field is left. Typing hides the picker, Escape closes it, the down arrow opens it, instead of the browser's own inputs (`DateField`, `TimeField` in `components/commons`)
 -   Chip fields such as Merkmale and Interne Tags (`ChipCombobox`): chips that wrap keep a gap between their rows, and the field leaves room above and below them

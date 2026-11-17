@@ -4,6 +4,7 @@ import {
   eventDays,
   eventIssues,
   isMultiDay,
+  locationToAdopt,
   normalizedSchedules,
   registrationModeOf,
   registrationPatch,
@@ -194,5 +195,48 @@ describe("eventIssues", () => {
     const event = validEvent();
     event.attendees = { needsRegistration: false, maxAttendees: null };
     expect(eventIssues(event)).toEqual([]);
+  });
+});
+
+describe("locationToAdopt", () => {
+  const location = (patch = {}) => ({
+    coordinates: { type: "Point", points: [null, null] },
+    display_address: "",
+    address: { street: null, house_number: null, postcode: null, city: null },
+    meta: {},
+    ...patch,
+  });
+
+  it("takes a location with an address, as a copy", () => {
+    const bookable = {
+      location: location({
+        display_address: "Bahnhofstraße 1, 24392 Süderbrarup",
+        address: { street: "Bahnhofstraße", house_number: "1" },
+      }),
+    };
+    const adopted = locationToAdopt(bookable);
+
+    expect(adopted.display_address).toBe("Bahnhofstraße 1, 24392 Süderbrarup");
+    expect(adopted).not.toBe(bookable.location);
+  });
+
+  it("takes a location with a point only", () => {
+    const bookable = {
+      location: location({ coordinates: { points: [54.6, 9.7] } }),
+    };
+    expect(locationToAdopt(bookable)).not.toBeNull();
+  });
+
+  it("takes a legacy text", () => {
+    expect(locationToAdopt({ location: "Am Markt 2" })).toBe("Am Markt 2");
+  });
+
+  it.each([
+    ["no bookable", undefined],
+    ["no location", {}],
+    ["an empty location", { location: location() }],
+    ["an empty text", { location: "  " }],
+  ])("takes nothing from %s", (_, bookable) => {
+    expect(locationToAdopt(bookable)).toBeNull();
   });
 });

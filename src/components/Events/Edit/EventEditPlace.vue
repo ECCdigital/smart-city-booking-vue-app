@@ -8,6 +8,7 @@ import {
   EVENT_FORMATS,
   needsParticipationLink,
 } from "@/utils/eventParticipationLink";
+import { locationToAdopt } from "@/utils/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
 
 const FORMAT_KEYS = Object.freeze({
@@ -79,6 +80,17 @@ export default {
       });
   },
   methods: {
+    /**
+     * A venue or room chosen from this administration (`field`: `select` or
+     * `room`): the event takes its address as its location.
+     */
+    choose(field, id) {
+      this.update("eventLocation", field, id || null);
+      const location = locationToAdopt(
+        this.bookables.find((bookable) => bookable.id === id)
+      );
+      if (location) this.update(null, "location", location);
+    },
     formatLabel(format) {
       return this.$t(`event.edit.place.formats.${FORMAT_KEYS[format]}`);
     },
@@ -156,7 +168,7 @@ export default {
             clearable
             outlined
             dense
-            @change="update('eventLocation', 'select', $event || null)"
+            @change="choose('select', $event)"
           />
         </v-col>
         <v-col cols="12" sm="6">
@@ -171,7 +183,7 @@ export default {
             clearable
             outlined
             dense
-            @change="update('eventLocation', 'room', $event || null)"
+            @change="choose('room', $event)"
           />
         </v-col>
       </v-row>
