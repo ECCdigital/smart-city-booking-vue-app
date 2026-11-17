@@ -137,3 +137,23 @@ describe("EventCard text in dark mode", () => {
     expect(wrapper.findAll(".grey--text")).toHaveLength(0);
   });
 });
+
+describe("EventCard quick actions", () => {
+  it("opens Veranstaltungsmanagement from the quick actions", async () => {
+    const push = vi.fn();
+    const wrapper = mountComponent(EventCard, {
+      store: store(),
+      propsData: { item: item(), fromRoute: "events" },
+      filters: { date: (value) => value, time: (value) => value },
+      mocks: { $router: { push } },
+    });
+    await flushPromises();
+
+    wrapper.vm.navigateToEdit({ view: "management" });
+
+    expect(push).toHaveBeenCalledWith({
+      name: "event-edit",
+      query: { id: "e-1", fromRoute: "events", view: "management" },
+    });
+  });
+});

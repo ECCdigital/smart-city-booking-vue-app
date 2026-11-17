@@ -84,10 +84,44 @@
             @update:review="setReview"
           />
         </v-sheet>
+
+        <!-- Details to edit, or where the event stands: only for a saved
+             event, as only that has tickets and bookings. -->
+        <v-tabs
+          v-if="eventId && !isLoading"
+          :value="viewIndex"
+          class="mb-4 event-edit__views"
+          :grow="$vuetify.breakpoint.xsOnly"
+          data-test="event-views"
+          @change="setView"
+        >
+          <v-tab
+            v-for="view in views"
+            :key="view.key"
+            :data-test="`event-view-${view.key}`"
+          >
+            <v-icon v-if="$vuetify.breakpoint.smAndUp" left small>
+              {{ view.icon }}
+            </v-icon>
+            {{ $t(view.labelKey) }}
+          </v-tab>
+        </v-tabs>
       </template>
 
+      <!-- The overview stays beside the management, as beside the editor. -->
+      <div v-if="managementShown" class="event-edit__main">
+        <EventManagement
+          class="event-edit__manage"
+          :event-id="eventId"
+          @go="goTo"
+        />
+        <div v-if="$vuetify.breakpoint.lgAndUp" class="event-edit__overview">
+          <EventEditOverview :issues="issues" :tabs="tabs" @go="goTo" />
+        </div>
+      </div>
+
       <EventFlow
-        v-if="flowMode && !isLoading"
+        v-else-if="flowMode && !isLoading"
         ref="flow"
         :is-new="!eventId"
         :issues="issues"
@@ -130,8 +164,9 @@
         </div>
       </div>
 
+      <!-- On „Veranstaltungsmanagement“ only while something is unsaved. -->
       <SaveBar
-        v-if="!flowMode"
+        v-if="!flowMode && (!managementShown || hasUnsavedChanges)"
         :anchor-el="$refs.contentCol"
         :scroll-root="scrollRoot"
         :active="hasUnsavedChanges"
@@ -168,8 +203,23 @@ import { eventIssues, normalizedSchedules } from "@/utils/eventEditing";
 import EventEditPublication from "@/components/Events/Edit/EventEditPublication.vue";
 import EventEditOverview from "@/components/Events/Edit/EventEditOverview.vue";
 import EventFlow from "@/components/Events/Edit/EventFlow.vue";
+import EventManagement from "@/components/Events/Manage/EventManagement.vue";
 import { isFlowMode, withMode } from "@/utils/bookableFlow";
 import { EVENT_EDIT_TABS } from "@/components/Events/Edit/eventEditTabs";
+
+// The two views of a saved event, as the tabs above the editor offer them.
+const EVENT_VIEWS = Object.freeze([
+  {
+    key: "details",
+    icon: "mdi-pencil-outline",
+    labelKey: "event.edit.views.details",
+  },
+  {
+    key: "management",
+    icon: "mdi-account-multiple-check-outline",
+    labelKey: "event.edit.views.management",
+  },
+]);
 
 /**
  * The editing page of an event, laid out as the bookable editor: tabs left,
@@ -190,6 +240,7 @@ export default {
     EventEditPublication,
     EventEditOverview,
     EventFlow,
+    EventManagement,
   },
   mixins: [unsavedChangesGuard],
   provide() {
@@ -209,6 +260,7 @@ export default {
   data() {
     return {
       tabs: EVENT_EDIT_TABS,
+      views: EVENT_VIEWS,
       isLoading: false,
       inProgress: false,
       originalSnapshot: null,
@@ -238,6 +290,23 @@ export default {
         bookableId: this.eventId,
         mode: this.$route.query.mode,
       });
+    },
+    /**
+     * The view of a saved event: „Veranstaltungsdetails“ (the editor) or
+     * „Veranstaltungsmanagement“, as `?view=management`.
+     */
+    activeView() {
+      return this.eventId && this.$route.query.view === "management"
+        ? "management"
+        : "details";
+    },
+    viewIndex() {
+      return this.views.findIndex((view) => view.key === this.activeView);
+    },
+    managementShown() {
+      return (
+        !this.flowMode && !this.isLoading && this.activeView === "management"
+      );
     },
     pageTitle() {
       return this.$t(`event.edit.title.${this.eventId ? "edit" : "new"}`);
@@ -337,12 +406,21 @@ export default {
         this.allowPublic = true;
       }
     },
-    /** Opens a tab, and in it the field or section asked for. */
+    setView(index) {
+      const view = this.views[index]?.key;
+      if (!view || view === this.activeView) return;
+      const query = { ...this.$route.query, view };
+      if (view === "details") delete query.view;
+      this.$router.replace({ query }).catch(() => {});
+    },
+    /**
+     * Opens a tab of the details, and in it the field or section asked for.
+     */
     goTo({ tab, field = null, section = null }) {
-      if (tab && tab !== this.activeTab) {
-        this.$router
-          .replace({ query: { ...this.$route.query, tab } })
-          .catch(() => {});
+      if ((tab && tab !== this.activeTab) || this.activeView !== "details") {
+        const query = { ...this.$route.query, tab: tab || this.activeTab };
+        delete query.view;
+        this.$router.replace({ query }).catch(() => {});
       }
       this.$nextTick(() => {
         if (field) this.revealField(field);
@@ -627,6 +705,33 @@ export default {
   background-color: var(--scb-hover-tint-strong);
 }
 
+.event-edit__views >>> .v-tab {
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+}
+
+/* On a phone both tabs share the width, their words broken at the soft
+   hyphen, instead of scrolling. */
+@media (max-width: 599px) {
+  .event-edit__views >>> .v-slide-group__prev,
+  .event-edit__views >>> .v-slide-group__next {
+    display: none;
+  }
+
+  .event-edit__views >>> .v-slide-group__content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .event-edit__views >>> .v-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 var(--scb-space-2);
+    line-height: var(--scb-line-height-tight);
+  }
+}
+
 .event-edit__band {
   background-color: var(--scb-surface-raised) !important;
 }
@@ -652,6 +757,12 @@ export default {
   max-width: var(--scb-editor-width-max);
   padding-bottom: var(--scb-save-bar-clearance);
   scroll-margin-top: var(--scb-space-4);
+}
+
+.event-edit__manage {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: var(--scb-save-bar-clearance);
 }
 
 .event-edit__overview {

@@ -1076,6 +1076,43 @@
         }
       }
     },
+    "manage": {
+      "open": "Veranstaltungsmanagement öffnen",
+      "loadFailed": "Tickets und Buchungen konnten nicht geladen werden.",
+      "retry": "Erneut laden",
+      "refresh": "Aktualisieren",
+      "occupancy": {
+        "title": "Belegung",
+        "ofCapacity": "{booked} von {capacity} Plätzen belegt",
+        "booked": "Noch kein Ticket gebucht | {booked} Ticket gebucht | {booked} Tickets gebucht",
+        "free": "Kein Platz mehr frei | Noch 1 Platz frei | Noch {n} Plätze frei",
+        "released": "{n} Ticket zurückgegeben (abgelehnt, storniert oder widerrufen) | {n} Tickets zurückgegeben (abgelehnt, storniert oder widerrufen)"
+      },
+      "tickets": {
+        "title": "Nach Ticket",
+        "ofCapacity": "{booked} / {capacity}",
+        "unlimited": "ohne Begrenzung",
+        "sharedCapacity": "Ohne eigene Anzahl gelten die Teilnahmeplätze der Veranstaltung.",
+        "none": "Diese Veranstaltung hat noch keine Tickets. Erst mit einem Ticket kann sie gebucht werden.",
+        "toTickets": "Zu den Tickets"
+      },
+      "participants": {
+        "title": "Teilnehmende",
+        "count": "Keine Buchung | 1 Buchung | {n} Buchungen",
+        "name": "Name und Kontakt",
+        "tickets": "Tickets",
+        "status": "Status",
+        "booked": "Gebucht am",
+        "search": "Name, Firma oder E-Mail suchen",
+        "showReleased": "Abgesagte zeigen ({n})",
+        "ownReach": "Sie sehen nur die Buchungen, die Ihnen zugewiesen sind.",
+        "none": "Noch keine Buchungen. Sobald jemand ein Ticket bucht, steht die Person hier.",
+        "noMatch": "Keine Buchung passt zur Suche.",
+        "open": "Zur Buchung",
+        "perPage": "Buchungen pro Seite",
+        "all": "Alle"
+      }
+    },
     "edit": {
       "title": {
         "edit": "Veranstaltung bearbeiten",
@@ -1088,6 +1125,10 @@
       "nav": {
         "tabs": "Bereiche der Veranstaltung",
         "sections": "Abschnitte"
+      },
+      "views": {
+        "details": "Veranstaltungs\u00addetails",
+        "management": "Veranstaltungs\u00admanagement"
       },
       "tabs": {
         "general": "Allgemein",

@@ -9,6 +9,11 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/events/${id}`);
   },
+  /** The bookings of the event's tickets, within the caller's Reichweite. */
+  getEventBookings(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/events/${id}/bookings`);
+  },
   getTags(tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/events/_meta/tags`);
