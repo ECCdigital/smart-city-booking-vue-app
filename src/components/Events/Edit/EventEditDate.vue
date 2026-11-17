@@ -37,25 +37,16 @@ export default {
     },
   },
   methods: {
+    /** „1 Tag 2 Std. 30 Min.“: whole days, hours and minutes, the empty ones left out. */
     duration(ms) {
-      const minutes = Math.round(ms / 60000);
-      if (minutes >= 24 * 60) {
-        const days = Math.round((minutes / (24 * 60)) * 10) / 10;
-        return this.$t("event.edit.date.days", {
-          days: String(days).replace(".", ","),
-        });
-      }
+      const total = Math.round(ms / 60000);
+      const days = Math.floor(total / (24 * 60));
+      const hours = Math.floor((total % (24 * 60)) / 60);
+      const minutes = total % 60;
       const parts = [];
-      if (Math.floor(minutes / 60)) {
-        parts.push(
-          this.$t("event.edit.date.hours", { hours: Math.floor(minutes / 60) })
-        );
-      }
-      if (minutes % 60) {
-        parts.push(
-          this.$t("event.edit.date.minutes", { minutes: minutes % 60 })
-        );
-      }
+      if (days) parts.push(this.$tc("event.edit.date.days", days, { days }));
+      if (hours) parts.push(this.$t("event.edit.date.hours", { hours }));
+      if (minutes) parts.push(this.$t("event.edit.date.minutes", { minutes }));
       return parts.join(" ");
     },
   },

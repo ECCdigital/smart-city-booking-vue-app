@@ -16,6 +16,7 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import eventsModule from "@/store/modules/events";
 import EventEditParticipation from "@/components/Events/Edit/EventEditParticipation.vue";
 import EventEditProgram from "@/components/Events/Edit/EventEditProgram.vue";
+import EventEditDate from "@/components/Events/Edit/EventEditDate.vue";
 import EventEditTickets from "@/components/Events/Edit/EventEditTickets.vue";
 import { REGISTRATION } from "@/utils/eventEditing";
 
@@ -124,6 +125,31 @@ describe("EventEditParticipation: changed places", () => {
     await wrapper.vm.$nextTick();
 
     expect(find(wrapper, "places-changed").exists()).toBe(false);
+  });
+});
+
+describe("EventEditDate: duration", () => {
+  const event = (endDate, endTime) => ({
+    information: {
+      startDate: "2026-12-21",
+      startTime: "11:00",
+      endDate,
+      endTime,
+    },
+  });
+  const summary = (wrapper) => find(wrapper, "event-date-summary").text();
+
+  it.each([
+    ["2026-12-21", "19:00", "Dauer 8 Std."],
+    ["2026-12-21", "12:30", "Dauer 1 Std. 30 Min."],
+    ["2026-12-22", "13:00", "Dauer 1 Tag 2 Std."],
+    ["2026-12-23", "11:00", "Dauer 2 Tage"],
+    ["2026-12-24", "11:45", "Dauer 3 Tage 45 Min."],
+  ])("ends %s at %s: %s", async (endDate, endTime, expected) => {
+    const { wrapper } = await mount(EventEditDate, {
+      event: event(endDate, endTime),
+    });
+    expect(summary(wrapper)).toContain(expected);
   });
 });
 

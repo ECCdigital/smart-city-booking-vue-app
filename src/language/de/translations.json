@@ -1130,7 +1130,7 @@
         "publicOnly": "Diese Veranstaltung ist öffentlich sichtbar. Interne Medien können hier nicht gespeichert werden."
       },
       "description": {
-        "hint": "Was Teilnehmende vorher wissen sollten: Inhalt der Veranstaltung, Voraussetzungen oder was sie mitbringen sollen."
+        "hint": "Geben Sie eine ausführlichere Beschreibung zur Veranstaltung an. Geben Sie an, was Teilnehmende vorher wissen sollten: Inhalt der Veranstaltung, Voraussetzungen oder was sie mitbringen sollen."
       },
       "features": {
         "hint": "Kennzeichnen die Veranstaltung im Katalog, z. B. „Neu“ oder „Barrierefrei“.",
@@ -1145,7 +1145,7 @@
         "summary": "Dauer {duration}",
         "hours": "{hours} Std.",
         "minutes": "{minutes} Min.",
-        "days": "{days} Tage"
+        "days": "{days} Tag | {days} Tage"
       },
       "place": {
         "format": "Format",
