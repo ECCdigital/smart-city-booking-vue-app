@@ -1222,7 +1222,7 @@
         "externalUrl": "Adresse der Anmeldeseite"
       },
       "program": {
-        "hint": "Der Ablauf steht auf der Veranstaltungsseite und hilft bei der Entscheidung.",
+        "hint": "Legen Sie bei Bedarf einen Ablauf der Veranstaltung fest. Dieser wird auf der Veranstaltungsseite angezeigt. Ein Ablaufplan kann Teilnehmenden vermitteln, was sie erwartet, und dazu beitragen, deren Interesse zu wecken.",
         "none": "Ohne festgelegtes Programm",
         "noneHint": "Eingeschaltet werden alle Programmpunkte entfernt.",
         "multiDay": "Die Veranstaltung geht über mehrere Tage. Wählen Sie für jeden Punkt den Tag.",
