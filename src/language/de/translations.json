@@ -3135,20 +3135,31 @@
       },
       "compartments": {
         "title": "Fächer der Schließfachanlage",
-        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Schließfachanlage stehen, stehen nicht zur Wahl.",
+        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Ein graues Fach steht schon in einer anderen Schließfachanlage. Zeigen Sie darauf, um zu sehen, in welcher.",
         "lockerBank": "Schrank {name}",
         "compartment": "Fach {number}",
         "outOfService": "außer Betrieb",
         "notListed": "Nicht in der Liste von {provider}",
+        "note": "{compartment}: {text}",
+        "takenBy": "Steht schon in der Schließfachanlage „{lockerSystem}“",
+        "service": {
+          "off": "Außer Betrieb setzen",
+          "on": "Wieder in Betrieb nehmen"
+        },
+        "legend": {
+          "on": "in der Schließfachanlage",
+          "taken": "in einer anderen Schließfachanlage",
+          "running": "laufende Buchung",
+          "future": "künftige Buchung",
+          "warning": "Warnung, Grund unter dem Schrank"
+        },
         "empty": "Keine Fächer zur Wahl.",
         "selected": "Gewählte Fächer: {count}",
         "saveRefused": "Nicht alle gewählten Fächer lassen sich speichern.",
         "bookings": {
-          "legendRunning": "laufende Buchung",
-          "legendFuture": "künftige Buchung",
           "runningUntil": "läuft bis {end}, bleibt",
           "running": "läuft, bleibt",
-          "moving": "{count} zieht um | {count} ziehen um",
+          "moving": "1 künftige Buchung zieht um | {count} künftige Buchungen ziehen um",
           "summary": "Beim Speichern: {consequences}.",
           "keep": "1 laufende Buchung behält ihr Fach | {count} laufende Buchungen behalten ihr Fach",
           "move": "1 künftige Buchung bekommt ein freies Fach in Betrieb | {count} künftige Buchungen bekommen ein freies Fach in Betrieb",
@@ -3302,6 +3313,7 @@
         "bookable": {
           "label": "Für welches Buchungsobjekt?",
           "later": "Später zuordnen",
+          "amount": "Anzahl {amount}",
           "hint": "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt.",
           "locked": "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt. Die Zuordnung zu „{bookable}“ ändern kann nur, wer es bearbeiten darf.",
           "assignFailed": "Die Schließfachanlage ist gespeichert, die Zuordnung aber nicht. {reason}",
@@ -3310,17 +3322,14 @@
           "and": "und",
           "assignRetry": "Speichern Sie erneut, um sie zuzuordnen."
         },
+        "name": {
+          "label": "Name der Schließfachanlage",
+          "hint": "So erscheint sie in der Liste und im Mobile Key."
+        },
         "amount": {
           "noted": "Beim Speichern wird die Anzahl von „{bookable}“ auf {amount} gesetzt.",
           "keep": "Bisherige Anzahl behalten",
           "locked": "Die Anzahl muss jemand ändern, der „{bookable}“ bearbeiten darf."
-        },
-        "uses": {
-          "lead": "Jede Buchung bekommt für ihre Zeit ein eigenes Fach. Wählen Sie so viele Fächer, wie zur selben Zeit gebucht werden können.",
-          "room": "Schlüssel für einen Raum: 1 Fach",
-          "roomHint": "Im Fach liegt der Schlüssel. Wer den Raum bucht, holt ihn ab und legt ihn wieder hinein.",
-          "item": "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-          "itemHint": "Im Fach steht, was gebucht wird. 6 Fahrradboxen oder 6 Tablets brauchen 6 Fächer."
         },
         "outcome": {
           "title": "Was daraus wird",

@@ -31,6 +31,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   // location input (LocationInput). The same in both themes.
   --scb-overlay: rgba(31, 35, 40, 0.88);
   --scb-on-overlay: #fff;
+  // Text on a fill of a theme colour: a Fach chosen for a Schließfachanlage
+  // or out of service (AccessPointCompartmentPicker.vue). The same in both
+  // themes.
+  --scb-on-theme: #fff;
   // Behind the instance logo (app bar, login pages, public booking status)
   // and the providers' logos (AppPanel): none in the light theme, the one
   // the logos are made for.
@@ -110,6 +114,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-search-height: 48px; // the search band of every list (toolbar.scss)
   --scb-form-width: 520px; // a form card on a page of its own (AuthPage)
   --scb-icon-size-header: 20px;
+  // A Fach as a tile in the dialog of a Schließfachanlage, and a booking at
+  // it as a dot on the tile (AccessPointCompartmentPicker.vue).
+  --scb-compartment-tile-size: 44px;
+  --scb-compartment-dot-size: 6px;
   --scb-app-bar-height: 64px; // what a sticky column subtracts from 100vh
   --scb-panel-width: 380px; // the booking page's detail panel
   --scb-panel-width-narrow: 320px; // ... below $scb-bp-md
@@ -139,6 +147,12 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-card-lift: -3px;
   // A menu over the page: the filter card behind the search funnel.
   --scb-shadow-popover: 0 12px 40px rgba(0, 0, 0, 0.14);
+  // A control focused by keyboard, set off from what it sits on; and a Fach
+  // with a warning, its reason under its Schrank
+  // (AccessPointCompartmentPicker.vue). Drawn outside, so they take no room.
+  --scb-ring-focus: 0 0 0 2px var(--scb-surface),
+    0 0 0 4px var(--v-primary-base);
+  --scb-ring-warning: 0 0 0 2px var(--v-warning-base);
   // The selected card: a primary ring plus a primary glow in place of the
   // grey ambient shadow - a close halo and a wide, faint one that fades out.
   --scb-glow-selected: 0 0 0 1px var(--v-primary-base),
@@ -147,10 +161,6 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-glow-selected-hover: 0 0 0 1px var(--v-primary-base),
     0 8px 28px color-mix(in srgb, var(--v-primary-base) 22%, transparent),
     0 18px 64px color-mix(in srgb, var(--v-primary-base) 14%, transparent);
-  // The ring of the chosen entry in a list of choices, without the glow of a
-  // card: the example of a Schließfachanlage that fits its bookable
-  // (AccessPointLockerUses.vue). Drawn inside, so it takes no room at rest.
-  --scb-ring-selected: inset 0 0 0 1px var(--v-primary-base);
 }
 
 .theme--dark {
