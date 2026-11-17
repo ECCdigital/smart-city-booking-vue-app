@@ -49,6 +49,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   The transitions of a booking and a series (Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Widerruf akzeptieren, Wiederherstellen) need „Alle bearbeiten“ for bookings (`manageBookings.updateAny`), as in the backend ([ECCdigital/tickets#836](https://github.com/ECCdigital/tickets/issues/836), [ECCdigital/tickets#837](https://github.com/ECCdigital/tickets/issues/837)). With only „Eigene bearbeiten“ the list, calendar, Kanban, booking page and series page offered them on an own booking, and the backend refused with 403. „Bearbeiten“ is unchanged. Characterisation tests changed: the booking page and series page gate the transitions on `allowTransition` instead of `allowUpdate`
 -   The icon in the title of the dialogs for reports, suspensions and the blacklist sits level with the first line of the title
 -   Group checkout names its failure ([ECCdigital/tickets#298](https://github.com/ECCdigital/tickets/issues/298)): the backend's bare `404 "Bookable not found"` shows „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“ as the single checkout does, any other failure the general error toast, instead of only a line in the console
 -   „Passwort vergessen“ names a hit rate limit ([ECCdigital/tickets#302](https://github.com/ECCdigital/tickets/issues/302)): a `429` of `POST /auth/forgot-password` shows the toast „Zu viele Versuche“ (`auth.rate-limit.unknown`) instead of the general error; the form stays

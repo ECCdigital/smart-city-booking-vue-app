@@ -39,6 +39,26 @@ class BookingPermissionService {
   }
 
   /**
+   * The transitions - Freigeben, Als bezahlt markieren, Ablehnen /
+   * Stornieren, Widerruf akzeptieren, Wiederherstellen, of a booking and of
+   * a series: the backend's `booking.commit`, `pay`, `reject`,
+   * `acceptWithdrawal` and `update` (reinstate), and the same on
+   * `groupBooking`, all `manageBookings.updateAny` with no variant for the
+   * own booking. `updateOwn` does not open them.
+   */
+  static allowTransition() {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return !!permissions.manageBookings?.updateAny;
+  }
+
+  /**
    * Reissuing a receipt or cancellation receipt (spec E8): the backend's
    * `booking.reprint` - the booking's own user, or `manageBookings.updateAny`.
    */
