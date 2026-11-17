@@ -4,10 +4,9 @@
 // hairline rows instead of tables. Every colour and size is a token from
 // tokens.scss.
 //
-// The app-wide $card-border-radius (25px !important, see variables.scss) is
-// toned down here the same way media-library.scss does it; the !important is
-// what it takes to out-specify the Vuetify rule. Everything else is plain
-// classes the three pages share.
+// Cards are rounded as surfaces app-wide ($card-border-radius, see
+// variables.scss); the rule below also rounds the status path the same way.
+// Everything else is plain classes the three pages share.
 
 .booking-page,
 .group-booking-page,

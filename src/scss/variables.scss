@@ -1,9 +1,10 @@
 $body-font-family: "Work Sans", sans-serif;
 $heading-font-family: "Work Sans", sans-serif;
 
-// The media library surfaces opt out of the card/dialog radius below — see
-// media-library.scss.
-$card-border-radius: 25px !important;
+// Cards are rounded as the section cards are, the token of a surface
+// (tokens.scss). The media library surfaces opt out of the dialog radius
+// below — see media-library.scss.
+$card-border-radius: var(--scb-radius-surface) !important;
 $btn-text-transform: capitalize !important;
 $dialog-border-radius: 25px !important;
 
