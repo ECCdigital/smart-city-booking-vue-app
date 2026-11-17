@@ -56,14 +56,28 @@
           v-if="compartmentHints.length"
           data-test="flow-amount-compartments"
         >
-          <p
+          <div
             v-for="hint in compartmentHints"
             :key="`compartments-${hint.id}`"
-            class="bookable-amount__warning"
           >
-            <v-icon small color="warning">mdi-alert-outline</v-icon>
-            {{ hint.text }}
-          </p>
+            <p class="bookable-amount__warning">
+              <v-icon small color="warning">mdi-alert-outline</v-icon>
+              {{ hint.text }}
+            </p>
+            <v-btn
+              v-if="hint.suggestedAmount"
+              class="bookable-amount__set"
+              small
+              text
+              color="primary"
+              data-test="flow-amount-compartments-set"
+              @click="setAmount(hint.suggestedAmount)"
+            >
+              {{
+                $t("bookable.amount.set-to", { amount: hint.suggestedAmount })
+              }}
+            </v-btn>
+          </div>
         </div>
       </template>
     </div>
@@ -129,9 +143,11 @@ const isEmpty = (value) => value == null || String(value).trim() === "";
  * in the backend; the Höchstmenge shows unless the Anzahl is exactly 1 and
  * none is set. More than one unit of a room is questioned, not refused.
  * Where a provider handles the Anzahl only its note shows, with a jump to
- * its settings in Schließsysteme (`open-section`). An Anzahl unlimited or
- * larger than the Fächer of a linked Open Locker Schließfachanlage is
- * questioned too, not refused (ECCdigital/tickets#1038).
+ * its settings in Schließsysteme (`open-section`). An Anzahl that does not
+ * equal the Fächer in service of a linked Open Locker Schließfachanlage -
+ * larger, smaller or unlimited - is questioned too, not refused
+ * (ECCdigital/tickets#1038), with „Anzahl auf N setzen“ to fill the field
+ * where a Fach is in service (ECCdigital/tickets#1164).
  *
  * The only state held: while an emptied field has focus it stays
  * „Begrenzt“, though the bookable already reads unlimited.
@@ -189,6 +205,11 @@ export default {
       return this.bookable.priceType === "per-square-meter"
         ? this.$t("bookable.amount.unit-square-meter")
         : this.$tc("bookable.amount.unit", Number(count) || 0);
+    },
+    /** „Anzahl auf N setzen“: fills the field, saved with the bookable. */
+    setAmount(amount) {
+      this.typing.amount = false;
+      this.patch({ amount });
     },
     setAmountLimited(limited) {
       this.typing.amount = false;
@@ -263,6 +284,10 @@ export default {
   font-size: var(--scb-font-size-xs);
   line-height: var(--scb-line-height-base);
   color: var(--scb-text-muted);
+}
+
+.bookable-amount__set {
+  margin-top: var(--scb-space-1);
 }
 
 .bookable-amount__warning {

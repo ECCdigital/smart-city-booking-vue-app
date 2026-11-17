@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   carriesOwnCompartments,
+  compartmentCountMismatch,
   compartmentCountMismatches,
   compartmentGroups,
   compartmentsByLockerBank,
@@ -264,11 +265,12 @@ describe("lockerSystemIdsLinkedElsewhere", () => {
 });
 
 /**
- * `amount` stays independent of the Fächer, but the form says so when it
- * is unlimited or larger than the Fächer of a linked Anlage
- * (ECCdigital/tickets#1038).
+ * `amount` stays independent of the Fächer, but the form names each linked
+ * Anlage whose Fächer in service it does not equal (ECCdigital/tickets#1038,
+ * #1164), by the rule of `compartmentCountMismatch`.
  */
 describe("compartmentCountMismatches", () => {
+  // Each Anlage has its first Fach out of service.
   const system = (id, label, count) => ({
     id,
     type: "locker",
@@ -290,13 +292,40 @@ describe("compartmentCountMismatches", () => {
     accessPointDetails: { active: true, accessPointIds: ids },
   });
 
-  it("names an Anlage with fewer Fächer than the amount, counting every Fach", () => {
+  it("names an Anlage with fewer Fächer in service than the amount", () => {
     expect(
       compartmentCountMismatches(bookable(3, ["ap-garage", "ap-keller"]), [
         GARAGE,
         KELLER,
       ])
-    ).toEqual([{ accessPointId: "ap-keller", label: "Keller", count: 2 }]);
+    ).toEqual([
+      {
+        accessPointId: "ap-keller",
+        label: "Keller",
+        kind: "larger",
+        amount: 3,
+        inService: 1,
+        suggestedAmount: 1,
+      },
+    ]);
+  });
+
+  it("names an Anlage with more Fächer in service than the amount", () => {
+    expect(
+      compartmentCountMismatches(bookable(1, ["ap-garage", "ap-keller"]), [
+        GARAGE,
+        KELLER,
+      ])
+    ).toEqual([
+      {
+        accessPointId: "ap-garage",
+        label: "Fahrradgarage",
+        kind: "smaller",
+        amount: 1,
+        inService: 3,
+        suggestedAmount: 3,
+      },
+    ]);
   });
 
   it("names every linked Anlage while the amount is unlimited", () => {
@@ -304,25 +333,20 @@ describe("compartmentCountMismatches", () => {
       compartmentCountMismatches(bookable(null, ["ap-garage", "ap-keller"]), [
         GARAGE,
         KELLER,
+      ]).map(({ accessPointId, kind, suggestedAmount }) => [
+        accessPointId,
+        kind,
+        suggestedAmount,
       ])
     ).toEqual([
-      { accessPointId: "ap-garage", label: "Fahrradgarage", count: 4 },
-      { accessPointId: "ap-keller", label: "Keller", count: 2 },
+      ["ap-garage", "unlimited", 3],
+      ["ap-keller", "unlimited", 1],
     ]);
   });
 
-  it("reads an amount of 0 as unlimited, as the backend does", () => {
+  it("names nothing when the amount equals the Fächer in service", () => {
     expect(
-      compartmentCountMismatches(bookable(0, ["ap-keller"]), [KELLER])
-    ).toHaveLength(1);
-  });
-
-  it("names nothing when the amount fits or lies below the Fächer", () => {
-    expect(
-      compartmentCountMismatches(bookable(2, ["ap-garage", "ap-keller"]), [
-        GARAGE,
-        KELLER,
-      ])
+      compartmentCountMismatches(bookable(3, ["ap-garage"]), [GARAGE])
     ).toEqual([]);
   });
 
@@ -330,6 +354,90 @@ describe("compartmentCountMismatches", () => {
     expect(
       compartmentCountMismatches(bookable(null, ["ap-ifbs"]), [IFBS, GARAGE])
     ).toEqual([]);
+  });
+});
+
+/**
+ * The Regel für Anzahl und Fächer of one Anlage (ECCdigital/tickets#1164):
+ * the bookable's `amount` should equal the Fächer in service. It takes the
+ * Fächer as they stand, a stored Anlage's or the dialog's draft, and the
+ * bookable or none, so the dialog of the Anlage can ask it too.
+ */
+describe("compartmentCountMismatch", () => {
+  const fächer = (inService, outOfService = 0) => [
+    ...Array.from({ length: inService }, (_, i) => ({ id: `in-${i}` })),
+    ...Array.from({ length: outOfService }, (_, i) => ({
+      id: `off-${i}`,
+      outOfService: true,
+    })),
+  ];
+
+  it("reports nothing when the amount equals the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(3), { amount: 3 })).toBeNull();
+  });
+
+  it("does not count a Fach out of service", () => {
+    expect(compartmentCountMismatch(fächer(2, 1), { amount: 2 })).toBeNull();
+  });
+
+  it("reports a larger amount and suggests the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(4), { amount: 6 })).toEqual({
+      kind: "larger",
+      amount: 6,
+      inService: 4,
+      suggestedAmount: 4,
+    });
+  });
+
+  it("reports a smaller amount and suggests the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(4), { amount: 1 })).toEqual({
+      kind: "smaller",
+      amount: 1,
+      inService: 4,
+      suggestedAmount: 4,
+    });
+  });
+
+  it("suggests the smaller amount when a Fach is out of service", () => {
+    expect(compartmentCountMismatch(fächer(5, 1), { amount: 6 })).toEqual({
+      kind: "larger",
+      amount: 6,
+      inService: 5,
+      suggestedAmount: 5,
+    });
+  });
+
+  it.each([
+    ["empty", null],
+    ["0, as the backend reads it", 0],
+  ])("reports an unlimited amount, %s", (_, amount) => {
+    expect(compartmentCountMismatch(fächer(2), { amount })).toEqual({
+      kind: "unlimited",
+      amount: null,
+      inService: 2,
+      suggestedAmount: 2,
+    });
+  });
+
+  /** 0 reads as unlimited in Biletado, so it is never suggested. */
+  it.each([
+    ["a limited", 2, "larger", 2],
+    ["an unlimited", null, "unlimited", null],
+  ])(
+    "suggests nothing for %s amount while no Fach is in service",
+    (_, amount, kind, reported) => {
+      expect(compartmentCountMismatch(fächer(0, 2), { amount })).toEqual({
+        kind,
+        amount: reported,
+        inService: 0,
+        suggestedAmount: null,
+      });
+    }
+  );
+
+  it("reports nothing without a bookable: there is no amount to compare", () => {
+    expect(compartmentCountMismatch(fächer(3), null)).toBeNull();
+    expect(compartmentCountMismatch(fächer(0), undefined)).toBeNull();
   });
 });
 

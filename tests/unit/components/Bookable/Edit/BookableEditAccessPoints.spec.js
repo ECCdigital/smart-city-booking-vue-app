@@ -323,9 +323,11 @@ describe("BookableEditAccessPoints", () => {
   });
 
   /**
-   * `amount` stays the editor's: a hint, never a refusal, when it is
-   * unlimited or larger than the Fächer of a linked Anlage
-   * (ECCdigital/tickets#1038).
+   * `amount` stays the editor's: a hint, never a refusal, when it does not
+   * equal the Fächer in service of a linked Anlage, larger, smaller or
+   * unlimited (ECCdigital/tickets#1038, #1164). The hint names the amount
+   * it should have; setting it is the amount card's, the field's one
+   * component.
    */
   describe("the hint on amount and Fächer", () => {
     const GARAGE = {
@@ -334,6 +336,7 @@ describe("BookableEditAccessPoints", () => {
         compartments: [
           { id: "c-1", number: 1 },
           { id: "c-2", number: 2 },
+          { id: "c-3", number: 3, outOfService: true },
         ],
       },
     };
@@ -348,14 +351,25 @@ describe("BookableEditAccessPoints", () => {
     const hint = (wrapper) =>
       wrapper.find("[data-test='compartment-count-hint']");
 
-    it("says so when the amount is larger than the Fächer", async () => {
+    it("says so when the amount is larger than the Fächer in service", async () => {
       const wrapper = await mountPoints({
         accessPoints: [GARAGE],
         bookable: linked(3),
       });
 
       expect(hint(wrapper).text()).toMatch(
-        /Die Anzahl \(3\) ist größer als die 2 Fächer der Schließfachanlage „Fahrradgarage“/
+        /Die Anzahl \(3\) ist größer als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“\..*Die Anzahl sollte 2 sein\./
+      );
+    });
+
+    it("says so when the amount is smaller than the Fächer in service", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [GARAGE],
+        bookable: linked(1),
+      });
+
+      expect(hint(wrapper).text()).toMatch(
+        /Die Anzahl \(1\) ist kleiner als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“\. Ein Fach wird nie gebraucht\. Die Anzahl sollte 2 sein\./
       );
     });
 
@@ -366,11 +380,11 @@ describe("BookableEditAccessPoints", () => {
       });
 
       expect(hint(wrapper).text()).toMatch(
-        /Die Anzahl ist unbegrenzt.*2 Fächer der Schließfachanlage „Fahrradgarage“/
+        /Die Anzahl ist unbegrenzt.*„Fahrradgarage“ hat nur 2 Fächer in Betrieb/
       );
     });
 
-    it("says nothing when the amount fits", async () => {
+    it("says nothing when the amount equals the Fächer in service", async () => {
       const wrapper = await mountPoints({
         accessPoints: [GARAGE],
         bookable: linked(2),

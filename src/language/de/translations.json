@@ -471,6 +471,7 @@
       "unit-square-meter": "m²",
       "unlimited-hint": "Es gibt keine feste Anzahl – jede Buchung wird angenommen, die zu den Zeiten passt.",
       "room-warning": "Mehr als eine Einheit für einen Raum – sicher?",
+      "set-to": "Anzahl auf {amount} setzen",
       "external-title": "Anzahl kommt von einem externen Anbieter",
       "external-text": "ParkraumService führt die Anzahl dieses Buchungsobjekts. Um sie hier selbst zu pflegen, nehmen Sie die Anzahl in der Einstellung heraus. Die Höchstmenge je Buchung gilt zusätzlich.",
       "max-title": "Höchstmenge je Buchung",
@@ -3639,8 +3640,9 @@
         "lockerSystem": "Je gebuchter Einheit ein eigenes Fach, von Biletado aus den Fächern der Anlage zugeteilt"
       },
       "compartmentCount": {
-        "unlimited": "Die Anzahl ist unbegrenzt, gleichzeitig buchbar ist aber höchstens das eine Fach der Schließfachanlage „{label}“. | Die Anzahl ist unbegrenzt, gleichzeitig buchbar sind aber höchstens die {count} Fächer der Schließfachanlage „{label}“.",
-        "larger": "Die Anzahl ({amount}) ist größer als das eine Fach der Schließfachanlage „{label}“. Gleichzeitig buchbar ist höchstens 1. | Die Anzahl ({amount}) ist größer als die {count} Fächer der Schließfachanlage „{label}“. Gleichzeitig buchbar sind höchstens {count}."
+        "unlimited": "Die Anzahl ist unbegrenzt, aber die Schließfachanlage „{label}“ hat kein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nichts. | Die Anzahl ist unbegrenzt, aber die Schließfachanlage „{label}“ hat nur ein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb höchstens 1. Die Anzahl sollte 1 sein. | Die Anzahl ist unbegrenzt, aber die Schließfachanlage „{label}“ hat nur {count} Fächer in Betrieb. Zur selben Zeit buchbar sind deshalb höchstens {count}. Die Anzahl sollte {count} sein.",
+        "larger": "Die Anzahl ({amount}) ist größer als die Fächer in Betrieb der Schließfachanlage „{label}“: Sie hat keins. Zur selben Zeit buchbar ist deshalb nichts. | Die Anzahl ({amount}) ist größer als das eine Fach in Betrieb der Schließfachanlage „{label}“. Zur selben Zeit buchbar ist deshalb höchstens 1. Die Anzahl sollte 1 sein. | Die Anzahl ({amount}) ist größer als die {count} Fächer in Betrieb der Schließfachanlage „{label}“. Zur selben Zeit buchbar sind deshalb höchstens {count}. Die Anzahl sollte {count} sein.",
+        "smaller": "Die Anzahl ({amount}) ist kleiner als die {count} Fächer in Betrieb der Schließfachanlage „{label}“. Ein Fach wird nie gebraucht. Die Anzahl sollte {count} sein. | Die Anzahl ({amount}) ist kleiner als die {count} Fächer in Betrieb der Schließfachanlage „{label}“. {unused} Fächer werden nie gebraucht. Die Anzahl sollte {count} sein."
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zugangspunkte“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
