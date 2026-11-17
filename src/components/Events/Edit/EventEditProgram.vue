@@ -3,6 +3,7 @@ import uniqueId from "lodash/uniqueId";
 import eventEditing from "@/mixins/eventEditing";
 import { eventDays, isMultiDay } from "@/utils/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import TimeField from "@/components/commons/TimeField.vue";
 
 /**
  * The tab „Programm“: the program points (`schedules`), each with a time and
@@ -13,7 +14,7 @@ import SectionCard from "@/components/commons/SectionCard.vue";
  */
 export default {
   name: "EventEditProgram",
-  components: { SectionCard },
+  components: { SectionCard, TimeField },
   mixins: [eventEditing],
   computed: {
     schedules() {
@@ -133,12 +134,9 @@ export default {
             hide-details
             @change="changePoint(index, { date: $event })"
           />
-          <v-text-field
+          <TimeField
             :value="point.time"
             :label="$t('event.edit.program.time')"
-            type="time"
-            outlined
-            dense
             hide-details
             @input="changePoint(index, { time: $event })"
           />
@@ -165,12 +163,9 @@ export default {
           :key="sub.id || subIndex"
           class="event-program__row event-program__row--sub"
         >
-          <v-text-field
+          <TimeField
             :value="sub.time"
             :label="$t('event.edit.program.time')"
-            type="time"
-            outlined
-            dense
             hide-details
             @input="changeSub(index, subIndex, { time: $event })"
           />
@@ -224,13 +219,13 @@ export default {
 
 .event-program__row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
   gap: var(--scb-space-2);
   align-items: center;
 }
 
 .event-program__row--days {
-  grid-template-columns: 150px 120px minmax(0, 1fr) auto;
+  grid-template-columns: 150px 150px minmax(0, 1fr) auto;
 }
 
 .event-program__row--sub {
@@ -244,7 +239,7 @@ export default {
 @media (max-width: 599px) {
   .event-program__row,
   .event-program__row--days {
-    grid-template-columns: 110px minmax(0, 1fr) auto;
+    grid-template-columns: 140px minmax(0, 1fr) auto;
   }
 
   .event-program__row--days > :first-child {

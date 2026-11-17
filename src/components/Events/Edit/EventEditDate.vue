@@ -1,11 +1,13 @@
 <script>
 import eventEditing from "@/mixins/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import DateField from "@/components/commons/DateField.vue";
+import TimeField from "@/components/commons/TimeField.vue";
 
 /** The tab „Termin“: begin and end, each with date and time. */
 export default {
   name: "EventEditDate",
-  components: { SectionCard },
+  components: { SectionCard, DateField, TimeField },
   mixins: [eventEditing],
   computed: {
     info() {
@@ -68,25 +70,19 @@ export default {
   >
     <v-row dense data-field="start">
       <v-col cols="12" sm="6">
-        <v-text-field
+        <DateField
           :value="info.startDate"
           :label="$t('event.edit.date.startDate') + ' *'"
           :error-messages="errorsFor('start')"
-          type="date"
-          outlined
-          dense
           data-test="event-start-date"
           @input="update('information', 'startDate', $event)"
         />
       </v-col>
       <v-col cols="12" sm="6">
-        <v-text-field
+        <TimeField
           :value="info.startTime"
           :label="$t('event.edit.date.startTime') + ' *'"
           :error="errorsFor('start').length > 0"
-          type="time"
-          outlined
-          dense
           data-test="event-start-time"
           @input="update('information', 'startTime', $event)"
         />
@@ -94,26 +90,20 @@ export default {
     </v-row>
     <v-row dense data-field="end">
       <v-col cols="12" sm="6">
-        <v-text-field
+        <DateField
           :value="info.endDate"
           :label="$t('event.edit.date.endDate') + ' *'"
           :error-messages="errorsFor('end')"
           :min="info.startDate || undefined"
-          type="date"
-          outlined
-          dense
           data-test="event-end-date"
           @input="update('information', 'endDate', $event)"
         />
       </v-col>
       <v-col cols="12" sm="6">
-        <v-text-field
+        <TimeField
           :value="info.endTime"
           :label="$t('event.edit.date.endTime') + ' *'"
           :error="errorsFor('end').length > 0"
-          type="time"
-          outlined
-          dense
           data-test="event-end-time"
           @input="update('information', 'endTime', $event)"
         />

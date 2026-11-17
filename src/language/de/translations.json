@@ -185,7 +185,9 @@
   },
   "validation": {
     "required": "Pflichtfeld",
-    "integerRequired": "Ganzzahl erforderlich"
+    "integerRequired": "Ganzzahl erforderlich",
+    "date": "Bitte ein Datum im Format TT.MM.JJJJ eingeben.",
+    "time": "Bitte eine Uhrzeit im Format HH:MM eingeben."
   },
   "bookable": {
     "flow": {
