@@ -219,6 +219,19 @@ const routes = [
       interfaceName: "tenants",
     },
   },
+  // PROTOTYPE — Fächer der Schließfachanlage: welche und wie viele
+  // (ECCdigital/tickets#1159). Throwaway route on branch
+  // `prototype/1159-faecher-der-anlage`, never merged. Public, runs without a
+  // backend.
+  {
+    path: "/prototype/faecher-der-anlage",
+    name: "prototype-faecher-der-anlage",
+    component: () => import("@/views/Prototype/FaecherDerAnlagePrototype.vue"),
+    meta: {
+      title: "PROTOTYP — Fächer der Schließfachanlage",
+      requiresAuth: false,
+    },
+  },
   {
     path: "/coupons",
     name: "coupons",
