@@ -5,8 +5,15 @@ import {
   leavingCompartmentsSummary,
 } from "@/utilities/locker-system-compartments";
 
-// What a tile can show, in the order the legend explains it.
-const LEGEND = ["on", "off", "taken", "running", "future", "warning"];
+// What a tile can show, in the order the legend explains it, by its text.
+const LEGEND = {
+  on: "legend.on",
+  off: "outOfService",
+  taken: "legend.taken",
+  running: "legend.running",
+  future: "legend.future",
+  warning: "legend.warning",
+};
 
 /**
  * The Fächer of a Schließfachanlage that carries its own, chosen from the
@@ -49,7 +56,10 @@ export default {
           compartments: group.compartments.map((compartment) => ({
             ...compartment,
             state: this.stateOf(compartment),
-            bookings: this.bookingsAt(compartment),
+            bookings: this.bookingsAt(compartment).map((booking) => ({
+              ...booking,
+              state: booking.running ? "running" : "future",
+            })),
             warning: !compartment.listed || !!this.errors[compartment.id],
           })),
           notes: group.compartments
@@ -80,19 +90,20 @@ export default {
       });
       return map;
     },
+    legendKeys() {
+      return LEGEND;
+    },
     // The states the tiles show, each explained once.
     legend() {
       const shown = new Set();
       this.groups.forEach((group) =>
         group.compartments.forEach((compartment) => {
           shown.add(compartment.state);
-          compartment.bookings.forEach((booking) =>
-            shown.add(booking.running ? "running" : "future")
-          );
+          compartment.bookings.forEach((booking) => shown.add(booking.state));
           if (compartment.warning) shown.add("warning");
         })
       );
-      return LEGEND.filter((state) => shown.has(state));
+      return Object.keys(LEGEND).filter((state) => shown.has(state));
     },
   },
   methods: {
@@ -123,6 +134,7 @@ export default {
       if (!text) return null;
       return {
         id: compartment.id,
+        refused: !!this.errors[compartment.id],
         text: this.$t("accessPoint.management.compartments.note", {
           compartment: this.compartmentName(compartment),
           text,
@@ -249,10 +261,8 @@ export default {
               v-for="(booking, index) in compartment.bookings"
               :key="`${booking.id}-${index}`"
               class="compartment-dot"
-              :class="`compartment-dot--${
-                booking.running ? 'running' : 'future'
-              }`"
-              :data-state="booking.running ? 'running' : 'future'"
+              :class="`compartment-dot--${booking.state}`"
+              :data-state="booking.state"
               data-test="booking-dot"
             />
           </span>
@@ -273,6 +283,7 @@ export default {
         v-for="note in group.notes"
         :key="`note-${note.id}`"
         class="compartment-note text-caption"
+        :class="{ 'compartment-note--refused': note.refused }"
         :data-compartment-id="note.id"
         data-test="compartment-note"
       >
@@ -296,7 +307,7 @@ export default {
           :class="`compartment-swatch--${state}`"
           aria-hidden="true"
         />
-        {{ $t(`accessPoint.management.compartments.legend.${state}`) }}
+        {{ $t(`accessPoint.management.compartments.${legendKeys[state]}`) }}
       </span>
     </div>
 
@@ -388,6 +399,10 @@ export default {
   box-shadow: var(--scb-ring-warning);
 }
 
+.compartment-tile--warning .compartment-tile__toggle:focus-visible {
+  box-shadow: var(--scb-ring-warning), var(--scb-ring-focus);
+}
+
 .compartment-tile__lock {
   position: absolute;
   top: calc(var(--scb-space-1) / 2);
@@ -443,6 +458,10 @@ export default {
 
 .compartment-note {
   color: var(--v-warning-darken2);
+}
+
+.compartment-note--refused {
+  color: var(--v-error-base);
 }
 
 .compartment-legend {

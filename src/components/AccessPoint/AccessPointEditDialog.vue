@@ -240,12 +240,6 @@ export default {
     choosing() {
       return !this.fields.compartments && (!this.isEdit || this.swapping);
     },
-    // An Anlage that carries its own Fächer is named first, as the list and
-    // the Mobile Key show it (ECCdigital/tickets#1178); every other access
-    // point keeps its Bezeichnung after its lock.
-    nameFirst() {
-      return !!this.fields.compartments;
-    },
     showLockLine() {
       return this.isEdit && !this.fields.compartments && !this.swapping;
     },
@@ -1110,8 +1104,9 @@ export default {
           <template v-if="fields.compartments">
             <v-row class="mb-4">
               <v-col cols="12" md="7" class="py-0">
+                <!-- Named first, as the list and the Mobile Key show it
+                     (ECCdigital/tickets#1178) -->
                 <v-text-field
-                  v-if="nameFirst"
                   v-model="form.label"
                   class="label-field mb-4"
                   :label="$t('accessPoint.management.dialog.name.label')"
@@ -1249,8 +1244,9 @@ export default {
             {{ $t("accessPoint.management.dialog.iqWarning") }}
           </v-alert>
 
+          <!-- Every other access point keeps its Bezeichnung after its lock -->
           <v-text-field
-            v-if="!nameFirst"
+            v-if="!fields.compartments"
             v-model="form.label"
             class="label-field"
             :label="$t('accessPoint.management.fields.label')"

@@ -3148,7 +3148,6 @@
         },
         "legend": {
           "on": "in der Schließfachanlage",
-          "off": "außer Betrieb",
           "taken": "in einer anderen Schließfachanlage",
           "running": "laufende Buchung",
           "future": "künftige Buchung",

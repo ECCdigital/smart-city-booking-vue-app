@@ -5820,6 +5820,9 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       expect(compartmentNotes(wrapper)).toEqual([
         "Fach 3: Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „uuid-3“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
       ]);
+      expect(
+        pointDialog(wrapper).find("[data-test='compartment-note']").classes()
+      ).toContain("compartment-note--refused");
     });
 
     it("explains under the tiles the states that occur", async () => {
