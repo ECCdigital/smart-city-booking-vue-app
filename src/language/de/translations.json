@@ -3070,7 +3070,6 @@
         },
         "qr": {
           "door": "QR-Code drucken (PDF, A4)",
-          "compartment": "QR-Code des Fachs drucken (PDF, A4)",
           "compartments": "QR-Codes der Fächer: einzeln oder als Sammel-PDF"
         },
         "actions": {
@@ -3195,7 +3194,6 @@
         },
         "opensNot": {
           "door": "öffnet die Tür nicht",
-          "fixed": "öffnet das Fach nicht",
           "compartment": "öffnet Fach {number} nicht",
           "all": "öffnet das Fach nicht | öffnet keines der {count} Fächer"
         },

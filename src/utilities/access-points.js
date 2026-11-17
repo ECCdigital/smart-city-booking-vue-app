@@ -10,11 +10,10 @@ export const DOOR_TYPE = "door";
  * Pareva locker systems. The mode of a locker system follows from the
  * provider as well - iFBS opens a compartment remotely, Pareva hands out a
  * code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
- * Open Locker hands out both, each opened remotely and in no other way: a
- * Schließfachanlage that carries its own Fächer, which the platform assigns -
- * the type a new one starts with - and a fixed Fach, a door
- * (ECCdigital/tickets#1037). Whether the provider also lists them is a
- * capability of its own, see `canListAccessPoints`.
+ * Open Locker hands out only the Schließfachanlage, opened remotely and in
+ * no other way, that carries its own Fächer, which the platform assigns
+ * (ECCdigital/tickets#1037, #1162). Whether the provider also lists them is
+ * a capability of its own, see `canListAccessPoints`.
  *
  * A provider outside this table says nothing about the type; the access point
  * keeps the one it has.
@@ -77,18 +76,6 @@ export function canListAccessPoints(provider) {
  */
 export function isLockerAccessPoint(accessPoint) {
   return accessPoint?.type === LOCKER_TYPE;
-}
-
-/**
- * Whether the access point is a fixed Fach: an Open Locker compartment that
- * is an access point of its own, a door by type, without an Anlage around
- * it (`accessPointTypeName` "compartment").
- *
- * @param {Object} accessPoint The access point to inspect
- * @returns {boolean}
- */
-export function isFixedCompartment(accessPoint) {
-  return accessPointTypeName(accessPoint) === "compartment";
 }
 
 /**

@@ -1,14 +1,12 @@
 import i18n from "@/language/index";
 import {
   accessPointLabel,
-  isFixedCompartment,
   requiresQrScan,
 } from "@/utilities/access-points";
 
 /**
  * What the question before rotating a scan code says (ECCdigital/tickets#1111),
- * for a door, a fixed Fach, one Fach of a Schließfachanlage or all of its
- * Fächer: that the code is replaced and printed stickers are void, and what
+ * for a door, one Fach of a Schließfachanlage or all of its Fächer: that the code is replaced and printed stickers are void, and what
  * that means for bookers. Loud only where the access point demands the QR
  * scan - there an old sticker locks bookers out; without it they keep opening
  * through the app. The tick that all stickers get printed anew is asked for
@@ -28,7 +26,6 @@ function opensNot(accessPoint, { compartment, all, count }) {
   if (all) return tc("opensNot.all", count);
   if (compartment)
     return t("opensNot.compartment", { number: compartment.number });
-  if (isFixedCompartment(accessPoint)) return t("opensNot.fixed");
   return t("opensNot.door");
 }
 

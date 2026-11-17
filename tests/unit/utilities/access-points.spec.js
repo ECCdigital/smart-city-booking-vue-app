@@ -7,10 +7,9 @@ import {
 } from "@/utilities/access-points";
 
 /**
- * What each provider hands out. Open Locker hands out both a
- * Schließfachanlage, whose Fächer the platform assigns, and a fixed Fach, a
- * door - both opened remotely, and a new one starts as the Anlage
- * (ECCdigital/tickets#1037).
+ * What each provider hands out. Open Locker hands out only the
+ * Schließfachanlage, whose Fächer the platform assigns, opened remotely
+ * (ECCdigital/tickets#1037, #1162).
  */
 describe("what a provider's access points are", () => {
   it.each([
