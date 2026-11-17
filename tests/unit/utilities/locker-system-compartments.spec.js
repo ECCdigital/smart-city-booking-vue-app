@@ -8,7 +8,7 @@ import {
   compartmentsByLockerBank,
   leavingCompartmentIds,
   compartmentTitle,
-  heldCompartmentIds,
+  heldCompartments,
   lockerSystemIdsLinkedElsewhere,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -52,8 +52,8 @@ describe("whether an access point carries its own Fächer", () => {
 
 /**
  * A Fach stands in at most one Anlage (ECCdigital/tickets#1162): the Fächer
- * the other Anlagen of the provider hold are not to be chosen, and nothing
- * else holds a Fach.
+ * the other Anlagen of the provider hold are not to be chosen, each named
+ * with its Anlage (ECCdigital/tickets#1178), and nothing else holds a Fach.
  */
 describe("the Fächer other Anlagen hold", () => {
   const accessPoints = [
@@ -61,12 +61,14 @@ describe("the Fächer other Anlagen hold", () => {
       id: "anlage-1",
       type: "locker",
       provider: "open-locker",
+      label: "Garage",
       config: { compartments: [{ id: UUID_1 }] },
     },
     {
       id: "anlage-2",
       type: "locker",
       provider: "open-locker",
+      label: "Fahrradboxen",
       config: { compartments: [{ id: UUID_4 }] },
     },
     // A door of Open Locker from before: it holds no Fach.
@@ -79,18 +81,20 @@ describe("the Fächer other Anlagen hold", () => {
     { id: "tuer-1", type: "door", provider: "nuki", externalId: UUID_3 },
   ];
 
-  it("names the Fächer of the other Anlagen of the provider, nothing else", () => {
+  it("names the Fächer of the other Anlagen of the provider with their Anlage, nothing else", () => {
     expect(
-      [...heldCompartmentIds(accessPoints, { provider: "open-locker" })].sort()
-    ).toEqual([UUID_1, UUID_4].sort());
+      Object.fromEntries(
+        heldCompartments(accessPoints, { provider: "open-locker" })
+      )
+    ).toEqual({ [UUID_1]: "Garage", [UUID_4]: "Fahrradboxen" });
   });
 
   it("leaves out the Anlage being edited", () => {
     expect([
-      ...heldCompartmentIds(accessPoints, {
+      ...heldCompartments(accessPoints, {
         provider: "open-locker",
         exceptId: "anlage-1",
-      }),
+      }).keys(),
     ]).toEqual([UUID_4]);
   });
 });
@@ -125,8 +129,8 @@ describe("the ids other access points stand for", () => {
 
 /**
  * The Fächer to choose from, grouped by Schließfachschrank in the order
- * Open Locker lists them: the free ones and the chosen ones, never one
- * another access point holds. A chosen Fach the listing does not name -
+ * Open Locker lists them: the free ones, the chosen ones and those another
+ * Anlage holds, named with it. A chosen Fach the listing does not name -
  * Open Locker is not active, or the account lost it - stays in its
  * Schrank as stored, so it can still be taken out.
  */
@@ -138,7 +142,7 @@ describe("the Fächer to choose from", () => {
   ];
 
   it("groups the listing by Schließfachschrank", () => {
-    const groups = compartmentGroups(listing, [], new Set());
+    const groups = compartmentGroups(listing, [], new Map());
 
     expect(
       groups.map((group) => ({
@@ -155,7 +159,7 @@ describe("the Fächer to choose from", () => {
     const groups = compartmentGroups(
       listing,
       [{ id: UUID_2, outOfService: true }],
-      new Set()
+      new Map()
     );
 
     expect(groups[0].compartments).toEqual([
@@ -166,6 +170,7 @@ describe("the Fächer to choose from", () => {
         selected: false,
         outOfService: false,
         listed: true,
+        takenBy: "",
       },
       {
         id: UUID_2,
@@ -174,15 +179,31 @@ describe("the Fächer to choose from", () => {
         selected: true,
         outOfService: true,
         listed: true,
+        takenBy: "",
       },
     ]);
   });
 
-  it("hides what another access point holds, and a Schrank left empty by it", () => {
-    const groups = compartmentGroups(listing, [], new Set([UUID_1, UUID_3]));
+  it("shows what another Anlage holds, named with it", () => {
+    const groups = compartmentGroups(
+      listing,
+      [],
+      new Map([
+        [UUID_1, "Garage"],
+        [UUID_3, "Fahrradboxen"],
+      ])
+    );
 
-    expect(groups.map((group) => group.compartments.map((c) => c.id))).toEqual([
-      [UUID_2],
+    expect(
+      groups.map((group) =>
+        group.compartments.map((c) => [c.number, c.selected, c.takenBy])
+      )
+    ).toEqual([
+      [
+        [1, false, "Garage"],
+        [2, false, ""],
+      ],
+      [[3, false, "Fahrradboxen"]],
     ]);
   });
 
@@ -194,12 +215,14 @@ describe("the Fächer to choose from", () => {
       outOfService: false,
     };
 
-    const groups = compartmentGroups([], [stored], new Set());
+    const groups = compartmentGroups([], [stored], new Map());
 
     expect(groups).toEqual([
       {
         lockerBank: HAFEN,
-        compartments: [{ ...stored, selected: true, listed: false }],
+        compartments: [
+          { ...stored, selected: true, listed: false, takenBy: "" },
+        ],
       },
     ]);
   });

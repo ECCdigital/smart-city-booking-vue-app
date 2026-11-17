@@ -15,7 +15,7 @@ import {
   validationError,
 } from "@tests/unit/support/api";
 import { typeSearch } from "@tests/unit/support/search";
-import { chooseOption, selectByLabel } from "@tests/unit/support/vuetify";
+import { selectByLabel } from "@tests/unit/support/vuetify";
 import ApiGeoService from "@/services/api/ApiGeoService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
@@ -3737,32 +3737,68 @@ describe("AccessPoints assigns an access point to bookables", () => {
 
 const BOOKABLE_FIELD = "Für welches Buchungsobjekt?";
 
-/** The choices of „Für welches Buchungsobjekt?“, top to bottom. */
-async function bookableChoices(wrapper) {
-  await selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
-    .find(".v-input__slot")
-    .trigger("click");
+/** „Für welches Buchungsobjekt?“, a field to search in. */
+function bookableField(wrapper) {
+  const field = pointDialog(wrapper)
+    .findAllComponents({ name: "v-autocomplete" })
+    .wrappers.find((entry) => entry.props("label") === BOOKABLE_FIELD);
+  if (!field) throw new Error(`Das Feld „${BOOKABLE_FIELD}“ fehlt.`);
+  return field;
+}
+
+/**
+ * Opens the bookables, `search` typed in where given, and reads each line
+ * as „Titel | Art · Anzahl“; the menu detaches into `data-app`.
+ */
+async function bookableLines(wrapper, search) {
+  await bookableField(wrapper).find(".v-input__slot").trigger("click");
+  if (search !== undefined) {
+    await bookableField(wrapper).find("input").setValue(search);
+  }
   await settle(wrapper);
-  const choices = [
+  const lines = [
     ...document.querySelectorAll(".menuable__content__active .v-list-item"),
-  ].map((item) => item.textContent.trim());
-  await selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
-    .find(".v-input__slot")
+  ].map((item) =>
+    [
+      item.querySelector("[data-test='bookable-title']"),
+      item.querySelector("[data-test='bookable-detail']"),
+    ]
+      .filter(Boolean)
+      .map((part) => part.textContent.trim())
+      .join(" | ")
+  );
+  await bookableField(wrapper)
+    .find("input")
     .trigger("keydown", { keyCode: 27 });
+  await bookableField(wrapper).find("input").trigger("blur");
   await settle(wrapper);
-  return choices;
+  return lines;
+}
+
+/** The choices of „Für welches Buchungsobjekt?“, top to bottom, by title. */
+async function bookableChoices(wrapper) {
+  return (await bookableLines(wrapper)).map((line) => line.split(" | ")[0]);
 }
 
 async function chooseBookable(wrapper, title) {
-  await chooseOption(pointDialog(wrapper), BOOKABLE_FIELD, title);
+  await bookableField(wrapper).find(".v-input__slot").trigger("click");
+  await settle(wrapper);
+  const item = [
+    ...document.querySelectorAll(".menuable__content__active .v-list-item"),
+  ].find(
+    (entry) =>
+      entry
+        .querySelector("[data-test='bookable-title']")
+        ?.textContent.trim() === title
+  );
+  if (!item) throw new Error(`„${title}“ steht nicht zur Wahl.`);
+  item.click();
   await settle(wrapper);
 }
 
 /** What the field shows as chosen. */
 function chosenBookable(wrapper) {
-  return selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
-    .find(".v-select__selection")
-    .text();
+  return bookableField(wrapper).find("input").element.value;
 }
 
 /**
@@ -3841,12 +3877,37 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
     ]);
   });
 
+  /**
+   * The field is a search (ECCdigital/tickets#1178): typing filters the
+   * bookables by title, each line names its type and Anzahl, and „Später
+   * zuordnen“ stays first whatever is typed.
+   */
+  it("finds the bookable by its title, each line with its type and Anzahl", async () => {
+    const wrapper = await mountOpenLocker([
+      ...BOOKABLES,
+      { id: "b4", title: "Lastenanhänger", type: "resource", amount: null },
+    ]);
+    await create(wrapper, "Open Locker");
+
+    expect(await bookableLines(wrapper)).toEqual([
+      "Später zuordnen",
+      "Besprechungsraum | Raum · Anzahl 1",
+      "Fahrradbox | Gerät / Weiteres · Anzahl 1",
+      "Lastenrad | Gerät / Weiteres · Anzahl 1",
+      "Lastenanhänger | Gerät / Weiteres · Anzahl unbegrenzt",
+    ]);
+    expect(await bookableLines(wrapper, "last")).toEqual([
+      "Später zuordnen",
+      "Lastenrad | Gerät / Weiteres · Anzahl 1",
+      "Lastenanhänger | Gerät / Weiteres · Anzahl unbegrenzt",
+    ]);
+    expect(await bookableLines(wrapper, "Sauna")).toEqual(["Später zuordnen"]);
+  });
+
   /** Creates „Garage“ with the free Fach, the bookable chosen as given. */
   async function createAnlage(wrapper, bookable) {
     await create(wrapper, "Open Locker");
-    await pointDialog(wrapper)
-      .find(".compartment-row[data-compartment-id='uuid-frei'] input")
-      .trigger("click");
+    await clickTile(wrapper, "uuid-frei");
     await pointDialog(wrapper).find(".label-field input").setValue("Garage");
     if (bookable) await chooseBookable(wrapper, bookable);
     await savePoint(wrapper);
@@ -3948,7 +4009,7 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
 
     await editPoint(wrapper, "Fahrradgarage Süd");
 
-    const field = selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD);
+    const field = bookableField(wrapper);
     expect(chosenBookable(wrapper)).toBe("Fahrradbox");
     expect(field.props("disabled")).toBe(true);
     expect(pointDialog(wrapper).text()).toContain(
@@ -4087,14 +4148,12 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
 });
 
 /**
- * The dialog of an Open Locker Schließfachanlage explains the Einsatzfall
- * and shows what Fächer and Anzahl make of each other
- * (ECCdigital/tickets#1166): on top one sentence and two examples, the one
- * that fits the bookable chosen highlighted; beside the Fächer „Was daraus
- * wird“ with three numbers and one sentence per case, at once on every
- * change.
+ * The dialog of an Open Locker Schließfachanlage shows what Fächer and
+ * Anzahl make of each other (ECCdigital/tickets#1166): beside the Fächer
+ * „Was daraus wird“ with three numbers and one sentence per case, at once on
+ * every change. It explains nothing on top (ECCdigital/tickets#1178).
  */
-describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => {
+describe("AccessPoints shows what the Fächer of a Schließfachanlage make", () => {
   const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
   const FÄCHER = [1, 2, 3, 4].map((number) =>
     listed("open-locker", `uuid-${number}`, `${LABOR.name} · Fach ${number}`, {
@@ -4124,34 +4183,12 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
     return wrapper;
   }
 
-  function compartmentRow(wrapper, number) {
-    return pointDialog(wrapper).find(
-      `.compartment-row[data-compartment-id='uuid-${number}']`
-    );
-  }
-
   async function tickFach(wrapper, number) {
-    await compartmentRow(wrapper, number)
-      .find("input[type='checkbox']")
-      .trigger("click");
-    await settle(wrapper);
+    await clickTile(wrapper, `uuid-${number}`);
   }
 
   async function takeOutOfService(wrapper, number) {
-    await compartmentRow(wrapper, number)
-      .find("[role='switch']")
-      .trigger("click");
-    await settle(wrapper);
-  }
-
-  /** The examples on top, the highlighted ones marked with a star. */
-  function uses(wrapper) {
-    return pointDialog(wrapper)
-      .findAll("[data-test='locker-use']")
-      .wrappers.map((use) => {
-        const title = use.find("[data-test='locker-use-title']").text();
-        return use.classes("locker-use--active") ? `★ ${title}` : title;
-      });
+    await clickWrench(wrapper, `uuid-${number}`);
   }
 
   /** „Was daraus wird“: the three numbers and the sentence. */
@@ -4169,61 +4206,20 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
     };
   }
 
-  it("explains on top that each booking gets a Fach of its own", async () => {
+  it("explains nothing on top: „Was daraus wird“ says what the Fächer make", async () => {
     const wrapper = await createAnlage();
 
-    expect(shown(wrapper, "locker-uses").text()).toContain(
-      "Jede Buchung bekommt für ihre Zeit ein eigenes Fach. Wählen Sie so viele Fächer, wie zur selben Zeit gebucht werden können."
+    expect(shown(wrapper, "locker-uses").exists()).toBe(false);
+    expect(pointDialog(wrapper).text()).not.toContain(
+      "Jede Buchung bekommt für ihre Zeit ein eigenes Fach."
     );
-    expect(uses(wrapper)).toEqual([
-      "Schlüssel für einen Raum: 1 Fach",
-      "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-    ]);
+    expect(pointDialog(wrapper).text()).not.toContain(
+      "Schlüssel für einen Raum"
+    );
+    expect(shown(wrapper, "compartment-outcome").exists()).toBe(true);
   });
 
-  it.each([
-    [
-      "the room for a room",
-      "Besprechungsraum",
-      [
-        "★ Schlüssel für einen Raum: 1 Fach",
-        "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-      ],
-    ],
-    [
-      "the bicycle boxes for a resource",
-      "Fahrradboxen",
-      [
-        "Schlüssel für einen Raum: 1 Fach",
-        "★ Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-      ],
-    ],
-    [
-      "the bicycle boxes for any other type",
-      "Festwiese",
-      [
-        "Schlüssel für einen Raum: 1 Fach",
-        "★ Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-      ],
-    ],
-    [
-      "none for „Später zuordnen“",
-      "Später zuordnen",
-      [
-        "Schlüssel für einen Raum: 1 Fach",
-        "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
-      ],
-    ],
-  ])("highlights %s", async (_, bookable, expected) => {
-    const wrapper = await createAnlage();
-    await chooseBookable(wrapper, "Fahrradboxen");
-
-    await chooseBookable(wrapper, bookable);
-
-    expect(uses(wrapper)).toEqual(expected);
-  });
-
-  it("highlights the example of the bookable a stored Anlage is assigned to", async () => {
+  it("tells what the Fächer make of the bookable a stored Anlage is assigned to", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],
       accessPoints: [OPEN_LOCKER_SCHLUESSEL],
@@ -4237,7 +4233,6 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
 
     await editPoint(wrapper, "Schlüssel Raum 1");
 
-    expect(uses(wrapper)[0]).toBe("★ Schlüssel für einen Raum: 1 Fach");
     expect(outcome(wrapper)).toEqual({
       numbers: ["1 Fach", "1 Anzahl", "1 zur selben Zeit buchbar"],
       text: "Passt: „Besprechungsraum“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach.",
@@ -4349,7 +4344,6 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
     ]);
 
     await chooseBookable(wrapper, "Besprechungsraum");
-    expect(uses(wrapper)[0]).toBe("★ Schlüssel für einen Raum: 1 Fach");
     expect(outcome(wrapper).text).toMatch(/^Passt: „Besprechungsraum“/);
   });
 
@@ -4411,7 +4405,7 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
     }
   );
 
-  it("shows neither examples nor „Was daraus wird“ for a door", async () => {
+  it("shows no „Was daraus wird“ for a door", async () => {
     const wrapper = await mountAccessPointsPage({ providers: [NUKI] });
 
     await create(wrapper, "Nuki");
@@ -4602,10 +4596,7 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
     ]);
     expect(setAmountButton(wrapper).exists()).toBe(false);
 
-    await pointDialog(wrapper)
-      .find(".compartment-row[data-compartment-id='uuid-3'] [role='switch']")
-      .trigger("click");
-    await settle(wrapper);
+    await clickWrench(wrapper, "uuid-3");
     expect(setAmountButton(wrapper).text()).toBe("Anzahl auf 2 setzen");
 
     await setAmount(wrapper);
@@ -4628,9 +4619,7 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
     });
     await create(wrapper, "Open Locker");
     for (const number of [1, 2]) {
-      await pointDialog(wrapper)
-        .find(`.compartment-row[data-compartment-id='uuid-${number}'] input`)
-        .trigger("click");
+      await clickTile(wrapper, `uuid-${number}`);
     }
     await pointDialog(wrapper).find(".label-field input").setValue("Garage");
     await chooseBookable(wrapper, "Lastenrad");
@@ -4663,10 +4652,7 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
     const wrapper = await editAnlage();
     await setAmount(wrapper);
 
-    await pointDialog(wrapper)
-      .find(".compartment-row[data-compartment-id='uuid-4'] input")
-      .trigger("click");
-    await settle(wrapper);
+    await clickTile(wrapper, "uuid-4");
 
     expect(shown(wrapper, "amount-noted").exists()).toBe(false);
     expect(outcomeText(wrapper)).toMatch(
@@ -4684,10 +4670,7 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
     const wrapper = await editAnlage();
     await setAmount(wrapper);
 
-    await pointDialog(wrapper)
-      .find(".compartment-row[data-compartment-id='uuid-3'] [role='switch']")
-      .trigger("click");
-    await settle(wrapper);
+    await clickWrench(wrapper, "uuid-3");
 
     expect(shown(wrapper, "amount-noted").exists()).toBe(false);
     expect(outcomeText(wrapper)).toBe(
@@ -5220,6 +5203,36 @@ function pointDialog(wrapper) {
   return dialogCard(wrapper, "AccessPointEditDialog");
 }
 
+/** The tile of a Fach in the dialog of a Schließfachanlage, by its UUID. */
+function tileOf(wrapper, id) {
+  return pointDialog(wrapper).find(
+    `.compartment-tile[data-compartment-id='${id}']`
+  );
+}
+
+/** A click on the tile: the Fach goes into the Anlage or out of it. */
+async function clickTile(wrapper, id) {
+  await tileOf(wrapper, id)
+    .find("[data-test='compartment-toggle']")
+    .trigger("click");
+  await settle(wrapper);
+}
+
+/** A click on the wrench: the Fach goes out of service or back. */
+async function clickWrench(wrapper, id) {
+  await tileOf(wrapper, id)
+    .find("[data-test='compartment-service']")
+    .trigger("click");
+  await settle(wrapper);
+}
+
+/** The lines under the Schränke, one per Fach concerned. */
+function compartmentNotes(wrapper) {
+  return pointDialog(wrapper)
+    .findAll("[data-test='compartment-note']")
+    .wrappers.map((note) => note.text().replace(/\s+/g, " "));
+}
+
 function shown(wrapper, test) {
   return pointDialog(wrapper).find(`[data-test='${test}']`);
 }
@@ -5559,12 +5572,6 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       return wrapper;
     }
 
-    function compartmentRow(wrapper, id) {
-      return pointDialog(wrapper).find(
-        `.compartment-row[data-compartment-id='${id}']`
-      );
-    }
-
     it("creates a Schließfachanlage without a choice of kind", async () => {
       const wrapper = await createAtOpenLocker();
 
@@ -5584,10 +5591,28 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       );
     });
 
+    /**
+     * The name comes first, as „Name der Schließfachanlage“, then the
+     * bookable (ECCdigital/tickets#1178). Doors, iFBS and Pareva keep their
+     * „Bezeichnung“ last.
+     */
+    it("asks first for the name of the Schließfachanlage, then for its bookable", async () => {
+      const wrapper = await createAtOpenLocker();
+
+      expect(labelsIn(pointDialog(wrapper))).toEqual([
+        "Name der Schließfachanlage",
+        "Für welches Buchungsobjekt?",
+      ]);
+      expect(pointDialog(wrapper).text()).toContain(
+        "So erscheint sie in der Liste und im Mobile Key."
+      );
+      expect(pointDialog(wrapper).text()).not.toContain("Bezeichnung");
+    });
+
     it("keeps the title of a Schließfachanlage with a single Fach ticked", async () => {
       const wrapper = await createAtOpenLocker();
 
-      await compartmentRow(wrapper, "uuid-2").find("input").trigger("click");
+      await clickTile(wrapper, "uuid-2");
       await pointDialog(wrapper)
         .find(".label-field input")
         .setValue("Schlüssel Raum 1");
@@ -5602,11 +5627,99 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       });
     });
 
-    it("offers every Fach that stands in no other Schließfachanlage", async () => {
+    /**
+     * The Fächer are tiles by Schließfachschrank (ECCdigital/tickets#1178):
+     * a click takes one into the Anlage or out, the wrench on a chosen one
+     * takes it out of service or back. Both are buttons with a name.
+     */
+    function tileState(wrapper, id) {
+      return tileOf(wrapper, id).attributes("data-state");
+    }
+
+    function toggleOf(wrapper, id) {
+      return tileOf(wrapper, id).find("[data-test='compartment-toggle']");
+    }
+
+    function wrenchOf(wrapper, id) {
+      return tileOf(wrapper, id).find("[data-test='compartment-service']");
+    }
+
+    it("takes a Fach into the Anlage and out again with a click on its tile", async () => {
+      const wrapper = await createAtOpenLocker();
+
+      expect(toggleOf(wrapper, "uuid-1").element.tagName).toBe("BUTTON");
+      expect(toggleOf(wrapper, "uuid-1").attributes("aria-label")).toBe(
+        "Fach 1"
+      );
+      expect(toggleOf(wrapper, "uuid-1").text()).toBe("1");
+      expect(toggleOf(wrapper, "uuid-1").attributes("aria-pressed")).toBe(
+        "false"
+      );
+      expect(wrenchOf(wrapper, "uuid-1").exists()).toBe(false);
+      expect(pointDialog(wrapper).find("input[type='checkbox']").exists()).toBe(
+        false
+      );
+
+      await clickTile(wrapper, "uuid-1");
+
+      expect(tileState(wrapper, "uuid-1")).toBe("on");
+      expect(toggleOf(wrapper, "uuid-1").attributes("aria-pressed")).toBe(
+        "true"
+      );
+      expect(pointDialog(wrapper).text()).toContain("Gewählte Fächer: 1");
+
+      await clickTile(wrapper, "uuid-1");
+
+      expect(tileState(wrapper, "uuid-1")).toBe("free");
+      expect(pointDialog(wrapper).text()).toContain("Gewählte Fächer: 0");
+    });
+
+    it("takes a chosen Fach out of service with the wrench, and back", async () => {
+      const wrapper = await createAtOpenLocker();
+      await clickTile(wrapper, "uuid-1");
+      await clickTile(wrapper, "uuid-3");
+
+      expect(wrenchOf(wrapper, "uuid-1").element.tagName).toBe("BUTTON");
+      expect(wrenchOf(wrapper, "uuid-1").attributes("aria-label")).toBe(
+        "Außer Betrieb setzen"
+      );
+      expect(pointDialog(wrapper).find("[role='switch']").exists()).toBe(false);
+
+      await clickWrench(wrapper, "uuid-1");
+
+      expect(tileState(wrapper, "uuid-1")).toBe("off");
+      expect(toggleOf(wrapper, "uuid-1").attributes("aria-pressed")).toBe(
+        "true"
+      );
+      expect(wrenchOf(wrapper, "uuid-1").attributes("aria-label")).toBe(
+        "Wieder in Betrieb nehmen"
+      );
+      await pointDialog(wrapper).find(".label-field input").setValue("Garage");
+      expect((await savePoint(wrapper)).config.compartments).toEqual([
+        { id: "uuid-1", number: 1, lockerBank: LABOR, outOfService: true },
+        { id: "uuid-3", number: 3, lockerBank: HAFEN, outOfService: false },
+      ]);
+    });
+
+    it("brings a Fach out of service back with the wrench", async () => {
+      const wrapper = await createAtOpenLocker();
+      await clickTile(wrapper, "uuid-1");
+      await clickWrench(wrapper, "uuid-1");
+
+      await clickWrench(wrapper, "uuid-1");
+
+      expect(tileState(wrapper, "uuid-1")).toBe("on");
+      expect(wrenchOf(wrapper, "uuid-1").attributes("aria-label")).toBe(
+        "Außer Betrieb setzen"
+      );
+    });
+
+    it("shows a Fach of another Anlage greyed and locked, not to be chosen, with its Anlage", async () => {
       const wrapper = await createAtOpenLocker([
         {
           ...OPEN_LOCKER_ANLAGE,
           id: "anlage-andere",
+          label: "Garage Nord",
           config: { compartments: [{ id: "uuid-1" }] },
         },
         // A door of Open Locker stored before tickets#1162 holds no Fach.
@@ -5621,20 +5734,125 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
         },
       ]);
 
-      expect(compartmentRow(wrapper, "uuid-1").exists()).toBe(false);
-      expect(compartmentRow(wrapper, "uuid-2").exists()).toBe(true);
-      expect(compartmentRow(wrapper, "uuid-3").exists()).toBe(true);
-      expect(pointDialog(wrapper).text()).toContain(
-        "Fächer, die schon in einer anderen Schließfachanlage stehen, stehen nicht zur Wahl."
+      expect(tileState(wrapper, "uuid-1")).toBe("taken");
+      expect(toggleOf(wrapper, "uuid-1").attributes("aria-disabled")).toBe(
+        "true"
       );
-      expect(pointDialog(wrapper).text()).not.toContain("festes Fach");
+      expect(
+        tileOf(wrapper, "uuid-1")
+          .find("[data-test='compartment-lock']")
+          .exists()
+      ).toBe(true);
+      expect(tileState(wrapper, "uuid-2")).toBe("free");
+
+      await clickTile(wrapper, "uuid-1");
+
+      expect(tileState(wrapper, "uuid-1")).toBe("taken");
+      expect(pointDialog(wrapper).text()).toContain("Gewählte Fächer: 0");
+
+      await toggleOf(wrapper, "uuid-1").trigger("mouseenter");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await wrapper.vm.$nextTick();
+      expect(
+        document
+          .querySelector(".v-tooltip__content.menuable__content__active")
+          .textContent.trim()
+      ).toBe("Steht schon in der Schließfachanlage „Garage Nord“");
+      await toggleOf(wrapper, "uuid-1").trigger("mouseleave");
+
+      expect(pointDialog(wrapper).text()).toContain(
+        "Ein graues Fach steht schon in einer anderen Schließfachanlage."
+      );
+      expect(pointDialog(wrapper).text()).not.toContain("nicht zur Wahl");
+    });
+
+    it("marks a Fach Open Locker no longer lists, and says so under its Schrank", async () => {
+      const wrapper = await mountAccessPointsPage({
+        providers: [OPEN_LOCKER],
+        accessPoints: [
+          {
+            ...OPEN_LOCKER_ANLAGE,
+            label: "Garage",
+            config: {
+              compartments: [
+                { id: "uuid-1", number: 1, lockerBank: LABOR },
+                { id: "uuid-5", number: 5, lockerBank: LABOR },
+              ],
+            },
+          },
+        ],
+      });
+      answerListings({ "open-locker": FAECHER });
+
+      await editPoint(wrapper, "Garage");
+
+      expect(tileOf(wrapper, "uuid-5").classes()).toContain(
+        "compartment-tile--warning"
+      );
+      expect(tileOf(wrapper, "uuid-1").classes()).not.toContain(
+        "compartment-tile--warning"
+      );
+      expect(compartmentNotes(wrapper)).toEqual([
+        "Fach 5: Nicht in der Liste von Open Locker",
+      ]);
+    });
+
+    it("marks a Fach the backend refused, and says why under its Schrank", async () => {
+      ApiAccessPointService.storeAccessPoint.mockRejectedValueOnce(
+        validationError([
+          {
+            field: "config.compartments.1",
+            code: "compartment_not_accessible",
+            params: { externalId: "uuid-3" },
+          },
+        ])
+      );
+      const wrapper = await createAtOpenLocker();
+      await clickTile(wrapper, "uuid-1");
+      await clickTile(wrapper, "uuid-3");
+      await pointDialog(wrapper).find(".label-field input").setValue("Garage");
+
+      await savePoint(wrapper);
+
+      expect(tileOf(wrapper, "uuid-3").classes()).toContain(
+        "compartment-tile--warning"
+      );
+      expect(compartmentNotes(wrapper)).toEqual([
+        "Fach 3: Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „uuid-3“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
+      ]);
+    });
+
+    it("explains under the tiles the states that occur", async () => {
+      const wrapper = await createAtOpenLocker([
+        {
+          ...OPEN_LOCKER_ANLAGE,
+          id: "anlage-andere",
+          config: { compartments: [{ id: "uuid-3" }] },
+        },
+      ]);
+      const legend = () =>
+        pointDialog(wrapper)
+          .findAll("[data-test='tile-legend-entry']")
+          .wrappers.map((entry) => entry.text());
+
+      expect(legend()).toEqual(["in einer anderen Schließfachanlage"]);
+
+      await clickTile(wrapper, "uuid-1");
+      await clickTile(wrapper, "uuid-2");
+      await clickWrench(wrapper, "uuid-2");
+
+      expect(legend()).toEqual([
+        "in der Schließfachanlage",
+        "außer Betrieb",
+        "in einer anderen Schließfachanlage",
+      ]);
     });
 
     it("saves the Fächer ticked for the Schließfachanlage", async () => {
       const wrapper = await createAtOpenLocker();
 
-      await compartmentRow(wrapper, "uuid-1").find("input").trigger("click");
-      await compartmentRow(wrapper, "uuid-3").find("input").trigger("click");
+      await clickTile(wrapper, "uuid-1");
+      await clickTile(wrapper, "uuid-3");
       await pointDialog(wrapper).find(".label-field input").setValue("Garage");
 
       expect(await savePoint(wrapper)).toMatchObject({
@@ -5656,7 +5874,7 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
 
     it("demands the scan at all Fächer where it is switched on", async () => {
       const wrapper = await createAtOpenLocker();
-      await compartmentRow(wrapper, "uuid-1").find("input").trigger("click");
+      await clickTile(wrapper, "uuid-1");
       await pointDialog(wrapper).find(".label-field input").setValue("Garage");
 
       await shown(wrapper, "more-settings")
@@ -5839,8 +6057,8 @@ describe("AccessPoints edits an access point in the same dialog", () => {
     expect(shown(wrapper, "lock-line").exists()).toBe(false);
     expect(
       pointDialog(wrapper)
-        .find(".compartment-row input[type='checkbox']")
-        .element.getAttribute("aria-checked")
+        .find(".compartment-tile [data-test='compartment-toggle']")
+        .attributes("aria-pressed")
     ).toBe("true");
   });
 });
@@ -6177,10 +6395,11 @@ describe("AccessPoints speaks of Tür and Schließfachanlage", () => {
 
 /**
  * The Fächer show their bookings themselves (ECCdigital/tickets#1113): a dot
- * per booking at each Fach, what a save does to them at a Fach taken out and
- * under the Fächer, and the save asks nothing. A future booking no Fach was
- * free for shows at the row of the Anlage until it is solved. The page reads
- * them from the tenant's bookings, each holding its Fach in `accessInfo`.
+ * per booking on the tile of each Fach, what a save does to them in a line
+ * under the Schrank of a Fach taken out and under the Fächer, and the save
+ * asks nothing. A future booking no Fach was free for shows at the row of
+ * the Anlage until it is solved. The page reads them from the tenant's
+ * bookings, each holding its Fach in `accessInfo`.
  */
 describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
   const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
@@ -6254,14 +6473,8 @@ describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
     return wrapper;
   }
 
-  function compartmentRow(wrapper, id) {
-    return pointDialog(wrapper).find(
-      `.compartment-row[data-compartment-id='${id}']`
-    );
-  }
-
   function dotsAt(wrapper, id) {
-    return compartmentRow(wrapper, id)
+    return tileOf(wrapper, id)
       .findAll("[data-test='booking-dot']")
       .wrappers.map((dot) => dot.attributes("data-state"));
   }
@@ -6277,32 +6490,26 @@ describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
 
     expect(dotsAt(wrapper, UUID_1)).toEqual(["running", "future"]);
     expect(dotsAt(wrapper, UUID_2)).toEqual(["future"]);
-    const legend = pointDialog(wrapper).find("[data-test='dot-legend']");
-    expect(legend.text().replace(/\s+/g, " ")).toBe(
-      "laufende Buchung künftige Buchung"
-    );
+    expect(
+      pointDialog(wrapper)
+        .findAll("[data-test='tile-legend-entry']")
+        .wrappers.map((entry) => entry.text())
+    ).toEqual([
+      "in der Schließfachanlage",
+      "laufende Buchung",
+      "künftige Buchung",
+    ]);
   });
 
   async function untick(wrapper, id) {
-    await compartmentRow(wrapper, id)
-      .find("input[type='checkbox']")
-      .trigger("click");
-    await settle(wrapper);
+    await clickTile(wrapper, id);
   }
 
   async function takeOutOfService(wrapper, id) {
-    await compartmentRow(wrapper, id).find("[role='switch']").trigger("click");
-    await settle(wrapper);
+    await clickWrench(wrapper, id);
   }
 
-  function consequenceAt(wrapper, id) {
-    const sentence = compartmentRow(wrapper, id).find(
-      "[data-test='compartment-consequence']"
-    );
-    return sentence.exists() ? sentence.text() : "";
-  }
-
-  it("says at a Fach taken out what happens to its bookings", async () => {
+  it("says under the Schrank what happens to the bookings at a Fach taken out", async () => {
     const wrapper = await editAnlage({
       bookings: [
         booking("b-running", FACH_1, -1, 3),
@@ -6312,14 +6519,13 @@ describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
       ],
     });
 
-    expect(consequenceAt(wrapper, UUID_1)).toBe("");
+    expect(compartmentNotes(wrapper)).toEqual([]);
 
     await untick(wrapper, UUID_1);
 
-    expect(consequenceAt(wrapper, UUID_1)).toBe(
-      "läuft bis 20.11.26, 14:00, bleibt · 2 ziehen um"
-    );
-    expect(consequenceAt(wrapper, UUID_2)).toBe("");
+    expect(compartmentNotes(wrapper)).toEqual([
+      "Fach 1: läuft bis 20.11.26, 14:00, bleibt · 2 künftige Buchungen ziehen um",
+    ]);
   });
 
   it("says it at a Fach taken out of service too", async () => {
@@ -6329,7 +6535,9 @@ describe("AccessPoints shows the bookings at the Fächer of an Anlage", () => {
 
     await takeOutOfService(wrapper, UUID_2);
 
-    expect(consequenceAt(wrapper, UUID_2)).toBe("1 zieht um");
+    expect(compartmentNotes(wrapper)).toEqual([
+      "Fach 2: 1 künftige Buchung zieht um",
+    ]);
   });
 
   function summary(wrapper) {

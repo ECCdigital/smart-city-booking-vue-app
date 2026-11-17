@@ -6,7 +6,6 @@ import BookablePermissionService from "@/services/permissions/BookablePermission
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import AccessPointCompartmentOutcome from "@/components/AccessPoint/AccessPointCompartmentOutcome.vue";
 import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
-import AccessPointLockerUses from "@/components/AccessPoint/AccessPointLockerUses.vue";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import {
   formatAccessPointErrorMessage,
@@ -16,7 +15,7 @@ import {
 import {
   carriesOwnCompartments,
   compartmentOutcome,
-  heldCompartmentIds,
+  heldCompartments,
   leavingCompartmentIds,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -40,6 +39,8 @@ import {
 } from "@/utilities/access-point-fields";
 import { iqNotActivated, printsQr } from "@/utilities/access-point-rows";
 import { locationRefusal, pointOf } from "@/utils/locationLogic";
+import { getTypeText } from "@/utils/bookables";
+import { isUnlimitedAmount } from "@/utils/bookableFlow";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
 // The origin of a point taken over with „Vorbelegen“: it counts as one set
@@ -91,9 +92,9 @@ function emptyForm() {
  * and edit an access point, its provider and type settled by the section it
  * opens from. Creating shows two things - what the provider lists, as a list
  * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
- * creates only a Schließfachanlage, which shows its bookable („Für welches
- * Buchungsobjekt?“) and its Fächer to tick instead of the list, under one
- * sentence with the examples of its Einsatzfall and beside „Was daraus
+ * creates only a Schließfachanlage, which shows its name first, then its
+ * bookable to search („Für welches Buchungsobjekt?“) and its Fächer as
+ * tiles instead of the list (ECCdigital/tickets#1178), beside „Was daraus
  * wird“ (ECCdigital/tickets#1166). Everything with a default waits folded
  * under „Weitere Einstellungen“, its state in one line.
  * Editing shows the chosen lock as one line with „Tauschen“ and the settings
@@ -112,7 +113,6 @@ export default {
   components: {
     AccessPointCompartmentOutcome,
     AccessPointCompartmentPicker,
-    AccessPointLockerUses,
     LocationInput,
   },
   props: {
@@ -240,6 +240,12 @@ export default {
     choosing() {
       return !this.fields.compartments && (!this.isEdit || this.swapping);
     },
+    // An Anlage that carries its own Fächer is named first, as the list and
+    // the Mobile Key show it (ECCdigital/tickets#1178); every other access
+    // point keeps its Bezeichnung after its lock.
+    nameFirst() {
+      return !!this.fields.compartments;
+    },
     showLockLine() {
       return this.isEdit && !this.fields.compartments && !this.swapping;
     },
@@ -250,15 +256,15 @@ export default {
       return this.choosing && (!this.canList || this.manual);
     },
     // What another access point of the provider stands for: for an Anlage
-    // that carries its own Fächer, the Fächer of the other Anlagen; for every
-    // other access point, the ids of the provider's locks.
+    // that carries its own Fächer, the Fächer of the other Anlagen with their
+    // name; for every other access point, the ids of the provider's locks.
     taken() {
       const others = {
         provider: this.form.provider,
         exceptId: this.form.id,
       };
       return this.fields.compartments
-        ? heldCompartmentIds(this.accessPoints, others)
+        ? heldCompartments(this.accessPoints, others)
         : takenProviderIds(this.accessPoints, others);
     },
     entries() {
@@ -466,7 +472,8 @@ export default {
         null
       );
     },
-    // „Später zuordnen“, then the bookables the person may edit. One
+    // „Später zuordnen“, then the bookables the person may edit, each with
+    // its type and Anzahl (ECCdigital/tickets#1178). One
     // assigned that she may not edit stands there too, see `bookableLocked`.
     bookableItems() {
       const items = this.bookables
@@ -475,7 +482,11 @@ export default {
             bookable === this.storedBookable ||
             BookablePermissionService.allowUpdate(bookable)
         )
-        .map((bookable) => ({ value: bookable.id, text: bookable.title }));
+        .map((bookable) => ({
+          value: bookable.id,
+          text: bookable.title,
+          detail: this.bookableDetail(bookable),
+        }));
       return [
         {
           value: null,
@@ -621,6 +632,26 @@ export default {
       } finally {
         this.loadingListing = false;
       }
+    },
+    // „Raum · Anzahl 1“: what a line of „Für welches Buchungsobjekt?“ says
+    // under the title.
+    bookableDetail(bookable) {
+      const amount = isUnlimitedAmount(bookable)
+        ? this.$t("accessPoint.management.dialog.outcome.unlimitedAmount")
+        : Number(bookable.amount);
+      return [
+        getTypeText(bookable.type),
+        this.$t("accessPoint.management.dialog.bookable.amount", { amount }),
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    },
+    // Typing filters the bookables by title; „Später zuordnen“ stays.
+    bookableFilter(item, search, text) {
+      return (
+        item.value === null ||
+        text.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+      );
     },
     // A pick fills the id and, where the admin typed none, the Bezeichnung.
     // Editing keeps the Bezeichnung: it was given before.
@@ -1074,16 +1105,28 @@ export default {
             </div>
           </div>
 
-          <!-- Open Locker's Schließfachanlage: its Einsatzfall, its
-               bookable, its Fächer and what they make of each other -->
+          <!-- Open Locker's Schließfachanlage: its bookable, its Fächer
+               and what they make of each other -->
           <template v-if="fields.compartments">
-            <AccessPointLockerUses :bookable="bookable" class="mb-5" />
             <v-row class="mb-4">
               <v-col cols="12" md="7" class="py-0">
-                <v-select
+                <v-text-field
+                  v-if="nameFirst"
+                  v-model="form.label"
+                  class="label-field mb-4"
+                  :label="$t('accessPoint.management.dialog.name.label')"
+                  :hint="$t('accessPoint.management.dialog.name.hint')"
+                  persistent-hint
+                  :rules="requiredRule"
+                  background-color="accent"
+                  filled
+                  dense
+                />
+                <v-autocomplete
                   v-if="assignsHere"
                   v-model="bookableId"
                   :items="bookableItems"
+                  :filter="bookableFilter"
                   :label="$t('accessPoint.management.dialog.bookable.label')"
                   :hint="bookableHint"
                   :disabled="bookableLocked || saving"
@@ -1093,7 +1136,21 @@ export default {
                   dense
                   class="bookable-field mb-4"
                   data-test="bookable-field"
-                />
+                >
+                  <template #item="{ item }">
+                    <v-list-item-content>
+                      <v-list-item-title data-test="bookable-title">
+                        {{ item.text }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle
+                        v-if="item.detail"
+                        data-test="bookable-detail"
+                      >
+                        {{ item.detail }}
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                  </template>
+                </v-autocomplete>
                 <div class="field-title">
                   {{ $t("accessPoint.management.compartments.title") }}
                 </div>
@@ -1193,6 +1250,7 @@ export default {
           </v-alert>
 
           <v-text-field
+            v-if="!nameFirst"
             v-model="form.label"
             class="label-field"
             :label="$t('accessPoint.management.fields.label')"
