@@ -3297,7 +3297,18 @@
           "point": "Standort auf der Karte"
         },
         "nextStep": "Danach: zuordnen und QR-Code drucken",
-        "nextStepNoQr": "Danach: zuordnen"
+        "nextStepNoQr": "Danach: zuordnen",
+        "nextStepQrOnly": "Danach: QR-Code drucken",
+        "bookable": {
+          "label": "Für welches Buchungsobjekt?",
+          "later": "Später zuordnen",
+          "hint": "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt.",
+          "locked": "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt. Die Zuordnung zu „{bookable}“ ändern kann nur, wer es bearbeiten darf.",
+          "assignFailed": "Die Schließfachanlage ist gespeichert, die Zuordnung aber nicht. {reason}",
+          "assignForbidden": "Ihnen fehlt die Berechtigung, {bookables} zu bearbeiten.",
+          "and": "und",
+          "assignRetry": "Speichern Sie erneut, um sie zuzuordnen."
+        }
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
@@ -3333,7 +3344,6 @@
       "assign": {
         "title": "Buchungsobjekte zuordnen",
         "hint": "Wer eines davon bucht, öffnet den Zugangspunkt für die Buchungszeit mit der App.",
-        "single": "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt.",
         "none": "Es gibt kein Buchungsobjekt, das Sie bearbeiten dürfen.",
         "save": "Zuordnen",
         "error": "Die Zuordnung konnte nicht gespeichert werden.",

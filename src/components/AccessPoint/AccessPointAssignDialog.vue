@@ -4,7 +4,6 @@ import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { accessPointLabel } from "@/utilities/access-points";
-import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 
 /** Whether the bookable carries the access point. */
 function carries(bookable, accessPointId) {
@@ -17,8 +16,8 @@ function carries(bookable, accessPointId) {
  * The dialog Zuordnen (ECCdigital/tickets#1110): the bookables of one access
  * point, to tick. It lists the bookables the person may edit; one assigned
  * that she may not edit stays assigned and is sent along unchanged, so the
- * save never fails on a missing right. A Schließfachanlage with its own
- * Fächer belongs to one bookable, so there a tick replaces the other.
+ * save never fails on a missing right. An Open Locker Schließfachanlage is
+ * assigned in its own dialog instead (ECCdigital/tickets#1165).
  *
  * Props: `open`, `accessPoint`, `bookables` (all the page loaded).
  * Events: `close`, `saved` (once the backend took the assignment).
@@ -60,9 +59,6 @@ export default {
         )
         .map((bookable) => bookable.id);
     },
-    single() {
-      return carriesOwnCompartments(this.accessPoint);
-    },
   },
   watch: {
     open(isOpen) {
@@ -76,9 +72,7 @@ export default {
   },
   methods: {
     toggle(id, ticked) {
-      const others = this.single
-        ? []
-        : this.selected.filter((selectedId) => selectedId !== id);
+      const others = this.selected.filter((selectedId) => selectedId !== id);
       this.selected = ticked ? [...others, id] : others;
     },
     async save() {
@@ -133,13 +127,7 @@ export default {
       <v-card-text class="pa-6">
         <p class="mb-1 font-weight-medium">{{ label }}</p>
         <p class="mb-4">
-          {{
-            $t(
-              single
-                ? "accessPoint.management.assign.single"
-                : "accessPoint.management.assign.hint"
-            )
-          }}
+          {{ $t("accessPoint.management.assign.hint") }}
         </p>
         <p v-if="!editable.length" class="text--secondary mb-0">
           {{ $t("accessPoint.management.assign.none") }}

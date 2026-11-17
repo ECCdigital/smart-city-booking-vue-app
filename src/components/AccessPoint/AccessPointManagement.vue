@@ -37,6 +37,7 @@ import {
   iqSummary,
 } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
+import { accessPointFields } from "@/utilities/access-point-fields";
 import { canListAccessPoints } from "@/utilities/access-points";
 import {
   bookingsWithoutCompartment,
@@ -551,7 +552,15 @@ export default {
           needsAction(accessPoint, bookables, this.listingOf(accessPoint)))
       );
     },
+    // An Open Locker Schließfachanlage is assigned in its own dialog
+    // (ECCdigital/tickets#1165); every other access point in Zuordnen.
     openAssign(accessPoint) {
+      if (
+        accessPointFields(accessPoint.provider, accessPoint.type).compartments
+      ) {
+        this.openEdit(accessPoint);
+        return;
+      }
       this.selectedAccessPoint = accessPoint;
       this.assignDialog = true;
     },
@@ -626,6 +635,12 @@ export default {
         )
       );
       await this.fetchAll();
+    },
+    // The Anlage is stored, its assignment failed: the dialog stays open on
+    // it, and its row stands on the page already (ECCdigital/tickets#1165).
+    async onStored(answer) {
+      if (this.createProvider && answer?.id) this.freshId = answer.id;
+      await this.fetchAccessPoints();
     },
     async onRotated() {
       await this.fetchAll();
@@ -836,8 +851,11 @@ export default {
       :provider="createProvider"
       :compartment-bookings="selectedCompartmentBookings"
       :bookings-unreadable="bookingsUnreadable"
+      :bookables="bookables"
+      :bookables-unreadable="bookablesForbidden"
       @close="editDialog = false"
       @saved="onSaved"
+      @stored="onStored"
     />
     <AccessPointAssignDialog
       :open="assignDialog"
