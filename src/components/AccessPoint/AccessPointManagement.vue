@@ -72,6 +72,9 @@ export default {
       accessPoints: [],
       bookables: [],
       bookablesForbidden: false,
+      // Any failure to read the bookables, the denial included: the dialog
+      // of an Anlage then cannot tell its assignment.
+      bookablesFailed: false,
       providers: [],
       // The tenant's stored access applications by provider, each with the
       // state of its connection.
@@ -423,6 +426,7 @@ export default {
     },
     async fetchBookables() {
       this.bookablesForbidden = false;
+      this.bookablesFailed = false;
       try {
         const response = await ApiBookablesService.getBookables(
           this.tenantId,
@@ -439,6 +443,7 @@ export default {
         // silence.
         this.bookables = [];
         this.bookablesForbidden = isForbiddenError(error);
+        this.bookablesFailed = true;
       }
     },
     // The active providers; answers the error that kept them.
@@ -551,7 +556,13 @@ export default {
           needsAction(accessPoint, bookables, this.listingOf(accessPoint)))
       );
     },
+    // An Open Locker Schließfachanlage is assigned in its own dialog
+    // (ECCdigital/tickets#1165); every other access point in Zuordnen.
     openAssign(accessPoint) {
+      if (carriesOwnCompartments(accessPoint)) {
+        this.openEdit(accessPoint);
+        return;
+      }
       this.selectedAccessPoint = accessPoint;
       this.assignDialog = true;
     },
@@ -571,7 +582,7 @@ export default {
       this.selectedAccessPoint = accessPoint;
       this.editDialog = true;
     },
-    // The QR code of a door or a fixed Fach is its PDF, at once; a
+    // The QR code of a door is its PDF, at once; a
     // Schließfachanlage has one per Fach, in their own dialog.
     openQr(accessPoint) {
       if (carriesOwnCompartments(accessPoint)) {
@@ -626,6 +637,12 @@ export default {
         )
       );
       await this.fetchAll();
+    },
+    // The Anlage is stored, its assignment failed: the dialog stays open on
+    // it, and its row stands on the page already (ECCdigital/tickets#1165).
+    async onStored(answer) {
+      if (this.createProvider && answer?.id) this.freshId = answer.id;
+      await this.fetchAccessPoints();
     },
     async onRotated() {
       await this.fetchAll();
@@ -836,8 +853,11 @@ export default {
       :provider="createProvider"
       :compartment-bookings="selectedCompartmentBookings"
       :bookings-unreadable="bookingsUnreadable"
+      :bookables="bookables"
+      :bookables-unreadable="bookablesFailed"
       @close="editDialog = false"
       @saved="onSaved"
+      @stored="onStored"
     />
     <AccessPointAssignDialog
       :open="assignDialog"

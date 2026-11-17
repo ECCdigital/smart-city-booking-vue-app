@@ -2,8 +2,12 @@
 import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
+import AccessPointCompartmentOutcome from "@/components/AccessPoint/AccessPointCompartmentOutcome.vue";
 import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
+import AccessPointLockerUses from "@/components/AccessPoint/AccessPointLockerUses.vue";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import {
   formatAccessPointErrorMessage,
   splitAccessPointFieldError,
@@ -11,6 +15,8 @@ import {
 } from "@/utilities/access-point-errors";
 import {
   carriesOwnCompartments,
+  compartmentOutcome,
+  heldCompartmentIds,
   leavingCompartmentIds,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -29,7 +35,7 @@ import {
 } from "@/utilities/access-points";
 import {
   accessPointFields,
-  accessPointTypes,
+  accessPointType,
   settingsSummary,
 } from "@/utilities/access-point-fields";
 import { iqNotActivated, printsQr } from "@/utilities/access-point-rows";
@@ -63,6 +69,10 @@ const OPEN_ACTION_FIELD = "config.openAction";
 // The index of „Weitere Einstellungen“ in its panels, open or not.
 const MORE_OPEN = 0;
 
+// An Anlage with its own Fächer shows „Was daraus wird“ beside them.
+const WIDTH = 640;
+const WIDTH_WITH_OUTCOME = 960;
+
 function emptyForm() {
   return {
     id: null,
@@ -81,15 +91,28 @@ function emptyForm() {
  * and edit an access point, its provider and type settled by the section it
  * opens from. Creating shows two things - what the provider lists, as a list
  * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
- * asks first for its Schließfachanlage or a fixed Fach. Everything with a
- * default waits folded under „Weitere Einstellungen“, its state in one line.
+ * creates only a Schließfachanlage, which shows its bookable („Für welches
+ * Buchungsobjekt?“) and its Fächer to tick instead of the list, under one
+ * sentence with the examples of its Einsatzfall and beside „Was daraus
+ * wird“ (ECCdigital/tickets#1166). Everything with a default waits folded
+ * under „Weitere Einstellungen“, its state in one line.
  * Editing shows the chosen lock as one line with „Tauschen“ and the settings
  * unfolded. Which fields an access point has is `accessPointFields`.
+ *
+ * Saving stores the access point, then, where the bookable chosen for an
+ * Open Locker Anlage changed, its assignment (ECCdigital/tickets#1165) -
+ * also where only its Anzahl changed: „Anzahl auf N setzen“ beside the
+ * Fächer notes the Anzahl, which goes with the assignment
+ * (ECCdigital/tickets#1167).
+ * Events: `close`, `saved` (both stored), `stored` (the Anlage is stored,
+ * its assignment failed: the dialog stays open on it).
  */
 export default {
   name: "AccessPointEditDialog",
   components: {
+    AccessPointCompartmentOutcome,
     AccessPointCompartmentPicker,
+    AccessPointLockerUses,
     LocationInput,
   },
   props: {
@@ -107,6 +130,11 @@ export default {
     // reads them; `bookingsUnreadable` where they could not be read.
     compartmentBookings: { type: Array, default: () => [] },
     bookingsUnreadable: { type: Boolean, default: false },
+    // The tenant's bookables, for the bookable an Open Locker Anlage is
+    // assigned to in this dialog; `bookablesUnreadable` where they could
+    // not be read.
+    bookables: { type: Array, default: () => [] },
+    bookablesUnreadable: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -121,6 +149,17 @@ export default {
       compartments: [],
       // Why the backend refused a Fach, by its UUID.
       compartmentErrors: {},
+      // The bookable an Anlage that carries its own Fächer is assigned to
+      // with the save (ECCdigital/tickets#1165); `null` is „Später
+      // zuordnen“.
+      bookableId: null,
+      // The Anzahl „Anzahl auf N setzen“ noted for that bookable, written
+      // with the assignment on save (ECCdigital/tickets#1167); `null` for
+      // none.
+      notedAmount: null,
+      // The Anlage this dialog stored while its assignment failed; it is
+      // edited from then on.
+      stored: null,
       configText: "{}",
       configError: "",
       // The switch as the admin set it, or as a stored access point has it.
@@ -158,6 +197,11 @@ export default {
     isEdit() {
       return !!this.form.id;
     },
+    // The access point as stored: the one edited, or the one this dialog
+    // stored.
+    source() {
+      return this.stored || this.accessPoint;
+    },
     fields() {
       return accessPointFields(this.form.provider, this.form.type);
     },
@@ -186,13 +230,6 @@ export default {
         provider
       );
     },
-    // Asked only of Open Locker, and only for a new access point: a stored
-    // one keeps the type its bookings were made with.
-    typeOptions() {
-      if (this.isEdit) return [];
-      const types = accessPointTypes(this.form.provider);
-      return types.length < 2 ? [] : types;
-    },
     // The listing is there where the provider has one and lists it - an
     // active provider with `listAccessPoints`. Without it the id is typed in.
     canList() {
@@ -212,13 +249,17 @@ export default {
     showIdField() {
       return this.choosing && (!this.canList || this.manual);
     },
-    // A Fach of an Anlage that carries its own is taken as well: it is no
-    // fixed Fach once it stands in an Anlage.
+    // What another access point of the provider stands for: for an Anlage
+    // that carries its own Fächer, the Fächer of the other Anlagen; for every
+    // other access point, the ids of the provider's locks.
     taken() {
-      return takenProviderIds(this.accessPoints, {
+      const others = {
         provider: this.form.provider,
         exceptId: this.form.id,
-      });
+      };
+      return this.fields.compartments
+        ? heldCompartmentIds(this.accessPoints, others)
+        : takenProviderIds(this.accessPoints, others);
     },
     entries() {
       return this.listing.map((lock) => {
@@ -280,12 +321,6 @@ export default {
     },
     iqWarning() {
       return !!this.entry?.iqOff;
-    },
-    typeHint() {
-      if (!this.typeOptions.length) return "";
-      return this.$t(
-        `accessPoint.management.dialog.typeHints.${this.fields.kind}`
-      );
     },
     // A new access point starts with the rule the server would default to
     // for it, so what the switch shows is what an untouched create
@@ -369,7 +404,7 @@ export default {
     // The location as stored, against which the input measures "unchanged":
     // none for a new access point.
     storedLocation() {
-      return this.accessPoint?.location ?? null;
+      return this.source?.location ?? null;
     },
     // Why the location may not be saved, or "": the backend's rule, measured
     // against the stored location the same way the bookable's is.
@@ -377,16 +412,19 @@ export default {
       const key = locationRefusal(this.form.location, this.storedLocation);
       return key ? this.$t(key) : "";
     },
-    // The rule of the row the new access point gets (`printsQr`).
+    // The rule of the row the new access point gets (`printsQr`); a
+    // bookable chosen here leaves no assignment to do.
     nextStep() {
       const printing = printsQr({
         provider: this.form.provider,
         type: this.form.type,
         validationRules: this.qrScanShown ? [{ type: QR_SCAN_RULE }] : [],
       });
+      const assigned = this.assignsHere && !!this.bookableId;
+      if (assigned && !printing) return "";
       return this.$t(
         `accessPoint.management.dialog.${
-          printing ? "nextStep" : "nextStepNoQr"
+          assigned ? "nextStepQrOnly" : printing ? "nextStep" : "nextStepNoQr"
         }`
       );
     },
@@ -400,7 +438,90 @@ export default {
     // The Fächer the save takes out of the stored Anlage or out of service.
     leavingIds() {
       if (!this.isEdit || !this.fields.compartments) return [];
-      return leavingCompartmentIds(this.accessPoint, this.compartments);
+      return leavingCompartmentIds(this.source, this.compartments);
+    },
+    // An Anlage that carries its own Fächer is assigned in this dialog, to
+    // one bookable at most, where the bookables are readable.
+    assignsHere() {
+      return !!this.fields.compartments && !this.bookablesUnreadable;
+    },
+    // The bookable the stored access point is assigned to, or `null`.
+    storedBookable() {
+      if (!this.form.id) return null;
+      return (
+        this.bookables.find((bookable) =>
+          (bookable.accessPointDetails?.accessPointIds || []).includes(
+            this.form.id
+          )
+        ) || null
+      );
+    },
+    storedBookableId() {
+      return this.storedBookable?.id ?? null;
+    },
+    // The bookable chosen in the field, with its type and Anzahl, or `null`.
+    bookable() {
+      return (
+        this.bookables.find((bookable) => bookable.id === this.bookableId) ||
+        null
+      );
+    },
+    // „Später zuordnen“, then the bookables the person may edit. One
+    // assigned that she may not edit stands there too, see `bookableLocked`.
+    bookableItems() {
+      const items = this.bookables
+        .filter(
+          (bookable) =>
+            bookable === this.storedBookable ||
+            BookablePermissionService.allowUpdate(bookable)
+        )
+        .map((bookable) => ({ value: bookable.id, text: bookable.title }));
+      return [
+        {
+          value: null,
+          text: this.$t("accessPoint.management.dialog.bookable.later"),
+        },
+        ...items,
+      ];
+    },
+    // Assigned to a bookable the person may not edit: moving the Anlage
+    // away would change it, so the field stays as it is.
+    bookableLocked() {
+      return (
+        !!this.storedBookable &&
+        !BookablePermissionService.allowUpdate(this.storedBookable)
+      );
+    },
+    bookableHint() {
+      return this.bookableLocked
+        ? this.$t("accessPoint.management.dialog.bookable.locked", {
+            bookable: this.storedBookable.title,
+          })
+        : this.$t("accessPoint.management.dialog.bookable.hint");
+    },
+    // „Was daraus wird“: what the Fächer ticked and the bookable chosen
+    // make of each other, by the Regel für Anzahl und Fächer; without the
+    // bookables, only the Fächer.
+    outcome() {
+      return compartmentOutcome(this.compartments, this.bookable, {
+        amount: this.notedAmount ?? undefined,
+        assignmentUnknown: this.bookablesUnreadable,
+      });
+    },
+    // The Anzahl the Fächer in service ask of the bookable where they
+    // differ, none while no Fach is in service.
+    suggestedAmount() {
+      if (!this.assignsHere || !this.bookable) return null;
+      return this.outcome.suggestedAmount;
+    },
+    // Whether the person may change the Anzahl of the bookable chosen.
+    mayChangeAmount() {
+      return (
+        !!this.bookable && BookablePermissionService.allowUpdate(this.bookable)
+      );
+    },
+    width() {
+      return this.fields.compartments ? WIDTH_WITH_OUTCOME : WIDTH;
     },
     // Required are the choice or the id, and the Bezeichnung.
     canSave() {
@@ -413,6 +534,15 @@ export default {
     open(isOpen) {
       if (isOpen) this.reset();
     },
+    // An Anzahl noted belongs to the bookable it was noted for.
+    bookableId() {
+      this.notedAmount = null;
+    },
+    // and to the Fächer in service it was noted for: once they change, the
+    // dialog shows the difference again with the new suggestion.
+    "outcome.inService"(inService) {
+      if (this.notedAmount !== inService) this.notedAmount = null;
+    },
   },
   methods: {
     reset() {
@@ -422,7 +552,7 @@ export default {
         ...emptyForm(),
         ...source,
         provider,
-        type: source?.type || accessPointTypes(provider)[0],
+        type: source?.type || accessPointType(provider),
       };
       this.form.label = this.form.label || "";
       this.form.externalId = this.form.externalId || "";
@@ -449,6 +579,9 @@ export default {
         delete config.compartments;
       }
       this.compartmentErrors = {};
+      this.stored = null;
+      this.bookableId = this.storedBookableId;
+      this.notedAmount = null;
       // A stored value outside the five is kept and saved back unchanged,
       // rather than being read as "Automatisch".
       this.openAction =
@@ -514,20 +647,6 @@ export default {
     },
     swap() {
       this.swapping = true;
-      this.manual = false;
-    },
-    // What Open Locker's choice of type is called, by the kind it makes.
-    typeChoiceLabel(type) {
-      const { kind } = accessPointFields(this.form.provider, type);
-      return this.$t(`accessPoint.management.dialog.kinds.${kind}.choice`);
-    },
-    // Open Locker's choice starts the lock afresh: an Anlage has Fächer, a
-    // fixed Fach one id.
-    chooseType(type) {
-      this.form.type = type;
-      this.form.externalId = "";
-      this.compartments = [];
-      this.compartmentErrors = {};
       this.manual = false;
     },
     isSelected(entry) {
@@ -666,7 +785,7 @@ export default {
      * types stay as they are instead of being dropped on every save.
      */
     buildValidationRules() {
-      const others = (this.accessPoint?.validationRules || []).filter(
+      const others = (this.source?.validationRules || []).filter(
         (rule) => rule.type !== QR_SCAN_RULE
       );
       return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
@@ -686,20 +805,99 @@ export default {
     },
     // The Fächer show what the save does to their bookings, so it asks
     // nothing (ECCdigital/tickets#1113). A future booking no Fach was free
-    // for shows at the row of the Anlage.
+    // for shows at the row of the Anlage. The assignment chosen here follows
+    // the Anlage (ECCdigital/tickets#1165).
     async store() {
       this.saving = true;
       try {
-        const response = await ApiAccessPointService.storeAccessPoint(
-          this.buildPayload(),
-          this.tenantId
-        );
-        this.$emit("saved", response.data);
-      } catch (error) {
-        this.applySaveError(error);
+        let saved;
+        try {
+          const response = await ApiAccessPointService.storeAccessPoint(
+            this.buildPayload(),
+            this.tenantId
+          );
+          saved = response.data;
+        } catch (error) {
+          this.applySaveError(error);
+          return;
+        }
+        if (await this.assign(saved?.id || this.form.id)) {
+          this.$emit("saved", saved);
+        } else {
+          this.holdStored(saved);
+        }
       } finally {
         this.saving = false;
       }
+    },
+    // „Anzahl auf N setzen“ only notes the Anzahl; the save writes it. Back
+    // at the bookable's own Anzahl, nothing is left to write.
+    noteAmount(amount) {
+      this.notedAmount =
+        amount === Number(this.bookable?.amount) ? null : amount;
+    },
+    // Sets the bookable of the Anlage where the choice changed it, and the
+    // Anzahl noted for it; the backend takes the Anlage off the bookable it
+    // hung at before. Answers whether the assignment stands.
+    async assign(accessPointId) {
+      // An Anzahl is noted only for a bookable chosen, see `noteAmount`.
+      const amount = this.notedAmount ?? undefined;
+      if (
+        !this.assignsHere ||
+        (this.bookableId === this.storedBookableId && amount === undefined)
+      ) {
+        return true;
+      }
+      try {
+        await ApiAccessPointService.assignBookables(
+          accessPointId,
+          this.bookableId ? [this.bookableId] : [],
+          this.tenantId,
+          { amount }
+        );
+        return true;
+      } catch (error) {
+        this.saveError = this.$t(
+          "accessPoint.management.dialog.bookable.assignFailed",
+          { reason: this.assignFailure(error) }
+        );
+        return false;
+      }
+    },
+    // A refusal for rights names the bookables the assignment changes, the
+    // one whose Anzahl alone changes once.
+    assignFailure(error) {
+      if (isForbiddenError(error)) {
+        const titles = [...new Set([this.storedBookable, this.bookable])]
+          .filter(Boolean)
+          .map((bookable) =>
+            this.$t("accessPoint.management.dialog.bookable.quoted", {
+              bookable: bookable.title,
+            })
+          );
+        return this.$t(
+          "accessPoint.management.dialog.bookable.assignForbidden",
+          {
+            bookables: titles.join(
+              ` ${this.$t("accessPoint.management.dialog.bookable.and")} `
+            ),
+          }
+        );
+      }
+      return formatAccessPointErrorMessage(error, {
+        fallbackKey: "accessPoint.management.dialog.bookable.assignRetry",
+      });
+    },
+    // The Anlage is stored, its assignment is not: the dialog stays open on
+    // the stored Anlage, so saving again updates it rather than creating a
+    // second one.
+    holdStored(saved) {
+      if (saved?.id) {
+        this.qrScanRequired = this.qrScanShown;
+        this.stored = saved;
+        this.form.id = saved.id;
+      }
+      this.$emit("stored", saved);
     },
     // The Öffnungsart's own faults belong at the select, a Fach's at the
     // Fach; everything else in the alert below, which names the refused
@@ -742,7 +940,7 @@ export default {
 <template>
   <v-dialog
     :value="open"
-    max-width="640"
+    :max-width="width"
     scrollable
     persistent
     @input="!$event && close()"
@@ -763,37 +961,6 @@ export default {
 
       <v-card-text class="pa-6">
         <v-form ref="form" @submit.prevent>
-          <!-- Open Locker: the one real choice of type -->
-          <template v-if="typeOptions.length">
-            <v-btn-toggle
-              :value="form.type"
-              mandatory
-              dense
-              color="primary"
-              class="d-flex mb-1"
-              data-test="type-choice"
-              @change="chooseType"
-            >
-              <v-btn
-                v-for="type in typeOptions"
-                :key="type"
-                :value="type"
-                :data-test="`type-choice-${type}`"
-                class="flex-grow-1"
-                text
-                small
-              >
-                {{ typeChoiceLabel(type) }}
-              </v-btn>
-            </v-btn-toggle>
-            <div
-              class="text-caption text--secondary mb-4"
-              data-test="type-hint"
-            >
-              {{ typeHint }}
-            </div>
-          </template>
-
           <!-- Editing: the lock as one line, swapped on demand -->
           <div v-if="showLockLine" class="lock-line mb-4" data-test="lock-line">
             <v-icon small class="mr-3">mdi-link-variant</v-icon>
@@ -907,24 +1074,97 @@ export default {
             </div>
           </div>
 
-          <!-- Open Locker's Schließfachanlage: its Fächer are the lock -->
-          <div v-if="fields.compartments" class="mb-4">
-            <div class="field-title">
-              {{ $t("accessPoint.management.compartments.title") }}
-            </div>
-            <AccessPointCompartmentPicker
-              :value="compartments"
-              :listing="listing"
-              :taken="taken"
-              :errors="compartmentErrors"
-              :loading="loadingListing"
-              :provider-title="providerTitle"
-              :bookings="compartmentBookings"
-              :leaving="leavingIds"
-              :bookings-unreadable="bookingsUnreadable"
-              @input="onCompartmentsChange"
-            />
-          </div>
+          <!-- Open Locker's Schließfachanlage: its Einsatzfall, its
+               bookable, its Fächer and what they make of each other -->
+          <template v-if="fields.compartments">
+            <AccessPointLockerUses :bookable="bookable" class="mb-5" />
+            <v-row class="mb-4">
+              <v-col cols="12" md="7" class="py-0">
+                <v-select
+                  v-if="assignsHere"
+                  v-model="bookableId"
+                  :items="bookableItems"
+                  :label="$t('accessPoint.management.dialog.bookable.label')"
+                  :hint="bookableHint"
+                  :disabled="bookableLocked || saving"
+                  persistent-hint
+                  background-color="accent"
+                  filled
+                  dense
+                  class="bookable-field mb-4"
+                  data-test="bookable-field"
+                />
+                <div class="field-title">
+                  {{ $t("accessPoint.management.compartments.title") }}
+                </div>
+                <AccessPointCompartmentPicker
+                  :value="compartments"
+                  :listing="listing"
+                  :taken="taken"
+                  :errors="compartmentErrors"
+                  :loading="loadingListing"
+                  :provider-title="providerTitle"
+                  :bookings="compartmentBookings"
+                  :leaving="leavingIds"
+                  :bookings-unreadable="bookingsUnreadable"
+                  @input="onCompartmentsChange"
+                />
+              </v-col>
+              <v-col cols="12" md="5" class="py-0">
+                <AccessPointCompartmentOutcome :outcome="outcome">
+                  <div
+                    v-if="notedAmount !== null"
+                    class="text-caption mt-2"
+                    data-test="amount-noted"
+                  >
+                    {{
+                      $t("accessPoint.management.dialog.amount.noted", {
+                        bookable: bookable.title,
+                        amount: notedAmount,
+                      })
+                    }}
+                    <a
+                      href="#"
+                      class="ml-1"
+                      data-test="amount-keep"
+                      @click.prevent="notedAmount = null"
+                    >
+                      {{ $t("accessPoint.management.dialog.amount.keep") }}
+                    </a>
+                  </div>
+                  <template v-if="suggestedAmount !== null">
+                    <v-btn
+                      v-if="mayChangeAmount"
+                      small
+                      text
+                      color="primary"
+                      class="mt-2 px-1"
+                      :disabled="saving"
+                      data-test="amount-set"
+                      @click="noteAmount(suggestedAmount)"
+                    >
+                      {{
+                        $t("bookable.amount.set-to", {
+                          amount: suggestedAmount,
+                        })
+                      }}
+                    </v-btn>
+                    <div
+                      v-else
+                      class="text-caption text--secondary mt-2"
+                      data-test="amount-locked"
+                    >
+                      {{
+                        $t("accessPoint.management.dialog.amount.locked", {
+                          bookable: bookable.title,
+                        })
+                      }}
+                    </div>
+                  </template>
+                </AccessPointCompartmentOutcome>
+              </v-col>
+            </v-row>
+          </template>
 
           <v-text-field
             v-if="showIdField"
@@ -1137,7 +1377,7 @@ export default {
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
         <span
-          v-if="!isEdit"
+          v-if="!isEdit && nextStep"
           class="text-caption text--secondary px-2"
           data-test="next-step"
         >

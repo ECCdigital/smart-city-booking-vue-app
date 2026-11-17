@@ -27,11 +27,16 @@ export default {
    * `bookableIds` names every one of them, the backend adds the access point
    * where it is missing and removes it from every other bookable. A bookable
    * that gets its first access point has its access switched on.
+   *
+   * `options.amount` writes the Anzahl of the one bookable with the same
+   * call (ECCdigital/tickets#1167), only at a Schließfachanlage with its
+   * own Fächer; left out, the assignment leaves the Anzahl as it is.
    */
-  assignBookables(id, bookableIds, tenant) {
+  assignBookables(id, bookableIds, tenant, { amount } = {}) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.put(`api/${t}/accesspoints/${id}/bookables`, {
       bookableIds,
+      ...(amount === undefined ? {} : { amount }),
     });
   },
 

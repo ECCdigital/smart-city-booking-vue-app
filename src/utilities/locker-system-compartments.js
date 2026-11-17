@@ -218,10 +218,8 @@ export function leavingCompartmentsSummary(bookings, leavingIds) {
 
 /**
  * The ids at the provider the other access points of the tenant stand for:
- * each one's `externalId` (a door, a fixed Fach, an iFBS Anlage) and the
- * Fächer of each Anlage that carries its own. A lock of the provider's
- * listing with one of them is created already; a Fach stands in at most one
- * Anlage and is then no fixed Fach, so none of them is to be chosen.
+ * each one's `externalId` (a door, an iFBS Anlage). A lock of the provider's
+ * listing with one of them is created already.
  *
  * @param {Object[]} accessPoints Every access point of the tenant
  * @param {Object} options
@@ -230,16 +228,36 @@ export function leavingCompartmentsSummary(bookings, leavingIds) {
  * @returns {Set<string>}
  */
 export function takenProviderIds(accessPoints, { provider, exceptId }) {
-  const taken = new Set();
-  (accessPoints || [])
-    .filter((point) => point.provider === provider && point.id !== exceptId)
-    .forEach((point) => {
-      if (point.externalId) taken.add(String(point.externalId));
-      if (carriesOwnCompartments(point)) {
-        point.config.compartments.forEach((c) => taken.add(String(c.id)));
-      }
-    });
-  return taken;
+  return new Set(
+    othersOf(accessPoints, { provider, exceptId })
+      .filter((point) => point.externalId)
+      .map((point) => String(point.externalId))
+  );
+}
+
+/**
+ * The Fächer the other Anlagen of the provider hold: a Fach stands in at
+ * most one Anlage, so none of them is to be chosen. Nothing else holds a
+ * Fach (ECCdigital/tickets#1162).
+ *
+ * @param {Object[]} accessPoints Every access point of the tenant
+ * @param {Object} options
+ * @param {string} options.provider The provider whose Anlagen count
+ * @param {string|null} [options.exceptId] The Anlage being edited
+ * @returns {Set<string>} The UUIDs of the Fächer
+ */
+export function heldCompartmentIds(accessPoints, { provider, exceptId }) {
+  return new Set(
+    othersOf(accessPoints, { provider, exceptId })
+      .filter(carriesOwnCompartments)
+      .flatMap((point) => point.config.compartments.map((c) => String(c.id)))
+  );
+}
+
+function othersOf(accessPoints, { provider, exceptId }) {
+  return (accessPoints || []).filter(
+    (point) => point.provider === provider && point.id !== exceptId
+  );
 }
 
 /**
@@ -399,52 +417,214 @@ export function lockerSystemIdsLinkedElsewhere(
   );
 }
 
+/** How many of the Fächer are in service - those the backend assigns. */
+export function compartmentsInService(compartments) {
+  return (compartments || []).filter(
+    (compartment) => compartment.outOfService !== true
+  ).length;
+}
+
+/** The Anzahl the Fächer in service ask for, none while none is: 0 means unlimited. */
+function suggestedAmountFor(inService) {
+  return inService > 0 ? inService : null;
+}
+
+/** The Anzahl of a bookable as the rule reads it, `null` while unlimited. */
+function amountOf(bookable) {
+  return isUnlimitedAmount(bookable) ? null : Number(bookable.amount);
+}
+
+/** The sentence of an Anzahl smaller than the Fächer in service. */
+function smallerText(key, { amount, inService }, params) {
+  const unused = inService - amount;
+  return i18n.tc(key, unused, { ...params, unused });
+}
+
 /**
- * The linked Anlagen with their own Fächer whose Fächer the bookable's
- * `amount` does not fit: it is unlimited (empty or 0), or larger than their
- * number. Every Fach counts, out of service or not. `amount` stays the
- * editor's to set, so this is a hint, never a refusal
- * (ECCdigital/tickets#1038).
+ * The Regel für Anzahl und Fächer of one Anlage (ECCdigital/tickets#1164):
+ * the bookable's `amount` should equal the Fächer in service, as the backend
+ * counts availability - the smaller of the two. Any difference is a hint,
+ * never a refusal: the amount is `larger`, `smaller`, or `unlimited` (empty
+ * or 0). The suggested amount is the Fächer in service, none while no Fach
+ * is in service, since 0 means unlimited.
+ *
+ * It takes the Fächer as they stand - a stored Anlage's `config.compartments`
+ * or the draft of its dialog, out of service marked - and the bookable or
+ * none, so the amount card, the access points of the bookable and the dialog
+ * of the Anlage ask the same rule.
+ *
+ * @param {Object[]} compartments The Fächer, each with `outOfService`
+ * @param {Object|null} bookable The bookable of the Anlage, `null` for none
+ * @returns {{kind: "larger"|"smaller"|"unlimited", amount: number|null,
+ *   inService: number, suggestedAmount: number|null}|null} `null` when the
+ *   amount fits or there is no bookable; `amount` is `null` while unlimited
+ */
+export function compartmentCountMismatch(compartments, bookable) {
+  if (!bookable) return null;
+  const inService = compartmentsInService(compartments);
+  const amount = amountOf(bookable);
+  if (amount === inService) return null;
+  let kind = "smaller";
+  if (amount === null) kind = "unlimited";
+  else if (amount > inService) kind = "larger";
+  return {
+    kind,
+    amount,
+    inService,
+    suggestedAmount: suggestedAmountFor(inService),
+  };
+}
+
+/**
+ * „Was daraus wird“ in the dialog of an Anlage (ECCdigital/tickets#1166):
+ * what the Fächer as they stand and the bookable chosen make of each other,
+ * by the Regel für Anzahl und Fächer (`compartmentCountMismatch`). The case,
+ * three numbers - the Fächer, out of service among them, the Anzahl, and how
+ * many bookings run at the same time, the smaller of the Anzahl and the
+ * Fächer in service as the backend counts availability - and one sentence.
+ *
+ * `options.amount` stands in for the bookable's own Anzahl, an Anzahl the
+ * dialog would save with the Anlage; left out, the bookable's counts.
+ * `options.assignmentUnknown` is set where the bookables could not be read:
+ * the case is then `unknown`, the Fächer in service without a word on the
+ * bookable or the Anzahl.
+ *
+ * @param {Object[]} compartments The Fächer, each with `outOfService`
+ * @param {Object|null} bookable The bookable chosen, `null` for none
+ * @param {{amount?: number|null, assignmentUnknown?: boolean}} [options]
+ * @returns {{kind: "empty"|"unknown"|"unassigned"|"fits"|"larger"|"smaller"|
+ *   "unlimited", count: number, outOfService: number, inService: number,
+ *   amount: number|null, unlimited: boolean, concurrent: number|null,
+ *   suggestedAmount: number|null, text: string}} `amount` is `null` while
+ *   unlimited or without a bookable; `concurrent` is `null` while the
+ *   assignment is unknown; `suggestedAmount` is the Anzahl the bookable
+ *   should have - what „Anzahl auf N setzen“ would set -, `null` where it
+ *   fits, no Fach is chosen or none is in service
+ */
+export function compartmentOutcome(
+  compartments,
+  bookable,
+  { amount: noted, assignmentUnknown = false } = {}
+) {
+  const count = (compartments || []).length;
+  const inService = compartmentsInService(compartments);
+  const measured =
+    bookable && noted !== undefined ? { ...bookable, amount: noted } : bookable;
+  const amount = measured ? amountOf(measured) : null;
+  const numbers = {
+    count,
+    outOfService: count - inService,
+    inService,
+    amount,
+    unlimited: !!measured && amount === null,
+  };
+  const key = (name) => `accessPoint.management.dialog.outcome.${name}`;
+  if (!count) {
+    return {
+      kind: "empty",
+      ...numbers,
+      concurrent: 0,
+      suggestedAmount: null,
+      text: i18n.t(key("empty")),
+    };
+  }
+  if (assignmentUnknown) {
+    return {
+      kind: "unknown",
+      ...numbers,
+      concurrent: null,
+      suggestedAmount: null,
+      text: i18n.tc(key("unknown"), inService, { count: inService }),
+    };
+  }
+  if (!measured) {
+    return {
+      kind: "unassigned",
+      ...numbers,
+      concurrent: inService,
+      suggestedAmount: suggestedAmountFor(inService),
+      text: i18n.tc(key("unassigned"), inService, { count: inService }),
+    };
+  }
+  const params = { bookable: measured.title, amount, count: inService };
+  const mismatch = compartmentCountMismatch(compartments, measured);
+  if (!mismatch) {
+    return {
+      kind: "fits",
+      ...numbers,
+      concurrent: amount,
+      suggestedAmount: null,
+      text: i18n.tc(key("fits"), amount, params),
+    };
+  }
+  const { kind, suggestedAmount } = mismatch;
+  const outcome = {
+    kind,
+    ...numbers,
+    concurrent: kind === "smaller" ? amount : inService,
+    suggestedAmount,
+  };
+  if (kind === "smaller") {
+    return { ...outcome, text: smallerText(key("smaller"), mismatch, params) };
+  }
+  const sentences = [i18n.tc(key(kind), inService, params)];
+  if (kind === "larger" && inService > 0) {
+    const missing = amount - inService;
+    sentences.push(
+      i18n.tc(key("largerAdvice"), missing, { count: inService, missing })
+    );
+  }
+  return { ...outcome, text: sentences.join(" ") };
+}
+
+/**
+ * The linked Anlagen with their own Fächer whose Fächer in service the
+ * bookable's `amount` does not equal, by `compartmentCountMismatch`. `amount`
+ * stays the editor's to set, so this is a hint, never a refusal
+ * (ECCdigital/tickets#1038, #1164).
  *
  * @param {Object} bookable The bookable as edited
  * @param {Object[]} accessPoints Every access point of the tenant
- * @returns {{accessPointId: string, label: string, count: number}[]} In the
- *   order the bookable links them
+ * @returns {{accessPointId: string, label: string, kind: string,
+ *   amount: number|null, inService: number, suggestedAmount: number|null}[]}
+ *   In the order the bookable links them
  */
 export function compartmentCountMismatches(bookable, accessPoints) {
-  const unlimited = isUnlimitedAmount(bookable);
-  const amount = Number(bookable?.amount);
   return (bookable?.accessPointDetails?.accessPointIds || [])
     .map((id) => (accessPoints || []).find((point) => point.id === id))
     .filter(carriesOwnCompartments)
     .map((point) => ({
+      point,
+      mismatch: compartmentCountMismatch(point.config.compartments, bookable),
+    }))
+    .filter(({ mismatch }) => mismatch)
+    .map(({ point, mismatch }) => ({
       accessPointId: point.id,
       label: accessPointLabel(point),
-      count: point.config.compartments.length,
-    }))
-    .filter(({ count }) => unlimited || amount > count);
+      ...mismatch,
+    }));
 }
 
 /**
- * The hint of `compartmentCountMismatches`, one sentence per Anlage, for the
- * amount card and the assignment alike.
+ * The hint of `compartmentCountMismatches`, one sentence per Anlage naming
+ * the amount it should have, for the amount card and the access points of
+ * the bookable alike. `suggestedAmount` is what „Anzahl auf N setzen“ sets,
+ * `null` while no Fach is in service.
  *
  * @param {Object} bookable The bookable as edited
  * @param {Object[]} accessPoints Every access point of the tenant
- * @returns {{id: string, text: string}[]}
+ * @returns {{id: string, text: string, suggestedAmount: number|null}[]}
  */
 export function compartmentCountHints(bookable, accessPoints) {
-  const unlimited = isUnlimitedAmount(bookable);
   return compartmentCountMismatches(bookable, accessPoints).map(
-    ({ accessPointId, label, count }) => ({
-      id: accessPointId,
-      text: i18n.tc(
-        `accessPoint.bookable.compartmentCount.${
-          unlimited ? "unlimited" : "larger"
-        }`,
-        count,
-        { label, count, amount: Number(bookable.amount) }
-      ),
-    })
+    ({ accessPointId, label, kind, amount, inService, suggestedAmount }) => {
+      const params = { label, amount, count: inService };
+      const key = `accessPoint.bookable.compartmentCount.${kind}`;
+      const text =
+        kind === "smaller"
+          ? smallerText(key, { amount, inService }, params)
+          : i18n.tc(key, inService, params);
+      return { id: accessPointId, text, suggestedAmount };
+    }
   );
 }

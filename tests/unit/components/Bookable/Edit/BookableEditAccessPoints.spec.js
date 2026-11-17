@@ -34,15 +34,6 @@ const LOCKER = {
   externalId: "loc-42",
 };
 
-// A fixed Open Locker compartment: a door by type, a Fach on site.
-const OPEN_LOCKER_COMPARTMENT = {
-  id: "ap-open-locker",
-  type: "door",
-  provider: "open-locker",
-  label: "Labor Fachbank 1 · Fach 2",
-  externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
-};
-
 // An Open Locker Schließfachanlage: its Fächer are Biletado's to assign.
 const OPEN_LOCKER_SYSTEM = {
   id: "ap-open-locker-system",
@@ -174,29 +165,6 @@ describe("BookableEditAccessPoints", () => {
   });
 
   /**
-   * An Open Locker compartment is shared like a door, but it is no door
-   * (ECCdigital/tickets#1036): its row says „Fach“ in type and grant, never
-   * „Tür“, and in the picker it reads the same.
-   */
-  it("calls an assigned Open Locker compartment a Fach, shared for the period", async () => {
-    const wrapper = await mountPoints({
-      accessPoints: [OPEN_LOCKER_COMPARTMENT],
-      bookable: {
-        accessPointDetails: {
-          active: true,
-          accessBuffer: { before: 0, after: 0 },
-          accessPointIds: [OPEN_LOCKER_COMPARTMENT.id],
-        },
-      },
-    });
-
-    const text = rows(wrapper).at(0).text();
-    expect(text).toMatch(/Labor Fachbank 1 · Fach 2/);
-    expect(text).toMatch(/Das Fach, im Buchungszeitraum mit anderen geteilt/);
-    expect(text).not.toMatch(/Tür/);
-  });
-
-  /**
    * An Open Locker Schließfachanlage hands out a Fach per booked unit like
    * any Anlage, but Biletado assigns it, not the provider
    * (ECCdigital/tickets#1037).
@@ -323,9 +291,11 @@ describe("BookableEditAccessPoints", () => {
   });
 
   /**
-   * `amount` stays the editor's: a hint, never a refusal, when it is
-   * unlimited or larger than the Fächer of a linked Anlage
-   * (ECCdigital/tickets#1038).
+   * `amount` stays the editor's: a hint, never a refusal, when it does not
+   * equal the Fächer in service of a linked Anlage, larger, smaller or
+   * unlimited (ECCdigital/tickets#1038, #1164). The hint names the amount
+   * it should have; setting it is the amount card's, the field's one
+   * component.
    */
   describe("the hint on amount and Fächer", () => {
     const GARAGE = {
@@ -334,6 +304,7 @@ describe("BookableEditAccessPoints", () => {
         compartments: [
           { id: "c-1", number: 1 },
           { id: "c-2", number: 2 },
+          { id: "c-3", number: 3, outOfService: true },
         ],
       },
     };
@@ -348,14 +319,25 @@ describe("BookableEditAccessPoints", () => {
     const hint = (wrapper) =>
       wrapper.find("[data-test='compartment-count-hint']");
 
-    it("says so when the amount is larger than the Fächer", async () => {
+    it("says so when the amount is larger than the Fächer in service", async () => {
       const wrapper = await mountPoints({
         accessPoints: [GARAGE],
         bookable: linked(3),
       });
 
       expect(hint(wrapper).text()).toMatch(
-        /Die Anzahl \(3\) ist größer als die 2 Fächer der Schließfachanlage „Fahrradgarage“/
+        /Die Anzahl \(3\) ist größer als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“\..*Die Anzahl sollte 2 sein\./
+      );
+    });
+
+    it("says so when the amount is smaller than the Fächer in service", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [GARAGE],
+        bookable: linked(1),
+      });
+
+      expect(hint(wrapper).text()).toMatch(
+        /Die Anzahl \(1\) ist kleiner als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“\. Ein Fach wird nie gebraucht\. Die Anzahl sollte 2 sein\./
       );
     });
 
@@ -366,11 +348,11 @@ describe("BookableEditAccessPoints", () => {
       });
 
       expect(hint(wrapper).text()).toMatch(
-        /Die Anzahl ist unbegrenzt.*2 Fächer der Schließfachanlage „Fahrradgarage“/
+        /Die Anzahl ist unbegrenzt.*„Fahrradgarage“ hat nur 2 Fächer in Betrieb/
       );
     });
 
-    it("says nothing when the amount fits", async () => {
+    it("says nothing when the amount equals the Fächer in service", async () => {
       const wrapper = await mountPoints({
         accessPoints: [GARAGE],
         bookable: linked(2),

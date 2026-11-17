@@ -147,6 +147,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-glow-selected-hover: 0 0 0 1px var(--v-primary-base),
     0 8px 28px color-mix(in srgb, var(--v-primary-base) 22%, transparent),
     0 18px 64px color-mix(in srgb, var(--v-primary-base) 14%, transparent);
+  // The ring of the chosen entry in a list of choices, without the glow of a
+  // card: the example of a Schließfachanlage that fits its bookable
+  // (AccessPointLockerUses.vue). Drawn inside, so it takes no room at rest.
+  --scb-ring-selected: inset 0 0 0 1px var(--v-primary-base);
 }
 
 .theme--dark {

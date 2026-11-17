@@ -152,6 +152,66 @@ describe("formatAccessPointErrorMessage", () => {
     });
 
     /**
+     * Open Locker knows only the Schließfachanlage (ECCdigital/tickets#1162):
+     * the backend refuses a door of Open Locker at `type`, from an old
+     * client too.
+     */
+    it("says that Open Locker knows only the Schließfachanlage", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          { field: "type", code: "open_locker_locker_only", params: {} },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Bei Open Locker gibt es nur Schließfachanlagen. Legen Sie eine Schließfachanlage an, auch für ein einzelnes Fach."
+      );
+    });
+
+    /**
+     * The Anzahl written with the assignment (ECCdigital/tickets#1167): the
+     * backend refuses it at `amount` for anything but a Schließfachanlage
+     * with its own Fächer and one bookable, and for anything but a whole
+     * number from 1.
+     */
+    it.each([
+      [
+        "amount_needs_one_locker_bookable",
+        "Die Anzahl lässt sich hier nur setzen, wenn die Schließfachanlage eigene Fächer hat und genau einem Buchungsobjekt zugeordnet wird.",
+      ],
+      ["invalid_amount", "Die Anzahl muss eine ganze Zahl ab 1 sein."],
+    ])("says why the Anzahl was refused (%s)", (code, sentence) => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [{ field: "amount", code, params: {} }],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(sentence);
+    });
+
+    it("names the Schließfachanlage a Fach already stands in", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          {
+            field: "config.compartments.0",
+            code: "compartment_in_locker_system",
+            params: {
+              compartmentId: "9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d",
+              accessPointId: "ap-garage",
+              label: "Fahrradgarage",
+            },
+          },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Das Fach steht schon in der Schließfachanlage „Fahrradgarage“."
+      );
+    });
+
+    /**
      * An older backend may name an Öffnungsart this UI has no label for; the
      * raw value is still something the admin can quote.
      */

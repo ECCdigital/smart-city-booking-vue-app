@@ -107,18 +107,12 @@ function formatCompartmentNotAccessible(detail) {
 }
 
 /**
- * A Fach another access point already holds (ECCdigital/tickets#1037): one
- * Fach stands in at most one Schließfachanlage and is then no fixed Fach.
- * The message names the access point that holds it, by its label.
+ * A Fach another Schließfachanlage already holds (ECCdigital/tickets#1037):
+ * one Fach stands in at most one Anlage. The message names the Anlage that
+ * holds it, by its label.
  */
-const COMPARTMENT_CLAIM_KEYS = {
-  compartment_in_locker_system:
-    "accessPoint.management.errors.compartmentInLockerSystem",
-  compartment_is_fixed: "accessPoint.management.errors.compartmentIsFixed",
-};
-
-function formatCompartmentClaim(detail) {
-  return i18n.t(COMPARTMENT_CLAIM_KEYS[detail.code], {
+function formatCompartmentInLockerSystem(detail) {
+  return i18n.t("accessPoint.management.errors.compartmentInLockerSystem", {
     label: detail.params?.label || detail.params?.accessPointId || "",
   });
 }
@@ -134,6 +128,21 @@ function formatLockerSystemInOtherBookable(detail) {
     bookable: detail.params?.bookableTitle || detail.params?.bookableId || "",
   });
 }
+
+/**
+ * The refusals whose message is one sentence without parameters: a door of
+ * Open Locker, which knows only the Schließfachanlage, sent by an old client
+ * or over the API (ECCdigital/tickets#1162); the Anzahl written with the
+ * assignment, only at a Schließfachanlage with its own Fächer and for
+ * exactly one bookable, and only a whole number from 1, since 0 and empty
+ * mean unlimited (ECCdigital/tickets#1167).
+ */
+const SENTENCE_KEYS = {
+  open_locker_locker_only: "accessPoint.management.errors.openLockerLockerOnly",
+  amount_needs_one_locker_bookable:
+    "accessPoint.management.errors.amountNeedsOneLockerBookable",
+  invalid_amount: "accessPoint.management.errors.invalidAmount",
+};
 
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
@@ -160,8 +169,12 @@ function formatDetail(detail) {
     return formatLockerSystemInOtherBookable(detail);
   }
 
-  if (COMPARTMENT_CLAIM_KEYS[detail.code]) {
-    return formatCompartmentClaim(detail);
+  if (detail.code === "compartment_in_locker_system") {
+    return formatCompartmentInLockerSystem(detail);
+  }
+
+  if (SENTENCE_KEYS[detail.code]) {
+    return i18n.t(SENTENCE_KEYS[detail.code]);
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {

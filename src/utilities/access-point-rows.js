@@ -3,14 +3,9 @@ import {
   accessPointFields,
   accessPointKind,
   DOOR_KIND,
-  FIXED_COMPARTMENT_KIND,
   kindNoun,
 } from "@/utilities/access-point-fields";
-import {
-  isFixedCompartment,
-  isLockerAccessPoint,
-  requiresQrScan,
-} from "@/utilities/access-points";
+import { isLockerAccessPoint, requiresQrScan } from "@/utilities/access-points";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 
 /**
@@ -34,8 +29,8 @@ const tc = (key, count) =>
 
 /**
  * The kind of the access point as the small line names it: „Schließfachanlage
- * · 12 Fächer“, „Schließfachanlage“ or „festes Fach“; empty for a door, whose
- * kind the section already says.
+ * · 12 Fächer“ or „Schließfachanlage“; empty for a door, whose kind the
+ * section already says.
  *
  * @param {Object} accessPoint The access point
  * @returns {string}
@@ -43,7 +38,6 @@ const tc = (key, count) =>
 export function kindLabel(accessPoint) {
   const kind = accessPointKind(accessPoint);
   if (kind === DOOR_KIND) return "";
-  if (kind === FIXED_COMPARTMENT_KIND) return t("kind.fixedCompartment");
   if (!carriesOwnCompartments(accessPoint)) return t("kind.lockerSystem");
   return [
     t("kind.lockerSystem"),
@@ -84,7 +78,7 @@ export function metaLine(accessPoint) {
 
 /**
  * Whether the access point has a QR code: every door, also one without QR
- * scan, a fixed Fach and an Open Locker Schließfachanlage; a
+ * scan, and an Open Locker Schließfachanlage; a
  * Schließfachanlage of iFBS or Pareva has none (`qrCode` of
  * `accessPointFields`).
  *
@@ -97,14 +91,13 @@ export function hasQr(accessPoint) {
 
 /**
  * What the QR code of the row does, as its tooltip says it: the PDF of a door
- * or a fixed Fach, the QR codes of the Fächer of a Schließfachanlage.
+ * at once, the QR codes of the Fächer of a Schließfachanlage.
  *
  * @param {Object} accessPoint The access point, one with `hasQr`
  * @returns {string} A translated tooltip
  */
 export function qrTitle(accessPoint) {
   if (carriesOwnCompartments(accessPoint)) return t("qr.compartments");
-  if (isFixedCompartment(accessPoint)) return t("qr.compartment");
   return t("qr.door");
 }
 

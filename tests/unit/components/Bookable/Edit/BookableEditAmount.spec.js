@@ -304,8 +304,10 @@ describe("BookableEditAmount - Anzahl from a provider", () => {
 
 /**
  * `amount` stays independent of the Fächer of an Open Locker
- * Schließfachanlage (ECCdigital/tickets#1038): the card says so when it is
- * unlimited or larger than their number, and changes nothing.
+ * Schließfachanlage (ECCdigital/tickets#1038): the card says so when it does
+ * not equal the Fächer in service, larger, smaller or unlimited, and changes
+ * nothing by itself. „Anzahl auf N setzen“ fills the field, saved with the
+ * bookable (ECCdigital/tickets#1164).
  */
 describe("BookableEditAmount - the Fächer of a linked Anlage", () => {
   const GARAGE = {
@@ -317,26 +319,44 @@ describe("BookableEditAmount - the Fächer of a linked Anlage", () => {
       compartments: [
         { id: "c-1", number: 1 },
         { id: "c-2", number: 2 },
+        { id: "c-3", number: 3, outOfService: true },
       ],
     },
   };
-  const mountLinked = (amount) =>
+  const OUT_OF_SERVICE = {
+    ...GARAGE,
+    config: {
+      compartments: [{ id: "c-1", number: 1, outOfService: true }],
+    },
+  };
+  const mountLinked = (amount, anlage = GARAGE) =>
     mountEditing(BookableEditAmount, {
       bookable: bookable({
         amount,
-        accessPointDetails: { active: true, accessPointIds: [GARAGE.id] },
+        accessPointDetails: { active: true, accessPointIds: [anlage.id] },
       }),
-      accessPoints: [GARAGE],
+      accessPoints: [anlage],
     });
+  const setButtons = (wrapper) =>
+    wrapper.findAll("[data-test='flow-amount-compartments-set']");
 
-  it("names the Fächer when the Anzahl is larger", () => {
+  it("names the Fächer in service when the Anzahl is larger", () => {
     const { wrapper, patches } = mountLinked(3);
 
     expect(text(wrapper, "flow-amount-compartments")).toContain(
-      "Die Anzahl (3) ist größer als die 2 Fächer der Schließfachanlage „Fahrradgarage“."
+      "Die Anzahl (3) ist größer als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“."
     );
     expect(find(wrapper, "flow-amount-box").classes()).toContain(
       "bookable-amount__box--warning"
+    );
+    expect(patches).toEqual([]);
+  });
+
+  it("names the Fächer in service when the Anzahl is smaller", () => {
+    const { wrapper, patches } = mountLinked(1);
+
+    expect(text(wrapper, "flow-amount-compartments")).toContain(
+      "Die Anzahl (1) ist kleiner als die 2 Fächer in Betrieb der Schließfachanlage „Fahrradgarage“. Ein Fach wird nie gebraucht."
     );
     expect(patches).toEqual([]);
   });
@@ -349,9 +369,38 @@ describe("BookableEditAmount - the Fächer of a linked Anlage", () => {
     );
   });
 
-  it("says nothing when the Anzahl fits", () => {
+  it("says nothing when the Anzahl equals the Fächer in service", () => {
     const { wrapper } = mountLinked(2);
 
     expect(find(wrapper, "flow-amount-compartments").exists()).toBe(false);
+  });
+
+  it.each([
+    ["smaller", 1],
+    ["larger", 3],
+    ["unlimited", null],
+  ])(
+    "fills the field with „Anzahl auf N setzen“ when the Anzahl is %s",
+    async (_, amount) => {
+      const { wrapper, patches } = mountLinked(amount);
+
+      expect(setButtons(wrapper)).toHaveLength(1);
+      expect(setButtons(wrapper).at(0).text()).toBe("Anzahl auf 2 setzen");
+      await setButtons(wrapper).at(0).trigger("click");
+
+      expect(lastPatch(patches)).toEqual({ amount: 2 });
+      expect(find(wrapper, "flow-amount-input").element.value).toBe("2");
+      expect(find(wrapper, "flow-amount-compartments").exists()).toBe(false);
+    }
+  );
+
+  /** 0 reads as unlimited in Biletado, so it is never offered. */
+  it("offers no Anzahl while no Fach is in service", () => {
+    const { wrapper } = mountLinked(2, OUT_OF_SERVICE);
+
+    expect(text(wrapper, "flow-amount-compartments")).toContain(
+      "Sie hat keins."
+    );
+    expect(setButtons(wrapper)).toHaveLength(0);
   });
 });

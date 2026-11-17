@@ -66,7 +66,11 @@ function toRow(accessPoint) {
  * only (ECCdigital/tickets#1038): the picker leaves out one another bookable
  * links, read from the tenant's bookables once such an Anlage exists - what
  * the editor may not read, the save refuses. A hint names an Anlage whose
- * Fächer the bookable's `amount` does not fit; saving stays possible.
+ * Fächer in service the bookable's `amount` does not equal, and the amount
+ * it should have (ECCdigital/tickets#1164); saving stays possible. Setting
+ * it is the amount card's, and, as the one exception, that of „Anzahl auf N
+ * setzen“ in the dialog of the Anlage, which writes it with the assignment
+ * (ECCdigital/tickets#1167).
  *
  * The list is read through the access point management API, which grants
  * reading to everyone who may read bookables. Editors without tenant owner
@@ -151,7 +155,8 @@ export default {
     hasLockerSystems() {
       return this.accessPoints.some(carriesOwnCompartments);
     },
-    // An Anlage whose Fächer the `amount` does not fit, one sentence each.
+    // An Anlage whose Fächer in service the `amount` does not equal, one
+    // sentence each, by the rule the amount card asks too.
     compartmentCountHints() {
       return compartmentCountHints(this.bookable, this.accessPoints);
     },
@@ -230,9 +235,8 @@ export default {
      * compartment per unit the booking books (`bookableItem.amount`) - never
      * the bookable's `amount`, which is the capacity the concurrent bookings
      * are counted against. A door is not handed out at all; it is shared for
-     * the booking period - and so is a fixed Open Locker compartment, which
-     * the sentence calls by its own name, a „Fach“ (ECCdigital/tickets#1036).
-     * A type name without a sentence of its own takes that of its type.
+     * the booking period. A type name without a sentence of its own takes
+     * that of its type.
      */
     grantText(row) {
       const key = `accessPoint.bookable.grants.${row.typeName}`;

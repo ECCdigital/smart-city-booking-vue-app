@@ -139,8 +139,7 @@ export default {
     /**
      * The name a person looks for: a Fach the platform assigned (Open Locker)
      * by its Anlage, Schließfachschrank and number, a compartment the
-     * provider named by its number (iFBS), anything else by its label - the
-     * fixed Fach of Open Locker included.
+     * provider named by its number (iFBS), a door by its label.
      */
     entryTitle(entry) {
       const label = entry.label || entry.id;

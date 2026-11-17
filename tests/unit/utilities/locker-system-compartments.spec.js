@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   carriesOwnCompartments,
+  compartmentCountMismatch,
   compartmentCountMismatches,
   compartmentGroups,
+  compartmentOutcome,
   compartmentsByLockerBank,
   leavingCompartmentIds,
   compartmentTitle,
+  heldCompartmentIds,
   lockerSystemIdsLinkedElsewhere,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -48,10 +51,11 @@ describe("whether an access point carries its own Fächer", () => {
 });
 
 /**
- * A Fach stands in at most one Anlage and is then no fixed Fach: what the
- * other access points of the provider already hold is not to be chosen.
+ * A Fach stands in at most one Anlage (ECCdigital/tickets#1162): the Fächer
+ * the other Anlagen of the provider hold are not to be chosen, and nothing
+ * else holds a Fach.
  */
-describe("the Fächer other access points hold", () => {
+describe("the Fächer other Anlagen hold", () => {
   const accessPoints = [
     {
       id: "anlage-1",
@@ -59,6 +63,13 @@ describe("the Fächer other access points hold", () => {
       provider: "open-locker",
       config: { compartments: [{ id: UUID_1 }] },
     },
+    {
+      id: "anlage-2",
+      type: "locker",
+      provider: "open-locker",
+      config: { compartments: [{ id: UUID_4 }] },
+    },
+    // A door of Open Locker from before: it holds no Fach.
     {
       id: "fach-1",
       type: "door",
@@ -68,12 +79,27 @@ describe("the Fächer other access points hold", () => {
     { id: "tuer-1", type: "door", provider: "nuki", externalId: UUID_3 },
   ];
 
-  it("names those in another Anlage and the fixed Fächer of the provider", () => {
+  it("names the Fächer of the other Anlagen of the provider, nothing else", () => {
     expect(
-      [...takenProviderIds(accessPoints, { provider: "open-locker" })].sort()
-    ).toEqual([UUID_1, UUID_2].sort());
+      [...heldCompartmentIds(accessPoints, { provider: "open-locker" })].sort()
+    ).toEqual([UUID_1, UUID_4].sort());
   });
 
+  it("leaves out the Anlage being edited", () => {
+    expect([
+      ...heldCompartmentIds(accessPoints, {
+        provider: "open-locker",
+        exceptId: "anlage-1",
+      }),
+    ]).toEqual([UUID_4]);
+  });
+});
+
+/**
+ * A lock of the provider's listing that another access point already
+ * stands for is created already.
+ */
+describe("the ids other access points stand for", () => {
   it("names what any other access point of the provider stands for, a Schließfachanlage of iFBS too", () => {
     const ifbs = [
       { id: "box-1", type: "locker", provider: "ifbs", externalId: "S" },
@@ -86,13 +112,14 @@ describe("the Fächer other access points hold", () => {
     ]);
   });
 
-  it("leaves out the Anlage being edited", () => {
+  it("leaves out the access point being edited", () => {
+    const doors = [
+      { id: "tuer-1", type: "door", provider: "nuki", externalId: "lock-1" },
+      { id: "tuer-2", type: "door", provider: "nuki", externalId: "lock-2" },
+    ];
     expect([
-      ...takenProviderIds(accessPoints, {
-        provider: "open-locker",
-        exceptId: "anlage-1",
-      }),
-    ]).toEqual([UUID_2]);
+      ...takenProviderIds(doors, { provider: "nuki", exceptId: "tuer-1" }),
+    ]).toEqual(["lock-2"]);
   });
 });
 
@@ -239,11 +266,12 @@ describe("lockerSystemIdsLinkedElsewhere", () => {
 });
 
 /**
- * `amount` stays independent of the Fächer, but the form says so when it
- * is unlimited or larger than the Fächer of a linked Anlage
- * (ECCdigital/tickets#1038).
+ * `amount` stays independent of the Fächer, but the form names each linked
+ * Anlage whose Fächer in service it does not equal (ECCdigital/tickets#1038,
+ * #1164), by the rule of `compartmentCountMismatch`.
  */
 describe("compartmentCountMismatches", () => {
+  // Each Anlage has its first Fach out of service.
   const system = (id, label, count) => ({
     id,
     type: "locker",
@@ -265,13 +293,40 @@ describe("compartmentCountMismatches", () => {
     accessPointDetails: { active: true, accessPointIds: ids },
   });
 
-  it("names an Anlage with fewer Fächer than the amount, counting every Fach", () => {
+  it("names an Anlage with fewer Fächer in service than the amount", () => {
     expect(
       compartmentCountMismatches(bookable(3, ["ap-garage", "ap-keller"]), [
         GARAGE,
         KELLER,
       ])
-    ).toEqual([{ accessPointId: "ap-keller", label: "Keller", count: 2 }]);
+    ).toEqual([
+      {
+        accessPointId: "ap-keller",
+        label: "Keller",
+        kind: "larger",
+        amount: 3,
+        inService: 1,
+        suggestedAmount: 1,
+      },
+    ]);
+  });
+
+  it("names an Anlage with more Fächer in service than the amount", () => {
+    expect(
+      compartmentCountMismatches(bookable(1, ["ap-garage", "ap-keller"]), [
+        GARAGE,
+        KELLER,
+      ])
+    ).toEqual([
+      {
+        accessPointId: "ap-garage",
+        label: "Fahrradgarage",
+        kind: "smaller",
+        amount: 1,
+        inService: 3,
+        suggestedAmount: 3,
+      },
+    ]);
   });
 
   it("names every linked Anlage while the amount is unlimited", () => {
@@ -279,25 +334,20 @@ describe("compartmentCountMismatches", () => {
       compartmentCountMismatches(bookable(null, ["ap-garage", "ap-keller"]), [
         GARAGE,
         KELLER,
+      ]).map(({ accessPointId, kind, suggestedAmount }) => [
+        accessPointId,
+        kind,
+        suggestedAmount,
       ])
     ).toEqual([
-      { accessPointId: "ap-garage", label: "Fahrradgarage", count: 4 },
-      { accessPointId: "ap-keller", label: "Keller", count: 2 },
+      ["ap-garage", "unlimited", 3],
+      ["ap-keller", "unlimited", 1],
     ]);
   });
 
-  it("reads an amount of 0 as unlimited, as the backend does", () => {
+  it("names nothing when the amount equals the Fächer in service", () => {
     expect(
-      compartmentCountMismatches(bookable(0, ["ap-keller"]), [KELLER])
-    ).toHaveLength(1);
-  });
-
-  it("names nothing when the amount fits or lies below the Fächer", () => {
-    expect(
-      compartmentCountMismatches(bookable(2, ["ap-garage", "ap-keller"]), [
-        GARAGE,
-        KELLER,
-      ])
+      compartmentCountMismatches(bookable(3, ["ap-garage"]), [GARAGE])
     ).toEqual([]);
   });
 
@@ -305,6 +355,260 @@ describe("compartmentCountMismatches", () => {
     expect(
       compartmentCountMismatches(bookable(null, ["ap-ifbs"]), [IFBS, GARAGE])
     ).toEqual([]);
+  });
+});
+
+/**
+ * The Regel für Anzahl und Fächer of one Anlage (ECCdigital/tickets#1164):
+ * the bookable's `amount` should equal the Fächer in service. It takes the
+ * Fächer as they stand, a stored Anlage's or the dialog's draft, and the
+ * bookable or none, so the dialog of the Anlage can ask it too.
+ */
+describe("compartmentCountMismatch", () => {
+  const fächer = (inService, outOfService = 0) => [
+    ...Array.from({ length: inService }, (_, i) => ({ id: `in-${i}` })),
+    ...Array.from({ length: outOfService }, (_, i) => ({
+      id: `off-${i}`,
+      outOfService: true,
+    })),
+  ];
+
+  it("reports nothing when the amount equals the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(3), { amount: 3 })).toBeNull();
+  });
+
+  it("does not count a Fach out of service", () => {
+    expect(compartmentCountMismatch(fächer(2, 1), { amount: 2 })).toBeNull();
+  });
+
+  it("reports a larger amount and suggests the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(4), { amount: 6 })).toEqual({
+      kind: "larger",
+      amount: 6,
+      inService: 4,
+      suggestedAmount: 4,
+    });
+  });
+
+  it("reports a smaller amount and suggests the Fächer in service", () => {
+    expect(compartmentCountMismatch(fächer(4), { amount: 1 })).toEqual({
+      kind: "smaller",
+      amount: 1,
+      inService: 4,
+      suggestedAmount: 4,
+    });
+  });
+
+  it("suggests the smaller amount when a Fach is out of service", () => {
+    expect(compartmentCountMismatch(fächer(5, 1), { amount: 6 })).toEqual({
+      kind: "larger",
+      amount: 6,
+      inService: 5,
+      suggestedAmount: 5,
+    });
+  });
+
+  it.each([
+    ["empty", null],
+    ["0, as the backend reads it", 0],
+  ])("reports an unlimited amount, %s", (_, amount) => {
+    expect(compartmentCountMismatch(fächer(2), { amount })).toEqual({
+      kind: "unlimited",
+      amount: null,
+      inService: 2,
+      suggestedAmount: 2,
+    });
+  });
+
+  /** 0 reads as unlimited in Biletado, so it is never suggested. */
+  it.each([
+    ["a limited", 2, "larger", 2],
+    ["an unlimited", null, "unlimited", null],
+  ])(
+    "suggests nothing for %s amount while no Fach is in service",
+    (_, amount, kind, reported) => {
+      expect(compartmentCountMismatch(fächer(0, 2), { amount })).toEqual({
+        kind,
+        amount: reported,
+        inService: 0,
+        suggestedAmount: null,
+      });
+    }
+  );
+
+  it("reports nothing without a bookable: there is no amount to compare", () => {
+    expect(compartmentCountMismatch(fächer(3), null)).toBeNull();
+    expect(compartmentCountMismatch(fächer(0), undefined)).toBeNull();
+  });
+});
+
+/**
+ * „Was daraus wird“ in the dialog of the Anlage (ECCdigital/tickets#1166):
+ * from the Fächer as they stand and the bookable chosen, the case, three
+ * numbers - Fächer (out of service among them), Anzahl, zur selben Zeit
+ * buchbar - and one sentence. A Fach out of service is not bookable.
+ */
+describe("compartmentOutcome", () => {
+  const fächer = (inService, outOfService = 0) => [
+    ...Array.from({ length: inService }, (_, i) => ({ id: `in-${i}` })),
+    ...Array.from({ length: outOfService }, (_, i) => ({
+      id: `off-${i}`,
+      outOfService: true,
+    })),
+  ];
+  const bookable = (amount, title = "Fahrradboxen Bahnhof Nord") => ({
+    id: "b1",
+    title,
+    type: "resource",
+    amount,
+  });
+
+  it("asks to tick the Fächer while none is chosen", () => {
+    expect(compartmentOutcome([], bookable(6))).toEqual({
+      kind: "empty",
+      count: 0,
+      outOfService: 0,
+      inService: 0,
+      amount: 6,
+      unlimited: false,
+      concurrent: 0,
+      suggestedAmount: null,
+      text: "Noch kein Fach gewählt. Klicken Sie links die Fächer an, die zu dieser Schließfachanlage gehören.",
+    });
+  });
+
+  it("fits when the Anzahl equals the Fächer in service", () => {
+    expect(compartmentOutcome(fächer(6), bookable(6))).toEqual({
+      kind: "fits",
+      count: 6,
+      outOfService: 0,
+      inService: 6,
+      amount: 6,
+      unlimited: false,
+      concurrent: 6,
+      suggestedAmount: null,
+      text: "Passt: „Fahrradboxen Bahnhof Nord“ kann 6-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach.",
+    });
+  });
+
+  it("fits the key to a room: one Fach, Anzahl 1", () => {
+    const outcome = compartmentOutcome(
+      fächer(1),
+      bookable(1, "Besprechungsraum 2.14")
+    );
+
+    expect(outcome.kind).toBe("fits");
+    expect(outcome.concurrent).toBe(1);
+    expect(outcome.text).toBe(
+      "Passt: „Besprechungsraum 2.14“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach."
+    );
+  });
+
+  /** „dafür gibt es ein Fach“ only where exactly one Fach is in service. */
+  it("says one Fach for Anzahl 1 only with one Fach in service, else the case it is", () => {
+    const oneOfThree = compartmentOutcome(fächer(1, 2), bookable(1, "Labor"));
+    expect(oneOfThree.kind).toBe("fits");
+    expect(oneOfThree.text).toBe(
+      "Passt: „Labor“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach."
+    );
+
+    const threeInService = compartmentOutcome(fächer(3), bookable(1, "Labor"));
+    expect(threeInService.kind).toBe("smaller");
+    expect(threeInService.text).toBe(
+      "„Labor“ hat die Anzahl 1, in Betrieb sind 3 Fächer. 2 Fächer werden nie gebraucht. Setzen Sie die Anzahl auf 3, oder nehmen Sie 2 Fächer heraus."
+    );
+  });
+
+  it("names the Anzahl the bookable should have while there is none", () => {
+    expect(compartmentOutcome(fächer(3, 1), null)).toEqual({
+      kind: "unassigned",
+      count: 4,
+      outOfService: 1,
+      inService: 3,
+      amount: null,
+      unlimited: false,
+      concurrent: 3,
+      suggestedAmount: 3,
+      text: "Zur selben Zeit buchbar: 3, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte 3 sein.",
+    });
+  });
+
+  /** 0 reads as unlimited in Biletado, so it is never the Anzahl to have. */
+  it("names no Anzahl without a bookable while no Fach is in service", () => {
+    const outcome = compartmentOutcome(fächer(0, 2), null);
+
+    expect(outcome.kind).toBe("unassigned");
+    expect(outcome.concurrent).toBe(0);
+    expect(outcome.suggestedAmount).toBeNull();
+    expect(outcome.text).toBe(
+      "Kein Fach ist in Betrieb. Zur selben Zeit buchbar ist deshalb nichts."
+    );
+  });
+
+  it("books only the Fächer in service when the Anzahl is larger", () => {
+    expect(compartmentOutcome(fächer(5, 1), bookable(6))).toEqual({
+      kind: "larger",
+      count: 6,
+      outOfService: 1,
+      inService: 5,
+      amount: 6,
+      unlimited: false,
+      concurrent: 5,
+      suggestedAmount: 5,
+      text: "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 6, aber nur 5 Fächer in Betrieb. Zur selben Zeit buchbar sind deshalb nur 5. Wählen Sie 1 weiteres Fach, oder setzen Sie die Anzahl auf 5.",
+    });
+  });
+
+  it("books nothing when the Anzahl is larger and no Fach is in service", () => {
+    const outcome = compartmentOutcome(fächer(0, 1), bookable(2));
+
+    expect(outcome.kind).toBe("larger");
+    expect(outcome.concurrent).toBe(0);
+    expect(outcome.suggestedAmount).toBeNull();
+    expect(outcome.text).toBe(
+      "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 2, aber kein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nichts."
+    );
+  });
+
+  it("names the Fächer never needed when the Anzahl is smaller", () => {
+    expect(compartmentOutcome(fächer(6), bookable(4))).toEqual({
+      kind: "smaller",
+      count: 6,
+      outOfService: 0,
+      inService: 6,
+      amount: 4,
+      unlimited: false,
+      concurrent: 4,
+      suggestedAmount: 6,
+      text: "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 4, in Betrieb sind 6 Fächer. 2 Fächer werden nie gebraucht. Setzen Sie die Anzahl auf 6, oder nehmen Sie 2 Fächer heraus.",
+    });
+  });
+
+  it("books only the Fächer in service when the Anzahl is unlimited", () => {
+    expect(compartmentOutcome(fächer(3), bookable(null))).toEqual({
+      kind: "unlimited",
+      count: 3,
+      outOfService: 0,
+      inService: 3,
+      amount: null,
+      unlimited: true,
+      concurrent: 3,
+      suggestedAmount: 3,
+      text: "Die Anzahl von „Fahrradboxen Bahnhof Nord“ ist unbegrenzt. Zur selben Zeit buchbar sind trotzdem nur 3, weil jede Buchung ein eigenes Fach braucht.",
+    });
+  });
+
+  /** The Anzahl the dialog would save with the Anlage counts instead. */
+  it("measures an Anzahl given in place of the bookable's", () => {
+    const outcome = compartmentOutcome(fächer(4), bookable(null), {
+      amount: 4,
+    });
+
+    expect(outcome.kind).toBe("fits");
+    expect(outcome.amount).toBe(4);
+    expect(outcome.text).toBe(
+      "Passt: „Fahrradboxen Bahnhof Nord“ kann 4-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach."
+    );
   });
 });
 
