@@ -200,6 +200,9 @@ export default {
       eventEditPage: {
         isDirty: () => this.hasUnsavedChanges,
         saveAndStay: () => this.save({ stay: true }),
+        // A value of the event as last loaded or saved, by its path.
+        stored: (path) =>
+          _.get(JSON.parse(this.originalSnapshot || "{}"), path),
       },
     };
   },

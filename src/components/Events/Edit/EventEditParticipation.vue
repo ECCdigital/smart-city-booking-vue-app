@@ -3,25 +3,46 @@ import { mapActions } from "vuex";
 import eventEditing from "@/mixins/eventEditing";
 import { REGISTRATION, registrationPatch } from "@/utils/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 
 /**
  * The tab „Teilnahme“: one question - how people register - and what the
  * answer needs: places and who may register for the portal, an address for
- * another website, nothing without registration.
+ * another website, nothing without registration. Once a ticket of the event
+ * has a number of its own, a changed number of places says so: those
+ * numbers may need to follow.
  */
 export default {
   name: "EventEditParticipation",
   components: { SectionCard },
+  inject: {
+    eventEditPage: { default: () => ({ stored: () => undefined }) },
+  },
   mixins: [eventEditing],
   data() {
     return {
       modes: [REGISTRATION.PORTAL, REGISTRATION.EXTERNAL, REGISTRATION.NONE],
       REGISTRATION,
+      // Whether a ticket of the event limits its own number (`amount`).
+      ticketsLimited: false,
     };
+  },
+  created() {
+    this.loadTickets();
+  },
+  // Kept alive between the tabs: tickets may have changed under „Tickets“.
+  activated() {
+    this.loadTickets();
   },
   computed: {
     attendees() {
       return this.form.attendees;
+    },
+    /** The places differ from the saved ones while a ticket limits its own. */
+    placesChanged() {
+      if (!this.ticketsLimited || !this.form.id) return false;
+      const stored = this.eventEditPage.stored("attendees.maxAttendees");
+      return (this.attendees.maxAttendees ?? null) !== (stored ?? null);
     },
   },
   methods: {
@@ -31,6 +52,23 @@ export default {
       this.update("attendees", "needsRegistration", patch.needsRegistration);
       this.update(null, "externalBookingUrl", patch.externalBookingUrl);
       this.setRegistrationMode(mode);
+    },
+    async loadTickets() {
+      if (!this.form.id) {
+        this.ticketsLimited = false;
+        return;
+      }
+      try {
+        const response = await ApiBookablesService.getBookables();
+        this.ticketsLimited = (response.data || []).some(
+          (b) =>
+            b.type === "ticket" &&
+            b.eventId === this.form.id &&
+            Number(b.amount) > 0
+        );
+      } catch (error) {
+        this.ticketsLimited = false;
+      }
     },
     setMax(value) {
       const number = parseInt(value, 10);
@@ -97,6 +135,16 @@ export default {
           data-test="event-max-attendees"
           @input="setMax"
         />
+        <v-alert
+          v-if="placesChanged"
+          dense
+          text
+          type="warning"
+          class="mt-3 mb-0 text-body-2"
+          data-test="places-changed"
+        >
+          {{ $t("event.edit.participation.placesChanged") }}
+        </v-alert>
       </div>
       <div class="event-edit__field">
         <div class="event-edit__label">

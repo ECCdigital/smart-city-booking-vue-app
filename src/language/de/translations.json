@@ -1208,6 +1208,7 @@
         },
         "max": "Teilnahmeplätze",
         "maxHint": "So viele Personen können sich höchstens anmelden, über alle Tickets zusammen.",
+        "placesChanged": "Sie haben die Anzahl der Teilnahmeplätze geändert. Einzelne Tickets haben eine begrenzte Anzahl. Bitte prüfen Sie, ob die Anzahl der Tickets noch ausreicht.",
         "audience": "Wer kann sich anmelden?",
         "audienceAll": {
           "label": "Alle",
@@ -1275,7 +1276,7 @@
           "intro": "Legen Sie Tickets für bestimmte Kategorien oder Personengruppen fest, z. B. Regulär, Kinder und Ermäßigt.",
           "name": "Name des Tickets",
           "amount": "Anzahl",
-          "amountHint": "Höchstens {max}, so viele Teilnahmeplätze hat die Veranstaltung.",
+          "amountHint": "Ohne Angabe sind maximal {max} Tickets dieser Art verfügbar.",
           "amountMin": "Bitte mindestens 1 eintragen.",
           "amountMax": "Höchstens {max}, so viele Teilnahmeplätze hat die Veranstaltung.",
           "price": "Preis pro Ticket",

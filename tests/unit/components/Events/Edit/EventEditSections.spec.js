@@ -78,6 +78,55 @@ describe("EventEditParticipation", () => {
   });
 });
 
+describe("EventEditParticipation: changed places", () => {
+  const event = {
+    id: "e-1",
+    attendees: { needsRegistration: true, maxAttendees: 20 },
+  };
+  // The page as saved: 20 places.
+  const page = { stored: () => 20 };
+
+  it("notes it under the field when a ticket limits its own number", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [{ id: "t-1", type: "ticket", eventId: "e-1", amount: 5 }],
+    });
+    const { wrapper } = await mount(EventEditParticipation, { event, page });
+    expect(find(wrapper, "places-changed").exists()).toBe(false);
+
+    wrapper.vm.setMax("25");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "places-changed").text()).toContain(
+      "Sie haben die Anzahl der Teilnahmeplätze geändert."
+    );
+  });
+
+  it("drops the note once the places are the saved ones again", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [{ id: "t-1", type: "ticket", eventId: "e-1", amount: 5 }],
+    });
+    const { wrapper } = await mount(EventEditParticipation, { event, page });
+
+    wrapper.vm.setMax("25");
+    wrapper.vm.setMax("20");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "places-changed").exists()).toBe(false);
+  });
+
+  it("notes nothing when no ticket limits its number", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [{ id: "t-1", type: "ticket", eventId: "e-1", amount: null }],
+    });
+    const { wrapper } = await mount(EventEditParticipation, { event, page });
+
+    wrapper.vm.setMax("25");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "places-changed").exists()).toBe(false);
+  });
+});
+
 describe("EventEditProgram", () => {
   const event = (schedules) => ({
     information: { startDate: "2026-11-21", endDate: "2026-11-21" },

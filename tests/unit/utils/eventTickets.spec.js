@@ -60,6 +60,10 @@ describe("newTicket", () => {
     expect(ticket.priceCategories[0].priceEur).toBe(12.5);
   });
 
+  it("leaves the number open without one: the event's places limit it", () => {
+    expect(newTicket({}, "e-1", form({ amount: "" })).amount).toBe(null);
+  });
+
   it("is bookable and shown at once", () => {
     expect(ticket.isBookable).toBe(true);
     expect(ticket.isPublic).toBe(true);

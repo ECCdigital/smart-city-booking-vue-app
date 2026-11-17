@@ -12,9 +12,13 @@ import {
   ticketFormOf,
 } from "@/utils/eventTickets";
 
+const isBlank = (value) =>
+  value === null || value === undefined || String(value).trim() === "";
+
 /**
  * A ticket of the event in short (`eventTickets`): its name, how many there
- * are and the price per ticket. Without `ticketId` it creates one, named
+ * are - none given, the event's Teilnahmeplätze are the limit - and the
+ * price per ticket. Without `ticketId` it creates one, named
  * after the event; with it, it edits that ticket and leaves everything else
  * of it as it is. „Detail-Modus öffnen“ leads to the ticket's editing page.
  * Emits `saved` and `close`.
@@ -52,10 +56,14 @@ export default {
       const max = this.maxAttendees;
       return {
         title: [(v) => !!(v || "").trim() || this.$t("validation.required")],
+        // Empty is fine: then the event's Teilnahmeplätze are the limit.
         amount: [
           (v) =>
-            Number(v) >= 1 || this.$t("event.edit.tickets.dialog.amountMin"),
+            isBlank(v) ||
+            Number(v) >= 1 ||
+            this.$t("event.edit.tickets.dialog.amountMin"),
           (v) =>
+            isBlank(v) ||
             !max ||
             Number(v) <= max ||
             this.$t("event.edit.tickets.dialog.amountMax", { max }),
@@ -89,7 +97,7 @@ export default {
           ).data;
           this.form = {
             title: defaultTicketTitle(this.eventName),
-            amount: this.maxAttendees || null,
+            amount: null,
             price: "0,00",
           };
         } else {
@@ -160,7 +168,7 @@ export default {
         <v-col cols="12" sm="6">
           <v-text-field
             v-model="form.amount"
-            :label="$t('event.edit.tickets.dialog.amount') + ' *'"
+            :label="$t('event.edit.tickets.dialog.amount')"
             :hint="
               maxAttendees
                 ? $t('event.edit.tickets.dialog.amountHint', {
