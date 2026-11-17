@@ -2932,8 +2932,7 @@
         },
         "kinds": {
           "door": "1 Tür | {count} Türen",
-          "lockerSystem": "1 Schließfachanlage | {count} Schließfachanlagen",
-          "fixedCompartment": "1 festes Fach | {count} feste Fächer"
+          "lockerSystem": "1 Schließfachanlage | {count} Schließfachanlagen"
         },
         "and": "und",
         "failing": {
@@ -2970,8 +2969,7 @@
         "removeBlocked": "Erst alle {things} löschen.",
         "removeKinds": {
           "door": "Türen",
-          "lockerSystem": "Schließfachanlagen",
-          "fixedCompartment": "festen Fächer"
+          "lockerSystem": "Schließfachanlagen"
         },
         "caption": {
           "checked": "Geprüft.",
@@ -3083,7 +3081,6 @@
         },
         "kind": {
           "lockerSystem": "Schließfachanlage",
-          "fixedCompartment": "festes Fach",
           "compartments": "1 Fach | {count} Fächer"
         }
       },
@@ -3134,13 +3131,11 @@
         "productId": "Produkt-ID",
         "productIdHint": "Ändern Sie die Produkt-ID, um die Schließfachanlage bei Pareva auszutauschen.",
         "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746",
-        "compartmentUuid": "UUID des Fachs",
-        "compartmentUuidHint": "Die UUID des Fachs in Open Locker. Ändern Sie sie, um das Fach auszutauschen.",
         "bookableIds": "Buchungsobjekte"
       },
       "compartments": {
         "title": "Fächer der Schließfachanlage",
-        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Schließfachanlage stehen oder ein festes Fach sind, stehen nicht zur Wahl.",
+        "hint": "Wählen Sie die Fächer der Schließfachanlage aus der Liste des Anbieters, auch aus mehreren Schließfachschränken. Fächer, die schon in einer anderen Schließfachanlage stehen, stehen nicht zur Wahl.",
         "lockerBank": "Schrank {name}",
         "compartment": "Fach {number}",
         "outOfService": "außer Betrieb",
@@ -3238,19 +3233,16 @@
         "loses": {
           "one": {
             "door": "{names} verliert die Tür.",
-            "lockerSystem": "{names} verliert die Schließfachanlage.",
-            "fixedCompartment": "{names} verliert das feste Fach."
+            "lockerSystem": "{names} verliert die Schließfachanlage."
           },
           "other": {
             "door": "{names} verlieren die Tür.",
-            "lockerSystem": "{names} verlieren die Schließfachanlage.",
-            "fixedCompartment": "{names} verlieren das feste Fach."
+            "lockerSystem": "{names} verlieren die Schließfachanlage."
           }
         },
         "bookablesUnchecked": {
           "door": "Ob Buchungsobjekte die Tür verlieren, ließ sich nicht prüfen.",
-          "lockerSystem": "Ob Buchungsobjekte die Schließfachanlage verlieren, ließ sich nicht prüfen.",
-          "fixedCompartment": "Ob Buchungsobjekte das feste Fach verlieren, ließ sich nicht prüfen."
+          "lockerSystem": "Ob Buchungsobjekte die Schließfachanlage verlieren, ließ sich nicht prüfen."
         },
         "names": {
           "last": "{names} und {last}",
@@ -3279,19 +3271,8 @@
           "lockerSystem": {
             "create": "Schließfachanlage anlegen",
             "edit": "Schließfachanlage bearbeiten",
-            "noun": "Schließfachanlage",
-            "choice": "Schließfachanlage"
-          },
-          "fixedCompartment": {
-            "create": "Festes Fach anlegen",
-            "edit": "Festes Fach bearbeiten",
-            "noun": "Fach",
-            "choice": "Festes Fach"
+            "noun": "Schließfachanlage"
           }
-        },
-        "typeHints": {
-          "lockerSystem": "Biletado teilt jeder Buchung ein freies Fach der Schließfachanlage zu.",
-          "fixedCompartment": "Alle Buchungen des Buchungsobjekts teilen sich dieses eine Fach."
         },
         "pickTitle": "{noun} aus der Liste von {provider} wählen",
         "byHandRow": "Nicht in der Liste: {noun} von Hand eintragen",
@@ -3346,7 +3327,7 @@
         "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
         "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
-        "compartmentIsFixed": "Das Fach ist schon als festes Fach „{label}“ angelegt.",
+        "openLockerLockerOnly": "Bei Open Locker gibt es nur Schließfachanlagen. Legen Sie eine Schließfachanlage an, auch für ein einzelnes Fach.",
         "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },

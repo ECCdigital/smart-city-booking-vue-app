@@ -3,7 +3,6 @@ import {
   accessPointFields,
   accessPointKind,
   DOOR_KIND,
-  FIXED_COMPARTMENT_KIND,
   kindNoun,
 } from "@/utilities/access-point-fields";
 import {
@@ -34,8 +33,8 @@ const tc = (key, count) =>
 
 /**
  * The kind of the access point as the small line names it: „Schließfachanlage
- * · 12 Fächer“, „Schließfachanlage“ or „festes Fach“; empty for a door, whose
- * kind the section already says.
+ * · 12 Fächer“ or „Schließfachanlage“; empty for a door, whose kind the
+ * section already says.
  *
  * @param {Object} accessPoint The access point
  * @returns {string}
@@ -43,7 +42,6 @@ const tc = (key, count) =>
 export function kindLabel(accessPoint) {
   const kind = accessPointKind(accessPoint);
   if (kind === DOOR_KIND) return "";
-  if (kind === FIXED_COMPARTMENT_KIND) return t("kind.fixedCompartment");
   if (!carriesOwnCompartments(accessPoint)) return t("kind.lockerSystem");
   return [
     t("kind.lockerSystem"),

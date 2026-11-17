@@ -656,7 +656,12 @@ describe("AccessPoints shows how far the setup is", () => {
     const wrapper = await mountAccessPointsPage({
       apps: [storedApp("nuki"), storedApp("pareva")],
       providers: [NUKI, PAREVA, OPEN_LOCKER],
-      accessPoints: [DOOR, PAREVA_LOCKER, OPEN_LOCKER_FACH, OPEN_LOCKER_ANLAGE],
+      accessPoints: [
+        DOOR,
+        PAREVA_LOCKER,
+        OPEN_LOCKER_SCHLUESSEL,
+        OPEN_LOCKER_ANLAGE,
+      ],
       bookables: [
         {
           id: "b1",
@@ -986,10 +991,13 @@ describe("AccessPoints switches a provider off and on", () => {
     expect(switchOffQuestion(wrapper, "Nuki").exists()).toBe(false);
   });
 
-  it("names Schließfachanlage and festes Fach apart, in the singular", async () => {
+  it("names only Schließfachanlagen at Open Locker", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],
-      accessPoints: [OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      accessPoints: [
+        OPEN_LOCKER_ANLAGE,
+        { ...OPEN_LOCKER_ANLAGE, id: "anlage-2", label: "Schlüssel Raum 1" },
+      ],
       apps: [storedApp("open-locker")],
     });
 
@@ -997,7 +1005,7 @@ describe("AccessPoints switches a provider off and on", () => {
     await settle(wrapper);
 
     expect(switchOffQuestion(wrapper, "Open Locker").text()).toContain(
-      "1 Schließfachanlage und 1 festes Fach öffnen dann nicht mehr"
+      "Open Locker ausschalten? 2 Schließfachanlagen öffnen dann nicht mehr, auch nicht für laufende Buchungen."
     );
   });
 
@@ -2561,7 +2569,7 @@ describe("AccessPoints removes the connection of a provider", () => {
   it("bars the removal while the section has access points, and says why", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [NUKI, OPEN_LOCKER],
-      accessPoints: [DOOR, OPEN_LOCKER_ANLAGE, OPEN_LOCKER_FACH],
+      accessPoints: [DOOR, OPEN_LOCKER_ANLAGE],
       apps: [NUKI_STORED, storedApp("open-locker")],
     });
 
@@ -2576,7 +2584,7 @@ describe("AccessPoints removes the connection of a provider", () => {
     const openLocker = await openSettings(wrapper, "Open Locker");
     expect(
       openLocker.find("[data-test='access-app-remove-blocked']").text()
-    ).toBe("Erst alle Schließfachanlagen und festen Fächer löschen.");
+    ).toBe("Erst alle Schließfachanlagen löschen.");
     expect(ApiAccessAppsService.removeApp).not.toHaveBeenCalled();
   });
 
@@ -2833,6 +2841,26 @@ const OPEN_LOCKER_FACH = {
   label: "Labor Fachbank 1 · Fach 2",
   externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
   validationRules: [],
+};
+
+/** A Schließfachanlage of Open Locker with a single Fach, the key to a room. */
+const OPEN_LOCKER_SCHLUESSEL = {
+  id: "ap-open-locker-schluessel",
+  type: "locker",
+  mode: "remote",
+  provider: "open-locker",
+  label: "Schlüssel Raum 1",
+  validationRules: [],
+  config: {
+    compartments: [
+      {
+        id: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
+        number: 2,
+        lockerBank: { id: "bank-labor", name: "Labor Fachbank 1" },
+        outOfService: false,
+      },
+    ],
+  },
 };
 
 function rowOf(wrapper, label) {
@@ -3206,17 +3234,17 @@ describe("AccessPoints asks before deleting, one sentence per consequence", () =
     ]);
   });
 
-  it("names the fixed Fach that a bookable loses", async () => {
+  it("names only what the bookable of an Open Locker Schließfachanlage loses", async () => {
     const wrapper = await mountAccessPointsPage({
       providers: [OPEN_LOCKER],
-      accessPoints: [OPEN_LOCKER_FACH],
-      bookables: bookablesAt(OPEN_LOCKER_FACH, "Laborschrank", "Werkbank"),
+      accessPoints: [OPEN_LOCKER_ANLAGE],
+      bookables: bookablesAt(OPEN_LOCKER_ANLAGE, "Schlüssel Raum 1"),
     });
 
-    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "delete");
+    await clickRowAction(wrapper, "Fahrradgarage Süd", "delete");
 
     expect(consequences(wrapper)).toEqual([
-      "Laborschrank und Werkbank verlieren das feste Fach.",
+      "Schlüssel Raum 1 verliert die Schließfachanlage.",
     ]);
   });
 
@@ -3403,7 +3431,6 @@ describe("AccessPoints shows each access point as a slim row", () => {
           location: { display_address: "Rathausplatz 1, 24103 Kiel" },
         },
         PAREVA_LOCKER,
-        OPEN_LOCKER_FACH,
         OPEN_LOCKER_ANLAGE,
       ],
     });
@@ -3413,9 +3440,6 @@ describe("AccessPoints shows each access point as a slim row", () => {
     );
     expect(metaOf(wrapper, "Schließfächer Rathaus")).toBe(
       "Schließfachanlage · 66570d1a1f9b6357ed971746"
-    );
-    expect(metaOf(wrapper, "Labor Fachbank 1 · Fach 2")).toBe(
-      "festes Fach · 4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d"
     );
     expect(metaOf(wrapper, "Fahrradgarage Süd")).toBe(
       "Schließfachanlage · 1 Fach"
@@ -3815,7 +3839,7 @@ describe("AccessPoints marks what differs from the standard", () => {
         DOOR,
         { ...DOOR, id: "ap-side", label: "Seiteneingang", validationRules: [] },
         PAREVA_LOCKER,
-        OPEN_LOCKER_FACH,
+        OPEN_LOCKER_SCHLUESSEL,
         {
           ...OPEN_LOCKER_ANLAGE,
           validationRules: [{ type: "qrScan" }],
@@ -3828,7 +3852,7 @@ describe("AccessPoints marks what differs from the standard", () => {
     const wrapper = await mountWithScans();
 
     expect(markersOf(wrapper, "Haupteingang")).toEqual([]);
-    expect(markersOf(wrapper, "Labor Fachbank 1 · Fach 2")).toEqual([]);
+    expect(markersOf(wrapper, "Schlüssel Raum 1")).toEqual([]);
     expect(markersOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
   });
 
@@ -3898,7 +3922,7 @@ describe("AccessPoints marks what differs from the provider's listing", () => {
         NUKI_BY_HAND,
         PAREVA_LOCKER,
         SALTO_DOOR,
-        OPEN_LOCKER_FACH,
+        OPEN_LOCKER_SCHLUESSEL,
       ],
       apps: [storedApp("nuki"), storedSalto()],
       listings: {
@@ -3929,7 +3953,7 @@ describe("AccessPoints marks what differs from the provider's listing", () => {
     const wrapper = await mountListed();
 
     expect(markersOf(wrapper, "Schließfächer Rathaus")).toEqual([]);
-    expect(markersOf(wrapper, "Labor Fachbank 1 · Fach 2")).toEqual([]);
+    expect(markersOf(wrapper, "Schlüssel Raum 1")).toEqual([]);
     expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalledWith(
       "t1",
       "pareva"
@@ -3962,7 +3986,7 @@ describe("AccessPoints marks what differs from the provider's listing", () => {
                 NUKI_BY_HAND.id,
                 PAREVA_LOCKER.id,
                 SALTO_DOOR.id,
-                OPEN_LOCKER_FACH.id,
+                OPEN_LOCKER_SCHLUESSEL.id,
               ],
             },
           },
@@ -4051,7 +4075,7 @@ describe("AccessPoints searches over all sections", () => {
           location: { display_address: "Holstenstraße 1, 24103 Kiel" },
         },
         PAREVA_LOCKER,
-        OPEN_LOCKER_FACH,
+        OPEN_LOCKER_SCHLUESSEL,
         OPEN_LOCKER_ANLAGE,
       ],
       bookables: [
@@ -4075,7 +4099,6 @@ describe("AccessPoints searches over all sections", () => {
     ["the label", "rathaus", "Schließfächer Rathaus"],
     ["the id at the provider", "lock-1", "Haupteingang"],
     ["the Standort", "holstenstraße", "Haupteingang"],
-    ["the kind", "festes fach", "Labor Fachbank 1 · Fach 2"],
     // Story 65 of ECCdigital/tickets#1082: the row of a door names no kind,
     // the search knows it all the same.
     ["the kind of a door", "tür", "Haupteingang"],
@@ -4606,27 +4629,21 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       return wrapper;
     }
 
-    async function chooseType(wrapper, type) {
-      await shown(wrapper, `type-choice-${type}`).trigger("click");
-      await settle(wrapper);
-    }
-
     function compartmentRow(wrapper, id) {
       return pointDialog(wrapper).find(
         `.compartment-row[data-compartment-id='${id}']`
       );
     }
 
-    it("starts as a Schließfachanlage, with a sentence on the choice", async () => {
+    it("creates a Schließfachanlage without a choice of kind", async () => {
       const wrapper = await createAtOpenLocker();
 
       expect(pointDialog(wrapper).text()).toContain(
         "Schließfachanlage anlegen"
       );
-      expect(shown(wrapper, "type-choice").text()).toContain("Festes Fach");
-      expect(shown(wrapper, "type-hint").text()).toBe(
-        "Biletado teilt jeder Buchung ein freies Fach der Schließfachanlage zu."
-      );
+      expect(pointDialog(wrapper).text()).not.toContain("Festes Fach");
+      expect(shown(wrapper, "type-choice").exists()).toBe(false);
+      expect(shown(wrapper, "type-hint").exists()).toBe(false);
       expect(
         pointDialog(wrapper)
           .findAll(".compartment-group-title")
@@ -4635,6 +4652,44 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       expect(shown(wrapper, "settings-summary").text()).toBe(
         "Öffnen per App · ohne QR-Scan · kein Standort"
       );
+    });
+
+    it("keeps the title of a Schließfachanlage with a single Fach ticked", async () => {
+      const wrapper = await createAtOpenLocker();
+
+      await compartmentRow(wrapper, "uuid-2").find("input").trigger("click");
+      await pointDialog(wrapper)
+        .find(".label-field input")
+        .setValue("Schlüssel Raum 1");
+      await settle(wrapper);
+
+      expect(pointDialog(wrapper).text()).toContain(
+        "Schließfachanlage anlegen"
+      );
+      expect(await savePoint(wrapper)).toMatchObject({
+        type: "locker",
+        config: { compartments: [{ id: "uuid-2" }] },
+      });
+    });
+
+    it("offers every Fach that stands in no other Schließfachanlage", async () => {
+      const wrapper = await createAtOpenLocker([
+        {
+          ...OPEN_LOCKER_ANLAGE,
+          id: "anlage-andere",
+          config: { compartments: [{ id: "uuid-1" }] },
+        },
+        // A door of Open Locker from before holds no Fach.
+        { ...OPEN_LOCKER_FACH, externalId: "uuid-2" },
+      ]);
+
+      expect(compartmentRow(wrapper, "uuid-1").exists()).toBe(false);
+      expect(compartmentRow(wrapper, "uuid-2").exists()).toBe(true);
+      expect(compartmentRow(wrapper, "uuid-3").exists()).toBe(true);
+      expect(pointDialog(wrapper).text()).toContain(
+        "Fächer, die schon in einer anderen Schließfachanlage stehen, stehen nicht zur Wahl."
+      );
+      expect(pointDialog(wrapper).text()).not.toContain("festes Fach");
     });
 
     it("saves the Fächer ticked for the Schließfachanlage", async () => {
@@ -4681,42 +4736,6 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
       );
       expect(await savePoint(wrapper)).toMatchObject({
         validationRules: [{ type: "qrScan" }],
-      });
-    });
-
-    it("offers a fixed Fach from the Fächer by Schrank, without a QR switch", async () => {
-      const wrapper = await createAtOpenLocker([
-        { ...OPEN_LOCKER_FACH, externalId: "uuid-2" },
-      ]);
-
-      await chooseType(wrapper, "door");
-
-      expect(pointDialog(wrapper).text()).toContain("Festes Fach anlegen");
-      expect(shown(wrapper, "type-hint").text()).toBe(
-        "Alle Buchungen des Buchungsobjekts teilen sich dieses eine Fach."
-      );
-      expect(pointDialog(wrapper).text()).toContain(
-        "Fach aus der Liste von Open Locker wählen"
-      );
-      expect(
-        pointDialog(wrapper)
-          .findAll("[data-test='pick-group']")
-          .wrappers.map((group) => group.text())
-      ).toEqual(["Schrank Labor Fachbank 1", "Schrank Quartiersschrank Hafen"]);
-      expect(pickEntry(wrapper, "Fach 2").text()).toContain("schon angelegt");
-      expect(shown(wrapper, "pick-manual").exists()).toBe(false);
-      expect(shown(wrapper, "settings-summary").text()).toBe(
-        "Öffnen per App · kein Standort"
-      );
-
-      await choose(wrapper, "Fach 3");
-
-      expect(await savePoint(wrapper)).toMatchObject({
-        provider: "open-locker",
-        type: "door",
-        externalId: "uuid-3",
-        label: "Quartiersschrank Hafen · Fach 3",
-        providerLocationId: null,
       });
     });
   });

@@ -46,7 +46,7 @@ export default {
     label() {
       return accessPointLabel(this.accessPoint);
     },
-    // „door“, „lockerSystem“ or „fixedCompartment“: what the bookables lose.
+    // „door“ or „lockerSystem“: what the bookables lose.
     kind() {
       return accessPointKind(this.accessPoint);
     },

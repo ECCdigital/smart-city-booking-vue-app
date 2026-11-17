@@ -3,7 +3,6 @@ import {
   accessPointFields,
   accessPointKind,
   DOOR_KIND,
-  FIXED_COMPARTMENT_KIND,
   LOCKER_SYSTEM_KIND,
 } from "@/utilities/access-point-fields";
 
@@ -11,11 +10,11 @@ import {
  * What the section of a provider says before it is switched off or its
  * connection removed (ECCdigital/tickets#1107): the access points that
  * stop opening or are in the way, named by their kind - Tür,
- * Schließfachanlage, festes Fach.
+ * Schließfachanlage.
  */
 
 // The kinds in the order they are named.
-const KINDS = [DOOR_KIND, LOCKER_SYSTEM_KIND, FIXED_COMPARTMENT_KIND];
+const KINDS = [DOOR_KIND, LOCKER_SYSTEM_KIND];
 
 /**
  * How many access points of each kind there are, the kinds without any left

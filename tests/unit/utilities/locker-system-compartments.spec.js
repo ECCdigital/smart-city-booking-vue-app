@@ -6,6 +6,7 @@ import {
   compartmentsByLockerBank,
   leavingCompartmentIds,
   compartmentTitle,
+  heldCompartmentIds,
   lockerSystemIdsLinkedElsewhere,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -48,10 +49,11 @@ describe("whether an access point carries its own Fächer", () => {
 });
 
 /**
- * A Fach stands in at most one Anlage and is then no fixed Fach: what the
- * other access points of the provider already hold is not to be chosen.
+ * A Fach stands in at most one Anlage (ECCdigital/tickets#1162): the Fächer
+ * the other Anlagen of the provider hold are not to be chosen, and nothing
+ * else holds a Fach.
  */
-describe("the Fächer other access points hold", () => {
+describe("the Fächer other Anlagen hold", () => {
   const accessPoints = [
     {
       id: "anlage-1",
@@ -59,6 +61,13 @@ describe("the Fächer other access points hold", () => {
       provider: "open-locker",
       config: { compartments: [{ id: UUID_1 }] },
     },
+    {
+      id: "anlage-2",
+      type: "locker",
+      provider: "open-locker",
+      config: { compartments: [{ id: UUID_4 }] },
+    },
+    // A door of Open Locker from before: it holds no Fach.
     {
       id: "fach-1",
       type: "door",
@@ -68,12 +77,27 @@ describe("the Fächer other access points hold", () => {
     { id: "tuer-1", type: "door", provider: "nuki", externalId: UUID_3 },
   ];
 
-  it("names those in another Anlage and the fixed Fächer of the provider", () => {
+  it("names the Fächer of the other Anlagen of the provider, nothing else", () => {
     expect(
-      [...takenProviderIds(accessPoints, { provider: "open-locker" })].sort()
-    ).toEqual([UUID_1, UUID_2].sort());
+      [...heldCompartmentIds(accessPoints, { provider: "open-locker" })].sort()
+    ).toEqual([UUID_1, UUID_4].sort());
   });
 
+  it("leaves out the Anlage being edited", () => {
+    expect([
+      ...heldCompartmentIds(accessPoints, {
+        provider: "open-locker",
+        exceptId: "anlage-1",
+      }),
+    ]).toEqual([UUID_4]);
+  });
+});
+
+/**
+ * A lock of the provider's listing that another access point already
+ * stands for is created already.
+ */
+describe("the ids other access points stand for", () => {
   it("names what any other access point of the provider stands for, a Schließfachanlage of iFBS too", () => {
     const ifbs = [
       { id: "box-1", type: "locker", provider: "ifbs", externalId: "S" },
@@ -86,13 +110,14 @@ describe("the Fächer other access points hold", () => {
     ]);
   });
 
-  it("leaves out the Anlage being edited", () => {
+  it("leaves out the access point being edited", () => {
+    const doors = [
+      { id: "tuer-1", type: "door", provider: "nuki", externalId: "lock-1" },
+      { id: "tuer-2", type: "door", provider: "nuki", externalId: "lock-2" },
+    ];
     expect([
-      ...takenProviderIds(accessPoints, {
-        provider: "open-locker",
-        exceptId: "anlage-1",
-      }),
-    ]).toEqual([UUID_2]);
+      ...takenProviderIds(doors, { provider: "nuki", exceptId: "tuer-1" }),
+    ]).toEqual(["lock-2"]);
   });
 });
 

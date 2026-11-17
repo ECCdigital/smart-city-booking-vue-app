@@ -11,6 +11,7 @@ import {
 } from "@/utilities/access-point-errors";
 import {
   carriesOwnCompartments,
+  heldCompartmentIds,
   leavingCompartmentIds,
   takenProviderIds,
 } from "@/utilities/locker-system-compartments";
@@ -29,7 +30,7 @@ import {
 } from "@/utilities/access-points";
 import {
   accessPointFields,
-  accessPointTypes,
+  accessPointType,
   settingsSummary,
 } from "@/utilities/access-point-fields";
 import { iqNotActivated, printsQr } from "@/utilities/access-point-rows";
@@ -186,13 +187,6 @@ export default {
         provider
       );
     },
-    // Asked only of Open Locker, and only for a new access point: a stored
-    // one keeps the type its bookings were made with.
-    typeOptions() {
-      if (this.isEdit) return [];
-      const types = accessPointTypes(this.form.provider);
-      return types.length < 2 ? [] : types;
-    },
     // The listing is there where the provider has one and lists it - an
     // active provider with `listAccessPoints`. Without it the id is typed in.
     canList() {
@@ -212,13 +206,17 @@ export default {
     showIdField() {
       return this.choosing && (!this.canList || this.manual);
     },
-    // A Fach of an Anlage that carries its own is taken as well: it is no
-    // fixed Fach once it stands in an Anlage.
+    // What another access point of the provider stands for: for an Anlage
+    // that carries its own Fächer, the Fächer of the other Anlagen; for every
+    // other access point, the ids of the provider's locks.
     taken() {
-      return takenProviderIds(this.accessPoints, {
+      const others = {
         provider: this.form.provider,
         exceptId: this.form.id,
-      });
+      };
+      return this.fields.compartments
+        ? heldCompartmentIds(this.accessPoints, others)
+        : takenProviderIds(this.accessPoints, others);
     },
     entries() {
       return this.listing.map((lock) => {
@@ -280,12 +278,6 @@ export default {
     },
     iqWarning() {
       return !!this.entry?.iqOff;
-    },
-    typeHint() {
-      if (!this.typeOptions.length) return "";
-      return this.$t(
-        `accessPoint.management.dialog.typeHints.${this.fields.kind}`
-      );
     },
     // A new access point starts with the rule the server would default to
     // for it, so what the switch shows is what an untouched create
@@ -422,7 +414,7 @@ export default {
         ...emptyForm(),
         ...source,
         provider,
-        type: source?.type || accessPointTypes(provider)[0],
+        type: source?.type || accessPointType(provider),
       };
       this.form.label = this.form.label || "";
       this.form.externalId = this.form.externalId || "";
@@ -514,20 +506,6 @@ export default {
     },
     swap() {
       this.swapping = true;
-      this.manual = false;
-    },
-    // What Open Locker's choice of type is called, by the kind it makes.
-    typeChoiceLabel(type) {
-      const { kind } = accessPointFields(this.form.provider, type);
-      return this.$t(`accessPoint.management.dialog.kinds.${kind}.choice`);
-    },
-    // Open Locker's choice starts the lock afresh: an Anlage has Fächer, a
-    // fixed Fach one id.
-    chooseType(type) {
-      this.form.type = type;
-      this.form.externalId = "";
-      this.compartments = [];
-      this.compartmentErrors = {};
       this.manual = false;
     },
     isSelected(entry) {
@@ -763,37 +741,6 @@ export default {
 
       <v-card-text class="pa-6">
         <v-form ref="form" @submit.prevent>
-          <!-- Open Locker: the one real choice of type -->
-          <template v-if="typeOptions.length">
-            <v-btn-toggle
-              :value="form.type"
-              mandatory
-              dense
-              color="primary"
-              class="d-flex mb-1"
-              data-test="type-choice"
-              @change="chooseType"
-            >
-              <v-btn
-                v-for="type in typeOptions"
-                :key="type"
-                :value="type"
-                :data-test="`type-choice-${type}`"
-                class="flex-grow-1"
-                text
-                small
-              >
-                {{ typeChoiceLabel(type) }}
-              </v-btn>
-            </v-btn-toggle>
-            <div
-              class="text-caption text--secondary mb-4"
-              data-test="type-hint"
-            >
-              {{ typeHint }}
-            </div>
-          </template>
-
           <!-- Editing: the lock as one line, swapped on demand -->
           <div v-if="showLockLine" class="lock-line mb-4" data-test="lock-line">
             <v-icon small class="mr-3">mdi-link-variant</v-icon>
