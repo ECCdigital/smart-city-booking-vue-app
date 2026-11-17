@@ -9,61 +9,18 @@
         <!-- The guided flow's bar stands in for this row, the page title and
              the status band: the way back, the bookable and the switches,
              each over its column of the flow. -->
-        <header
+        <FlowBar
           v-if="flowMode"
-          class="flow-bar"
-          :class="{ 'flow-bar--steps': flowStepColumn }"
-          data-test="flow-bar"
+          :type-label="$t(`editBookables.types.${bookable.type || type}`)"
+          :name="bookable.title || ''"
+          :new-label="$t(`bookable.flow.bar.new.${bookable.type || type}`)"
+          :id="bookableID || null"
+          :show-back="!flowOutcome"
+          :steps-column="flowStepColumn"
+          @leave="leaveFlow"
+          @copy-id="copyBookableId"
         >
-          <div class="flow-bar__back">
-            <v-btn
-              v-if="!flowOutcome"
-              small
-              text
-              class="flow-bar__back-btn"
-              data-test="flow-leave"
-              @click="leaveFlow"
-            >
-              <v-icon left small>mdi-arrow-left</v-icon>
-              {{ $t("bookable.flow.leave") }}
-            </v-btn>
-          </div>
-          <div class="flow-bar__object">
-            <h1 class="flow-bar__name" data-test="flow-bar-name">
-              <template v-if="!bookableID && !bookable.title">
-                {{ $t(`bookable.flow.bar.new.${bookable.type || type}`) }}
-              </template>
-              <template v-else>
-                <span class="flow-bar__type">
-                  {{ $t(`editBookables.types.${bookable.type || type}`) }}
-                </span>
-                <span class="flow-bar__title">
-                  {{ bookable.title || $t("bookable.edit.untitled") }}
-                </span>
-              </template>
-            </h1>
-            <!-- The ID, to copy, as the editor's row shows it. -->
-            <v-tooltip v-if="bookableID" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="bookable-id-copy flow-bar__id text--secondary"
-                  v-bind="attrs"
-                  v-on="on"
-                  data-test="flow-bar-id"
-                  @click="copyBookableId"
-                >
-                  <span class="bookable-id-text">{{
-                    $t("bookable.edit.id", { id: bookableID })
-                  }}</span>
-                  <v-icon x-small class="ml-1 flex-shrink-0">
-                    mdi-content-copy
-                  </v-icon>
-                </span>
-              </template>
-              <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
-            </v-tooltip>
-          </div>
-          <div class="flow-bar__actions">
+          <template #actions>
             <v-switch
               v-if="expertModeToggleVisible"
               :input-value="expertMode"
@@ -82,8 +39,8 @@
             >
               {{ $t("bookable.edit.unsavedChanges") }}
             </v-chip>
-          </div>
-        </header>
+          </template>
+        </FlowBar>
 
         <div v-else class="page-content__meta mb-2">
           <div class="page-content__meta-info text--secondary">
@@ -252,6 +209,7 @@ import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPubl
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
 import EditorNav from "@/components/commons/EditorNav.vue";
+import FlowBar from "@/components/commons/FlowBar.vue";
 import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
 import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
@@ -296,6 +254,7 @@ export default {
     BookableFlow,
     BookableEditTab,
     EditorNav,
+    FlowBar,
   },
   mixins: [unsavedChangesGuard],
   props: {
@@ -933,100 +892,6 @@ export default {
   align-items: center;
   flex: 0 0 auto;
   gap: var(--scb-space-2);
-}
-
-/* The guided flow's bar: one line across the page, closed by a rule, as wide
-   as the editor's row - the actions end at the right edge. From xl the back
-   cell is as wide as the step list, so the name starts over the step column;
-   below that the line is plain. */
-.flow-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--scb-gap-columns);
-  min-height: 40px;
-  margin-bottom: var(--scb-space-4);
-  padding-bottom: var(--scb-space-2);
-  border-bottom: 1px solid var(--scb-rule);
-}
-
-.flow-bar__back {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.flow-bar--steps .flow-bar__back {
-  min-width: var(--scb-nav-width-min);
-  max-width: var(--scb-nav-width-max);
-}
-
-/* Flush with the step list below; the page body clips what reaches past
-   its left edge, so no negative margin here. */
-.flow-bar__back-btn {
-  margin-left: 0;
-  color: var(--scb-text-muted);
-}
-
-.flow-bar__object {
-  display: flex;
-  align-items: baseline;
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: var(--scb-space-4);
-}
-
-.flow-bar__name {
-  flex: 0 1 auto;
-  min-width: 0;
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: var(--scb-font-weight-semibold);
-  line-height: var(--scb-line-height-tight);
-  color: var(--scb-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.flow-bar__id {
-  flex: 0 1 auto;
-  font-size: var(--scb-font-size-sm);
-}
-
-.flow-bar__type {
-  margin-right: var(--scb-space-2);
-  font-size: var(--scb-font-size-sm);
-  font-weight: normal;
-  color: var(--scb-text-muted);
-}
-
-.flow-bar__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  gap: var(--scb-space-2);
-  margin-left: auto;
-}
-
-@media (max-width: 599px) {
-  .flow-bar {
-    flex-wrap: wrap;
-    gap: var(--scb-space-2) var(--scb-space-3);
-  }
-
-  .flow-bar__object {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-    order: 3;
-    gap: var(--scb-space-1) var(--scb-space-3);
-  }
-
-  .flow-bar__name {
-    flex: 1 1 100%;
-    white-space: normal;
-  }
 }
 
 .bookable-id-text {

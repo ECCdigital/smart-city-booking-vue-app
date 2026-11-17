@@ -5,39 +5,28 @@
 
       <!-- The guided flow's bar stands in for the page title, the meta row
            and the publication band, as in the bookable editor. -->
-      <header v-if="flowMode" class="event-edit__flow-bar" data-test="flow-bar">
-        <v-btn
-          small
-          text
-          class="event-edit__flow-back"
-          data-test="flow-leave"
-          @click="leaveFlow"
-        >
-          <v-icon left small>mdi-arrow-left</v-icon>
-          {{ $t("bookable.flow.leave") }}
-        </v-btn>
-        <h1 class="event-edit__flow-name" data-test="flow-bar-name">
-          <template v-if="!eventId && !form.information.name">
-            {{ $t("event.flow.new") }}
-          </template>
-          <template v-else>
-            <span class="event-edit__flow-type">{{
-              $t("event.flow.type")
-            }}</span>
-            {{ form.information.name || $t("event.edit.untitled") }}
-          </template>
-        </h1>
-        <v-chip
-          v-if="hasUnsavedChanges"
-          color="warning"
-          text-color="black"
-          small
-          label
-          class="ml-auto"
-        >
-          {{ $t("bookable.edit.unsavedChanges") }}
-        </v-chip>
-      </header>
+      <FlowBar
+        v-if="flowMode"
+        :type-label="$t('event.flow.type')"
+        :name="form.information.name || ''"
+        :new-label="$t('event.flow.new')"
+        :id="eventId"
+        :steps-column="$vuetify.breakpoint.xl"
+        @leave="leaveFlow"
+        @copy-id="copyId"
+      >
+        <template #actions>
+          <v-chip
+            v-if="hasUnsavedChanges"
+            color="warning"
+            text-color="black"
+            small
+            label
+          >
+            {{ $t("bookable.edit.unsavedChanges") }}
+          </v-chip>
+        </template>
+      </FlowBar>
 
       <template v-else>
         <div class="event-edit__meta mb-2">
@@ -167,6 +156,7 @@ import { mapActions, mapGetters } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
 import BaseSection from "@/components/commons/BaseSection.vue";
 import EditorNav from "@/components/commons/EditorNav.vue";
+import FlowBar from "@/components/commons/FlowBar.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
@@ -194,6 +184,7 @@ export default {
     AdminLayout,
     BaseSection,
     EditorNav,
+    FlowBar,
     SaveBar,
     UnsavedChangesDialog,
     EventEditPublication,
@@ -553,38 +544,6 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--scb-space-2);
-}
-
-/* The guided flow's bar, as the bookable editor's (flow-bar). */
-.event-edit__flow-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--scb-space-2) var(--scb-gap-columns);
-  min-height: 40px;
-  margin-bottom: var(--scb-space-4);
-  padding-bottom: var(--scb-space-2);
-  border-bottom: 1px solid var(--scb-rule);
-}
-
-.event-edit__flow-back {
-  color: var(--scb-text-muted) !important;
-}
-
-.event-edit__flow-name {
-  min-width: 0;
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: var(--scb-font-weight-semibold);
-  line-height: var(--scb-line-height-tight);
-  color: var(--scb-text);
-}
-
-.event-edit__flow-type {
-  margin-right: var(--scb-space-2);
-  font-size: var(--scb-font-size-sm);
-  font-weight: normal;
-  color: var(--scb-text-muted);
 }
 
 .event-edit__meta-title {
