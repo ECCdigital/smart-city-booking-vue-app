@@ -621,10 +621,6 @@ export default {
           // Nothing is published unasked: both switches start off (#362).
           isBookable: false,
           isPublic: false,
-          // A ticket opened from an event's tab „Tickets“ starts linked to it.
-          ...(this.type === "ticket" && this.$route.query.eventId
-            ? { eventId: String(this.$route.query.eventId) }
-            : {}),
         });
       }
       await this.accessPoints.load(

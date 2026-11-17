@@ -4,7 +4,12 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiBookablesService", () => ({
-  default: { getBookables: vi.fn() },
+  default: {
+    getBookables: vi.fn(),
+    getBookable: vi.fn(),
+    createOrUpdateBookable: vi.fn(),
+    deleteBookable: vi.fn(),
+  },
 }));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
@@ -20,16 +25,20 @@ function createStore() {
   return new Vuex.Store({
     modules: {
       events: { ...eventsModule, state: eventsModule.state },
+      toasts: { namespaced: true, actions: { add: () => {} } },
     },
   });
 }
 
-async function mount(component, { event, router } = {}) {
+async function mount(component, { event, router, page } = {}) {
   const store = createStore();
   if (event) await store.dispatch("events/restoreFromApi", event);
   const wrapper = mountComponent(component, {
     store,
     mocks: { $router: router || { push: vi.fn() } },
+    ...(page ? { provide: { eventEditPage: page } } : {}),
+    // The ticket dialog is tested through its rules (`eventTickets`).
+    stubs: { EventTicketDialog: true },
   });
   await flushPromises();
   return { wrapper, store };
@@ -127,20 +136,102 @@ describe("EventEditTickets", () => {
     expect(find(wrapper, "tickets-none-bookable").exists()).toBe(true);
   });
 
-  it("opens the ticket editor with the event chosen", async () => {
+  const page = (dirty, saved = true) => ({
+    isDirty: () => dirty,
+    saveAndStay: vi.fn().mockResolvedValue(saved),
+  });
+
+  it("opens the short ticket form for a saved event", async () => {
     ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
-    const router = { push: vi.fn() };
     const { wrapper } = await mount(EventEditTickets, {
       event: event(),
-      router,
+      page: page(false),
     });
 
     await find(wrapper, "tickets-add").trigger("click");
 
-    expect(router.push).toHaveBeenCalledWith({
-      name: "ticket-edit",
-      query: { eventId: "e-1" },
+    expect(wrapper.vm.dialogTicket).toBe("");
+    expect(wrapper.vm.askSave).toBe(false);
+  });
+
+  it("asks to save an event with unsaved changes first", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+    const saving = page(true);
+    const { wrapper } = await mount(EventEditTickets, {
+      event: event(),
+      page: saving,
     });
+
+    await find(wrapper, "tickets-add").trigger("click");
+    expect(wrapper.vm.askSave).toBe(true);
+    expect(wrapper.vm.dialogTicket).toBe(null);
+
+    await wrapper.vm.saveAndAdd();
+    expect(saving.saveAndStay).toHaveBeenCalled();
+    expect(wrapper.vm.askSave).toBe(false);
+    expect(wrapper.vm.dialogTicket).toBe("");
+  });
+
+  it("keeps the form closed when the save is refused", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+    const { wrapper } = await mount(EventEditTickets, {
+      event: event(),
+      page: page(true, false),
+    });
+
+    await find(wrapper, "tickets-add").trigger("click");
+    await wrapper.vm.saveAndAdd();
+
+    expect(wrapper.vm.dialogTicket).toBe(null);
+  });
+
+  it("edits a listed ticket in the short form", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [{ id: "t-1", type: "ticket", eventId: "e-1", title: "Regulär" }],
+    });
+    const { wrapper } = await mount(EventEditTickets, { event: event() });
+
+    await find(wrapper, "ticket-edit-t-1").trigger("click");
+
+    expect(wrapper.vm.dialogTicket).toBe("t-1");
+  });
+
+  it("hides a bookable ticket: it is saved as not bookable", async () => {
+    const stored = {
+      id: "t-1",
+      type: "ticket",
+      eventId: "e-1",
+      title: "Regulär",
+      isBookable: true,
+    };
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [stored] });
+    ApiBookablesService.getBookable.mockResolvedValue({ data: stored });
+    ApiBookablesService.createOrUpdateBookable.mockResolvedValue({});
+    const { wrapper } = await mount(EventEditTickets, { event: event() });
+
+    await find(wrapper, "ticket-toggle-t-1").trigger("click");
+    await flushPromises();
+
+    expect(ApiBookablesService.createOrUpdateBookable).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "t-1", isBookable: false })
+    );
+  });
+
+  it("deletes a ticket only once the question is confirmed", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [{ id: "t-1", type: "ticket", eventId: "e-1", title: "Regulär" }],
+    });
+    ApiBookablesService.deleteBookable.mockResolvedValue({});
+    const { wrapper } = await mount(EventEditTickets, { event: event() });
+
+    await find(wrapper, "ticket-delete-t-1").trigger("click");
+    expect(wrapper.vm.deleteTicket.id).toBe("t-1");
+    expect(ApiBookablesService.deleteBookable).not.toHaveBeenCalled();
+
+    await wrapper.vm.confirmDelete();
+
+    expect(ApiBookablesService.deleteBookable).toHaveBeenCalledWith("t-1");
+    expect(wrapper.vm.deleteTicket).toBe(null);
   });
 
   it("needs no ticket without registration in the portal", async () => {

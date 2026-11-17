@@ -193,7 +193,15 @@ export default {
   },
   mixins: [unsavedChangesGuard],
   provide() {
-    return { eventEditIssues: this.issueState };
+    return {
+      eventEditIssues: this.issueState,
+      // What a card may ask of the page: whether there is something unsaved,
+      // and a save that stays on the page (the tab „Tickets“).
+      eventEditPage: {
+        isDirty: () => this.hasUnsavedChanges,
+        saveAndStay: () => this.save({ stay: true }),
+      },
+    };
   },
   data() {
     return {
@@ -276,7 +284,9 @@ export default {
         this.issueState.list = list;
       },
     },
-    eventId() {
+    eventId(id) {
+      // A new event saved in place already holds its id: nothing to load.
+      if (id && id === this.form.id) return;
       this.init();
     },
   },
@@ -351,13 +361,18 @@ export default {
         : el.querySelector("input, textarea");
       input?.focus({ preventScroll: true });
     },
-    async save() {
+    /**
+     * Saves the event; `true` once it is saved. A new event leaves for the
+     * event list - with `stay`, as the tab „Tickets“ asks before a ticket, it
+     * stays on the page with the id it got (`savedNewEventId`).
+     */
+    async save({ stay = false } = {}) {
       if (this.issues.length) {
         const [first] = this.issues;
         if (this.flowMode) this.$refs.flow?.openIssue(first);
         else this.goTo({ tab: first.tab, field: first.field });
         this.addToast(ToastService.createToast("event.edit.refused", "error"));
-        return;
+        return false;
       }
       this.inProgress = true;
       this.flowSaveFailed = false;
@@ -368,7 +383,26 @@ export default {
           field: "schedules",
           value: normalizedSchedules(this.form),
         });
+        const before = isNew && stay ? await this.eventIds() : null;
         await ApiEventService.addEvent();
+        if (isNew && stay) {
+          const id = await this.savedNewEventId(before);
+          if (id) {
+            this.updateForm({ field: "id", value: id });
+            this.locationSaved(location);
+            await this.refreshReview();
+            this.originalSnapshot = this.snapshot();
+            this.addToast(
+              ToastService.createToast("event.create.success", "success")
+            );
+            await this.$router
+              .replace({
+                query: withMode({ ...this.$route.query, id }, this.flowMode),
+              })
+              .catch(() => {});
+            return true;
+          }
+        }
         if (isNew) {
           this.addToast(
             ToastService.createToast("event.create.success", "success")
@@ -376,7 +410,7 @@ export default {
           this.allowNavigation = true;
           this.clearForm();
           await this.$router.push({ name: "events" });
-          return;
+          return false;
         }
         this.locationSaved(location);
         await this.refreshReview();
@@ -384,16 +418,41 @@ export default {
         this.addToast(
           ToastService.createToast("event.update.success", "success")
         );
-        // The flow of an existing event ends on its editing page.
-        if (this.flowMode) await this.leaveFlow();
+        // The flow of an existing event ends on its editing page, unless a
+        // ticket waits for the save.
+        if (this.flowMode && !stay) await this.leaveFlow();
+        return true;
       } catch (error) {
         if (this.flowMode) this.flowSaveFailed = true;
         this.addToast(
           ToastService.createToast("errors.something-wrong", "error")
         );
         console.error(error);
+        return false;
       } finally {
         this.inProgress = false;
+      }
+    },
+    async eventIds() {
+      const response = await ApiEventService.getEvents();
+      return new Set((response.data || []).map((event) => event.id));
+    },
+    /**
+     * The id of the event just created: the backend answers a creation
+     * without a body, so it is the one with this name that was not there
+     * before (`before`, the ids from just before the save).
+     */
+    async savedNewEventId(before) {
+      try {
+        const response = await ApiEventService.getEvents();
+        const created = (response.data || []).filter(
+          (event) =>
+            !before.has(event.id) &&
+            event.information?.name === this.form.information.name
+        );
+        return created.length === 1 ? created[0].id : null;
+      } catch (error) {
+        return null;
       }
     },
     /**

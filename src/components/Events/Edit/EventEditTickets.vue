@@ -1,22 +1,46 @@
 <script>
+import { mapActions } from "vuex";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ToastService from "@/services/ToastService";
+import { normalizeBookable } from "@/utils/normalizeBookable";
 import FormatService from "@/services/FormatService";
 import eventEditing from "@/mixins/eventEditing";
 import { REGISTRATION } from "@/utils/eventEditing";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import AppDialog from "@/components/commons/AppDialog.vue";
+import EventTicketDialog from "./EventTicketDialog.vue";
 
 /**
  * The tab „Tickets“: how the event becomes bookable. An event is not booked
  * itself; bookers book a ticket - a bookable of the type „Ticket“ that names
  * the event in `eventId`. The tab explains that, lists the tickets of the
- * event and opens the ticket editor, the event already chosen.
+ * event and creates and edits them in short (`EventTicketDialog`). A ticket
+ * needs a saved event: with something unsaved, „Veranstaltung speichern“
+ * asks first and saves the page (`eventEditPage`).
  */
 export default {
   name: "EventEditTickets",
-  components: { SectionCard },
+  components: { SectionCard, AppDialog, EventTicketDialog },
   mixins: [eventEditing],
+  inject: {
+    eventEditPage: {
+      default: () => ({ isDirty: () => false, saveAndStay: async () => false }),
+    },
+  },
   data() {
-    return { tickets: [], loading: false, loadFailed: false };
+    return {
+      tickets: [],
+      loading: false,
+      loadFailed: false,
+      // The ticket in the dialog: `null` for none, `""` for a new one.
+      dialogTicket: null,
+      askSave: false,
+      saving: false,
+      // The ticket the delete question is about, and the one at work.
+      deleteTicket: null,
+      deleting: false,
+      busyTicket: null,
+    };
   },
   computed: {
     needsTickets() {
@@ -24,6 +48,12 @@ export default {
     },
     eventId() {
       return this.form.id;
+    },
+    eventName() {
+      return this.form.information?.name || "";
+    },
+    maxAttendees() {
+      return Number(this.form.attendees?.maxAttendees) || null;
     },
     noneBookable() {
       return !this.loading && !this.tickets.some((t) => t.isBookable === true);
@@ -36,6 +66,7 @@ export default {
     eventId: { immediate: true, handler: "load" },
   },
   methods: {
+    ...mapActions({ addToast: "toasts/add" }),
     async load() {
       this.tickets = [];
       this.loadFailed = false;
@@ -62,13 +93,70 @@ export default {
       return FormatService.currency(amount);
     },
     editTicket(ticket) {
-      this.$router.push({ name: "ticket-edit", query: { id: ticket.id } });
+      this.dialogTicket = ticket.id;
     },
+    toggleLabel(ticket) {
+      return ticket.isBookable
+        ? this.$t("event.edit.tickets.hide")
+        : this.$t("event.edit.tickets.show");
+    },
+    /**
+     * Hides a ticket - it can no longer be booked - or offers it again:
+     * its switch „Buchbar“, saved on the whole stored ticket.
+     */
+    async toggleBookable(ticket) {
+      this.busyTicket = ticket.id;
+      try {
+        const stored = normalizeBookable(
+          (await ApiBookablesService.getBookable(ticket.id)).data
+        );
+        await ApiBookablesService.createOrUpdateBookable({
+          ...stored,
+          isBookable: !stored.isBookable,
+        });
+        await this.load();
+      } catch (error) {
+        this.addToast(
+          ToastService.createToast("errors.something-wrong", "error")
+        );
+      } finally {
+        this.busyTicket = null;
+      }
+    },
+    async confirmDelete() {
+      this.deleting = true;
+      try {
+        await ApiBookablesService.deleteBookable(this.deleteTicket.id);
+        this.addToast(
+          ToastService.createToast("bookable.delete.success", "success")
+        );
+        this.deleteTicket = null;
+        await this.load();
+      } catch (error) {
+        this.addToast(
+          ToastService.createToast("errors.something-wrong", "error")
+        );
+      } finally {
+        this.deleting = false;
+      }
+    },
+    /** A new ticket: with something unsaved, the event is saved first. */
     addTicket() {
-      this.$router.push({
-        name: "ticket-edit",
-        query: { eventId: this.eventId },
-      });
+      if (!this.eventId || this.eventEditPage.isDirty()) {
+        this.askSave = true;
+        return;
+      }
+      this.dialogTicket = "";
+    },
+    async saveAndAdd() {
+      this.saving = true;
+      try {
+        const saved = await this.eventEditPage.saveAndStay();
+        this.askSave = false;
+        if (saved && this.eventId) this.dialogTicket = "";
+      } finally {
+        this.saving = false;
+      }
     },
   },
 };
@@ -105,16 +193,7 @@ export default {
         </li>
       </ol>
 
-      <p
-        v-if="!eventId"
-        class="event-edit__note"
-        data-test="tickets-save-first"
-      >
-        <v-icon small>mdi-content-save-outline</v-icon>
-        {{ $t("event.edit.tickets.saveFirst") }}
-      </p>
-
-      <template v-else>
+      <template v-if="eventId">
         <v-alert v-if="loadFailed" dense text type="error" class="text-body-2">
           {{ $t("event.edit.tickets.loadFailed") }}
         </v-alert>
@@ -163,31 +242,66 @@ export default {
                   : $t("event.edit.tickets.notBookable")
               }}
             </v-chip>
-            <v-btn small text color="primary" @click="editTicket(ticket)">
-              <v-icon small left>mdi-open-in-new</v-icon>
+            <v-btn
+              small
+              text
+              color="primary"
+              :data-test="`ticket-edit-${ticket.id}`"
+              @click="editTicket(ticket)"
+            >
+              <v-icon small left>mdi-pencil-outline</v-icon>
               {{ $t("event.edit.tickets.edit") }}
+            </v-btn>
+            <v-btn
+              icon
+              small
+              :loading="busyTicket === ticket.id"
+              :title="toggleLabel(ticket)"
+              :aria-label="toggleLabel(ticket)"
+              :data-test="`ticket-toggle-${ticket.id}`"
+              @click="toggleBookable(ticket)"
+            >
+              <v-icon small>
+                {{
+                  ticket.isBookable ? "mdi-eye-off-outline" : "mdi-eye-outline"
+                }}
+              </v-icon>
+            </v-btn>
+            <v-btn
+              icon
+              small
+              :title="$t('event.edit.tickets.delete')"
+              :aria-label="$t('event.edit.tickets.delete')"
+              :data-test="`ticket-delete-${ticket.id}`"
+              @click="deleteTicket = ticket"
+            >
+              <v-icon small>mdi-delete-outline</v-icon>
             </v-btn>
           </div>
         </v-card>
         <p v-else class="event-edit__note">
           {{ $t("event.edit.tickets.empty") }}
         </p>
-
-        <v-btn
-          small
-          outlined
-          color="primary"
-          class="mt-3"
-          data-test="tickets-add"
-          @click="addTicket"
-        >
-          <v-icon small left>mdi-plus</v-icon>
-          {{ $t("event.edit.tickets.add") }}
-        </v-btn>
-        <div class="event-edit__hint">
-          {{ $t("event.edit.tickets.addHint") }}
-        </div>
       </template>
+      <p v-else class="event-edit__note" data-test="tickets-save-first">
+        <v-icon small>mdi-content-save-outline</v-icon>
+        {{ $t("event.edit.tickets.saveFirst") }}
+      </p>
+
+      <v-btn
+        small
+        outlined
+        color="primary"
+        class="mt-3"
+        data-test="tickets-add"
+        @click="addTicket"
+      >
+        <v-icon small left>mdi-plus</v-icon>
+        {{ $t("event.edit.tickets.add") }}
+      </v-btn>
+      <div class="event-edit__hint">
+        {{ $t("event.edit.tickets.addHint") }}
+      </div>
 
       <ul class="event-tickets__facts">
         <li>
@@ -204,6 +318,78 @@ export default {
         </li>
       </ul>
     </template>
+
+    <AppDialog
+      :open="askSave"
+      :title="$t('event.edit.tickets.saveDialog.title')"
+      icon="mdi-content-save-outline"
+      :busy="saving"
+      data-test="tickets-save-dialog"
+      @close="askSave = false"
+    >
+      {{ $t("event.edit.tickets.saveDialog.text") }}
+      <template #actions>
+        <v-btn text :disabled="saving" @click="askSave = false">
+          {{ $t("event.edit.tickets.saveDialog.keepEditing") }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          depressed
+          :loading="saving"
+          data-test="tickets-save-dialog-save"
+          @click="saveAndAdd"
+        >
+          {{ $t("actions.save") }}
+        </v-btn>
+      </template>
+    </AppDialog>
+
+    <AppDialog
+      :open="!!deleteTicket"
+      :title="$t('event.edit.tickets.deleteDialog.title')"
+      icon="mdi-delete-outline"
+      color="error"
+      :busy="deleting"
+      data-test="ticket-delete-dialog"
+      @close="deleteTicket = null"
+    >
+      <template v-if="deleteTicket">
+        <i18n path="event.edit.tickets.deleteDialog.question" tag="span">
+          <template #title>
+            <strong>{{ deleteTicket.title }}</strong>
+          </template>
+        </i18n>
+        <p class="text-body-2 text--secondary mt-3 mb-0">
+          {{ $t("event.edit.tickets.deleteDialog.final") }}
+        </p>
+      </template>
+      <template #actions>
+        <v-btn text :disabled="deleting" @click="deleteTicket = null">
+          {{ $t("actions.cancel") }}
+        </v-btn>
+        <v-btn
+          color="error"
+          depressed
+          :loading="deleting"
+          data-test="ticket-delete-confirm"
+          @click="confirmDelete"
+        >
+          <v-icon small left>mdi-delete-outline</v-icon>
+          {{ $t("event.edit.tickets.deleteDialog.confirm") }}
+        </v-btn>
+      </template>
+    </AppDialog>
+
+    <EventTicketDialog
+      v-if="eventId"
+      :open="dialogTicket !== null"
+      :ticket-id="dialogTicket || null"
+      :event-id="eventId"
+      :event-name="eventName"
+      :max-attendees="maxAttendees"
+      @saved="load"
+      @close="dialogTicket = null"
+    />
   </SectionCard>
 </template>
 
@@ -273,7 +459,7 @@ export default {
 
 .event-tickets__row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
   gap: var(--scb-space-3);
   align-items: center;
   padding: var(--scb-space-2) var(--scb-space-3);
