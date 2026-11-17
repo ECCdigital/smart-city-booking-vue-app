@@ -169,6 +169,27 @@ describe("formatAccessPointErrorMessage", () => {
       );
     });
 
+    /**
+     * The Anzahl written with the assignment (ECCdigital/tickets#1167): the
+     * backend refuses it at `amount` for anything but a Schließfachanlage
+     * with its own Fächer and one bookable, and for anything but a whole
+     * number from 1.
+     */
+    it.each([
+      [
+        "amount_needs_one_locker_bookable",
+        "Die Anzahl lässt sich hier nur setzen, wenn die Schließfachanlage eigene Fächer hat und genau einem Buchungsobjekt zugeordnet wird.",
+      ],
+      ["invalid_amount", "Die Anzahl muss eine ganze Zahl ab 1 sein."],
+    ])("says why the Anzahl was refused (%s)", (code, sentence) => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [{ field: "amount", code, params: {} }],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(sentence);
+    });
+
     it("names the Schließfachanlage a Fach already stands in", () => {
       const error = apiError(400, {
         message: "validation_failed",

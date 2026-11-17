@@ -138,6 +138,19 @@ function formatLockerSystemInOtherBookable(detail) {
   });
 }
 
+/**
+ * The Anzahl written with the assignment (ECCdigital/tickets#1167): only at
+ * a Schließfachanlage with its own Fächer and for exactly one bookable, and
+ * only a whole number from 1, since 0 and empty mean unlimited.
+ */
+function formatAmountNeedsOneLockerBookable() {
+  return i18n.t("accessPoint.management.errors.amountNeedsOneLockerBookable");
+}
+
+function formatInvalidAmount() {
+  return i18n.t("accessPoint.management.errors.invalidAmount");
+}
+
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
     return formatPrecondition(detail);
@@ -169,6 +182,14 @@ function formatDetail(detail) {
 
   if (detail.code === "open_locker_locker_only") {
     return formatOpenLockerLockerOnly();
+  }
+
+  if (detail.code === "amount_needs_one_locker_bookable") {
+    return formatAmountNeedsOneLockerBookable();
+  }
+
+  if (detail.code === "invalid_amount") {
+    return formatInvalidAmount();
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {
