@@ -6,7 +6,6 @@ import {
   kindNoun,
 } from "@/utilities/access-point-fields";
 import {
-  isFixedCompartment,
   isLockerAccessPoint,
   requiresQrScan,
 } from "@/utilities/access-points";
@@ -82,7 +81,7 @@ export function metaLine(accessPoint) {
 
 /**
  * Whether the access point has a QR code: every door, also one without QR
- * scan, a fixed Fach and an Open Locker Schließfachanlage; a
+ * scan, and an Open Locker Schließfachanlage; a
  * Schließfachanlage of iFBS or Pareva has none (`qrCode` of
  * `accessPointFields`).
  *
@@ -95,14 +94,13 @@ export function hasQr(accessPoint) {
 
 /**
  * What the QR code of the row does, as its tooltip says it: the PDF of a door
- * or a fixed Fach, the QR codes of the Fächer of a Schließfachanlage.
+ * at once, the QR codes of the Fächer of a Schließfachanlage.
  *
  * @param {Object} accessPoint The access point, one with `hasQr`
  * @returns {string} A translated tooltip
  */
 export function qrTitle(accessPoint) {
   if (carriesOwnCompartments(accessPoint)) return t("qr.compartments");
-  if (isFixedCompartment(accessPoint)) return t("qr.compartment");
   return t("qr.door");
 }
 

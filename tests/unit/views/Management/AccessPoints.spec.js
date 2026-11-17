@@ -2832,17 +2832,6 @@ const OPEN_LOCKER_ANLAGE = {
   },
 };
 
-// A fixed Fach of Open Locker (#1036): a door by type.
-const OPEN_LOCKER_FACH = {
-  id: "ap-open-locker",
-  type: "door",
-  mode: "remote",
-  provider: "open-locker",
-  label: "Labor Fachbank 1 · Fach 2",
-  externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
-  validationRules: [],
-};
-
 /** A Schließfachanlage of Open Locker with a single Fach, the key to a room. */
 const OPEN_LOCKER_SCHLUESSEL = {
   id: "ap-open-locker-schluessel",
@@ -2920,7 +2909,7 @@ async function mountEveryKind() {
     accessPoints: [
       DOOR,
       PAREVA_LOCKER,
-      OPEN_LOCKER_FACH,
+      OPEN_LOCKER_SCHLUESSEL,
       OPEN_LOCKER_ANLAGE,
       IFBS_LOCKER,
     ],
@@ -2937,13 +2926,13 @@ describe("AccessPoints offers the actions of each access point", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the QR code at doors, fixed Fächer and Open Locker Schließfachanlagen", async () => {
+  it("shows the QR code at doors and Open Locker Schließfachanlagen, one with a single Fach included", async () => {
     const wrapper = await mountEveryKind();
 
     const hasQr = (label) =>
       rowOf(wrapper, label).find("[data-test='row-qr']").exists();
     expect(hasQr("Haupteingang")).toBe(true);
-    expect(hasQr("Labor Fachbank 1 · Fach 2")).toBe(true);
+    expect(hasQr("Schlüssel Raum 1")).toBe(true);
     expect(hasQr("Fahrradgarage Süd")).toBe(true);
     expect(hasQr("Schließfächer Rathaus")).toBe(false);
     expect(hasQr("Fahrradboxen Bahnhof")).toBe(false);
@@ -2955,7 +2944,7 @@ describe("AccessPoints offers the actions of each access point", () => {
     [
       "Haupteingang",
       "Schließfächer Rathaus",
-      "Labor Fachbank 1 · Fach 2",
+      "Schlüssel Raum 1",
       "Fahrradgarage Süd",
       "Fahrradboxen Bahnhof",
     ].forEach((label) => {
@@ -2977,14 +2966,9 @@ describe("AccessPoints offers the actions of each access point", () => {
       ],
     ],
     [
-      "a fixed Fach",
-      "Labor Fachbank 1 · Fach 2",
-      [
-        "QR-Code als SVG",
-        "QR-Code als PNG",
-        "Scan-Code rotieren …",
-        "Löschen …",
-      ],
+      "an Open Locker Schließfachanlage with a single Fach",
+      "Schlüssel Raum 1",
+      ["Alle Scan-Codes rotieren …", "Löschen …"],
     ],
     [
       "an Open Locker Schließfachanlage",
@@ -3023,22 +3007,6 @@ describe("AccessPoints offers the actions of each access point", () => {
       "pdf",
       "t1"
     );
-  });
-
-  it("loads the SVG and the PNG of a fixed Fach from the menu", async () => {
-    ApiAccessPointService.getQrCode.mockResolvedValue({
-      data: new Blob(["<svg/>"]),
-      headers: {},
-    });
-    const wrapper = await mountEveryKind();
-
-    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "svg");
-    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "png");
-
-    expect(ApiAccessPointService.getQrCode.mock.calls).toEqual([
-      ["ap-open-locker", "svg", "t1"],
-      ["ap-open-locker", "png", "t1"],
-    ]);
   });
 
   it("opens „QR-Codes der Fächer“ of a Schließfachanlage from the QR code", async () => {
@@ -3402,7 +3370,7 @@ function metaOf(wrapper, label) {
 /**
  * Each access point is a slim row (ECCdigital/tickets#1108): its label large,
  * beneath it small the id at the provider and the Standort, and for a
- * Schließfachanlage or a fixed Fach its kind in front.
+ * Schließfachanlage its kind in front.
  */
 describe("AccessPoints shows each access point as a slim row", () => {
   beforeEach(() => {
@@ -4599,8 +4567,8 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
   });
 
   /**
-   * Open Locker asks first for its Schließfachanlage or a fixed Fach, then
-   * offers its Fächer by Schließfachschrank.
+   * Open Locker creates only a Schließfachanlage (ECCdigital/tickets#1162)
+   * and offers its Fächer by Schließfachschrank.
    */
   describe("at Open Locker", () => {
     const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
@@ -4679,8 +4647,16 @@ describe("AccessPoints creates an access point in a slim dialog", () => {
           id: "anlage-andere",
           config: { compartments: [{ id: "uuid-1" }] },
         },
-        // A door of Open Locker from before holds no Fach.
-        { ...OPEN_LOCKER_FACH, externalId: "uuid-2" },
+        // A door of Open Locker stored before tickets#1162 holds no Fach.
+        {
+          id: "ap-open-locker-tuer",
+          type: "door",
+          mode: "remote",
+          provider: "open-locker",
+          label: "Labor Fachbank 1 · Fach 2",
+          externalId: "uuid-2",
+          validationRules: [],
+        },
       ]);
 
       expect(compartmentRow(wrapper, "uuid-1").exists()).toBe(false);
@@ -5660,11 +5636,11 @@ async function mountAnlage(anlage = qrAnlage()) {
 }
 
 /**
- * QR-Codes and Rotieren (ECCdigital/tickets#1111): a door and a fixed Fach
- * load their PDF at once and rotate in a small dialog; a Schließfachanlage
- * of Open Locker has „QR-Codes der Fächer“, the list left, preview and print
- * right, and rotating asks there too. The warning is loud only where the QR
- * scan locks bookers out.
+ * QR-Codes and Rotieren (ECCdigital/tickets#1111): a door loads its PDF at
+ * once and rotates in a small dialog; a Schließfachanlage of Open Locker,
+ * one with a single Fach included (ECCdigital/tickets#1163), has „QR-Codes
+ * der Fächer“, the list left, preview and print right, and rotating asks
+ * there too. The warning is loud only where the QR scan locks bookers out.
  */
 describe("AccessPoints prints and rotates the QR codes of the Fächer", () => {
   let saved;
@@ -5873,6 +5849,38 @@ describe("AccessPoints prints and rotates the QR codes of the Fächer", () => {
     );
   });
 
+  it("prints and rotates at an Anlage with a single Fach like at any Anlage", async () => {
+    ApiAccessPointService.rotateAllCompartmentScanCodes.mockResolvedValue({});
+    const wrapper = await mountAnlage({
+      ...OPEN_LOCKER_SCHLUESSEL,
+      validationRules: QR_SCAN,
+    });
+    await clickRowIcon(wrapper, "Schlüssel Raum 1", "qr");
+
+    expect(compartmentEntries(wrapper)).toEqual([
+      "Alle Fächer (1)",
+      "Schrank Labor Fachbank 1",
+      "Fach 2",
+    ]);
+
+    await clickIn(qrDialog(wrapper), "Alle rotieren …");
+
+    expect(rotationQuestion(wrapper)).toEqual({
+      text: "Alle Scan-Codes rotieren? Der Scan-Code des einen Fachs wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Bis die neuen Aufkleber hängen, öffnet das Fach nicht für Buchende.",
+      warning: true,
+      tick: true,
+    });
+    await qrDialog(wrapper)
+      .find("[data-test='rotate-question'] input[type='checkbox']")
+      .trigger("click");
+    await settle(wrapper);
+    await clickIn(qrDialog(wrapper), "1 rotieren");
+
+    expect(
+      ApiAccessPointService.rotateAllCompartmentScanCodes
+    ).toHaveBeenCalledWith("ap-open-locker-schluessel", "t1");
+  });
+
   it("opens on „Alle Fächer“ with the question from „Alle Scan-Codes rotieren …“", async () => {
     const wrapper = await mountAnlage();
 
@@ -5946,8 +5954,8 @@ function rotateDialog(wrapper) {
 }
 
 /**
- * Rotating at a door or a fixed Fach (ECCdigital/tickets#1111) is a small
- * dialog: the question, then the new code with „Neuen QR-Code drucken“.
+ * Rotating at a door (ECCdigital/tickets#1111) is a small dialog: the
+ * question, then the new code with „Neuen QR-Code drucken“.
  */
 describe("AccessPoints rotates the scan code of a door", () => {
   let saved;
@@ -5989,31 +5997,6 @@ describe("AccessPoints rotates the scan code of a door", () => {
     expect(ApiAccessPointService.rotateScanCode).toHaveBeenCalledWith(
       "ap-door",
       "t1"
-    );
-  });
-
-  it("says softly at a fixed Fach without the QR scan that bookers keep opening", async () => {
-    const wrapper = await mountEveryKind();
-
-    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "rotate");
-
-    expect(rotationQuestion(wrapper, rotateDialog(wrapper))).toEqual({
-      text: "Der Scan-Code von „Labor Fachbank 1 · Fach 2“ wird ersetzt. Gedruckte Aufkleber gelten ab sofort nicht mehr. Buchende öffnen weiter über die App, nur der alte Aufkleber führt ins Leere.",
-      warning: false,
-      tick: false,
-    });
-  });
-
-  it("names a fixed Fach with the QR scan as the Fach that does not open", async () => {
-    const wrapper = await mountAccessPointsPage({
-      providers: [OPEN_LOCKER],
-      accessPoints: [{ ...OPEN_LOCKER_FACH, validationRules: QR_SCAN }],
-    });
-
-    await clickRowAction(wrapper, "Labor Fachbank 1 · Fach 2", "rotate");
-
-    expect(rotationQuestion(wrapper, rotateDialog(wrapper)).text).toContain(
-      "Bis der neue Aufkleber hängt, öffnet das Fach nicht für Buchende."
     );
   });
 

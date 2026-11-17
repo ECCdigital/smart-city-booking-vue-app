@@ -58,7 +58,7 @@ The Fächer of an Open Locker Anlage show the bookings that hold them, and the s
 
 How far the setup is - the strip „Anbieter verbinden“, „Zugangspunkte anlegen“, „Buchungsobjekten zuordnen“ or the line „Eingerichtet: …“ (`AccessSetupStrip.vue`) - is `setupState` in `src/utilities/access-setup.js`, derived from the providers connected, the IQs of Salto KS still open (`iqSummary(...).open` of the IQs the page loads), the access points, their bookables and the providers' listings; the backend keeps no state of it. The same derivation counts „Offen (n)“ through `needsAction`, an IQ not activated included. The empty page and „Weiteren Anbieter verbinden“ are `AccessProviderPicker.vue`.
 
-The question before rotating a scan code - at a door or fixed Fach in `AccessPointRotateDialog.vue`, at one Fach or all Fächer of an Anlage on the right of „QR-Codes der Fächer“ (`AccessPointCompartmentQrDialog.vue`) - is worded by `rotationWarning` in `src/utilities/scan-code-rotation.js`: loud only where the access point demands the QR scan, and the tick only for all Fächer with it.
+The question before rotating a scan code - at a door in `AccessPointRotateDialog.vue`, at one Fach or all Fächer of an Anlage on the right of „QR-Codes der Fächer“ (`AccessPointCompartmentQrDialog.vue`) - is worded by `rotationWarning` in `src/utilities/scan-code-rotation.js`: loud only where the access point demands the QR scan, and the tick only for all Fächer with it.
 
 ## „Locker“ is not a German word here
 

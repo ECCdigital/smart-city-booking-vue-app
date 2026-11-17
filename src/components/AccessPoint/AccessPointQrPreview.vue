@@ -3,7 +3,7 @@ import { mapGetters } from "vuex";
 import { qrPreviewUrl } from "@/utilities/access-point-qr";
 
 /**
- * The QR code of a door, a fixed Fach or one Fach of a Schließfachanlage, as
+ * The QR code of a door or one Fach of a Schließfachanlage, as
  * the server renders it (ECCdigital/tickets#1111). A new `version` loads it
  * anew, after a rotation say. Where the image cannot be had, a QR icon stands
  * in; printing says why.

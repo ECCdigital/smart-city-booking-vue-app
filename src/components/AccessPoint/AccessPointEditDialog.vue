@@ -82,7 +82,7 @@ function emptyForm() {
  * and edit an access point, its provider and type settled by the section it
  * opens from. Creating shows two things - what the provider lists, as a list
  * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
- * asks first for its Schließfachanlage or a fixed Fach. Everything with a
+ * creates only a Schließfachanlage, its Fächer to tick. Everything with a
  * default waits folded under „Weitere Einstellungen“, its state in one line.
  * Editing shows the chosen lock as one line with „Tauschen“ and the settings
  * unfolded. Which fields an access point has is `accessPointFields`.

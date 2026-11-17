@@ -571,7 +571,7 @@ export default {
       this.selectedAccessPoint = accessPoint;
       this.editDialog = true;
     },
-    // The QR code of a door or a fixed Fach is its PDF, at once; a
+    // The QR code of a door is its PDF, at once; a
     // Schließfachanlage has one per Fach, in their own dialog.
     openQr(accessPoint) {
       if (carriesOwnCompartments(accessPoint)) {

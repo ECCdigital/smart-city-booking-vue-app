@@ -243,24 +243,6 @@ describe("BookingAccessPoints", () => {
     });
   });
 
-  it("keeps the fixed Fach of Open Locker a door with its label", async () => {
-    const wrapper = await mountList({
-      entries: [
-        door({
-          id: "fixed-1",
-          provider: "open-locker",
-          mode: "remote",
-          label: "Quartiersschrank Hafen · Fach 3",
-          capabilities: ["open"],
-        }),
-      ],
-    });
-
-    expect(tiles(wrapper).at(0).find(".access-point-tile__title").text()).toBe(
-      "Quartiersschrank Hafen · Fach 3"
-    );
-  });
-
   it("shows the provider and the provider's process id", async () => {
     const wrapper = await mountList({ entries: [compartment()] });
 

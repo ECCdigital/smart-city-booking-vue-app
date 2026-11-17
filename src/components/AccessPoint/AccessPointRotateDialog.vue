@@ -7,7 +7,7 @@ import { downloadQrCode } from "@/utilities/access-point-qr";
 import { rotationWarning } from "@/utilities/scan-code-rotation";
 
 /**
- * „Scan-Code rotieren“ of a door or a fixed Fach (ECCdigital/tickets#1111):
+ * „Scan-Code rotieren“ of a door (ECCdigital/tickets#1111):
  * the question with what the rotation means for bookers, then the new code
  * with „Neuen QR-Code drucken“ as the main button, SVG and PNG beside it.
  * The scan code never reaches the client; the server renders every file.

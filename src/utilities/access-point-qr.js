@@ -114,7 +114,7 @@ export function downloadCompartmentQrSheet(accessPoint, tenant) {
 }
 
 /**
- * The QR code of a door, a fixed Fach or one Fach of a Schließfachanlage as
+ * The QR code of a door or one Fach of a Schließfachanlage as
  * an image to look at, rendered by the server as PNG (ECCdigital/tickets#1111).
  * The caller frees the URL with `URL.revokeObjectURL` once it is no longer
  * shown.
