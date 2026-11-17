@@ -153,8 +153,9 @@ export function bookingsWithoutCompartment(accessPoint, bookings) {
 
 /**
  * What a save does to the bookings at a Fach that leaves the Anlage, in a
- * few words at the Fach (ECCdigital/tickets#1113): the running one stays,
- * the future ones move - „läuft bis 20.11.26, 14:00, bleibt · 2 ziehen um“.
+ * few words under its Schrank (ECCdigital/tickets#1113): the running one
+ * stays, the future ones move - „läuft bis 20.11.26, 14:00, bleibt · 2
+ * künftige Buchungen ziehen um“.
  *
  * @param {Object[]} bookings The bookings at the Fach, as
  *   `compartmentBookings` reads them
@@ -236,21 +237,28 @@ export function takenProviderIds(accessPoints, { provider, exceptId }) {
 }
 
 /**
- * The Fächer the other Anlagen of the provider hold: a Fach stands in at
- * most one Anlage, so none of them is to be chosen. Nothing else holds a
- * Fach (ECCdigital/tickets#1162).
+ * The Fächer the other Anlagen of the provider hold, each with the name of
+ * its Anlage: a Fach stands in at most one Anlage, so none of them is to be
+ * chosen, and the dialog says where it stands (ECCdigital/tickets#1178).
+ * Nothing else holds a Fach (ECCdigital/tickets#1162).
  *
  * @param {Object[]} accessPoints Every access point of the tenant
  * @param {Object} options
  * @param {string} options.provider The provider whose Anlagen count
  * @param {string|null} [options.exceptId] The Anlage being edited
- * @returns {Set<string>} The UUIDs of the Fächer
+ * @returns {Map<string, string>} The name of the Anlage by the UUID of the
+ *   Fach
  */
-export function heldCompartmentIds(accessPoints, { provider, exceptId }) {
-  return new Set(
+export function heldCompartments(accessPoints, { provider, exceptId }) {
+  return new Map(
     othersOf(accessPoints, { provider, exceptId })
       .filter(carriesOwnCompartments)
-      .flatMap((point) => point.config.compartments.map((c) => String(c.id)))
+      .flatMap((point) =>
+        point.config.compartments.map((c) => [
+          String(c.id),
+          accessPointLabel(point),
+        ])
+      )
   );
 }
 
@@ -303,15 +311,16 @@ function fromListing(entry) {
 
 /**
  * The Fächer to choose from, grouped by Schließfachschrank in the order the
- * listing names them: every listed Fach no other access point holds, each
- * marked whether it is chosen and out of service. A chosen Fach the listing
- * does not name - the provider is not active, or the account lost it - is
- * kept as stored, at the end of its Schrank, so it can still be taken out.
- * A Schrank with nothing left to show is left out.
+ * listing names them: every listed Fach, each marked whether it is chosen,
+ * out of service, and which other Anlage holds it (`takenBy`, "" for none;
+ * ECCdigital/tickets#1178). A chosen Fach the listing does not name - the
+ * provider is not active, or the account lost it - is kept as stored, at
+ * the end of its Schrank, so it can still be taken out.
  *
  * @param {Object[]} listing The provider's listing (`listAccessPoints`)
  * @param {Object[]} selected The Fächer chosen, in the stored shape
- * @param {Set<string>} taken The Fächer other access points hold
+ * @param {Map<string, string>} taken The Fächer other Anlagen hold, with
+ *   their name, as `heldCompartments` reads them
  * @returns {{lockerBank: {id: string, name: string}, compartments: Object[]}[]}
  */
 export function compartmentGroups(listing, selected, taken) {
@@ -330,12 +339,12 @@ export function compartmentGroups(listing, selected, taken) {
     const compartment = fromListing(entry);
     listedIds.add(compartment.id);
     const choice = chosen.get(compartment.id);
-    if (!choice && taken.has(compartment.id)) return;
     groupOf(compartment.lockerBank).compartments.push({
       ...compartment,
       selected: !!choice,
       outOfService: choice?.outOfService === true,
       listed: true,
+      takenBy: choice ? "" : taken.get(compartment.id) || "",
     });
   });
 
@@ -349,10 +358,11 @@ export function compartmentGroups(listing, selected, taken) {
       selected: true,
       outOfService: choice.outOfService === true,
       listed: false,
+      takenBy: "",
     });
   });
 
-  return [...groups.values()].filter((group) => group.compartments.length);
+  return [...groups.values()];
 }
 
 /**
