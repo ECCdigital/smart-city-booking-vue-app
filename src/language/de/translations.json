@@ -1107,7 +1107,7 @@
         "place": "Ort & Format",
         "organizer": "Veranstalter",
         "contact": "Kontakt für Rückfragen",
-        "people": "Referenten",
+        "people": "Referent:innen",
         "participation": "Teilnahme",
         "program": "Programm",
         "gallery": "Bildergalerie",
@@ -1181,7 +1181,7 @@
         "phone": "Telefon"
       },
       "people": {
-        "hint": "Geben Sie an, wer die Veranstaltung leitet oder dort spricht. Referenten erscheinen mit Namen und Foto auf der Veranstaltungsseite, auch externe Personen.",
+        "hint": "Geben Sie optional an, wer die Veranstaltung leitet oder dort spricht. Referent:innen erscheinen mit Namen und Foto auf der Veranstaltungsseite.",
         "contact": "Kontaktperson",
         "contactHint": "Geben Sie optional zusätzlich eine Kontaktperson an, an die Teilnehmende sich mit Fragen wenden können. Sie erscheint mit Namen und Foto auf der Veranstaltungsseite.",
         "addContact": "Kontaktperson hinzufügen",
