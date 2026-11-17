@@ -263,7 +263,9 @@ export default {
             >
               <v-icon small>
                 {{
-                  ticket.isBookable ? "mdi-eye-off-outline" : "mdi-eye-outline"
+                  ticket.isBookable
+                    ? "mdi-basket-off-outline"
+                    : "mdi-basket-outline"
                 }}
               </v-icon>
             </v-btn>
@@ -460,7 +462,7 @@ export default {
 .event-tickets__row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
-  gap: var(--scb-space-3);
+  gap: var(--scb-space-2);
   align-items: center;
   padding: var(--scb-space-2) var(--scb-space-3);
 }
