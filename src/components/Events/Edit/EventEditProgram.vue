@@ -104,7 +104,7 @@ export default {
       :label="$t('event.edit.program.none')"
       :hint="noProgram ? '' : $t('event.edit.program.noneHint')"
       persistent-hint
-      inset
+      dense
       class="mt-0 pt-0 mb-4"
       data-test="event-no-program"
       @change="setNoProgram($event === true)"
