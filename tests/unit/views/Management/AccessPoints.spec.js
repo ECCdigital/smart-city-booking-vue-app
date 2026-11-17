@@ -15,7 +15,7 @@ import {
   validationError,
 } from "@tests/unit/support/api";
 import { typeSearch } from "@tests/unit/support/search";
-import { selectByLabel } from "@tests/unit/support/vuetify";
+import { chooseOption, selectByLabel } from "@tests/unit/support/vuetify";
 import ApiGeoService from "@/services/api/ApiGeoService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
@@ -3682,37 +3682,6 @@ describe("AccessPoints assigns an access point to bookables", () => {
     );
   });
 
-  it("ticks one bookable at most for a Schließfachanlage with its own Fächer", async () => {
-    const wrapper = await mountAccessPointsPage({
-      providers: [OPEN_LOCKER],
-      accessPoints: [OPEN_LOCKER_ANLAGE],
-      bookables: BOOKABLES,
-    });
-    await rowOf(wrapper, "Fahrradgarage Süd")
-      .find("[data-test='assign-bookable']")
-      .trigger("click");
-    await settle(wrapper);
-
-    await tick(wrapper, "Werkstatt");
-    await tick(wrapper, "Saal");
-
-    expect(assignChoices(wrapper)).toEqual([
-      ["Besprechungsraum", false],
-      ["Werkstatt", false],
-      ["Saal", true],
-    ]);
-    expect(assignDialog(wrapper).text()).toContain(
-      "Eine Schließfachanlage mit eigenen Fächern gehört zu einem Buchungsobjekt."
-    );
-
-    await saveAssignment(wrapper);
-    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
-      "ap-open-locker-anlage",
-      ["b3"],
-      "t1"
-    );
-  });
-
   /** Creates a door by hand in the section of Nuki; the backend names it `ap-new`. */
   async function createDoor(wrapper, created) {
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: created });
@@ -3795,6 +3764,354 @@ describe("AccessPoints assigns an access point to bookables", () => {
     expect(assignDialog(wrapper).text()).toContain(
       "Sie dürfen nicht jedes dieser Buchungsobjekte bearbeiten."
     );
+  });
+});
+
+const BOOKABLE_FIELD = "Für welches Buchungsobjekt?";
+
+/** The choices of „Für welches Buchungsobjekt?“, top to bottom. */
+async function bookableChoices(wrapper) {
+  await selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
+    .find(".v-input__slot")
+    .trigger("click");
+  await settle(wrapper);
+  const choices = [
+    ...document.querySelectorAll(".menuable__content__active .v-list-item"),
+  ].map((item) => item.textContent.trim());
+  await selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
+    .find(".v-input__slot")
+    .trigger("keydown", { keyCode: 27 });
+  await settle(wrapper);
+  return choices;
+}
+
+async function chooseBookable(wrapper, title) {
+  await chooseOption(pointDialog(wrapper), BOOKABLE_FIELD, title);
+  await settle(wrapper);
+}
+
+/** What the field shows as chosen. */
+function chosenBookable(wrapper) {
+  return selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD)
+    .find(".v-select__selection")
+    .text();
+}
+
+/**
+ * At Open Locker the dialog of the Schließfachanlage assigns it
+ * (ECCdigital/tickets#1165): „Für welches Buchungsobjekt?“ takes one
+ * bookable or „Später zuordnen“, and Speichern stores the Anlage first and
+ * then, where the bookable changed, the assignment. „Zuordnen“ at its row
+ * opens that dialog; doors, iFBS and Pareva keep the dialog Zuordnen.
+ */
+describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog", () => {
+  const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
+  const listedFach = (id, number) =>
+    listed("open-locker", id, `${LABOR.name} · Fach ${number}`, {
+      metadata: { id, number, lockerBank: LABOR },
+    });
+  // Fach 1 stands in the stored Anlage, Fach 2 is free.
+  const LISTING = {
+    "open-locker": [
+      listedFach("9b2f6c1e-3d4a-4f5b-8c7d-1e2f3a4b5c6d", 1),
+      listedFach("uuid-frei", 2),
+    ],
+  };
+  const BOOKABLES = [
+    {
+      id: "b1",
+      title: "Besprechungsraum",
+      type: "room",
+      amount: 1,
+      accessPointDetails: { accessPointIds: [] },
+    },
+    {
+      id: "b2",
+      title: "Fahrradbox",
+      type: "resource",
+      amount: 1,
+      accessPointDetails: { accessPointIds: [OPEN_LOCKER_ANLAGE.id] },
+    },
+    { id: "b3", title: "Lastenrad", type: "resource", amount: 1 },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    BookablePermissionService.allowUpdate.mockImplementation(() => true);
+    ApiAccessPointService.storeAccessPoint.mockImplementation(
+      async (payload) => ({ data: { id: "ap-new", ...payload } })
+    );
+    ApiAccessPointService.assignBookables.mockResolvedValue({ data: {} });
+  });
+
+  async function mountOpenLocker(bookables = BOOKABLES) {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER, NUKI],
+      accessPoints: [OPEN_LOCKER_ANLAGE, DOOR],
+      bookables,
+    });
+    answerListings(LISTING);
+    return wrapper;
+  }
+
+  it("asks for the bookable, „Später zuordnen“ first, the editable ones only", async () => {
+    BookablePermissionService.allowUpdate.mockImplementation(
+      (bookable) => bookable.id !== "b1"
+    );
+    const wrapper = await mountOpenLocker();
+
+    await create(wrapper, "Open Locker");
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt."
+    );
+    expect(chosenBookable(wrapper)).toBe("Später zuordnen");
+    expect(await bookableChoices(wrapper)).toEqual([
+      "Später zuordnen",
+      "Fahrradbox",
+      "Lastenrad",
+    ]);
+  });
+
+  /** Creates „Garage“ with the free Fach, the bookable chosen as given. */
+  async function createAnlage(wrapper, bookable) {
+    await create(wrapper, "Open Locker");
+    await pointDialog(wrapper)
+      .find(".compartment-row[data-compartment-id='uuid-frei'] input")
+      .trigger("click");
+    await pointDialog(wrapper).find(".label-field input").setValue("Garage");
+    if (bookable) await chooseBookable(wrapper, bookable);
+    await savePoint(wrapper);
+  }
+
+  it("stores the Anlage first, then assigns it to the bookable chosen", async () => {
+    const wrapper = await mountOpenLocker();
+
+    await createAnlage(wrapper, "Lastenrad");
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    expect(
+      ApiAccessPointService.storeAccessPoint.mock.calls[0][0]
+    ).not.toHaveProperty("id");
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      "ap-new",
+      ["b3"],
+      "t1"
+    );
+    expect(
+      ApiAccessPointService.storeAccessPoint.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      ApiAccessPointService.assignBookables.mock.invocationCallOrder[0]
+    );
+    expect(pointDialog(wrapper).isVisible()).toBe(false);
+  });
+
+  it("stores the Anlage alone with „Später zuordnen“", async () => {
+    const wrapper = await mountOpenLocker();
+
+    await createAnlage(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    expect(ApiAccessPointService.assignBookables).not.toHaveBeenCalled();
+    expect(pointDialog(wrapper).isVisible()).toBe(false);
+  });
+
+  it("shows the bookable of a stored Anlage and stores it alone while it stays", async () => {
+    const wrapper = await mountOpenLocker();
+
+    await editPoint(wrapper, "Fahrradgarage Süd");
+    expect(chosenBookable(wrapper)).toBe("Fahrradbox");
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledWith(
+      expect.objectContaining({ id: OPEN_LOCKER_ANLAGE.id }),
+      "t1"
+    );
+    expect(ApiAccessPointService.assignBookables).not.toHaveBeenCalled();
+  });
+
+  it("moves the Anlage to another bookable, off the one before", async () => {
+    const wrapper = await mountOpenLocker();
+    await editPoint(wrapper, "Fahrradgarage Süd");
+
+    await chooseBookable(wrapper, "Lastenrad");
+    ApiBookablesService.getBookables.mockResolvedValue({
+      data: [
+        BOOKABLES[0],
+        { ...BOOKABLES[1], accessPointDetails: { accessPointIds: [] } },
+        {
+          ...BOOKABLES[2],
+          accessPointDetails: { accessPointIds: [OPEN_LOCKER_ANLAGE.id] },
+        },
+      ],
+    });
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      OPEN_LOCKER_ANLAGE.id,
+      ["b3"],
+      "t1"
+    );
+    expect(chipsOf(wrapper, "Fahrradgarage Süd")).toEqual(["Lastenrad"]);
+  });
+
+  it("takes the Anlage off its bookable with „Später zuordnen“", async () => {
+    const wrapper = await mountOpenLocker();
+    await editPoint(wrapper, "Fahrradgarage Süd");
+
+    await chooseBookable(wrapper, "Später zuordnen");
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
+      OPEN_LOCKER_ANLAGE.id,
+      [],
+      "t1"
+    );
+  });
+
+  it("keeps the bookable it may not edit, and says who can change it", async () => {
+    BookablePermissionService.allowUpdate.mockImplementation(
+      (bookable) => bookable.id !== "b2"
+    );
+    const wrapper = await mountOpenLocker();
+
+    await editPoint(wrapper, "Fahrradgarage Süd");
+
+    const field = selectByLabel(pointDialog(wrapper), BOOKABLE_FIELD);
+    expect(chosenBookable(wrapper)).toBe("Fahrradbox");
+    expect(field.props("disabled")).toBe(true);
+    expect(pointDialog(wrapper).text()).toContain(
+      "Die Zuordnung zu „Fahrradbox“ ändern kann nur, wer es bearbeiten darf."
+    );
+  });
+
+  it("keeps the dialog on the stored Anlage when the assignment fails, and stores no second one", async () => {
+    ApiAccessPointService.assignBookables.mockRejectedValueOnce(serverError());
+    const wrapper = await mountOpenLocker();
+
+    await createAnlage(wrapper, "Lastenrad");
+
+    expect(pointDialog(wrapper).isVisible()).toBe(true);
+    expect(pointDialog(wrapper).text()).toContain(
+      "Schließfachanlage bearbeiten"
+    );
+    expect(pointDialog(wrapper).text()).toContain(
+      "Die Schließfachanlage ist gespeichert, die Zuordnung aber nicht."
+    );
+    expect(chosenBookable(wrapper)).toBe("Lastenrad");
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(2);
+    expect(
+      ApiAccessPointService.storeAccessPoint.mock.calls[1][0]
+    ).toMatchObject({ id: "ap-new", label: "Garage" });
+    // Open Locker's default stays: the Anlage was created without the scan.
+    expect(
+      ApiAccessPointService.storeAccessPoint.mock.calls[1][0].validationRules
+    ).toEqual([]);
+    expect(ApiAccessPointService.assignBookables.mock.calls).toEqual([
+      ["ap-new", ["b3"], "t1"],
+      ["ap-new", ["b3"], "t1"],
+    ]);
+    expect(pointDialog(wrapper).isVisible()).toBe(false);
+  });
+
+  it("lists the stored Anlage at once when the assignment fails", async () => {
+    ApiAccessPointService.assignBookables.mockRejectedValue(serverError());
+    const wrapper = await mountOpenLocker();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [
+        OPEN_LOCKER_ANLAGE,
+        DOOR,
+        { ...OPEN_LOCKER_ANLAGE, id: "ap-new", label: "Garage" },
+      ],
+    });
+
+    await createAnlage(wrapper, "Lastenrad");
+
+    expect(pointDialog(wrapper).isVisible()).toBe(true);
+    expect(rowOf(wrapper, "Garage")).toBeTruthy();
+  });
+
+  it("names no assignment in the next step once a bookable is chosen", async () => {
+    const wrapper = await mountOpenLocker();
+    await create(wrapper, "Open Locker");
+    expect(shown(wrapper, "next-step").text()).toBe("Danach: zuordnen");
+
+    await chooseBookable(wrapper, "Lastenrad");
+    expect(shown(wrapper, "next-step").exists()).toBe(false);
+
+    await shown(wrapper, "more-settings")
+      .find(".v-expansion-panel-header")
+      .trigger("click");
+    await settle(wrapper);
+    await shown(wrapper, "qr-scan").find("input").trigger("click");
+    await settle(wrapper);
+    expect(shown(wrapper, "next-step").text()).toBe("Danach: QR-Code drucken");
+  });
+
+  it("names the bookable when the backend refuses the assignment for rights", async () => {
+    ApiAccessPointService.assignBookables.mockRejectedValue(forbiddenError());
+    const wrapper = await mountOpenLocker();
+
+    await createAnlage(wrapper, "Lastenrad");
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Die Schließfachanlage ist gespeichert, die Zuordnung aber nicht. Ihnen fehlt die Berechtigung, „Lastenrad“ zu bearbeiten."
+    );
+  });
+
+  it("opens the dialog of the Anlage from „Buchungsobjekt zuordnen“ and from its chip", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [
+        OPEN_LOCKER_ANLAGE,
+        { ...OPEN_LOCKER_SCHLUESSEL, config: { compartments: [] } },
+      ],
+      bookables: BOOKABLES,
+    });
+
+    await rowOf(wrapper, "Schlüssel Raum 1")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(pointDialog(wrapper).text()).toContain(
+      "Schließfachanlage bearbeiten"
+    );
+    expect(pointDialog(wrapper).find(".label-field input").element.value).toBe(
+      "Schlüssel Raum 1"
+    );
+    expect(chosenBookable(wrapper)).toBe("Später zuordnen");
+    expect(assignDialog(wrapper).exists()).toBe(false);
+
+    await pointDialog(wrapper).find(".v-card__actions .v-btn").trigger("click");
+    await settle(wrapper);
+    await rowOf(wrapper, "Fahrradgarage Süd")
+      .find("[data-test='access-point-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(pointDialog(wrapper).find(".label-field input").element.value).toBe(
+      "Fahrradgarage Süd"
+    );
+    expect(chosenBookable(wrapper)).toBe("Fahrradbox");
+  });
+
+  it("offers no „Zuordnen“ in the menu of the Anlage, and keeps the dialog Zuordnen for a door", async () => {
+    const wrapper = await mountOpenLocker();
+
+    expect(await menuEntries(wrapper, "Fahrradgarage Süd")).not.toContain(
+      "Zuordnen"
+    );
+    await rowOf(wrapper, "Haupteingang")
+      .find("[data-test='assign-bookable']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(assignDialog(wrapper).text()).toContain("Haupteingang");
+    expect(editDialog(wrapper).props("open")).toBe(false);
   });
 });
 

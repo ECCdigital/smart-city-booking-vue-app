@@ -2,8 +2,10 @@
 import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import {
   formatAccessPointErrorMessage,
   splitAccessPointFieldError,
@@ -81,11 +83,17 @@ function emptyForm() {
  * The dialog Zugangspunkt (ECCdigital/tickets#1109): one dialog to create
  * and edit an access point, its provider and type settled by the section it
  * opens from. Creating shows two things - what the provider lists, as a list
- * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
- * asks first for its Schließfachanlage or a fixed Fach. Everything with a
+ * to click with „by hand“ as its last line, and the Bezeichnung; an Open
+ * Locker Schließfachanlage shows its bookable („Für welches
+ * Buchungsobjekt?“) and its Fächer instead of the list. Everything with a
  * default waits folded under „Weitere Einstellungen“, its state in one line.
  * Editing shows the chosen lock as one line with „Tauschen“ and the settings
  * unfolded. Which fields an access point has is `accessPointFields`.
+ *
+ * Saving stores the access point, then, where the bookable chosen for an
+ * Open Locker Anlage changed, its assignment (ECCdigital/tickets#1165).
+ * Events: `close`, `saved` (both stored), `stored` (the Anlage is stored,
+ * its assignment failed: the dialog stays open on it).
  */
 export default {
   name: "AccessPointEditDialog",
@@ -108,6 +116,11 @@ export default {
     // reads them; `bookingsUnreadable` where they could not be read.
     compartmentBookings: { type: Array, default: () => [] },
     bookingsUnreadable: { type: Boolean, default: false },
+    // The tenant's bookables, for the bookable an Open Locker Anlage is
+    // assigned to in this dialog; `bookablesUnreadable` where they could
+    // not be read.
+    bookables: { type: Array, default: () => [] },
+    bookablesUnreadable: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -122,6 +135,13 @@ export default {
       compartments: [],
       // Why the backend refused a Fach, by its UUID.
       compartmentErrors: {},
+      // The bookable an Anlage that carries its own Fächer is assigned to
+      // with the save (ECCdigital/tickets#1165); `null` is „Später
+      // zuordnen“.
+      bookableId: null,
+      // The Anlage this dialog stored while its assignment failed; it is
+      // edited from then on.
+      stored: null,
       configText: "{}",
       configError: "",
       // The switch as the admin set it, or as a stored access point has it.
@@ -158,6 +178,11 @@ export default {
     }),
     isEdit() {
       return !!this.form.id;
+    },
+    // The access point as stored: the one edited, or the one this dialog
+    // stored.
+    source() {
+      return this.stored || this.accessPoint;
     },
     fields() {
       return accessPointFields(this.form.provider, this.form.type);
@@ -361,7 +386,7 @@ export default {
     // The location as stored, against which the input measures "unchanged":
     // none for a new access point.
     storedLocation() {
-      return this.accessPoint?.location ?? null;
+      return this.source?.location ?? null;
     },
     // Why the location may not be saved, or "": the backend's rule, measured
     // against the stored location the same way the bookable's is.
@@ -369,16 +394,19 @@ export default {
       const key = locationRefusal(this.form.location, this.storedLocation);
       return key ? this.$t(key) : "";
     },
-    // The rule of the row the new access point gets (`printsQr`).
+    // The rule of the row the new access point gets (`printsQr`); a
+    // bookable chosen here leaves no assignment to do.
     nextStep() {
       const printing = printsQr({
         provider: this.form.provider,
         type: this.form.type,
         validationRules: this.qrScanShown ? [{ type: QR_SCAN_RULE }] : [],
       });
+      const assigned = this.assignsHere && !!this.bookableId;
+      if (assigned && !printing) return "";
       return this.$t(
         `accessPoint.management.dialog.${
-          printing ? "nextStep" : "nextStepNoQr"
+          assigned ? "nextStepQrOnly" : printing ? "nextStep" : "nextStepNoQr"
         }`
       );
     },
@@ -392,7 +420,66 @@ export default {
     // The Fächer the save takes out of the stored Anlage or out of service.
     leavingIds() {
       if (!this.isEdit || !this.fields.compartments) return [];
-      return leavingCompartmentIds(this.accessPoint, this.compartments);
+      return leavingCompartmentIds(this.source, this.compartments);
+    },
+    // An Anlage that carries its own Fächer is assigned in this dialog, to
+    // one bookable at most, where the bookables are readable.
+    assignsHere() {
+      return !!this.fields.compartments && !this.bookablesUnreadable;
+    },
+    // The bookable the stored access point is assigned to, or `null`.
+    storedBookable() {
+      if (!this.form.id) return null;
+      return (
+        this.bookables.find((bookable) =>
+          (bookable.accessPointDetails?.accessPointIds || []).includes(
+            this.form.id
+          )
+        ) || null
+      );
+    },
+    storedBookableId() {
+      return this.storedBookable?.id ?? null;
+    },
+    // The bookable chosen in the field, with its type and Anzahl, or `null`.
+    bookable() {
+      return (
+        this.bookables.find((bookable) => bookable.id === this.bookableId) ||
+        null
+      );
+    },
+    // „Später zuordnen“, then the bookables the person may edit. One
+    // assigned that she may not edit stands there too, see `bookableLocked`.
+    bookableItems() {
+      const items = this.bookables
+        .filter(
+          (bookable) =>
+            bookable === this.storedBookable ||
+            BookablePermissionService.allowUpdate(bookable)
+        )
+        .map((bookable) => ({ value: bookable.id, text: bookable.title }));
+      return [
+        {
+          value: null,
+          text: this.$t("accessPoint.management.dialog.bookable.later"),
+        },
+        ...items,
+      ];
+    },
+    // Assigned to a bookable the person may not edit: moving the Anlage
+    // away would change it, so the field stays as it is.
+    bookableLocked() {
+      return (
+        !!this.storedBookable &&
+        !BookablePermissionService.allowUpdate(this.storedBookable)
+      );
+    },
+    bookableHint() {
+      return this.bookableLocked
+        ? this.$t("accessPoint.management.dialog.bookable.locked", {
+            bookable: this.storedBookable.title,
+          })
+        : this.$t("accessPoint.management.dialog.bookable.hint");
     },
     // Required are the choice or the id, and the Bezeichnung.
     canSave() {
@@ -441,6 +528,8 @@ export default {
         delete config.compartments;
       }
       this.compartmentErrors = {};
+      this.stored = null;
+      this.bookableId = this.storedBookableId;
       // A stored value outside the five is kept and saved back unchanged,
       // rather than being read as "Automatisch".
       this.openAction =
@@ -644,7 +733,7 @@ export default {
      * types stay as they are instead of being dropped on every save.
      */
     buildValidationRules() {
-      const others = (this.accessPoint?.validationRules || []).filter(
+      const others = (this.source?.validationRules || []).filter(
         (rule) => rule.type !== QR_SCAN_RULE
       );
       return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
@@ -664,20 +753,82 @@ export default {
     },
     // The Fächer show what the save does to their bookings, so it asks
     // nothing (ECCdigital/tickets#1113). A future booking no Fach was free
-    // for shows at the row of the Anlage.
+    // for shows at the row of the Anlage. The assignment chosen here follows
+    // the Anlage (ECCdigital/tickets#1165).
     async store() {
       this.saving = true;
       try {
-        const response = await ApiAccessPointService.storeAccessPoint(
-          this.buildPayload(),
-          this.tenantId
-        );
-        this.$emit("saved", response.data);
-      } catch (error) {
-        this.applySaveError(error);
+        let saved;
+        try {
+          const response = await ApiAccessPointService.storeAccessPoint(
+            this.buildPayload(),
+            this.tenantId
+          );
+          saved = response.data;
+        } catch (error) {
+          this.applySaveError(error);
+          return;
+        }
+        if (await this.assign(saved?.id || this.form.id)) {
+          this.$emit("saved", saved);
+        } else {
+          this.holdStored(saved);
+        }
       } finally {
         this.saving = false;
       }
+    },
+    // Sets the bookable of the Anlage where the choice changed it; the
+    // backend takes the Anlage off the bookable it hung at before. Answers
+    // whether the assignment stands.
+    async assign(accessPointId) {
+      if (!this.assignsHere || this.bookableId === this.storedBookableId) {
+        return true;
+      }
+      try {
+        await ApiAccessPointService.assignBookables(
+          accessPointId,
+          this.bookableId ? [this.bookableId] : [],
+          this.tenantId
+        );
+        return true;
+      } catch (error) {
+        this.saveError = this.$t(
+          "accessPoint.management.dialog.bookable.assignFailed",
+          { reason: this.assignFailure(error) }
+        );
+        return false;
+      }
+    },
+    // A refusal for rights names the bookables the assignment changes.
+    assignFailure(error) {
+      if (isForbiddenError(error)) {
+        const titles = [this.storedBookable, this.bookable]
+          .filter(Boolean)
+          .map((bookable) => `„${bookable.title}“`);
+        return this.$t(
+          "accessPoint.management.dialog.bookable.assignForbidden",
+          {
+            bookables: titles.join(
+              ` ${this.$t("accessPoint.management.dialog.bookable.and")} `
+            ),
+          }
+        );
+      }
+      return formatAccessPointErrorMessage(error, {
+        fallbackKey: "accessPoint.management.dialog.bookable.assignRetry",
+      });
+    },
+    // The Anlage is stored, its assignment is not: the dialog stays open on
+    // the stored Anlage, so saving again updates it rather than creating a
+    // second one.
+    holdStored(saved) {
+      if (saved?.id) {
+        this.qrScanRequired = this.qrScanShown;
+        this.stored = saved;
+        this.form.id = saved.id;
+      }
+      this.$emit("stored", saved);
     },
     // The Öffnungsart's own faults belong at the select, a Fach's at the
     // Fach; everything else in the alert below, which names the refused
@@ -853,6 +1004,22 @@ export default {
               </div>
             </div>
           </div>
+
+          <!-- Open Locker's Schließfachanlage: assigned right here -->
+          <v-select
+            v-if="assignsHere"
+            v-model="bookableId"
+            :items="bookableItems"
+            :label="$t('accessPoint.management.dialog.bookable.label')"
+            :hint="bookableHint"
+            :disabled="bookableLocked || saving"
+            persistent-hint
+            background-color="accent"
+            filled
+            dense
+            class="bookable-field mb-4"
+            data-test="bookable-field"
+          />
 
           <!-- Open Locker's Schließfachanlage: its Fächer are the lock -->
           <div v-if="fields.compartments" class="mb-4">
@@ -1084,7 +1251,7 @@ export default {
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
         <span
-          v-if="!isEdit"
+          v-if="!isEdit && nextStep"
           class="text-caption text--secondary px-2"
           data-test="next-step"
         >
