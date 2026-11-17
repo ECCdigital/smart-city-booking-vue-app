@@ -3309,6 +3309,12 @@
           "and": "und",
           "assignRetry": "Speichern Sie erneut, um sie zuzuordnen."
         },
+        "amount": {
+          "setTo": "Anzahl auf {amount} setzen",
+          "noted": "Beim Speichern wird die Anzahl von „{bookable}“ auf {amount} gesetzt.",
+          "keep": "Bisherige Anzahl behalten",
+          "locked": "Die Anzahl muss jemand ändern, der „{bookable}“ bearbeiten darf."
+        },
         "uses": {
           "lead": "Jede Buchung bekommt für ihre Zeit ein eigenes Fach. Wählen Sie so viele Fächer, wie zur selben Zeit gebucht werden können.",
           "room": "Schlüssel für einen Raum: 1 Fach",
@@ -3360,6 +3366,8 @@
         "compartmentNotAccessible": "Das technische Konto von Open Locker hat keinen Zugriff auf das Fach „{externalId}“. Geben Sie dem Konto in Open Locker eine Berechtigung auf das Fach oder wählen Sie ein Fach, auf das es Zugriff hat.",
         "compartmentInLockerSystem": "Das Fach steht schon in der Schließfachanlage „{label}“.",
         "openLockerLockerOnly": "Bei Open Locker gibt es nur Schließfachanlagen. Legen Sie eine Schließfachanlage an, auch für ein einzelnes Fach.",
+        "amountNeedsOneLockerBookable": "Die Anzahl lässt sich hier nur setzen, wenn die Schließfachanlage eigene Fächer hat und genau einem Buchungsobjekt zugeordnet wird.",
+        "invalidAmount": "Die Anzahl muss eine ganze Zahl ab 1 sein.",
         "lockerSystemInOtherBookable": "Die Schließfachanlage „{label}“ gehört schon zum Buchungsobjekt „{bookable}“. Entfernen Sie sie dort, bevor Sie sie hier zuordnen.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },

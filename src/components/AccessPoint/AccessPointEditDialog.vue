@@ -100,7 +100,10 @@ function emptyForm() {
  * unfolded. Which fields an access point has is `accessPointFields`.
  *
  * Saving stores the access point, then, where the bookable chosen for an
- * Open Locker Anlage changed, its assignment (ECCdigital/tickets#1165).
+ * Open Locker Anlage changed, its assignment (ECCdigital/tickets#1165) -
+ * also where only its Anzahl changed: „Anzahl auf N setzen“ beside the
+ * Fächer notes the Anzahl, which goes with the assignment
+ * (ECCdigital/tickets#1167).
  * Events: `close`, `saved` (both stored), `stored` (the Anlage is stored,
  * its assignment failed: the dialog stays open on it).
  */
@@ -150,6 +153,10 @@ export default {
       // with the save (ECCdigital/tickets#1165); `null` is „Später
       // zuordnen“.
       bookableId: null,
+      // The Anzahl „Anzahl auf N setzen“ noted for that bookable, written
+      // with the assignment on save (ECCdigital/tickets#1167); `null` for
+      // none.
+      notedAmount: null,
       // The Anlage this dialog stored while its assignment failed; it is
       // edited from then on.
       stored: null,
@@ -495,7 +502,23 @@ export default {
     // „Was daraus wird“: what the Fächer ticked and the bookable chosen
     // make of each other, by the Regel für Anzahl und Fächer.
     outcome() {
-      return compartmentOutcome(this.compartments, this.bookable);
+      return compartmentOutcome(
+        this.compartments,
+        this.bookable,
+        this.notedAmount === null ? {} : { amount: this.notedAmount }
+      );
+    },
+    // The Anzahl the Fächer in service ask of the bookable where they
+    // differ, none while no Fach is in service.
+    suggestedAmount() {
+      if (!this.assignsHere || !this.bookable) return null;
+      return this.outcome.suggestedAmount;
+    },
+    // Whether the person may change the Anzahl of the bookable chosen.
+    mayChangeAmount() {
+      return (
+        !!this.bookable && BookablePermissionService.allowUpdate(this.bookable)
+      );
     },
     width() {
       return this.fields.compartments ? WIDTH_WITH_OUTCOME : WIDTH;
@@ -510,6 +533,10 @@ export default {
   watch: {
     open(isOpen) {
       if (isOpen) this.reset();
+    },
+    // An Anzahl noted belongs to the bookable it was noted for.
+    bookableId() {
+      this.notedAmount = null;
     },
   },
   methods: {
@@ -549,6 +576,7 @@ export default {
       this.compartmentErrors = {};
       this.stored = null;
       this.bookableId = this.storedBookableId;
+      this.notedAmount = null;
       // A stored value outside the five is kept and saved back unchanged,
       // rather than being read as "Automatisch".
       this.openAction =
@@ -797,18 +825,29 @@ export default {
         this.saving = false;
       }
     },
-    // Sets the bookable of the Anlage where the choice changed it; the
-    // backend takes the Anlage off the bookable it hung at before. Answers
-    // whether the assignment stands.
+    // „Anzahl auf N setzen“ only notes the Anzahl; the save writes it. Back
+    // at the bookable's own Anzahl, nothing is left to write.
+    noteAmount(amount) {
+      this.notedAmount =
+        amount === Number(this.bookable?.amount) ? null : amount;
+    },
+    // Sets the bookable of the Anlage where the choice changed it, and the
+    // Anzahl noted for it; the backend takes the Anlage off the bookable it
+    // hung at before. Answers whether the assignment stands.
     async assign(accessPointId) {
-      if (!this.assignsHere || this.bookableId === this.storedBookableId) {
+      const amountNoted = !!this.bookableId && this.notedAmount !== null;
+      if (
+        !this.assignsHere ||
+        (this.bookableId === this.storedBookableId && !amountNoted)
+      ) {
         return true;
       }
       try {
         await ApiAccessPointService.assignBookables(
           accessPointId,
           this.bookableId ? [this.bookableId] : [],
-          this.tenantId
+          this.tenantId,
+          ...(amountNoted ? [{ amount: this.notedAmount }] : [])
         );
         return true;
       } catch (error) {
@@ -819,10 +858,11 @@ export default {
         return false;
       }
     },
-    // A refusal for rights names the bookables the assignment changes.
+    // A refusal for rights names the bookables the assignment changes, the
+    // one whose Anzahl alone changes once.
     assignFailure(error) {
       if (isForbiddenError(error)) {
-        const titles = [this.storedBookable, this.bookable]
+        const titles = [...new Set([this.storedBookable, this.bookable])]
           .filter(Boolean)
           .map((bookable) => `„${bookable.title}“`);
         return this.$t(
@@ -1061,7 +1101,57 @@ export default {
                 />
               </v-col>
               <v-col cols="12" md="5" class="py-0">
-                <AccessPointCompartmentOutcome :outcome="outcome" />
+                <AccessPointCompartmentOutcome :outcome="outcome">
+                  <div
+                    v-if="notedAmount !== null"
+                    class="text-caption mt-2"
+                    data-test="amount-noted"
+                  >
+                    {{
+                      $t("accessPoint.management.dialog.amount.noted", {
+                        bookable: bookable.title,
+                        amount: notedAmount,
+                      })
+                    }}
+                    <a
+                      href="#"
+                      class="ml-1"
+                      data-test="amount-keep"
+                      @click.prevent="notedAmount = null"
+                    >
+                      {{ $t("accessPoint.management.dialog.amount.keep") }}
+                    </a>
+                  </div>
+                  <template v-if="suggestedAmount !== null">
+                    <v-btn
+                      v-if="mayChangeAmount"
+                      small
+                      text
+                      color="primary"
+                      class="mt-2 px-1"
+                      :disabled="saving"
+                      data-test="amount-set"
+                      @click="noteAmount(suggestedAmount)"
+                    >
+                      {{
+                        $t("accessPoint.management.dialog.amount.setTo", {
+                          amount: suggestedAmount,
+                        })
+                      }}
+                    </v-btn>
+                    <div
+                      v-else
+                      class="text-caption text--secondary mt-2"
+                      data-test="amount-locked"
+                    >
+                      {{
+                        $t("accessPoint.management.dialog.amount.locked", {
+                          bookable: bookable.title,
+                        })
+                      }}
+                    </div>
+                  </template>
+                </AccessPointCompartmentOutcome>
               </v-col>
             </v-row>
           </template>
