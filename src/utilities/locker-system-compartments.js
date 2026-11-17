@@ -399,52 +399,100 @@ export function lockerSystemIdsLinkedElsewhere(
   );
 }
 
+/** How many of the Fächer are in service - those the backend assigns. */
+export function compartmentsInService(compartments) {
+  return (compartments || []).filter(
+    (compartment) => compartment.outOfService !== true
+  ).length;
+}
+
 /**
- * The linked Anlagen with their own Fächer whose Fächer the bookable's
- * `amount` does not fit: it is unlimited (empty or 0), or larger than their
- * number. Every Fach counts, out of service or not. `amount` stays the
- * editor's to set, so this is a hint, never a refusal
- * (ECCdigital/tickets#1038).
+ * The Regel für Anzahl und Fächer of one Anlage (ECCdigital/tickets#1164):
+ * the bookable's `amount` should equal the Fächer in service, as the backend
+ * counts availability - the smaller of the two. Any difference is a hint,
+ * never a refusal: the amount is `larger`, `smaller`, or `unlimited` (empty
+ * or 0). The suggested amount is the Fächer in service, none while no Fach
+ * is in service, since 0 means unlimited.
+ *
+ * It takes the Fächer as they stand - a stored Anlage's `config.compartments`
+ * or the draft of its dialog, out of service marked - and the bookable or
+ * none, so the amount card, the access points of the bookable and the dialog
+ * of the Anlage ask the same rule.
+ *
+ * @param {Object[]} compartments The Fächer, each with `outOfService`
+ * @param {Object|null} bookable The bookable of the Anlage, `null` for none
+ * @returns {{kind: "larger"|"smaller"|"unlimited", amount: number|null,
+ *   inService: number, suggestedAmount: number|null}|null} `null` when the
+ *   amount fits or there is no bookable; `amount` is `null` while unlimited
+ */
+export function compartmentCountMismatch(compartments, bookable) {
+  if (!bookable) return null;
+  const inService = compartmentsInService(compartments);
+  const unlimited = isUnlimitedAmount(bookable);
+  const amount = unlimited ? null : Number(bookable.amount);
+  if (amount === inService) return null;
+  let kind = "smaller";
+  if (unlimited) kind = "unlimited";
+  else if (amount > inService) kind = "larger";
+  return {
+    kind,
+    amount,
+    inService,
+    suggestedAmount: inService > 0 ? inService : null,
+  };
+}
+
+/**
+ * The linked Anlagen with their own Fächer whose Fächer in service the
+ * bookable's `amount` does not equal, by `compartmentCountMismatch`. `amount`
+ * stays the editor's to set, so this is a hint, never a refusal
+ * (ECCdigital/tickets#1038, #1164).
  *
  * @param {Object} bookable The bookable as edited
  * @param {Object[]} accessPoints Every access point of the tenant
- * @returns {{accessPointId: string, label: string, count: number}[]} In the
- *   order the bookable links them
+ * @returns {{accessPointId: string, label: string, kind: string,
+ *   amount: number|null, inService: number, suggestedAmount: number|null}[]}
+ *   In the order the bookable links them
  */
 export function compartmentCountMismatches(bookable, accessPoints) {
-  const unlimited = isUnlimitedAmount(bookable);
-  const amount = Number(bookable?.amount);
   return (bookable?.accessPointDetails?.accessPointIds || [])
     .map((id) => (accessPoints || []).find((point) => point.id === id))
     .filter(carriesOwnCompartments)
     .map((point) => ({
+      point,
+      mismatch: compartmentCountMismatch(point.config.compartments, bookable),
+    }))
+    .filter(({ mismatch }) => mismatch)
+    .map(({ point, mismatch }) => ({
       accessPointId: point.id,
       label: accessPointLabel(point),
-      count: point.config.compartments.length,
-    }))
-    .filter(({ count }) => unlimited || amount > count);
+      ...mismatch,
+    }));
 }
 
 /**
- * The hint of `compartmentCountMismatches`, one sentence per Anlage, for the
- * amount card and the assignment alike.
+ * The hint of `compartmentCountMismatches`, one sentence per Anlage naming
+ * the amount it should have, for the amount card and the access points of
+ * the bookable alike. `suggestedAmount` is what „Anzahl auf N setzen“ sets,
+ * `null` while no Fach is in service.
  *
  * @param {Object} bookable The bookable as edited
  * @param {Object[]} accessPoints Every access point of the tenant
- * @returns {{id: string, text: string}[]}
+ * @returns {{id: string, text: string, suggestedAmount: number|null}[]}
  */
 export function compartmentCountHints(bookable, accessPoints) {
-  const unlimited = isUnlimitedAmount(bookable);
   return compartmentCountMismatches(bookable, accessPoints).map(
-    ({ accessPointId, label, count }) => ({
-      id: accessPointId,
-      text: i18n.tc(
-        `accessPoint.bookable.compartmentCount.${
-          unlimited ? "unlimited" : "larger"
-        }`,
-        count,
-        { label, count, amount: Number(bookable.amount) }
-      ),
-    })
+    ({ accessPointId, label, kind, amount, inService, suggestedAmount }) => {
+      const params = { label, amount, count: inService };
+      const key = `accessPoint.bookable.compartmentCount.${kind}`;
+      const text =
+        kind === "smaller"
+          ? i18n.tc(key, inService - amount, {
+              ...params,
+              unused: inService - amount,
+            })
+          : i18n.tc(key, inService, params);
+      return { id: accessPointId, text, suggestedAmount };
+    }
   );
 }
