@@ -9,6 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Event editing, Teilnahme: „Ohne Anmeldung“ adds „Teilnahmeplätze und Tickets entfallen.“; „Nur wer den Link hat“ reads „Die Veranstaltung steht nicht in der öffentlichen Liste. Der Link wird manuell verschickt, z. B. an eine Schulklasse.“
 -   Event editing, Veranstalter & Kontakt: the card „Referenten“ reads „Referent:innen“, its hint „Geben Sie optional an, wer die Veranstaltung leitet oder dort spricht. Referent:innen erscheinen mit Namen und Foto auf der Veranstaltungsseite.“
 -   Event editing, Ort & Format: choosing a Veranstaltungsort or a Raum of this administration takes its location as the event's Standort. The location input shows a location set from outside anew, its search text too
 -   Old checkout, Buchungszeitraum: Startdatum, Startzeit, Enddatum and Endzeit use the same fields as the event editing (`DateField`, `TimeField`), outlined like there; typing, the pickers beneath the field and the checks (not before today, the end not before the start) stay as they were. The checkout's own date parsing is gone, it reads typed dates with `utils/dateInput`

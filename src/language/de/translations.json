@@ -1206,7 +1206,7 @@
         },
         "none": {
           "label": "Ohne Anmeldung",
-          "hint": "Teilnehmende kommen einfach vorbei."
+          "hint": "Teilnehmende kommen einfach vorbei. Teilnahmeplätze und Tickets entfallen."
         },
         "max": "Teilnahmeplätze",
         "maxHint": "So viele Personen können sich höchstens anmelden, über alle Tickets zusammen.",
@@ -1217,7 +1217,7 @@
         },
         "audienceLink": {
           "label": "Nur wer den Link hat",
-          "hint": "Sie steht nicht in der Liste. Sie verschicken den Link selbst, z. B. an eine Schulklasse."
+          "hint": "Die Veranstaltung steht nicht in der öffentlichen Liste. Der Link wird manuell verschickt, z. B. an eine Schulklasse."
         },
         "externalUrl": "Adresse der Anmeldeseite"
       },
