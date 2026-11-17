@@ -53,6 +53,7 @@ const state = () => ({
       },
     ],
     priceType: "per-item",
+    priceCountStartedHours: false,
     priceValueAddedTax: 0,
 
     enableCoupons: true,
@@ -157,6 +158,7 @@ const mutations = {
         },
       ],
       priceType: "per-item",
+      priceCountStartedHours: false,
       priceValueAddedTax: 0,
 
       enableCoupons: true,

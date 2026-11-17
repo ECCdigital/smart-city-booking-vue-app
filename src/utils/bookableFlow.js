@@ -210,11 +210,13 @@ export function suggestedPriceType(bookable) {
  * Sets the Preisart. `fixedPrice` means something else for each of them
  * (Tagespauschale, full days, once per booking), so every category falls
  * back to the new Preisart's default rather than silently changing meaning.
+ * Counting started hours belongs to the hour price and starts off again.
  * The same Preisart again changes nothing.
  */
 export function applyPriceType(bookable, priceType) {
   if (bookable.priceType === priceType) return bookable;
   bookable.priceType = priceType;
+  bookable.priceCountStartedHours = false;
   (bookable.priceCategories || []).forEach((category) => {
     category.fixedPrice = defaultFixedPrice(priceType);
   });
@@ -255,8 +257,9 @@ export function applyPriceMode(bookable, mode) {
  * backend reckons it (`_internalRegularPriceEur`). The booking is split into
  * calendar days; per day an hour price counts the hours, a day price the
  * share of 24 hours, and `fixedPrice` drops that factor, so each touched day
- * costs the price once. Item and m² ignore the duration; with `fixedPrice`
- * they ignore the booked quantity too. The key below
+ * costs the price once; with `priceCountStartedHours` an hour price counts
+ * every started hour in full. Item and m² ignore the duration; with
+ * `fixedPrice` they ignore the booked quantity too. The key below
  * `bookable.price.explain` and the amounts (net, in euros) its
  * parameters need. The examples: 2.5 hours, Friday 14:00 to Sunday 12:00
  * (three touched days), 6 hours, 3 items.
@@ -271,8 +274,10 @@ export function priceExplanation(bookable) {
   switch (bookable.priceType) {
     case "per-hour":
       // Tagespauschale: no time factor, once per touched calendar day.
-      return fixed
-        ? { key: "per-hour-daily", amounts: { total: price * 3 } }
+      if (fixed)
+        return { key: "per-hour-daily", amounts: { total: price * 3 } };
+      return bookable.priceCountStartedHours
+        ? { key: "per-hour-started", amounts: { total: price * 3 } }
         : { key: "per-hour", amounts: { total: price * 2.5 } };
     case "per-day":
       if (mode === "week")
