@@ -3306,11 +3306,11 @@
           "locked": "Eine Schließfachanlage gehört zu genau einem Buchungsobjekt. Die Zuordnung zu „{bookable}“ ändern kann nur, wer es bearbeiten darf.",
           "assignFailed": "Die Schließfachanlage ist gespeichert, die Zuordnung aber nicht. {reason}",
           "assignForbidden": "Ihnen fehlt die Berechtigung, {bookables} zu bearbeiten.",
+          "quoted": "„{bookable}“",
           "and": "und",
           "assignRetry": "Speichern Sie erneut, um sie zuzuordnen."
         },
         "amount": {
-          "setTo": "Anzahl auf {amount} setzen",
           "noted": "Beim Speichern wird die Anzahl von „{bookable}“ auf {amount} gesetzt.",
           "keep": "Bisherige Anzahl behalten",
           "locked": "Die Anzahl muss jemand ändern, der „{bookable}“ bearbeiten darf."
@@ -3330,6 +3330,7 @@
           "unlimitedAmount": "unbegrenzt",
           "concurrent": "zur selben Zeit buchbar",
           "empty": "Noch kein Fach gewählt. Klicken Sie links die Fächer an, die zu dieser Schließfachanlage gehören.",
+          "unknown": "Kein Fach ist in Betrieb. Die Zuordnung zu einem Buchungsobjekt ließ sich nicht lesen. | 1 Fach ist in Betrieb, für eine Buchung zur selben Zeit. Die Zuordnung zu einem Buchungsobjekt ließ sich nicht lesen. | {count} Fächer sind in Betrieb, je Fach eine Buchung zur selben Zeit. Die Zuordnung zu einem Buchungsobjekt ließ sich nicht lesen.",
           "unassigned": "Kein Fach ist in Betrieb. Zur selben Zeit buchbar ist deshalb nichts. | Zur selben Zeit buchbar: 1, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte 1 sein. | Zur selben Zeit buchbar: {count}, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte {count} sein.",
           "fits": "Passt: „{bookable}“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach. | Passt: „{bookable}“ kann {count}-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach.",
           "larger": "„{bookable}“ hat die Anzahl {amount}, aber kein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nichts. | „{bookable}“ hat die Anzahl {amount}, aber nur 1 Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nur 1. | „{bookable}“ hat die Anzahl {amount}, aber nur {count} Fächer in Betrieb. Zur selben Zeit buchbar sind deshalb nur {count}.",
@@ -3673,7 +3674,6 @@
       },
       "grants": {
         "door": "Die Tür, im Buchungszeitraum mit anderen geteilt",
-        "compartment": "Das Fach, im Buchungszeitraum mit anderen geteilt",
         "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
         "lockerSystem": "Je gebuchter Einheit ein eigenes Fach, von Biletado aus den Fächern der Anlage zugeteilt"
       },

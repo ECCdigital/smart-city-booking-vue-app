@@ -504,6 +504,21 @@ describe("compartmentOutcome", () => {
     );
   });
 
+  /** „dafür gibt es ein Fach“ only where exactly one Fach is in service. */
+  it("says one Fach for Anzahl 1 only with one Fach in service, else the case it is", () => {
+    const oneOfThree = compartmentOutcome(fächer(1, 2), bookable(1, "Labor"));
+    expect(oneOfThree.kind).toBe("fits");
+    expect(oneOfThree.text).toBe(
+      "Passt: „Labor“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach."
+    );
+
+    const threeInService = compartmentOutcome(fächer(3), bookable(1, "Labor"));
+    expect(threeInService.kind).toBe("smaller");
+    expect(threeInService.text).toBe(
+      "„Labor“ hat die Anzahl 1, in Betrieb sind 3 Fächer. 2 Fächer werden nie gebraucht. Setzen Sie die Anzahl auf 3, oder nehmen Sie 2 Fächer heraus."
+    );
+  });
+
   it("names the Anzahl the bookable should have while there is none", () => {
     expect(compartmentOutcome(fächer(3, 1), null)).toEqual({
       kind: "unassigned",

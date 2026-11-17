@@ -3864,7 +3864,8 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
     expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
       "ap-new",
       ["b3"],
-      "t1"
+      "t1",
+      { amount: undefined }
     );
     expect(
       ApiAccessPointService.storeAccessPoint.mock.invocationCallOrder[0]
@@ -3918,7 +3919,8 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
     expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
       OPEN_LOCKER_ANLAGE.id,
       ["b3"],
-      "t1"
+      "t1",
+      { amount: undefined }
     );
     expect(chipsOf(wrapper, "Fahrradgarage Süd")).toEqual(["Lastenrad"]);
   });
@@ -3933,7 +3935,8 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
     expect(ApiAccessPointService.assignBookables).toHaveBeenCalledWith(
       OPEN_LOCKER_ANLAGE.id,
       [],
-      "t1"
+      "t1",
+      { amount: undefined }
     );
   });
 
@@ -3979,8 +3982,8 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
       ApiAccessPointService.storeAccessPoint.mock.calls[1][0].validationRules
     ).toEqual([]);
     expect(ApiAccessPointService.assignBookables.mock.calls).toEqual([
-      ["ap-new", ["b3"], "t1"],
-      ["ap-new", ["b3"], "t1"],
+      ["ap-new", ["b3"], "t1", { amount: undefined }],
+      ["ap-new", ["b3"], "t1", { amount: undefined }],
     ]);
     expect(pointDialog(wrapper).isVisible()).toBe(false);
   });
@@ -4350,6 +4353,64 @@ describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => 
     expect(outcome(wrapper).text).toMatch(/^Passt: „Besprechungsraum“/);
   });
 
+  /**
+   * Without the bookables the dialog cannot tell whether the Anlage is
+   * assigned, so it claims neither way and its save leaves the assignment
+   * alone.
+   */
+  it.each([
+    ["forbidden", forbiddenError()],
+    ["not loaded", new Error("Network Error")],
+  ])(
+    "claims no assignment while the bookables are %s, and keeps it on save",
+    async (_, error) => {
+      ApiAccessPointService.storeAccessPoint.mockImplementation(
+        async (payload) => ({ data: payload })
+      );
+      const anlage = {
+        id: "ap-labor",
+        type: "locker",
+        mode: "remote",
+        provider: "open-locker",
+        label: "Labor",
+        validationRules: [],
+        config: {
+          compartments: [1, 2, 3].map((number) => ({
+            id: `uuid-${number}`,
+            number,
+            lockerBank: LABOR,
+            outOfService: number === 3,
+          })),
+        },
+      };
+      const wrapper = await mountAccessPointsPage({
+        providers: [OPEN_LOCKER],
+        accessPoints: [anlage],
+        bookables: error,
+        listings: { "open-locker": FÄCHER },
+      });
+
+      await editPoint(wrapper, "Labor");
+
+      expect(outcome(wrapper)).toEqual({
+        numbers: [
+          "3 Fächer (1 außer Betrieb)",
+          "– Anzahl",
+          "– zur selben Zeit buchbar",
+        ],
+        text: "2 Fächer sind in Betrieb, je Fach eine Buchung zur selben Zeit. Die Zuordnung zu einem Buchungsobjekt ließ sich nicht lesen.",
+      });
+      expect(shown(wrapper, "bookable-field").exists()).toBe(false);
+      expect(pointDialog(wrapper).text()).not.toContain("Später zuordnen");
+      expect(pointDialog(wrapper).text()).not.toContain("Ordnen Sie");
+
+      await savePoint(wrapper);
+
+      expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+      expect(ApiAccessPointService.assignBookables).not.toHaveBeenCalled();
+    }
+  );
+
   it("shows neither examples nor „Was daraus wird“ for a door", async () => {
     const wrapper = await mountAccessPointsPage({ providers: [NUKI] });
 
@@ -4579,7 +4640,7 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
 
     expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
     expect(ApiAccessPointService.assignBookables.mock.calls).toEqual([
-      ["ap-new", ["b-rad"], "t1"],
+      ["ap-new", ["b-rad"], "t1", { amount: undefined }],
     ]);
     expect(pointDialog(wrapper).isVisible()).toBe(false);
   });
@@ -4594,8 +4655,48 @@ describe("AccessPoints aligns the Anzahl in the dialog of a Schließfachanlage",
     expect(setAmountButton(wrapper).text()).toBe("Anzahl auf 3 setzen");
     await savePoint(wrapper);
     expect(ApiAccessPointService.assignBookables.mock.calls).toEqual([
-      [ANLAGE.id, ["b-rad"], "t1"],
+      [ANLAGE.id, ["b-rad"], "t1", { amount: undefined }],
     ]);
+  });
+
+  it("drops the Anzahl noted once a Fach ticked makes it stale, and saves none", async () => {
+    const wrapper = await editAnlage();
+    await setAmount(wrapper);
+
+    await pointDialog(wrapper)
+      .find(".compartment-row[data-compartment-id='uuid-4'] input")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(shown(wrapper, "amount-noted").exists()).toBe(false);
+    expect(outcomeText(wrapper)).toMatch(
+      /^„Fahrradboxen“ hat die Anzahl 2, in Betrieb sind 4 Fächer\./
+    );
+    expect(setAmountButton(wrapper).text()).toBe("Anzahl auf 4 setzen");
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.storeAccessPoint).toHaveBeenCalledTimes(1);
+    expect(ApiAccessPointService.assignBookables).not.toHaveBeenCalled();
+  });
+
+  it("drops the Anzahl noted once a Fach out of service makes it stale", async () => {
+    const wrapper = await editAnlage();
+    await setAmount(wrapper);
+
+    await pointDialog(wrapper)
+      .find(".compartment-row[data-compartment-id='uuid-3'] [role='switch']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(shown(wrapper, "amount-noted").exists()).toBe(false);
+    expect(outcomeText(wrapper)).toBe(
+      "Passt: „Fahrradboxen“ kann 2-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach."
+    );
+
+    await savePoint(wrapper);
+
+    expect(ApiAccessPointService.assignBookables).not.toHaveBeenCalled();
   });
 
   it("names the bookable once when the backend refuses the Anzahl for rights", async () => {

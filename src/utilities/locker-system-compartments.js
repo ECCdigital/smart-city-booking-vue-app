@@ -424,6 +424,22 @@ export function compartmentsInService(compartments) {
   ).length;
 }
 
+/** The Anzahl the Fächer in service ask for, none while none is: 0 means unlimited. */
+function suggestedAmountFor(inService) {
+  return inService > 0 ? inService : null;
+}
+
+/** The Anzahl of a bookable as the rule reads it, `null` while unlimited. */
+function amountOf(bookable) {
+  return isUnlimitedAmount(bookable) ? null : Number(bookable.amount);
+}
+
+/** The sentence of an Anzahl smaller than the Fächer in service. */
+function smallerText(key, { amount, inService }, params) {
+  const unused = inService - amount;
+  return i18n.tc(key, unused, { ...params, unused });
+}
+
 /**
  * The Regel für Anzahl und Fächer of one Anlage (ECCdigital/tickets#1164):
  * the bookable's `amount` should equal the Fächer in service, as the backend
@@ -446,17 +462,16 @@ export function compartmentsInService(compartments) {
 export function compartmentCountMismatch(compartments, bookable) {
   if (!bookable) return null;
   const inService = compartmentsInService(compartments);
-  const unlimited = isUnlimitedAmount(bookable);
-  const amount = unlimited ? null : Number(bookable.amount);
+  const amount = amountOf(bookable);
   if (amount === inService) return null;
   let kind = "smaller";
-  if (unlimited) kind = "unlimited";
+  if (amount === null) kind = "unlimited";
   else if (amount > inService) kind = "larger";
   return {
     kind,
     amount,
     inService,
-    suggestedAmount: inService > 0 ? inService : null,
+    suggestedAmount: suggestedAmountFor(inService),
   };
 }
 
@@ -470,33 +485,38 @@ export function compartmentCountMismatch(compartments, bookable) {
  *
  * `options.amount` stands in for the bookable's own Anzahl, an Anzahl the
  * dialog would save with the Anlage; left out, the bookable's counts.
+ * `options.assignmentUnknown` is set where the bookables could not be read:
+ * the case is then `unknown`, the Fächer in service without a word on the
+ * bookable or the Anzahl.
  *
  * @param {Object[]} compartments The Fächer, each with `outOfService`
  * @param {Object|null} bookable The bookable chosen, `null` for none
- * @param {{amount?: number|null}} [options]
- * @returns {{kind: "empty"|"unassigned"|"fits"|"larger"|"smaller"|"unlimited",
- *   count: number, outOfService: number, inService: number,
- *   amount: number|null, unlimited: boolean, concurrent: number,
+ * @param {{amount?: number|null, assignmentUnknown?: boolean}} [options]
+ * @returns {{kind: "empty"|"unknown"|"unassigned"|"fits"|"larger"|"smaller"|
+ *   "unlimited", count: number, outOfService: number, inService: number,
+ *   amount: number|null, unlimited: boolean, concurrent: number|null,
  *   suggestedAmount: number|null, text: string}} `amount` is `null` while
- *   unlimited or without a bookable; `suggestedAmount` is the Anzahl the
- *   bookable should have - what „Anzahl auf N setzen“ would set -, `null`
- *   where it fits, no Fach is chosen or none is in service
+ *   unlimited or without a bookable; `concurrent` is `null` while the
+ *   assignment is unknown; `suggestedAmount` is the Anzahl the bookable
+ *   should have - what „Anzahl auf N setzen“ would set -, `null` where it
+ *   fits, no Fach is chosen or none is in service
  */
-export function compartmentOutcome(compartments, bookable, options = {}) {
+export function compartmentOutcome(
+  compartments,
+  bookable,
+  { amount: noted, assignmentUnknown = false } = {}
+) {
   const count = (compartments || []).length;
   const inService = compartmentsInService(compartments);
   const measured =
-    bookable && options.amount !== undefined
-      ? { ...bookable, amount: options.amount }
-      : bookable;
-  const unlimited = !!measured && isUnlimitedAmount(measured);
-  const amount = measured && !unlimited ? Number(measured.amount) : null;
+    bookable && noted !== undefined ? { ...bookable, amount: noted } : bookable;
+  const amount = measured ? amountOf(measured) : null;
   const numbers = {
     count,
     outOfService: count - inService,
     inService,
     amount,
-    unlimited,
+    unlimited: !!measured && amount === null,
   };
   const key = (name) => `accessPoint.management.dialog.outcome.${name}`;
   if (!count) {
@@ -508,13 +528,21 @@ export function compartmentOutcome(compartments, bookable, options = {}) {
       text: i18n.t(key("empty")),
     };
   }
-  const suggestedAmount = inService > 0 ? inService : null;
+  if (assignmentUnknown) {
+    return {
+      kind: "unknown",
+      ...numbers,
+      concurrent: null,
+      suggestedAmount: null,
+      text: i18n.tc(key("unknown"), inService, { count: inService }),
+    };
+  }
   if (!measured) {
     return {
       kind: "unassigned",
       ...numbers,
       concurrent: inService,
-      suggestedAmount,
+      suggestedAmount: suggestedAmountFor(inService),
       text: i18n.tc(key("unassigned"), inService, { count: inService }),
     };
   }
@@ -529,19 +557,15 @@ export function compartmentOutcome(compartments, bookable, options = {}) {
       text: i18n.tc(key("fits"), amount, params),
     };
   }
-  const { kind } = mismatch;
+  const { kind, suggestedAmount } = mismatch;
   const outcome = {
     kind,
     ...numbers,
     concurrent: kind === "smaller" ? amount : inService,
-    suggestedAmount: mismatch.suggestedAmount,
+    suggestedAmount,
   };
   if (kind === "smaller") {
-    const unused = inService - amount;
-    return {
-      ...outcome,
-      text: i18n.tc(key("smaller"), unused, { ...params, unused }),
-    };
+    return { ...outcome, text: smallerText(key("smaller"), mismatch, params) };
   }
   const sentences = [i18n.tc(key(kind), inService, params)];
   if (kind === "larger" && inService > 0) {
@@ -598,10 +622,7 @@ export function compartmentCountHints(bookable, accessPoints) {
       const key = `accessPoint.bookable.compartmentCount.${kind}`;
       const text =
         kind === "smaller"
-          ? i18n.tc(key, inService - amount, {
-              ...params,
-              unused: inService - amount,
-            })
+          ? smallerText(key, { amount, inService }, params)
           : i18n.tc(key, inService, params);
       return { id: accessPointId, text, suggestedAmount };
     }

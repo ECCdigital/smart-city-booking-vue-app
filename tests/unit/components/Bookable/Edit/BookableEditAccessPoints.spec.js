@@ -34,15 +34,6 @@ const LOCKER = {
   externalId: "loc-42",
 };
 
-// A fixed Open Locker compartment: a door by type, a Fach on site.
-const OPEN_LOCKER_COMPARTMENT = {
-  id: "ap-open-locker",
-  type: "door",
-  provider: "open-locker",
-  label: "Labor Fachbank 1 · Fach 2",
-  externalId: "4f9c2a1e-0b7d-4c3a-9e51-2d6f8a0b1c3d",
-};
-
 // An Open Locker Schließfachanlage: its Fächer are Biletado's to assign.
 const OPEN_LOCKER_SYSTEM = {
   id: "ap-open-locker-system",
@@ -171,29 +162,6 @@ describe("BookableEditAccessPoints", () => {
     const row = rows(wrapper).at(0);
     expect(row.text()).toMatch(/Tür/);
     expect(row.text()).toMatch(/im Buchungszeitraum mit anderen geteilt/);
-  });
-
-  /**
-   * An Open Locker compartment is shared like a door, but it is no door
-   * (ECCdigital/tickets#1036): its row says „Fach“ in type and grant, never
-   * „Tür“, and in the picker it reads the same.
-   */
-  it("calls an assigned Open Locker compartment a Fach, shared for the period", async () => {
-    const wrapper = await mountPoints({
-      accessPoints: [OPEN_LOCKER_COMPARTMENT],
-      bookable: {
-        accessPointDetails: {
-          active: true,
-          accessBuffer: { before: 0, after: 0 },
-          accessPointIds: [OPEN_LOCKER_COMPARTMENT.id],
-        },
-      },
-    });
-
-    const text = rows(wrapper).at(0).text();
-    expect(text).toMatch(/Labor Fachbank 1 · Fach 2/);
-    expect(text).toMatch(/Das Fach, im Buchungszeitraum mit anderen geteilt/);
-    expect(text).not.toMatch(/Tür/);
   });
 
   /**

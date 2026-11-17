@@ -5,10 +5,7 @@ import {
   DOOR_KIND,
   kindNoun,
 } from "@/utilities/access-point-fields";
-import {
-  isLockerAccessPoint,
-  requiresQrScan,
-} from "@/utilities/access-points";
+import { isLockerAccessPoint, requiresQrScan } from "@/utilities/access-points";
 import { carriesOwnCompartments } from "@/utilities/locker-system-compartments";
 
 /**
