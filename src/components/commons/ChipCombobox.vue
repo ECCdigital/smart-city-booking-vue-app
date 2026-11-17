@@ -21,6 +21,7 @@ export default {
 
 <template>
   <v-combobox
+    class="chip-combobox"
     :value="value"
     :items="items"
     :label="label"
@@ -36,3 +37,22 @@ export default {
     @change="$emit('change', $event)"
   />
 </template>
+
+<style scoped>
+/* Chips that wrap stand apart, and the field leaves room above and below
+   them; Vuetify's dense field sets neither. The selector outweighs
+   Vuetify's own padding of the dense outlined field. */
+.chip-combobox.v-select.v-input--dense.v-text-field--outlined:not(
+    .v-text-field--single-line
+  )
+  >>> .v-select__selections {
+  row-gap: var(--scb-space-1);
+  padding-top: var(--scb-space-2);
+  padding-bottom: var(--scb-space-2);
+}
+
+.chip-combobox >>> .v-select__selections .v-chip {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+</style>

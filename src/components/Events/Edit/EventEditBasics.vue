@@ -52,12 +52,14 @@ export default {
         <MediaReferenceField
           :value="info.teaserImage"
           :label="$t('event.edit.basics.image')"
-          :hint="$t('event.edit.basics.imageHint')"
           :empty-label="$t('event.edit.basics.imageEmpty')"
           :public-only="isPublic"
           :public-only-reason="$t('event.edit.basics.publicOnly')"
           @input="update('information', 'teaserImage', $event)"
         />
+        <div class="event-edit__hint">
+          {{ $t("event.edit.basics.imageHint") }}
+        </div>
       </div>
     </SectionCard>
 
