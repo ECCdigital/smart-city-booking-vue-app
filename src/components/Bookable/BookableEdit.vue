@@ -184,96 +184,16 @@
 
       <div v-else-if="!flowMode" class="page-content__main">
         <div class="page-content__nav">
-          <nav
-            v-if="$vuetify.breakpoint.mdAndUp"
+          <EditorNav
             :key="tabsRenderKey"
-            class="bookable-edit-nav"
+            :tabs="navTabs"
+            :active-key="activeTabKey"
+            :sections="showSectionNav ? navSections : []"
+            :active-section-id="activeSectionId"
             :aria-label="$t('bookable.edit.nav.tabs')"
-          >
-            <div
-              v-for="t in visibleTabs"
-              :key="t.key"
-              class="bookable-edit-nav__group"
-              :class="{
-                'bookable-edit-nav__group--active': activeTabKey === t.key,
-              }"
-            >
-              <button
-                type="button"
-                class="bookable-edit-nav__tab"
-                :class="{
-                  'bookable-edit-nav__tab--active': activeTabKey === t.key,
-                }"
-                @click="goToTab(t.key)"
-              >
-                <v-icon small class="bookable-edit-nav__tab-icon">
-                  {{ t.icon }}
-                </v-icon>
-                <span class="bookable-edit-nav__tab-label">{{
-                  $t(t.labelKey)
-                }}</span>
-              </button>
-
-              <div
-                v-if="activeTabKey === t.key && showSectionNav"
-                class="bookable-edit-nav__sections"
-              >
-                <button
-                  v-for="section in activeTabSections"
-                  :key="section.id"
-                  type="button"
-                  class="bookable-edit-nav__section"
-                  :class="{
-                    'bookable-edit-nav__section--active':
-                      activeSectionId === section.id,
-                  }"
-                  @click="goToTab(t.key, section.id)"
-                >
-                  {{ $t(section.labelKey) }}
-                </button>
-              </div>
-            </div>
-          </nav>
-
-          <template v-else>
-            <v-tabs
-              :key="tabsRenderKey"
-              :value="activeTabIndex"
-              color="primary"
-              show-arrows
-              @change="onTabChange"
-            >
-              <v-tab
-                v-for="t in visibleTabs"
-                :key="t.key"
-                class="d-flex justify-start"
-                style="text-transform: none"
-              >
-                <v-icon left small>{{ t.icon }}</v-icon>
-                {{ $t(t.labelKey) }}
-              </v-tab>
-            </v-tabs>
-            <div
-              v-if="showSectionNav"
-              class="bookable-edit-nav__subnav"
-              role="navigation"
-              :aria-label="$t('bookable.edit.nav.sections')"
-            >
-              <button
-                v-for="section in activeTabSections"
-                :key="section.id"
-                type="button"
-                class="bookable-edit-nav__sublink"
-                :class="{
-                  'bookable-edit-nav__sublink--active':
-                    activeSectionId === section.id,
-                }"
-                @click="goToTab(activeTabKey, section.id)"
-              >
-                {{ $t(section.labelKey) }}
-              </button>
-            </div>
-          </template>
+            :sections-aria-label="$t('bookable.edit.nav.sections')"
+            @go="goToTab"
+          />
         </div>
 
         <div class="page-content__editor" ref="editorScroll">
@@ -331,6 +251,7 @@ import { mapActions, mapGetters } from "vuex";
 import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
+import EditorNav from "@/components/commons/EditorNav.vue";
 import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
 import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
@@ -374,6 +295,7 @@ export default {
     UnsavedChangesDialog,
     BookableFlow,
     BookableEditTab,
+    EditorNav,
   },
   mixins: [unsavedChangesGuard],
   props: {
@@ -461,12 +383,6 @@ export default {
     tabsRenderKey() {
       return this.expertMode ? "expert" : "simple";
     },
-    activeTabIndex() {
-      const index = this.visibleTabs.findIndex(
-        (tab) => tab.key === this.activeTabKey
-      );
-      return index >= 0 ? index : 0;
-    },
     activeTab() {
       return (
         this.visibleTabs.find((tab) => tab.key === this.activeTabKey) ||
@@ -485,6 +401,20 @@ export default {
         this.activeTabKey,
         this.sectionContext
       );
+    },
+    /** The tabs as the navigation shows them. */
+    navTabs() {
+      return this.visibleTabs.map((tab) => ({
+        key: tab.key,
+        icon: tab.icon,
+        label: this.$t(tab.labelKey),
+      }));
+    },
+    navSections() {
+      return this.activeTabSections.map((section) => ({
+        id: section.id,
+        label: this.$t(section.labelKey),
+      }));
     },
     showSectionNav() {
       return shouldShowBookableEditSectionNav(
@@ -732,6 +662,10 @@ export default {
           // Nothing is published unasked: both switches start off (#362).
           isBookable: false,
           isPublic: false,
+          // A ticket opened from an event's tab „Tickets“ starts linked to it.
+          ...(this.type === "ticket" && this.$route.query.eventId
+            ? { eventId: String(this.$route.query.eventId) }
+            : {}),
         });
       }
       await this.accessPoints.load(
@@ -803,12 +737,6 @@ export default {
           (item) => item.id === sectionId
         )
       );
-    },
-    onTabChange(index) {
-      const tab = this.visibleTabs[index];
-      if (tab) {
-        this.goToTab(tab.key);
-      }
     },
     applySectionNavigation(sectionId) {
       const section = getBookableEditSectionById(sectionId);
@@ -1121,155 +1049,6 @@ export default {
   max-height: calc(100vh - var(--scb-app-bar-height));
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.bookable-edit-nav {
-  min-width: var(--scb-nav-width-min);
-  max-width: var(--scb-nav-width-max);
-  padding: 2px 0;
-}
-
-.bookable-edit-nav__group {
-  margin-bottom: 2px;
-}
-
-.bookable-edit-nav__group--active {
-  margin-bottom: var(--scb-space-2);
-}
-
-/* The active tab is a tinted pill, with no bar at its left edge - as the
-   guided flow's step list. */
-.bookable-edit-nav__tab {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: var(--scb-nav-item-height);
-  margin: 0;
-  padding: var(--scb-space-2) var(--scb-space-3);
-  border: 0;
-  border-radius: var(--scb-radius-control);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast);
-}
-
-.bookable-edit-nav__tab:hover {
-  background-color: var(--scb-hover-tint);
-}
-
-.bookable-edit-nav__tab--active {
-  color: var(--v-primary-base);
-  background-color: var(--scb-selected-tint);
-  font-weight: var(--scb-font-weight-medium);
-}
-
-.bookable-edit-nav__tab--active .bookable-edit-nav__tab-icon {
-  color: var(--v-primary-base);
-}
-
-.bookable-edit-nav__tab-icon {
-  flex: 0 0 auto;
-  margin-right: 10px;
-  opacity: 0.85;
-}
-
-.bookable-edit-nav__tab-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: var(--scb-font-size-md);
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bookable-edit-nav__sections {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin: 2px 0 0 24px;
-  padding: 2px 0 2px var(--scb-space-3);
-  border-left: 1px solid var(--scb-surface-border);
-}
-
-.bookable-edit-nav__section {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 5px var(--scb-space-2);
-  border: 0;
-  border-radius: var(--scb-radius-control);
-  background: transparent;
-  color: var(--scb-text-muted);
-  font: inherit;
-  font-size: var(--scb-font-size-sm);
-  line-height: var(--scb-line-height-tight);
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast);
-}
-
-.bookable-edit-nav__section:hover {
-  color: var(--scb-text-hover);
-  background-color: var(--scb-hover-tint);
-}
-
-.bookable-edit-nav__section--active {
-  color: var(--v-primary-base);
-  font-weight: var(--scb-font-weight-medium);
-  background-color: var(--scb-selected-tint);
-}
-
-.theme--dark .bookable-edit-nav__section--active {
-  color: var(--v-primary-base);
-}
-
-.bookable-edit-nav__subnav {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--scb-space-1);
-  margin: 0;
-  padding: 6px var(--scb-space-1) var(--scb-space-2);
-  overflow-x: auto;
-  border-bottom: 1px solid var(--scb-rule-strong);
-  scrollbar-width: thin;
-}
-
-.bookable-edit-nav__sublink {
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: var(--scb-radius-pill);
-  background: transparent;
-  color: var(--scb-text-muted);
-  font: inherit;
-  font-size: var(--scb-font-size-sm);
-  line-height: 1.2;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast);
-}
-
-.bookable-edit-nav__sublink:hover {
-  color: var(--scb-text-hover);
-  background-color: var(--scb-hover-tint-strong);
-}
-
-.bookable-edit-nav__sublink--active {
-  color: var(--v-primary-base);
-  font-weight: var(--scb-font-weight-medium);
-  background-color: var(--scb-selected-tint-strong);
-}
-
-.theme--dark .bookable-edit-nav__sublink--active {
-  color: var(--v-primary-base);
 }
 
 /* As wide as the guided flow's step column, at most. */

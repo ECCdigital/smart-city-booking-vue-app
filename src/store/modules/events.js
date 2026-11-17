@@ -1,5 +1,6 @@
 import Vue from "vue";
 import { locationRefusal } from "@/utils/locationLogic";
+import { registrationModeOf } from "@/utils/eventEditing";
 
 const namespaced = true;
 const defaultState = {
@@ -76,6 +77,10 @@ const state = () => ({
   // `null` for a new event. The backend lets an unchanged location pass
   // whatever it holds, a new or changed one only with a point.
   storedLocation: null,
+  // The answer to „Wie melden sich Teilnehmende an?“ (`REGISTRATION`). The
+  // stored fields cannot hold „Auf einer anderen Website“ before an address
+  // is typed, so the answer lives beside the form and is never saved.
+  registrationMode: registrationModeOf(defaultState),
 });
 
 const mutations = {
@@ -116,6 +121,10 @@ const mutations = {
     state.form = form;
     state.review = review;
     state.storedLocation = form.location ?? null;
+    state.registrationMode = registrationModeOf(form);
+  },
+  SET_REGISTRATION_MODE(state, mode) {
+    state.registrationMode = mode;
   },
   SET_STORED_LOCATION(state, location) {
     state.storedLocation = location ?? null;
@@ -127,6 +136,7 @@ const mutations = {
     state.form = JSON.parse(JSON.stringify(defaultState));
     state.review = null;
     state.storedLocation = null;
+    state.registrationMode = registrationModeOf(state.form);
   },
   UPDATE_SCHEDULES_FOR_DAY(state, payload) {
     // add schedules to the day
@@ -152,6 +162,9 @@ const actions = {
   /** After a save: the location sent is the one stored now. */
   locationSaved({ commit }, location) {
     commit("SET_STORED_LOCATION", location);
+  },
+  setRegistrationMode({ commit }, mode) {
+    commit("SET_REGISTRATION_MODE", mode);
   },
   setReview({ commit }, review) {
     commit("SET_REVIEW", review);
@@ -191,6 +204,7 @@ const actions = {
 const getters = {
   form: (state) => state.form,
   review: (state) => state.review,
+  registrationMode: (state) => state.registrationMode,
   storedLocation: (state) => state.storedLocation,
   /** Why the location may not be saved (`location.reason.*`), or `null`. */
   locationRefusal: (state) =>

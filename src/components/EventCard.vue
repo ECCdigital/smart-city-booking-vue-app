@@ -323,7 +323,7 @@ export default {
     navigateToEdit() {
       if (this.BookablePermissionService.allowUpdate(this.item)) {
         this.$router.push({
-          name: "event-create-information",
+          name: "event-edit",
           query: { id: this.item.id, fromRoute: this.fromRoute },
         });
       }

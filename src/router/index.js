@@ -377,12 +377,17 @@ const routes = [
     },
   },
   {
-    // The direct link of an event (review queue, „Verwendung“ in the media
-    // library). Form and steps are the children of `event-create`, so the link
-    // opens the first step with the event's id, as the event list does.
+    // The editing page of an event, laid out as the bookable editor; without
+    // `?id=` it creates one. Also the direct link of an event (review queue,
+    // „Verwendung“ in the media library).
     path: "/events/edit",
     name: "event-edit",
-    redirect: (to) => ({ name: "event-create-information", query: to.query }),
+    component: lazyLoad("Bookables/Events/EventEdit"),
+    meta: {
+      title: "Veranstaltung bearbeiten",
+      requiresAuth: true,
+      interfaceName: "events",
+    },
   },
   {
     path: "/events/create",

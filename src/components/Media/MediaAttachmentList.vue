@@ -9,7 +9,10 @@
             @click="toggleExpand(attachment.id)"
           >
             <v-list-item-avatar>
-              <v-avatar :color="attachment.type ? 'primary' : 'grey'" size="40">
+              <v-avatar
+                :color="attachment.type || plain ? 'primary' : 'grey'"
+                size="40"
+              >
                 <v-icon dark small>{{ getTypeIcon(attachment.type) }}</v-icon>
               </v-avatar>
             </v-list-item-avatar>
@@ -20,7 +23,7 @@
                   {{ attachment.title || "Ohne Titel" }}
                 </span>
                 <v-chip
-                  v-if="isRequired(attachment)"
+                  v-if="!plain && isRequired(attachment)"
                   x-small
                   color="red"
                   text-color="white"
@@ -30,18 +33,22 @@
                 </v-chip>
               </v-list-item-title>
               <v-list-item-subtitle class="d-flex align-center flex-wrap">
-                <v-chip x-small class="mr-2">
+                <v-chip v-if="!plain" x-small class="mr-2">
                   {{ getTypeName(attachment.type) }}
                 </v-chip>
                 <v-icon
-                  v-if="attachment.show"
+                  v-if="!plain && attachment.show"
                   x-small
                   color="success"
                   class="mr-1"
                 >
                   mdi-eye
                 </v-icon>
-                <v-icon v-if="attachment.mailAttach" x-small color="primary">
+                <v-icon
+                  v-if="!plain && attachment.mailAttach"
+                  x-small
+                  color="primary"
+                >
                   mdi-email-outline
                 </v-icon>
               </v-list-item-subtitle>
@@ -73,7 +80,7 @@
               color="grey lighten-5"
             >
               <v-row>
-                <v-col cols="12" md="6">
+                <v-col cols="12" :md="plain ? 12 : 6">
                   <v-text-field
                     :value="attachment.title"
                     @input="setField(attachment, 'title', $event)"
@@ -85,7 +92,7 @@
                     :rules="[(v) => !!v || 'Titel ist erforderlich']"
                   ></v-text-field>
                 </v-col>
-                <v-col cols="12" md="6">
+                <v-col v-if="!plain" cols="12" md="6">
                   <v-select
                     :value="attachment.type"
                     @change="setField(attachment, 'type', $event)"
@@ -126,15 +133,19 @@
                     background-color="accent"
                     filled
                     label="Beschreibung"
-                    placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
+                    :placeholder="
+                      plain
+                        ? 'Liste der Materialien, die Sie mitbringen'
+                        : 'Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie.'
+                    "
                     hide-details
                   ></v-text-field>
                 </v-col>
               </v-row>
 
-              <v-divider class="my-3"></v-divider>
+              <v-divider v-if="!plain" class="my-3"></v-divider>
 
-              <v-row>
+              <v-row v-if="!plain">
                 <v-col cols="12" sm="4">
                   <v-switch
                     :input-value="attachment.show"
@@ -196,7 +207,11 @@
       </v-icon>
       <div class="text-h6 grey--text mb-2">Keine Anhänge vorhanden</div>
       <div class="text-body-2 grey--text text--darken-1 mb-4">
-        Fügen Sie Dokumente wie Nutzungsbedingungen oder Anleitungen hinzu
+        {{
+          plain
+            ? "Fügen Sie Dateien zum Herunterladen hinzu, z. B. eine Materialliste"
+            : "Fügen Sie Dokumente wie Nutzungsbedingungen oder Anleitungen hinzu"
+        }}
       </div>
       <v-btn small text color="primary" @click="add">
         <v-icon left small>mdi-plus</v-icon>
@@ -239,6 +254,10 @@ export default {
     value: { type: Array, default: () => [] },
     scope: { type: String, default: MEDIA_SCOPE.TENANT },
     publicOnly: { type: Boolean, default: false },
+    // Plain files to download, as an event's attachments: no type, and none
+    // of the switches of the checkout (shown, accepted, in the mail) - an
+    // event is not booked itself.
+    plain: { type: Boolean, default: false },
     publicOnlyReason: {
       type: String,
       default:

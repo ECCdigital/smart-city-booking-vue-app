@@ -1,5 +1,6 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import SectionCard from "@/components/commons/SectionCard.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import {
   bookableEditSectionElementId,
@@ -15,7 +16,7 @@ import {
  */
 export default {
   name: "BookableEditTab",
-  components: { BaseSection },
+  components: { BaseSection, SectionCard },
   mixins: [bookableEditing],
   props: {
     tab: { type: Object, required: true },
@@ -61,28 +62,21 @@ export default {
         @update:bookable="$emit('update:bookable', $event)"
         @open-section="$emit('open-section', $event)"
       />
-      <v-card
+      <SectionCard
         v-else
         :id="elementId(card)"
         :key="card.key"
-        class="mb-6 section-card"
-        outlined
+        :icon="card.icon"
+        :title="$t(card.titleKey)"
       >
-        <v-card-title class="section-header pa-4">
-          <v-icon class="mr-2">{{ card.icon }}</v-icon>
-          <span class="text-h6 font-weight-bold">{{ $t(card.titleKey) }}</span>
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text class="pa-4">
-          <component
-            :is="card.comp"
-            :bookable="bookable"
-            v-bind="cardProps(card)"
-            @update:bookable="$emit('update:bookable', $event)"
-            @open-section="$emit('open-section', $event)"
-          />
-        </v-card-text>
-      </v-card>
+        <component
+          :is="card.comp"
+          :bookable="bookable"
+          v-bind="cardProps(card)"
+          @update:bookable="$emit('update:bookable', $event)"
+          @open-section="$emit('open-section', $event)"
+        />
+      </SectionCard>
     </template>
   </div>
 </template>

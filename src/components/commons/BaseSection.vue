@@ -13,7 +13,7 @@
       <v-icon left small color="info">mdi-information-outline</v-icon>
       {{ hint }}
     </v-card-subtitle>
-    <v-card-text class="">
+    <v-card-text v-if="$slots.default" class="">
       <slot />
     </v-card-text>
   </v-card>
