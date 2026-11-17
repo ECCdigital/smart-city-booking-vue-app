@@ -118,15 +118,6 @@ function formatCompartmentInLockerSystem(detail) {
 }
 
 /**
- * A door of Open Locker (ECCdigital/tickets#1162): Open Locker knows only
- * the Schließfachanlage, so the backend refuses any other type - sent by an
- * old client or over the API. The message says what to set up instead.
- */
-function formatOpenLockerLockerOnly() {
-  return i18n.t("accessPoint.management.errors.openLockerLockerOnly");
-}
-
-/**
  * A Schließfachanlage with its own Fächer another bookable already links
  * (ECCdigital/tickets#1038): it belongs to one bookable only. The message
  * names both by their titles, the ids where a title is missing.
@@ -139,17 +130,19 @@ function formatLockerSystemInOtherBookable(detail) {
 }
 
 /**
- * The Anzahl written with the assignment (ECCdigital/tickets#1167): only at
- * a Schließfachanlage with its own Fächer and for exactly one bookable, and
- * only a whole number from 1, since 0 and empty mean unlimited.
+ * The refusals whose message is one sentence without parameters: a door of
+ * Open Locker, which knows only the Schließfachanlage, sent by an old client
+ * or over the API (ECCdigital/tickets#1162); the Anzahl written with the
+ * assignment, only at a Schließfachanlage with its own Fächer and for
+ * exactly one bookable, and only a whole number from 1, since 0 and empty
+ * mean unlimited (ECCdigital/tickets#1167).
  */
-function formatAmountNeedsOneLockerBookable() {
-  return i18n.t("accessPoint.management.errors.amountNeedsOneLockerBookable");
-}
-
-function formatInvalidAmount() {
-  return i18n.t("accessPoint.management.errors.invalidAmount");
-}
+const SENTENCE_KEYS = {
+  open_locker_locker_only: "accessPoint.management.errors.openLockerLockerOnly",
+  amount_needs_one_locker_bookable:
+    "accessPoint.management.errors.amountNeedsOneLockerBookable",
+  invalid_amount: "accessPoint.management.errors.invalidAmount",
+};
 
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
@@ -180,16 +173,8 @@ function formatDetail(detail) {
     return formatCompartmentInLockerSystem(detail);
   }
 
-  if (detail.code === "open_locker_locker_only") {
-    return formatOpenLockerLockerOnly();
-  }
-
-  if (detail.code === "amount_needs_one_locker_bookable") {
-    return formatAmountNeedsOneLockerBookable();
-  }
-
-  if (detail.code === "invalid_amount") {
-    return formatInvalidAmount();
+  if (SENTENCE_KEYS[detail.code]) {
+    return i18n.t(SENTENCE_KEYS[detail.code]);
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {

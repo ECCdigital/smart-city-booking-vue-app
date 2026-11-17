@@ -2,6 +2,7 @@
 // The look of the sentence by case: fitting, differing, or still to do.
 const TONES = {
   empty: { tone: "neutral", icon: "mdi-gesture-tap" },
+  unknown: { tone: "neutral", icon: "mdi-information-outline" },
   unassigned: { tone: "neutral", icon: "mdi-information-outline" },
   fits: { tone: "ok", icon: "mdi-check-circle-outline" },
   larger: { tone: "warn", icon: "mdi-alert-outline" },
@@ -33,6 +34,12 @@ export default {
         return this.$t("accessPoint.management.dialog.outcome.unlimitedAmount");
       }
       return this.outcome.amount == null ? "–" : String(this.outcome.amount);
+    },
+    // A dash while the assignment is unknown.
+    concurrentText() {
+      return this.outcome.concurrent == null
+        ? "–"
+        : String(this.outcome.concurrent);
     },
   },
 };
@@ -76,7 +83,7 @@ export default {
       </div>
       <div class="compartment-outcome__operator" aria-hidden="true">→</div>
       <div data-test="outcome-concurrent">
-        <div class="compartment-outcome__value">{{ outcome.concurrent }}</div>
+        <div class="compartment-outcome__value">{{ concurrentText }}</div>
         <div class="compartment-outcome__label">
           {{ $t("accessPoint.management.dialog.outcome.concurrent") }}
         </div>
@@ -122,9 +129,10 @@ export default {
   line-height: var(--scb-line-height-tight);
   color: var(--scb-text);
 }
+/* A word in place of a number keeps the line of the numbers. */
 .compartment-outcome__value--word {
   font-size: var(--scb-font-size-md);
-  line-height: 28px;
+  line-height: calc(var(--scb-font-size-lead) * var(--scb-line-height-tight));
 }
 .compartment-outcome__label {
   font-size: var(--scb-font-size-xs);

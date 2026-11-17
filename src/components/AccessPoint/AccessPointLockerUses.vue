@@ -75,20 +75,20 @@ export default {
   align-items: flex-start;
   gap: var(--scb-space-3);
   padding: var(--scb-space-2) var(--scb-space-3);
-  border: 1px solid transparent;
   border-radius: var(--scb-radius-surface);
   transition: background var(--scb-motion-base),
-    border-color var(--scb-motion-base);
+    box-shadow var(--scb-motion-base);
 }
 .locker-use + .locker-use {
   margin-top: var(--scb-space-1);
 }
 .locker-use--active {
   background: var(--scb-selected-tint);
-  border-color: var(--v-primary-base);
+  box-shadow: var(--scb-ring-selected);
 }
+/* Half a step down, onto the first line of the title. */
 .locker-use__icon {
-  margin-top: 2px;
+  margin-top: calc(var(--scb-space-1) / 2);
 }
 .locker-use--active .locker-use__icon {
   color: var(--v-primary-base);

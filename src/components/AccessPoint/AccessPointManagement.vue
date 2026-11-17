@@ -37,7 +37,6 @@ import {
   iqSummary,
 } from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
-import { accessPointFields } from "@/utilities/access-point-fields";
 import { canListAccessPoints } from "@/utilities/access-points";
 import {
   bookingsWithoutCompartment,
@@ -73,6 +72,9 @@ export default {
       accessPoints: [],
       bookables: [],
       bookablesForbidden: false,
+      // Any failure to read the bookables, the denial included: the dialog
+      // of an Anlage then cannot tell its assignment.
+      bookablesFailed: false,
       providers: [],
       // The tenant's stored access applications by provider, each with the
       // state of its connection.
@@ -424,6 +426,7 @@ export default {
     },
     async fetchBookables() {
       this.bookablesForbidden = false;
+      this.bookablesFailed = false;
       try {
         const response = await ApiBookablesService.getBookables(
           this.tenantId,
@@ -440,6 +443,7 @@ export default {
         // silence.
         this.bookables = [];
         this.bookablesForbidden = isForbiddenError(error);
+        this.bookablesFailed = true;
       }
     },
     // The active providers; answers the error that kept them.
@@ -555,9 +559,7 @@ export default {
     // An Open Locker Schließfachanlage is assigned in its own dialog
     // (ECCdigital/tickets#1165); every other access point in Zuordnen.
     openAssign(accessPoint) {
-      if (
-        accessPointFields(accessPoint.provider, accessPoint.type).compartments
-      ) {
+      if (carriesOwnCompartments(accessPoint)) {
         this.openEdit(accessPoint);
         return;
       }
@@ -852,7 +854,7 @@ export default {
       :compartment-bookings="selectedCompartmentBookings"
       :bookings-unreadable="bookingsUnreadable"
       :bookables="bookables"
-      :bookables-unreadable="bookablesForbidden"
+      :bookables-unreadable="bookablesFailed"
       @close="editDialog = false"
       @saved="onSaved"
       @stored="onStored"

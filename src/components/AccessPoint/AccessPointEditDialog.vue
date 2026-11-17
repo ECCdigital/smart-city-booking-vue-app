@@ -500,13 +500,13 @@ export default {
         : this.$t("accessPoint.management.dialog.bookable.hint");
     },
     // „Was daraus wird“: what the Fächer ticked and the bookable chosen
-    // make of each other, by the Regel für Anzahl und Fächer.
+    // make of each other, by the Regel für Anzahl und Fächer; without the
+    // bookables, only the Fächer.
     outcome() {
-      return compartmentOutcome(
-        this.compartments,
-        this.bookable,
-        this.notedAmount === null ? {} : { amount: this.notedAmount }
-      );
+      return compartmentOutcome(this.compartments, this.bookable, {
+        amount: this.notedAmount ?? undefined,
+        assignmentUnknown: this.bookablesUnreadable,
+      });
     },
     // The Anzahl the Fächer in service ask of the bookable where they
     // differ, none while no Fach is in service.
@@ -537,6 +537,11 @@ export default {
     // An Anzahl noted belongs to the bookable it was noted for.
     bookableId() {
       this.notedAmount = null;
+    },
+    // and to the Fächer in service it was noted for: once they change, the
+    // dialog shows the difference again with the new suggestion.
+    "outcome.inService"(inService) {
+      if (this.notedAmount !== inService) this.notedAmount = null;
     },
   },
   methods: {
@@ -835,10 +840,11 @@ export default {
     // Anzahl noted for it; the backend takes the Anlage off the bookable it
     // hung at before. Answers whether the assignment stands.
     async assign(accessPointId) {
-      const amountNoted = !!this.bookableId && this.notedAmount !== null;
+      // An Anzahl is noted only for a bookable chosen, see `noteAmount`.
+      const amount = this.notedAmount ?? undefined;
       if (
         !this.assignsHere ||
-        (this.bookableId === this.storedBookableId && !amountNoted)
+        (this.bookableId === this.storedBookableId && amount === undefined)
       ) {
         return true;
       }
@@ -847,7 +853,7 @@ export default {
           accessPointId,
           this.bookableId ? [this.bookableId] : [],
           this.tenantId,
-          ...(amountNoted ? [{ amount: this.notedAmount }] : [])
+          { amount }
         );
         return true;
       } catch (error) {
@@ -864,7 +870,11 @@ export default {
       if (isForbiddenError(error)) {
         const titles = [...new Set([this.storedBookable, this.bookable])]
           .filter(Boolean)
-          .map((bookable) => `„${bookable.title}“`);
+          .map((bookable) =>
+            this.$t("accessPoint.management.dialog.bookable.quoted", {
+              bookable: bookable.title,
+            })
+          );
         return this.$t(
           "accessPoint.management.dialog.bookable.assignForbidden",
           {
@@ -1134,7 +1144,7 @@ export default {
                       @click="noteAmount(suggestedAmount)"
                     >
                       {{
-                        $t("accessPoint.management.dialog.amount.setTo", {
+                        $t("bookable.amount.set-to", {
                           amount: suggestedAmount,
                         })
                       }}
