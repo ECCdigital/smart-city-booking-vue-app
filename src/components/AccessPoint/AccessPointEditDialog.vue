@@ -4,7 +4,9 @@ import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import LocationInput from "@/components/commons/Location/LocationInput.vue";
+import AccessPointCompartmentOutcome from "@/components/AccessPoint/AccessPointCompartmentOutcome.vue";
 import AccessPointCompartmentPicker from "@/components/AccessPoint/AccessPointCompartmentPicker.vue";
+import AccessPointLockerUses from "@/components/AccessPoint/AccessPointLockerUses.vue";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import {
   formatAccessPointErrorMessage,
@@ -13,6 +15,7 @@ import {
 } from "@/utilities/access-point-errors";
 import {
   carriesOwnCompartments,
+  compartmentOutcome,
   heldCompartmentIds,
   leavingCompartmentIds,
   takenProviderIds,
@@ -66,6 +69,10 @@ const OPEN_ACTION_FIELD = "config.openAction";
 // The index of „Weitere Einstellungen“ in its panels, open or not.
 const MORE_OPEN = 0;
 
+// An Anlage with its own Fächer shows „Was daraus wird“ beside them.
+const WIDTH = 640;
+const WIDTH_WITH_OUTCOME = 960;
+
 function emptyForm() {
   return {
     id: null,
@@ -85,8 +92,10 @@ function emptyForm() {
  * opens from. Creating shows two things - what the provider lists, as a list
  * to click with „by hand“ as its last line, and the Bezeichnung; Open Locker
  * creates only a Schließfachanlage, which shows its bookable („Für welches
- * Buchungsobjekt?“) and its Fächer to tick instead of the list. Everything with a
- * default waits folded under „Weitere Einstellungen“, its state in one line.
+ * Buchungsobjekt?“) and its Fächer to tick instead of the list, under one
+ * sentence with the examples of its Einsatzfall and beside „Was daraus
+ * wird“ (ECCdigital/tickets#1166). Everything with a default waits folded
+ * under „Weitere Einstellungen“, its state in one line.
  * Editing shows the chosen lock as one line with „Tauschen“ and the settings
  * unfolded. Which fields an access point has is `accessPointFields`.
  *
@@ -98,7 +107,9 @@ function emptyForm() {
 export default {
   name: "AccessPointEditDialog",
   components: {
+    AccessPointCompartmentOutcome,
     AccessPointCompartmentPicker,
+    AccessPointLockerUses,
     LocationInput,
   },
   props: {
@@ -480,6 +491,14 @@ export default {
             bookable: this.storedBookable.title,
           })
         : this.$t("accessPoint.management.dialog.bookable.hint");
+    },
+    // „Was daraus wird“: what the Fächer ticked and the bookable chosen
+    // make of each other, by the Regel für Anzahl und Fächer.
+    outcome() {
+      return compartmentOutcome(this.compartments, this.bookable);
+    },
+    width() {
+      return this.fields.compartments ? WIDTH_WITH_OUTCOME : WIDTH;
     },
     // Required are the choice or the id, and the Bezeichnung.
     canSave() {
@@ -871,7 +890,7 @@ export default {
 <template>
   <v-dialog
     :value="open"
-    max-width="640"
+    :max-width="width"
     scrollable
     persistent
     @input="!$event && close()"
@@ -1005,40 +1024,47 @@ export default {
             </div>
           </div>
 
-          <!-- Open Locker's Schließfachanlage: assigned right here -->
-          <v-select
-            v-if="assignsHere"
-            v-model="bookableId"
-            :items="bookableItems"
-            :label="$t('accessPoint.management.dialog.bookable.label')"
-            :hint="bookableHint"
-            :disabled="bookableLocked || saving"
-            persistent-hint
-            background-color="accent"
-            filled
-            dense
-            class="bookable-field mb-4"
-            data-test="bookable-field"
-          />
-
-          <!-- Open Locker's Schließfachanlage: its Fächer are the lock -->
-          <div v-if="fields.compartments" class="mb-4">
-            <div class="field-title">
-              {{ $t("accessPoint.management.compartments.title") }}
-            </div>
-            <AccessPointCompartmentPicker
-              :value="compartments"
-              :listing="listing"
-              :taken="taken"
-              :errors="compartmentErrors"
-              :loading="loadingListing"
-              :provider-title="providerTitle"
-              :bookings="compartmentBookings"
-              :leaving="leavingIds"
-              :bookings-unreadable="bookingsUnreadable"
-              @input="onCompartmentsChange"
-            />
-          </div>
+          <!-- Open Locker's Schließfachanlage: its Einsatzfall, its
+               bookable, its Fächer and what they make of each other -->
+          <template v-if="fields.compartments">
+            <AccessPointLockerUses :bookable="bookable" class="mb-5" />
+            <v-row class="mb-4">
+              <v-col cols="12" md="7" class="py-0">
+                <v-select
+                  v-if="assignsHere"
+                  v-model="bookableId"
+                  :items="bookableItems"
+                  :label="$t('accessPoint.management.dialog.bookable.label')"
+                  :hint="bookableHint"
+                  :disabled="bookableLocked || saving"
+                  persistent-hint
+                  background-color="accent"
+                  filled
+                  dense
+                  class="bookable-field mb-4"
+                  data-test="bookable-field"
+                />
+                <div class="field-title">
+                  {{ $t("accessPoint.management.compartments.title") }}
+                </div>
+                <AccessPointCompartmentPicker
+                  :value="compartments"
+                  :listing="listing"
+                  :taken="taken"
+                  :errors="compartmentErrors"
+                  :loading="loadingListing"
+                  :provider-title="providerTitle"
+                  :bookings="compartmentBookings"
+                  :leaving="leavingIds"
+                  :bookings-unreadable="bookingsUnreadable"
+                  @input="onCompartmentsChange"
+                />
+              </v-col>
+              <v-col cols="12" md="5" class="py-0">
+                <AccessPointCompartmentOutcome :outcome="outcome" />
+              </v-col>
+            </v-row>
+          </template>
 
           <v-text-field
             v-if="showIdField"

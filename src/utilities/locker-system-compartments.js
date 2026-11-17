@@ -461,6 +461,99 @@ export function compartmentCountMismatch(compartments, bookable) {
 }
 
 /**
+ * „Was daraus wird“ in the dialog of an Anlage (ECCdigital/tickets#1166):
+ * what the Fächer as they stand and the bookable chosen make of each other,
+ * by the Regel für Anzahl und Fächer (`compartmentCountMismatch`). The case,
+ * three numbers - the Fächer, out of service among them, the Anzahl, and how
+ * many bookings run at the same time, the smaller of the Anzahl and the
+ * Fächer in service as the backend counts availability - and one sentence.
+ *
+ * `options.amount` stands in for the bookable's own Anzahl, an Anzahl the
+ * dialog would save with the Anlage; left out, the bookable's counts.
+ *
+ * @param {Object[]} compartments The Fächer, each with `outOfService`
+ * @param {Object|null} bookable The bookable chosen, `null` for none
+ * @param {{amount?: number|null}} [options]
+ * @returns {{kind: "empty"|"unassigned"|"fits"|"larger"|"smaller"|"unlimited",
+ *   count: number, outOfService: number, inService: number,
+ *   amount: number|null, unlimited: boolean, concurrent: number,
+ *   suggestedAmount: number|null, text: string}} `amount` is `null` while
+ *   unlimited or without a bookable; `suggestedAmount` is the Anzahl the
+ *   bookable should have - what „Anzahl auf N setzen“ would set -, `null`
+ *   where it fits, no Fach is chosen or none is in service
+ */
+export function compartmentOutcome(compartments, bookable, options = {}) {
+  const count = (compartments || []).length;
+  const inService = compartmentsInService(compartments);
+  const measured =
+    bookable && options.amount !== undefined
+      ? { ...bookable, amount: options.amount }
+      : bookable;
+  const unlimited = !!measured && isUnlimitedAmount(measured);
+  const amount = measured && !unlimited ? Number(measured.amount) : null;
+  const numbers = {
+    count,
+    outOfService: count - inService,
+    inService,
+    amount,
+    unlimited,
+  };
+  const key = (name) => `accessPoint.management.dialog.outcome.${name}`;
+  if (!count) {
+    return {
+      kind: "empty",
+      ...numbers,
+      concurrent: 0,
+      suggestedAmount: null,
+      text: i18n.t(key("empty")),
+    };
+  }
+  const suggestedAmount = inService > 0 ? inService : null;
+  if (!measured) {
+    return {
+      kind: "unassigned",
+      ...numbers,
+      concurrent: inService,
+      suggestedAmount,
+      text: i18n.tc(key("unassigned"), inService, { count: inService }),
+    };
+  }
+  const params = { bookable: measured.title, amount, count: inService };
+  const mismatch = compartmentCountMismatch(compartments, measured);
+  if (!mismatch) {
+    return {
+      kind: "fits",
+      ...numbers,
+      concurrent: amount,
+      suggestedAmount: null,
+      text: i18n.tc(key("fits"), amount, params),
+    };
+  }
+  const { kind } = mismatch;
+  const outcome = {
+    kind,
+    ...numbers,
+    concurrent: kind === "smaller" ? amount : inService,
+    suggestedAmount: mismatch.suggestedAmount,
+  };
+  if (kind === "smaller") {
+    const unused = inService - amount;
+    return {
+      ...outcome,
+      text: i18n.tc(key("smaller"), unused, { ...params, unused }),
+    };
+  }
+  const sentences = [i18n.tc(key(kind), inService, params)];
+  if (kind === "larger" && inService > 0) {
+    const missing = amount - inService;
+    sentences.push(
+      i18n.tc(key("largerAdvice"), missing, { count: inService, missing })
+    );
+  }
+  return { ...outcome, text: sentences.join(" ") };
+}
+
+/**
  * The linked Anlagen with their own Fächer whose Fächer in service the
  * bookable's `amount` does not equal, by `compartmentCountMismatch`. `amount`
  * stays the editor's to set, so this is a hint, never a refusal

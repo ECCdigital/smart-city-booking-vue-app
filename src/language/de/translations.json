@@ -3308,6 +3308,28 @@
           "assignForbidden": "Ihnen fehlt die Berechtigung, {bookables} zu bearbeiten.",
           "and": "und",
           "assignRetry": "Speichern Sie erneut, um sie zuzuordnen."
+        },
+        "uses": {
+          "lead": "Jede Buchung bekommt für ihre Zeit ein eigenes Fach. Wählen Sie so viele Fächer, wie zur selben Zeit gebucht werden können.",
+          "room": "Schlüssel für einen Raum: 1 Fach",
+          "roomHint": "Im Fach liegt der Schlüssel. Wer den Raum bucht, holt ihn ab und legt ihn wieder hinein.",
+          "item": "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+          "itemHint": "Im Fach steht, was gebucht wird. 6 Fahrradboxen oder 6 Tablets brauchen 6 Fächer."
+        },
+        "outcome": {
+          "title": "Was daraus wird",
+          "compartments": "Fächer | Fach | Fächer",
+          "outOfService": "({count} außer Betrieb)",
+          "amount": "Anzahl",
+          "unlimitedAmount": "unbegrenzt",
+          "concurrent": "zur selben Zeit buchbar",
+          "empty": "Noch kein Fach gewählt. Klicken Sie links die Fächer an, die zu dieser Schließfachanlage gehören.",
+          "unassigned": "Kein Fach ist in Betrieb. Zur selben Zeit buchbar ist deshalb nichts. | Zur selben Zeit buchbar: 1, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte 1 sein. | Zur selben Zeit buchbar: {count}, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte {count} sein.",
+          "fits": "Passt: „{bookable}“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach. | Passt: „{bookable}“ kann {count}-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach.",
+          "larger": "„{bookable}“ hat die Anzahl {amount}, aber kein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nichts. | „{bookable}“ hat die Anzahl {amount}, aber nur 1 Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nur 1. | „{bookable}“ hat die Anzahl {amount}, aber nur {count} Fächer in Betrieb. Zur selben Zeit buchbar sind deshalb nur {count}.",
+          "largerAdvice": "Wählen Sie 1 weiteres Fach, oder setzen Sie die Anzahl auf {count}. | Wählen Sie {missing} weitere Fächer, oder setzen Sie die Anzahl auf {count}.",
+          "smaller": "„{bookable}“ hat die Anzahl {amount}, in Betrieb sind {count} Fächer. 1 Fach wird nie gebraucht. Setzen Sie die Anzahl auf {count}, oder nehmen Sie 1 Fach heraus. | „{bookable}“ hat die Anzahl {amount}, in Betrieb sind {count} Fächer. {unused} Fächer werden nie gebraucht. Setzen Sie die Anzahl auf {count}, oder nehmen Sie {unused} Fächer heraus.",
+          "unlimited": "Die Anzahl von „{bookable}“ ist unbegrenzt. Zur selben Zeit buchbar ist trotzdem nichts, weil jede Buchung ein eigenes Fach braucht und keins in Betrieb ist. | Die Anzahl von „{bookable}“ ist unbegrenzt. Zur selben Zeit buchbar ist trotzdem nur 1, weil jede Buchung ein eigenes Fach braucht. | Die Anzahl von „{bookable}“ ist unbegrenzt. Zur selben Zeit buchbar sind trotzdem nur {count}, weil jede Buchung ein eigenes Fach braucht."
         }
       },
       "errors": {
