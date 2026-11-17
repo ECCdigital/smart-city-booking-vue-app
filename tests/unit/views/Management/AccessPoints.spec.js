@@ -4083,6 +4083,283 @@ describe("AccessPoints assigns an Open Locker Schließfachanlage in its dialog",
   });
 });
 
+/**
+ * The dialog of an Open Locker Schließfachanlage explains the Einsatzfall
+ * and shows what Fächer and Anzahl make of each other
+ * (ECCdigital/tickets#1166): on top one sentence and two examples, the one
+ * that fits the bookable chosen highlighted; beside the Fächer „Was daraus
+ * wird“ with three numbers and one sentence per case, at once on every
+ * change.
+ */
+describe("AccessPoints explains the Einsatzfall of a Schließfachanlage", () => {
+  const LABOR = { id: "bank-labor", name: "Labor Fachbank 1" };
+  const FÄCHER = [1, 2, 3, 4].map((number) =>
+    listed("open-locker", `uuid-${number}`, `${LABOR.name} · Fach ${number}`, {
+      metadata: { id: `uuid-${number}`, number, lockerBank: LABOR },
+    })
+  );
+  const BOOKABLES = [
+    { id: "b-raum", title: "Besprechungsraum", type: "room", amount: 1 },
+    { id: "b-box", title: "Fahrradboxen", type: "resource", amount: 2 },
+    { id: "b-rad", title: "Lastenrad", type: "resource", amount: null },
+    { id: "b-ort", title: "Festwiese", type: "event-location", amount: 1 },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    BookablePermissionService.allowUpdate.mockImplementation(() => true);
+  });
+
+  async function createAnlage() {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [],
+      bookables: BOOKABLES,
+      listings: { "open-locker": FÄCHER },
+    });
+    await create(wrapper, "Open Locker");
+    return wrapper;
+  }
+
+  function compartmentRow(wrapper, number) {
+    return pointDialog(wrapper).find(
+      `.compartment-row[data-compartment-id='uuid-${number}']`
+    );
+  }
+
+  async function tickFach(wrapper, number) {
+    await compartmentRow(wrapper, number)
+      .find("input[type='checkbox']")
+      .trigger("click");
+    await settle(wrapper);
+  }
+
+  async function takeOutOfService(wrapper, number) {
+    await compartmentRow(wrapper, number)
+      .find("[role='switch']")
+      .trigger("click");
+    await settle(wrapper);
+  }
+
+  /** The examples on top, the highlighted ones marked with a star. */
+  function uses(wrapper) {
+    return pointDialog(wrapper)
+      .findAll("[data-test='locker-use']")
+      .wrappers.map((use) => {
+        const title = use.find("[data-test='locker-use-title']").text();
+        return use.classes("locker-use--active") ? `★ ${title}` : title;
+      });
+  }
+
+  /** „Was daraus wird“: the three numbers and the sentence. */
+  function outcome(wrapper) {
+    const area = shown(wrapper, "compartment-outcome");
+    const text = (test) =>
+      area.find(`[data-test='${test}']`).text().replace(/\s+/g, " ");
+    return {
+      numbers: [
+        text("outcome-compartments"),
+        text("outcome-amount"),
+        text("outcome-concurrent"),
+      ],
+      text: text("outcome-text"),
+    };
+  }
+
+  it("explains on top that each booking gets a Fach of its own", async () => {
+    const wrapper = await createAnlage();
+
+    expect(shown(wrapper, "locker-uses").text()).toContain(
+      "Jede Buchung bekommt für ihre Zeit ein eigenes Fach. Wählen Sie so viele Fächer, wie zur selben Zeit gebucht werden können."
+    );
+    expect(uses(wrapper)).toEqual([
+      "Schlüssel für einen Raum: 1 Fach",
+      "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+    ]);
+  });
+
+  it.each([
+    [
+      "the room for a room",
+      "Besprechungsraum",
+      [
+        "★ Schlüssel für einen Raum: 1 Fach",
+        "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+      ],
+    ],
+    [
+      "the bicycle boxes for a resource",
+      "Fahrradboxen",
+      [
+        "Schlüssel für einen Raum: 1 Fach",
+        "★ Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+      ],
+    ],
+    [
+      "the bicycle boxes for any other type",
+      "Festwiese",
+      [
+        "Schlüssel für einen Raum: 1 Fach",
+        "★ Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+      ],
+    ],
+    [
+      "none for „Später zuordnen“",
+      "Später zuordnen",
+      [
+        "Schlüssel für einen Raum: 1 Fach",
+        "Fahrradboxen, Geräte: je Box oder Gerät ein Fach",
+      ],
+    ],
+  ])("highlights %s", async (_, bookable, expected) => {
+    const wrapper = await createAnlage();
+    await chooseBookable(wrapper, "Fahrradboxen");
+
+    await chooseBookable(wrapper, bookable);
+
+    expect(uses(wrapper)).toEqual(expected);
+  });
+
+  it("highlights the example of the bookable a stored Anlage is assigned to", async () => {
+    const wrapper = await mountAccessPointsPage({
+      providers: [OPEN_LOCKER],
+      accessPoints: [OPEN_LOCKER_SCHLUESSEL],
+      bookables: [
+        {
+          ...BOOKABLES[0],
+          accessPointDetails: { accessPointIds: [OPEN_LOCKER_SCHLUESSEL.id] },
+        },
+      ],
+    });
+
+    await editPoint(wrapper, "Schlüssel Raum 1");
+
+    expect(uses(wrapper)[0]).toBe("★ Schlüssel für einen Raum: 1 Fach");
+    expect(outcome(wrapper)).toEqual({
+      numbers: ["1 Fach", "1 Anzahl", "1 zur selben Zeit buchbar"],
+      text: "Passt: „Besprechungsraum“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach.",
+    });
+  });
+
+  it("asks to tick the Fächer while none is chosen", async () => {
+    const wrapper = await createAnlage();
+
+    expect(outcome(wrapper)).toEqual({
+      numbers: ["0 Fächer", "– Anzahl", "0 zur selben Zeit buchbar"],
+      text: "Noch kein Fach gewählt. Klicken Sie links die Fächer an, die zu dieser Schließfachanlage gehören.",
+    });
+  });
+
+  it.each([
+    [
+      "the Anzahl it should have without a bookable",
+      { fächer: 3, outOfService: 1, bookable: null },
+      {
+        numbers: [
+          "3 Fächer (1 außer Betrieb)",
+          "– Anzahl",
+          "2 zur selben Zeit buchbar",
+        ],
+        text: "Zur selben Zeit buchbar: 2, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte 2 sein.",
+      },
+    ],
+    [
+      "„Passt“ when the Anzahl equals the Fächer in service",
+      { fächer: 3, outOfService: 1, bookable: "Fahrradboxen" },
+      {
+        numbers: [
+          "3 Fächer (1 außer Betrieb)",
+          "2 Anzahl",
+          "2 zur selben Zeit buchbar",
+        ],
+        text: "Passt: „Fahrradboxen“ kann 2-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach.",
+      },
+    ],
+    [
+      "„Passt“ for one Fach and Anzahl 1",
+      { fächer: 1, outOfService: 0, bookable: "Besprechungsraum" },
+      {
+        numbers: ["1 Fach", "1 Anzahl", "1 zur selben Zeit buchbar"],
+        text: "Passt: „Besprechungsraum“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach.",
+      },
+    ],
+    [
+      "that only the Fächer in service are bookable when the Anzahl is larger",
+      { fächer: 2, outOfService: 1, bookable: "Fahrradboxen" },
+      {
+        numbers: [
+          "2 Fächer (1 außer Betrieb)",
+          "2 Anzahl",
+          "1 zur selben Zeit buchbar",
+        ],
+        text: "„Fahrradboxen“ hat die Anzahl 2, aber nur 1 Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nur 1. Wählen Sie 1 weiteres Fach, oder setzen Sie die Anzahl auf 1.",
+      },
+    ],
+    [
+      "the Fächer never needed when the Anzahl is smaller",
+      { fächer: 4, outOfService: 0, bookable: "Fahrradboxen" },
+      {
+        numbers: ["4 Fächer", "2 Anzahl", "2 zur selben Zeit buchbar"],
+        text: "„Fahrradboxen“ hat die Anzahl 2, in Betrieb sind 4 Fächer. 2 Fächer werden nie gebraucht. Setzen Sie die Anzahl auf 4, oder nehmen Sie 2 Fächer heraus.",
+      },
+    ],
+    [
+      "that only the Fächer in service are bookable when the Anzahl is unlimited",
+      { fächer: 3, outOfService: 0, bookable: "Lastenrad" },
+      {
+        numbers: ["3 Fächer", "unbegrenzt Anzahl", "3 zur selben Zeit buchbar"],
+        text: "Die Anzahl von „Lastenrad“ ist unbegrenzt. Zur selben Zeit buchbar sind trotzdem nur 3, weil jede Buchung ein eigenes Fach braucht.",
+      },
+    ],
+  ])("shows %s", async (_, draft, expected) => {
+    const wrapper = await createAnlage();
+    for (let number = 1; number <= draft.fächer; number += 1) {
+      await tickFach(wrapper, number);
+    }
+    for (let number = 1; number <= draft.outOfService; number += 1) {
+      await takeOutOfService(wrapper, number);
+    }
+    if (draft.bookable) await chooseBookable(wrapper, draft.bookable);
+
+    expect(outcome(wrapper)).toEqual(expected);
+  });
+
+  it("follows each tick, Fach out of service and bookable at once", async () => {
+    const wrapper = await createAnlage();
+    await chooseBookable(wrapper, "Fahrradboxen");
+
+    await tickFach(wrapper, 1);
+    expect(outcome(wrapper).numbers).toEqual([
+      "1 Fach",
+      "2 Anzahl",
+      "1 zur selben Zeit buchbar",
+    ]);
+
+    await tickFach(wrapper, 2);
+    expect(outcome(wrapper).text).toMatch(/^Passt: „Fahrradboxen“ kann 2-mal/);
+
+    await takeOutOfService(wrapper, 2);
+    expect(outcome(wrapper).numbers).toEqual([
+      "2 Fächer (1 außer Betrieb)",
+      "2 Anzahl",
+      "1 zur selben Zeit buchbar",
+    ]);
+
+    await chooseBookable(wrapper, "Besprechungsraum");
+    expect(uses(wrapper)[0]).toBe("★ Schlüssel für einen Raum: 1 Fach");
+    expect(outcome(wrapper).text).toMatch(/^Passt: „Besprechungsraum“/);
+  });
+
+  it("shows neither examples nor „Was daraus wird“ for a door", async () => {
+    const wrapper = await mountAccessPointsPage({ providers: [NUKI] });
+
+    await create(wrapper, "Nuki");
+
+    expect(shown(wrapper, "locker-uses").exists()).toBe(false);
+    expect(shown(wrapper, "compartment-outcome").exists()).toBe(false);
+  });
+});
+
 /** The markers at the label of a row. */
 function markersOf(wrapper, label) {
   return rowOf(wrapper, label)

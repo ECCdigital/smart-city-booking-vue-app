@@ -4,6 +4,7 @@ import {
   compartmentCountMismatch,
   compartmentCountMismatches,
   compartmentGroups,
+  compartmentOutcome,
   compartmentsByLockerBank,
   leavingCompartmentIds,
   compartmentTitle,
@@ -438,6 +439,161 @@ describe("compartmentCountMismatch", () => {
   it("reports nothing without a bookable: there is no amount to compare", () => {
     expect(compartmentCountMismatch(fächer(3), null)).toBeNull();
     expect(compartmentCountMismatch(fächer(0), undefined)).toBeNull();
+  });
+});
+
+/**
+ * „Was daraus wird“ in the dialog of the Anlage (ECCdigital/tickets#1166):
+ * from the Fächer as they stand and the bookable chosen, the case, three
+ * numbers - Fächer (out of service among them), Anzahl, zur selben Zeit
+ * buchbar - and one sentence. A Fach out of service is not bookable.
+ */
+describe("compartmentOutcome", () => {
+  const fächer = (inService, outOfService = 0) => [
+    ...Array.from({ length: inService }, (_, i) => ({ id: `in-${i}` })),
+    ...Array.from({ length: outOfService }, (_, i) => ({
+      id: `off-${i}`,
+      outOfService: true,
+    })),
+  ];
+  const bookable = (amount, title = "Fahrradboxen Bahnhof Nord") => ({
+    id: "b1",
+    title,
+    type: "resource",
+    amount,
+  });
+
+  it("asks to tick the Fächer while none is chosen", () => {
+    expect(compartmentOutcome([], bookable(6))).toEqual({
+      kind: "empty",
+      count: 0,
+      outOfService: 0,
+      inService: 0,
+      amount: 6,
+      unlimited: false,
+      concurrent: 0,
+      suggestedAmount: null,
+      text: "Noch kein Fach gewählt. Klicken Sie links die Fächer an, die zu dieser Schließfachanlage gehören.",
+    });
+  });
+
+  it("fits when the Anzahl equals the Fächer in service", () => {
+    expect(compartmentOutcome(fächer(6), bookable(6))).toEqual({
+      kind: "fits",
+      count: 6,
+      outOfService: 0,
+      inService: 6,
+      amount: 6,
+      unlimited: false,
+      concurrent: 6,
+      suggestedAmount: null,
+      text: "Passt: „Fahrradboxen Bahnhof Nord“ kann 6-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach.",
+    });
+  });
+
+  it("fits the key to a room: one Fach, Anzahl 1", () => {
+    const outcome = compartmentOutcome(
+      fächer(1),
+      bookable(1, "Besprechungsraum 2.14")
+    );
+
+    expect(outcome.kind).toBe("fits");
+    expect(outcome.concurrent).toBe(1);
+    expect(outcome.text).toBe(
+      "Passt: „Besprechungsraum 2.14“ wird immer nur einmal zur selben Zeit gebucht, und dafür gibt es ein Fach."
+    );
+  });
+
+  it("names the Anzahl the bookable should have while there is none", () => {
+    expect(compartmentOutcome(fächer(3, 1), null)).toEqual({
+      kind: "unassigned",
+      count: 4,
+      outOfService: 1,
+      inService: 3,
+      amount: null,
+      unlimited: false,
+      concurrent: 3,
+      suggestedAmount: 3,
+      text: "Zur selben Zeit buchbar: 3, je Fach in Betrieb eine Buchung. Ordnen Sie die Schließfachanlage einem Buchungsobjekt zu. Seine Anzahl sollte 3 sein.",
+    });
+  });
+
+  /** 0 reads as unlimited in Biletado, so it is never the Anzahl to have. */
+  it("names no Anzahl without a bookable while no Fach is in service", () => {
+    const outcome = compartmentOutcome(fächer(0, 2), null);
+
+    expect(outcome.kind).toBe("unassigned");
+    expect(outcome.concurrent).toBe(0);
+    expect(outcome.suggestedAmount).toBeNull();
+    expect(outcome.text).toBe(
+      "Kein Fach ist in Betrieb. Zur selben Zeit buchbar ist deshalb nichts."
+    );
+  });
+
+  it("books only the Fächer in service when the Anzahl is larger", () => {
+    expect(compartmentOutcome(fächer(5, 1), bookable(6))).toEqual({
+      kind: "larger",
+      count: 6,
+      outOfService: 1,
+      inService: 5,
+      amount: 6,
+      unlimited: false,
+      concurrent: 5,
+      suggestedAmount: 5,
+      text: "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 6, aber nur 5 Fächer in Betrieb. Zur selben Zeit buchbar sind deshalb nur 5. Wählen Sie 1 weiteres Fach, oder setzen Sie die Anzahl auf 5.",
+    });
+  });
+
+  it("books nothing when the Anzahl is larger and no Fach is in service", () => {
+    const outcome = compartmentOutcome(fächer(0, 1), bookable(2));
+
+    expect(outcome.kind).toBe("larger");
+    expect(outcome.concurrent).toBe(0);
+    expect(outcome.suggestedAmount).toBeNull();
+    expect(outcome.text).toBe(
+      "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 2, aber kein Fach in Betrieb. Zur selben Zeit buchbar ist deshalb nichts."
+    );
+  });
+
+  it("names the Fächer never needed when the Anzahl is smaller", () => {
+    expect(compartmentOutcome(fächer(6), bookable(4))).toEqual({
+      kind: "smaller",
+      count: 6,
+      outOfService: 0,
+      inService: 6,
+      amount: 4,
+      unlimited: false,
+      concurrent: 4,
+      suggestedAmount: 6,
+      text: "„Fahrradboxen Bahnhof Nord“ hat die Anzahl 4, in Betrieb sind 6 Fächer. 2 Fächer werden nie gebraucht. Setzen Sie die Anzahl auf 6, oder nehmen Sie 2 Fächer heraus.",
+    });
+  });
+
+  it("books only the Fächer in service when the Anzahl is unlimited", () => {
+    expect(compartmentOutcome(fächer(3), bookable(null))).toEqual({
+      kind: "unlimited",
+      count: 3,
+      outOfService: 0,
+      inService: 3,
+      amount: null,
+      unlimited: true,
+      concurrent: 3,
+      suggestedAmount: 3,
+      text: "Die Anzahl von „Fahrradboxen Bahnhof Nord“ ist unbegrenzt. Zur selben Zeit buchbar sind trotzdem nur 3, weil jede Buchung ein eigenes Fach braucht.",
+    });
+  });
+
+  /** The Anzahl the dialog would save with the Anlage counts instead. */
+  it("measures an Anzahl given in place of the bookable's", () => {
+    const outcome = compartmentOutcome(fächer(4), bookable(null), {
+      amount: 4,
+    });
+
+    expect(outcome.kind).toBe("fits");
+    expect(outcome.amount).toBe(4);
+    expect(outcome.text).toBe(
+      "Passt: „Fahrradboxen Bahnhof Nord“ kann 4-mal zur selben Zeit gebucht werden, und jede dieser Buchungen bekommt ihr eigenes Fach."
+    );
   });
 });
 
