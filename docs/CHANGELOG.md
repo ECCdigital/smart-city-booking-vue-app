@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Changed
+
+-   Agent docs: the issue tracker follows the template „GitHub Portolan, Produkt-Repo“ (skills `ecc-12`), with flow `v2` of `ECCdigital/tickets`, sub-tickets and `Refs` in pull requests; the glossary is `GLOSSARY.md` (formerly `CONTEXT.md`, the stale copy of `GLOSSARY.md` is gone)
+
 ## [4.4.1] — 2026-11-16
 
 ### Fixed

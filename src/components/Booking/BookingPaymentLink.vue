@@ -98,7 +98,7 @@ const COPIED_MS = 2000;
 
 /**
  * The row "Zahlungslink" of a Buchungsseite's Zahlung block: the customer's
- * payment URL (CONTEXT.md: not the Buchungslink) to copy or open while the
+ * payment URL (GLOSSARY.md: not the Buchungslink) to copy or open while the
  * payment is pending over a provider other than invoice. A series member
  * chooses between its own link and the series' aggregated one.
  */

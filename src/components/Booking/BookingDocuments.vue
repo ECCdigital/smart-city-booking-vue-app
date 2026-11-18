@@ -60,7 +60,7 @@
 import FormatService from "@/services/FormatService";
 
 /**
- * The Dokumente block of a Buchungsseite (CONTEXT.md): the booking's
+ * The Dokumente block of a Buchungsseite (GLOSSARY.md): the booking's
  * attachments in their groups - Belege, Rechnungen, Stornobelege,
  * Widerrufbelege, Anhänge - as dense lists with a counter per group,
  * "keine" for an empty one and a download icon per row. The producing action

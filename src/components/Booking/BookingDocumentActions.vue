@@ -173,7 +173,7 @@ import documentProduction from "@/mixins/documentProduction";
 
 /**
  * The Dokumente block of a Buchungsseite with its producing actions beside
- * the groups (CONTEXT.md: the actions that produce a document belong to its
+ * the groups (GLOSSARY.md: the actions that produce a document belong to its
  * group): "Beleg erstellen" at Bestätigt (spec E8) - for a series member
  * only while every member is Bestätigt, with the single / aggregated choice
  * -, the "Rechnung" menu over the invoice provider, and the cancellation
