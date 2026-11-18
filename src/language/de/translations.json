@@ -185,7 +185,9 @@
   },
   "validation": {
     "required": "Pflichtfeld",
-    "integerRequired": "Ganzzahl erforderlich"
+    "integerRequired": "Ganzzahl erforderlich",
+    "date": "Bitte ein Datum im Format TT.MM.JJJJ eingeben.",
+    "time": "Bitte eine Uhrzeit im Format HH:MM eingeben."
   },
   "bookable": {
     "flow": {
@@ -1019,7 +1021,363 @@
       }
     },
     "participation-link": {
-      "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
+      "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Ort & Format“ ein."
+    },
+    "flow": {
+      "new": "Neue Veranstaltung",
+      "type": "Veranstaltung",
+      "save-failed": "Die Veranstaltung konnte nicht gespeichert werden.",
+      "save-hint": "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie die Veranstaltung verlassen.",
+      "steps": {
+        "general": {
+          "title": "Inhalt",
+          "question": "Worum geht es?",
+          "why": "Name, Kurzbeschreibung und Bilder. Daran erkennen Interessierte die Veranstaltung im Katalog."
+        },
+        "date": {
+          "title": "Termin",
+          "question": "Wann findet sie statt?",
+          "why": "Beginn und Ende, jeweils mit Datum und Uhrzeit."
+        },
+        "place": {
+          "title": "Ort",
+          "question": "Wo findet sie statt?",
+          "why": "Wählen Sie zuerst das Format. Davon hängt ab, ob Sie einen Ort, einen Link oder beides angeben."
+        },
+        "people": {
+          "title": "Veranstalter",
+          "question": "Wer lädt ein?",
+          "why": "Wer veranstaltet, wohin Teilnehmende ihre Fragen schicken und wer dort spricht."
+        },
+        "participation": {
+          "title": "Teilnahme",
+          "question": "Wie kommt man dazu?",
+          "why": "Wie die Anmeldung läuft und wie viele Plätze es gibt."
+        },
+        "program": {
+          "title": "Programm",
+          "question": "Wie läuft sie ab?",
+          "why": "Optional. Ein kurzer Ablauf hilft bei der Entscheidung. „Weiter“ geht auch ohne."
+        },
+        "media": {
+          "title": "Anhänge",
+          "question": "Gibt es Unterlagen?",
+          "why": "Optional. Dateien zum Herunterladen, z. B. eine Materialliste oder die Anfahrt."
+        },
+        "tickets": {
+          "title": "Tickets",
+          "question": "Wie wird sie buchbar?",
+          "why": "Gebucht wird nicht die Veranstaltung selbst, sondern ein Ticket, das mit ihr verknüpft ist."
+        },
+        "publication": {
+          "title": "Veröffentlichung",
+          "question": "Wer kann sie finden?",
+          "why": "Im Katalog erscheint die Veranstaltung erst, wenn Sie das hier einschalten."
+        }
+      }
+    },
+    "manage": {
+      "open": "Veranstaltungsmanagement öffnen",
+      "loadFailed": "Tickets und Buchungen konnten nicht geladen werden.",
+      "retry": "Erneut laden",
+      "refresh": "Aktualisieren",
+      "occupancy": {
+        "title": "Belegung",
+        "ofCapacity": "{booked} von {capacity} Plätzen belegt",
+        "booked": "Noch kein Ticket gebucht | {booked} Ticket gebucht | {booked} Tickets gebucht",
+        "free": "Kein Platz mehr frei | Noch 1 Platz frei | Noch {n} Plätze frei",
+        "released": "{n} Ticket zurückgegeben (abgelehnt, storniert oder widerrufen) | {n} Tickets zurückgegeben (abgelehnt, storniert oder widerrufen)"
+      },
+      "tickets": {
+        "title": "Nach Ticket",
+        "ofCapacity": "{booked} / {capacity}",
+        "unlimited": "ohne Begrenzung",
+        "sharedCapacity": "Ohne eigene Anzahl gelten die Teilnahmeplätze der Veranstaltung.",
+        "none": "Diese Veranstaltung hat noch keine Tickets. Erst mit einem Ticket kann sie gebucht werden.",
+        "toTickets": "Zu den Tickets"
+      },
+      "participants": {
+        "title": "Teilnehmende",
+        "count": "Keine Buchung | 1 Buchung | {n} Buchungen",
+        "name": "Name und Kontakt",
+        "tickets": "Tickets",
+        "status": "Status",
+        "booked": "Gebucht am",
+        "search": "Name, Firma, E-Mail oder ID",
+        "none": "Noch keine Buchungen. Sobald jemand ein Ticket bucht, steht die Person hier.",
+        "noMatch": "Keine Buchung passt zu Suche und Filter.",
+        "open": "Zur Buchung",
+        "perPage": "Buchungen pro Seite",
+        "all": "Alle"
+      }
+    },
+    "edit": {
+      "title": {
+        "edit": "Veranstaltung bearbeiten",
+        "new": "Veranstaltung erstellen",
+        "simple": "Veranstaltung einfach erstellen"
+      },
+      "visibility": {
+        "hint": "Legen Sie fest, ob die Veranstaltung im Katalog und auf eingebundenen Webseiten erscheint. Sie können das später jederzeit ändern."
+      },
+      "simple": {
+        "intro": "Hier legen Sie eine Veranstaltung mit den wichtigsten Angaben auf einer Seite an. Programm und Anhänge ergänzen Sie nach dem Speichern auf der Bearbeitungsseite der Veranstaltung."
+      },
+      "untitled": "Ohne Namen",
+      "id": "ID: {id}",
+      "required": "Pflicht",
+      "optional": "Optional",
+      "nav": {
+        "tabs": "Bereiche der Veranstaltung",
+        "sections": "Abschnitte"
+      },
+      "views": {
+        "details": "Veranstaltungs\u00addetails",
+        "management": "Veranstaltungs\u00admanagement"
+      },
+      "tabs": {
+        "general": "Allgemein",
+        "date": "Termin",
+        "place": "Ort & Format",
+        "placeSimple": "Ort",
+        "people": "Veranstalter & Kontakt",
+        "participation": "Teilnahme",
+        "program": "Programm",
+        "media": "Anhänge",
+        "tickets": "Tickets"
+      },
+      "cards": {
+        "basics": "Grunddaten",
+        "description": "Beschreibung",
+        "features": "Merkmale",
+        "date": "Termin",
+        "place": "Ort & Format",
+        "placeSimple": "Ort",
+        "organizer": "Veranstalter",
+        "contact": "Kontakt für Rückfragen",
+        "people": "Referent:innen",
+        "participation": "Teilnahme",
+        "program": "Programm",
+        "attachments": "Anhänge",
+        "tickets": "Tickets",
+        "visibility": "Sichtbarkeit"
+      },
+      "publication": {
+        "effect": {
+          "public": "Die Veranstaltung wird öffentlich angezeigt.",
+          "hidden": "Die Veranstaltung wird nicht öffentlich angezeigt. Sie bleibt ein Entwurf, den nur die Verwaltung sieht."
+        },
+        "limit": "Die Höchstzahl öffentlicher Veranstaltungen ist erreicht. Diese Veranstaltung kann nicht öffentlich angezeigt werden."
+      },
+      "basics": {
+        "name": "Name der Veranstaltung",
+        "nameHint": "Daran erkennen Buchende die Veranstaltung im Katalog und Sie es in den Listen der Verwaltung.",
+        "teaser": "Kurzbeschreibung",
+        "teaserHint": "Ein kurzer Teaser-Text mit 1-2 Sätzen, um das Interesse der Teilnehmenden zu wecken.",
+        "images": "Bilder",
+        "imagesHint": "Das erste Bild ist das Titelbild — es erscheint in Listen und im Katalog zuerst. Bilder aus der Mediathek wählen, neu hochladen oder extern verlinken. Reihenfolge per Ziehen ändern.",
+        "publicOnly": "Diese Veranstaltung ist öffentlich sichtbar. Interne Medien können hier nicht gespeichert werden."
+      },
+      "description": {
+        "hint": "Geben Sie eine ausführlichere Beschreibung zur Veranstaltung an. Geben Sie an, was Teilnehmende vorher wissen sollten: Inhalt der Veranstaltung, Voraussetzungen oder was sie mitbringen sollen."
+      },
+      "features": {
+        "hint": "Kennzeichnen die Veranstaltung im Katalog, z. B. „Neu“ oder „Barrierefrei“.",
+        "label": "Merkmale",
+        "empty": "Eingeben und Enter drücken"
+      },
+      "date": {
+        "startDate": "Beginn: Datum",
+        "startTime": "Beginn: Uhrzeit",
+        "endDate": "Ende: Datum",
+        "endTime": "Ende: Uhrzeit",
+        "summary": "Dauer {duration}",
+        "hours": "{hours} Std.",
+        "minutes": "{minutes} Min.",
+        "days": "{days} Tag | {days} Tage"
+      },
+      "place": {
+        "format": "Format",
+        "formats": {
+          "presence": "Vor Ort",
+          "hybrid": "Hybrid",
+          "online": "Online"
+        },
+        "explain": {
+          "presence": "Teilnehmende kommen an einen Ort. Sie geben den Ort an.",
+          "hybrid": "Vor Ort und online gleichzeitig. Sie geben einen Ort und einen Teilnahmelink an.",
+          "online": "Nur online. Statt eines Ortes geben Sie einen Teilnahmelink an."
+        },
+        "name": "Name des Ortes",
+        "nameHint": "So steht der Ort auf der Veranstaltungsseite.",
+        "venue": "Veranstaltungsort",
+        "venueHint": "Wählen Sie optional einen Veranstaltungsort aus dieser Verwaltung.",
+        "room": "Raum",
+        "roomHint": "Wählen Sie optional einen Raum aus dieser Verwaltung.",
+        "location": "Standort",
+        "url": "Teilnahmelink",
+        "urlHint": "Über diesen Link nehmen Teilnehmende online teil. Beginnt mit https://."
+      },
+      "organizer": {
+        "name": "Name des Veranstalters",
+        "nameHint": "Die Einrichtung oder Person, die zur Veranstaltung einlädt."
+      },
+      "contact": {
+        "hint": "Geben Sie eine allgemeine Adresse für Rückfragen an.",
+        "email": "E-Mail",
+        "phone": "Telefon"
+      },
+      "people": {
+        "hint": "Geben Sie optional an, wer die Veranstaltung leitet oder dort spricht. Referent:innen erscheinen mit Namen und Foto auf der Veranstaltungsseite.",
+        "contact": "Kontaktperson",
+        "contactHint": "Geben Sie optional zusätzlich eine Kontaktperson an, an die Teilnehmende sich mit Fragen wenden können. Sie erscheint mit Namen und Foto auf der Veranstaltungsseite.",
+        "addContact": "Kontaktperson hinzufügen",
+        "removeContact": "Kontaktperson entfernen",
+        "addSpeaker": "Referent:in hinzufügen",
+        "removeSpeaker": "Referent:in entfernen",
+        "name": "Vor- und Nachname",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "photo": "Foto",
+        "photoEmpty": "Kein Foto ausgewählt"
+      },
+      "participation": {
+        "question": "Wie melden sich Teilnehmende an?",
+        "portal": {
+          "label": "Über das Buchungsportal",
+          "hint": "Teilnehmende buchen im Portal ein Ticket. Die Plätze legen Sie hier fest, die Preise im Ticket."
+        },
+        "external": {
+          "label": "Auf einer anderen Website",
+          "hint": "Das Portal leitet zur Anmeldung dorthin weiter. Teilnahmeplätze und Tickets entfallen."
+        },
+        "none": {
+          "label": "Ohne Anmeldung",
+          "hint": "Teilnehmende kommen einfach vorbei. Teilnahmeplätze und Tickets entfallen."
+        },
+        "max": "Teilnahmeplätze",
+        "maxHint": "So viele Personen können sich höchstens anmelden, über alle Tickets zusammen.",
+        "placesChanged": "Sie haben die Anzahl der Teilnahmeplätze geändert. Einzelne Tickets haben eine begrenzte Anzahl. Bitte prüfen Sie, ob die Anzahl der Tickets noch ausreicht.",
+        "audience": "Wer kann sich anmelden?",
+        "audienceAll": {
+          "label": "Alle",
+          "hint": "Die Veranstaltung steht in der Liste im Portal."
+        },
+        "audienceLink": {
+          "label": "Nur wer den Link hat",
+          "hint": "Die Veranstaltung steht nicht in der öffentlichen Liste. Der Link wird manuell verschickt, z. B. an eine Schulklasse."
+        },
+        "externalUrl": "Adresse der Anmeldeseite"
+      },
+      "program": {
+        "hint": "Legen Sie bei Bedarf einen Ablauf der Veranstaltung fest. Dieser wird auf der Veranstaltungsseite angezeigt. Ein Ablaufplan kann Teilnehmenden vermitteln, was sie erwartet, und dazu beitragen, deren Interesse zu wecken.",
+        "none": "Ohne festgelegtes Programm",
+        "noneHint": "Eingeschaltet werden alle Programmpunkte entfernt.",
+        "multiDay": "Die Veranstaltung geht über mehrere Tage. Wählen Sie für jeden Punkt den Tag.",
+        "day": "Tag",
+        "time": "Uhrzeit",
+        "description": "Was passiert?",
+        "add": "Programmpunkt hinzufügen",
+        "addSub": "Unterpunkt hinzufügen",
+        "remove": "Programmpunkt entfernen",
+        "removeSub": "Unterpunkt entfernen"
+      },
+      "attachments": {
+        "hint": "Dateien zum Herunterladen, z. B. eine Materialliste oder die Anfahrt.",
+        "add": "Datei hinzufügen"
+      },
+      "tickets": {
+        "how": {
+          "event": {
+            "title": "Veranstaltung",
+            "text": "Beschreibt Termin, Ort und Teilnahmeplätze. Buchen kann man sie nicht direkt."
+          },
+          "ticket": {
+            "title": "Ticket",
+            "text": "Das wird gebucht. Jedes Ticket hat seinen eigenen Preis, seinen Schalter „Buchbar“ und legt fest, wer buchen darf."
+          },
+          "booking": {
+            "title": "Buchung",
+            "text": "Buchende wählen im Portal ein Ticket. Die Buchung steht danach unter „Buchungen“."
+          }
+        },
+        "list": "Tickets dieser Veranstaltung",
+        "empty": "Noch keine Tickets.",
+        "noneBookable": "Noch kein buchbares Ticket. Die Veranstaltung ist im Portal zu sehen, aber niemand kann sich anmelden.",
+        "bookable": "Buchbar",
+        "notBookable": "Nicht buchbar",
+        "free": "Kostenfrei",
+        "noPrice": "Noch ohne Preis",
+        "edit": "Bearbeiten",
+        "hide": "Ticket verbergen: danach nicht mehr buchbar",
+        "show": "Ticket wieder buchbar machen",
+        "delete": "Ticket löschen",
+        "deleteDialog": {
+          "title": "Ticket löschen",
+          "question": "Sind Sie sicher, dass Sie das Ticket {title} löschen wollen?",
+          "final": "Diese Aktion kann nicht rückgängig gemacht werden.",
+          "confirm": "Löschen"
+        },
+        "add": "Ticket für diese Veranstaltung anlegen",
+        "dialog": {
+          "titleNew": "Ticket anlegen",
+          "titleEdit": "Ticket bearbeiten",
+          "intro": "Legen Sie Tickets für bestimmte Kategorien oder Personengruppen fest, z. B. Regulär, Kinder und Ermäßigt.",
+          "name": "Name des Tickets",
+          "amount": "Anzahl",
+          "amountHint": "Ohne Angabe sind maximal {max} Tickets dieser Art verfügbar.",
+          "amountMin": "Bitte mindestens 1 eintragen.",
+          "amountMax": "Höchstens {max}, so viele Teilnahmeplätze hat die Veranstaltung.",
+          "price": "Preis pro Ticket",
+          "priceHint": "0,00 € heißt kostenfrei.",
+          "priceTiered": "Dieses Ticket hat gestaffelte Preise. Sie lassen sich im Detail-Modus ändern.",
+          "priceInvalid": "Bitte einen Preis wie 12,50 eintragen.",
+          "failed": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
+          "detail": "Detail-Modus öffnen"
+        },
+        "saveDialog": {
+          "title": "Veranstaltung speichern",
+          "text": "Ein Ticket gehört zu einer gespeicherten Veranstaltung. Speichern Sie die Veranstaltung, bevor Sie ein Ticket anlegen.",
+          "keepEditing": "Weiter bearbeiten"
+        },
+        "addHint": "Öffnet einen kurzen Dialog mit Name, Anzahl und Preis. Alles Weitere zum Ticket steht im Detail-Modus.",
+        "saveFirst": "Die Veranstaltung ist noch nicht gespeichert. Sie wird gespeichert, bevor das erste Ticket entsteht.",
+        "loadFailed": "Die Tickets ließen sich nicht laden.",
+        "factEnd": "Tickets sind buchbar, bis die Veranstaltung endet.",
+        "factPlaces": "Die Teilnahmeplätze gelten für alle Tickets zusammen. Sind sie vergeben, ist kein Ticket mehr buchbar.",
+        "factPrice": "Preise stehen nur im Ticket. Für Regulär und Ermäßigt legen Sie zwei Tickets an, für eine kostenfreie Veranstaltung ein kostenfreies Ticket.",
+        "notNeeded": "Bei der Anmeldung „{mode}“ brauchen Sie kein Ticket. Tickets braucht nur die Anmeldung „Über das Buchungsportal“."
+      },
+      "overview": {
+        "title": "Übersicht",
+        "empty": "Nicht angegeben",
+        "missing": "Fehlt, ist aber Pflicht",
+        "tickets": "{count} Tickets",
+        "noTicketNeeded": "Kein Ticket nötig",
+        "programNone": "Ohne festgelegtes Programm",
+        "programCount": "{count} Programmpunkte",
+        "attachments": "{count} Anhänge"
+      },
+      "issues": {
+        "name": "Bitte den Namen der Veranstaltung eintragen.",
+        "start": "Bitte Datum und Uhrzeit des Beginns eintragen.",
+        "end": "Bitte Datum und Uhrzeit des Endes eintragen.",
+        "endBeforeStart": "Das Ende liegt vor dem Beginn.",
+        "placeName": "Bitte den Namen des Ortes eintragen.",
+        "location": "Der Standort lässt sich so nicht speichern.",
+        "url": "Bitte einen Link eintragen, der mit https:// beginnt.",
+        "organizer": "Bitte den Veranstalter eintragen.",
+        "emailAddress": "Bitte eine gültige E-Mail-Adresse für Rückfragen eintragen.",
+        "contactPersonName": "Bitte den Namen der Kontaktperson eintragen.",
+        "contactPersonPhoneNumber": "Bitte die Telefonnummer der Kontaktperson eintragen.",
+        "contactPersonEmailAddress": "Bitte eine gültige E-Mail-Adresse der Kontaktperson eintragen.",
+        "maxAttendees": "Bitte die Zahl der Teilnahmeplätze eintragen.",
+        "externalBookingUrl": "Bitte die Adresse der Anmeldeseite eintragen. Sie beginnt mit https://."
+      },
+      "refused": {
+        "title": "Nicht gespeichert",
+        "message": "Es fehlen noch Pflichtangaben. Sie sind auf der Seite markiert."
+      }
     }
   },
   "dialog": {

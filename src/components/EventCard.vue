@@ -33,6 +33,19 @@
             <v-divider></v-divider>
             <v-list-item
               link
+              data-test="event-card-open-management"
+              @click="navigateToEdit({ view: 'management' })"
+              :disabled="!BookablePermissionService.allowUpdate(item)"
+            >
+              <v-list-item-icon>
+                <v-icon>mdi-account-multiple-check-outline</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>
+                {{ $t("event.manage.open") }}
+              </v-list-item-title>
+            </v-list-item>
+            <v-list-item
+              link
               @click="downloadEventBookings(item.id, item.tenantId)"
               :disabled="!BookablePermissionService.allowUpdate(item)"
             >
@@ -320,11 +333,16 @@ export default {
     emitDuplicateAction() {
       this.$emit("duplicate");
     },
-    navigateToEdit() {
+    /** The editing page; `view` „management“ opens Veranstaltungsmanagement. */
+    navigateToEdit({ view } = {}) {
       if (this.BookablePermissionService.allowUpdate(this.item)) {
         this.$router.push({
-          name: "event-create-information",
-          query: { id: this.item.id, fromRoute: this.fromRoute },
+          name: "event-edit",
+          query: {
+            id: this.item.id,
+            fromRoute: this.fromRoute,
+            ...(view ? { view } : {}),
+          },
         });
       }
     },

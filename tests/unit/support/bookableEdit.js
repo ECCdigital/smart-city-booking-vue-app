@@ -123,7 +123,7 @@ export const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 /** A tab of the editing page's navigation, by its label. */
 export const editTab = (wrapper, label) =>
   wrapper
-    .findAll(".bookable-edit-nav__tab")
+    .findAll(".editor-nav__tab")
     .wrappers.find((button) => button.text() === label);
 
 /** Whether the hint „Ungespeicherte Änderungen“ shows. */

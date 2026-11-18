@@ -1,10 +1,9 @@
 // Surfaces of the media library (MediaLibrary, MediaDetailPanel,
 // MediaPickerDialog).
 //
-// The app-wide $card-border-radius / $dialog-border-radius (25px !important,
-// see variables.scss) are far too round for these dense, list-heavy views. They
-// are toned down for the media surfaces only — the global values stay as they
-// are. The !important is unavoidable: the Vuetify rules generated from those
+// The app-wide $dialog-border-radius (25px !important, see variables.scss) is
+// far too round for these dense, list-heavy views; it is toned down for the
+// media surfaces only. Cards are rounded as here app-wide. The !important is unavoidable: the Vuetify rules generated from those
 // variables carry one themselves, so only a more specific !important wins.
 //
 // These selectors are global on purpose: the picker and the confirm/delete

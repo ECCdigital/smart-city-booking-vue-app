@@ -10,7 +10,6 @@ import EventCreateAttendees from "@/views/Bookables/Events/Form/Attendees.vue";
 import EventCreateAgenda from "@/views/Bookables/Events/Form/Agenda.vue";
 import EventCreateAttachments from "@/views/Bookables/Events/Form/Attachments.vue";
 import EventCreateImages from "@/views/Bookables/Events/Form/Images.vue";
-import SimpleEventCreator from "@/views/Bookables/Events/SimpleEventCreator.vue";
 import Rooms from "@/views/Bookables/Rooms/Rooms.vue";
 import Resources from "@/views/Bookables/Resources/Resources.vue";
 import Locations from "@/views/Bookables/Locations/Locations";
@@ -377,12 +376,30 @@ const routes = [
     },
   },
   {
-    // The direct link of an event (review queue, „Verwendung“ in the media
-    // library). Form and steps are the children of `event-create`, so the link
-    // opens the first step with the event's id, as the event list does.
+    // The editing page of an event, laid out as the bookable editor; without
+    // `?id=` it creates one. Also the direct link of an event (review queue,
+    // „Verwendung“ in the media library).
     path: "/events/edit",
     name: "event-edit",
-    redirect: (to) => ({ name: "event-create-information", query: to.query }),
+    component: lazyLoad("Bookables/Events/EventEdit"),
+    meta: {
+      title: "Veranstaltung bearbeiten",
+      requiresAuth: true,
+      interfaceName: "events",
+    },
+  },
+  {
+    // A new event in its main cards on one page: the editing page in its
+    // simple form (`meta.simpleEvent`).
+    path: "/events/create/simple-event",
+    name: "simple-event-creator",
+    component: lazyLoad("Bookables/Events/EventEdit"),
+    meta: {
+      title: "Veranstaltung einfach erstellen",
+      requiresAuth: true,
+      interfaceName: "events",
+      simpleEvent: true,
+    },
   },
   {
     path: "/events/create",
@@ -394,16 +411,6 @@ const routes = [
       interfaceName: "events",
     },
     children: [
-      {
-        path: "simple-event",
-        name: "simple-event-creator",
-        component: SimpleEventCreator,
-        meta: {
-          title: "Veranstaltung erstellen",
-          requiresAuth: true,
-          interfaceName: "events",
-        },
-      },
       {
         path: "information",
         name: "event-create-information",

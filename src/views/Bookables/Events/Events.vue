@@ -216,7 +216,7 @@ export default {
       items: [
         {
           title: "Detaillierte Event-Erstellung",
-          to: "event-create-information",
+          to: "event-edit",
         },
         { title: "Einfache Event-Erstellung", to: "simple-event-creator" },
       ],

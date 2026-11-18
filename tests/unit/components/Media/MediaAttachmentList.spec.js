@@ -64,3 +64,29 @@ describe("MediaAttachmentList: „Muss akzeptiert werden“ follows „Im Buchun
     expect(wrapper.text()).not.toContain("Pflicht");
   });
 });
+
+describe("MediaAttachmentList: plain files, as an event's attachments", () => {
+  it("shows the field „Typ“, its badge and the switches by default", async () => {
+    const wrapper = await mountList(attachment());
+
+    expect(wrapper.text()).toContain("Nutzervereinbarung");
+    expect(wrapper.findAll(".v-select").length).toBe(1);
+    expect(wrapper.findAll(".v-input--switch").length).toBe(3);
+  });
+
+  it("drops type, badge and the checkout switches when plain", async () => {
+    const wrapper = mountComponent(MediaAttachmentList, {
+      propsData: {
+        value: [attachment({ show: true, required: true })],
+        plain: true,
+      },
+      stubs: { MediaReferenceField: true },
+    });
+    await wrapper.setData({ expandedItems: ["att-1"] });
+
+    expect(wrapper.text()).not.toContain("Nutzervereinbarung");
+    expect(wrapper.text()).not.toContain("Pflicht");
+    expect(wrapper.findAll(".v-select").length).toBe(0);
+    expect(wrapper.findAll(".v-input--switch").length).toBe(0);
+  });
+});

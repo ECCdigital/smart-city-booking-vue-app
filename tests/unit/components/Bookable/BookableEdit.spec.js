@@ -138,7 +138,7 @@ describe("BookableEdit - the areas without a step", () => {
   /** The links below the open tab in the navigation, in order. */
   const subNav = (wrapper) =>
     wrapper
-      .findAll(".bookable-edit-nav__section")
+      .findAll(".editor-nav__section")
       .wrappers.map((link) => link.text());
   const cardTitles = (wrapper) =>
     wrapper
@@ -363,7 +363,7 @@ describe("BookableEdit - the price in both modes", () => {
 describe("BookableEdit - Grunddaten", () => {
   const subNav = (wrapper) =>
     wrapper
-      .findAll(".bookable-edit-nav__section")
+      .findAll(".editor-nav__section")
       .wrappers.map((link) => link.text());
   const cardTitles = (wrapper) =>
     wrapper
@@ -479,7 +479,7 @@ describe("BookableEdit - the Buchungsart", () => {
 describe("BookableEdit - Wer darf buchen?", () => {
   const subNav = (wrapper) =>
     wrapper
-      .findAll(".bookable-edit-nav__section")
+      .findAll(".editor-nav__section")
       .wrappers.map((link) => link.text());
   const cardTitles = (wrapper) =>
     wrapper

@@ -32,158 +32,46 @@
 
       <v-row v-if="selectionType === 'schedule'">
         <v-col>
-          <v-menu
-            ref="dateBeginMenu"
-            v-model="dateBeginMenu"
-            :close-on-content-click="false"
-            :return-value.sync="dateBeginModel"
-            transition="scale-transition"
-            offset-y
-            min-width="auto"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="dateBeginDisplay"
-                v-bind="attrs"
-                v-on="on"
-                label="Startdatum"
-                prepend-icon="mdi-calendar"
-                type="text"
-                v-mask="'##.##.####'"
-                inputmode="numeric"
-                placeholder="DD.MM.YYYY"
-                :rules="validationRules.dateBegin"
-                @click:prepend="dateBeginMenu = true"
-                @change="$refs.dateBeginMenu.save(dateBeginModel)"
-              />
-            </template>
-            <v-date-picker
-              v-model="dateBeginModel"
-              no-title
-              scrollable
-              color="primary"
-              locale="de"
-              :first-day-of-week="1"
-              :show-current="minBookingDate"
-              :min="minBookingDate"
-              @click:date="$refs.dateBeginMenu.save(dateBeginModel)"
-            />
-          </v-menu>
+          <DateField
+            :value="dateBeginModel"
+            label="Startdatum"
+            :rules="validationRules.dateBegin"
+            :min="minBookingDate"
+            :show-current="minBookingDate"
+            @input="setDateBegin"
+          />
         </v-col>
         <v-col>
-          <v-menu
-            ref="timeBeginMenuRef"
-            v-model="timeBeginMenu"
-            :close-on-content-click="false"
-            :nudge-right="40"
-            transition="scale-transition"
-            offset-y
-            max-width="290px"
-            min-width="290px"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="timeBeginModel"
-                v-bind="attrs"
-                v-on="on"
-                label="Startzeit"
-                prepend-icon="mdi-clock-time-four-outline"
-                type="text"
-                v-mask="'##:##'"
-                inputmode="numeric"
-                placeholder="HH:mm"
-                :rules="validationRules.time"
-                @click:prepend="timeBeginMenu = true"
-              />
-            </template>
-            <v-time-picker
-              v-if="timeBeginMenu"
-              v-model="timeBeginModel"
-              full-width
-              format="24hr"
-              :allowed-minutes="[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]"
-              @click:minute="$refs.timeBeginMenuRef.save(timeBeginModel)"
-            />
-          </v-menu>
+          <TimeField
+            :value="timeBeginModel"
+            label="Startzeit"
+            :rules="validationRules.time"
+            :allowed-minutes="ALLOWED_MINUTES"
+            @input="timeBeginModel = $event"
+          />
         </v-col>
       </v-row>
       <v-row v-if="selectionType === 'schedule'">
         <v-col>
-          <v-menu
-            ref="dateEndMenu"
-            v-model="dateEndMenu"
-            :close-on-content-click="false"
-            :return-value.sync="dateEndModel"
-            transition="scale-transition"
-            offset-y
-            min-width="auto"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="dateEndDisplay"
-                v-bind="attrs"
-                v-on="on"
-                label="Enddatum"
-                prepend-icon="mdi-calendar"
-                type="text"
-                v-mask="'##.##.####'"
-                inputmode="numeric"
-                placeholder="DD.MM.YYYY"
-                :rules="validationRules.dateEnd"
-                @click:prepend="dateEndMenu = true"
-                @change="$refs.dateEndMenu.save(dateEndModel)"
-              />
-            </template>
-            <v-date-picker
-              v-model="dateEndModel"
-              no-title
-              scrollable
-              color="primary"
-              locale="de"
-              :first-day-of-week="1"
-              :show-current="minBookingDate"
-              :min="dateBeginModel || minBookingDate"
-              @click:date="$refs.dateEndMenu.save(dateEndModel)"
-            />
-          </v-menu>
+          <DateField
+            :value="dateEndModel"
+            label="Enddatum"
+            :rules="validationRules.dateEnd"
+            :min="dateBeginModel || minBookingDate"
+            :show-current="minBookingDate"
+            @input="setDateEnd"
+          />
         </v-col>
         <v-col>
-          <v-menu
-            ref="timeEndMenuRef"
-            v-model="timeEndMenu"
-            :close-on-content-click="false"
-            :nudge-right="40"
-            transition="scale-transition"
-            offset-y
-            max-width="290px"
-            min-width="290px"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="timeEndModel"
-                v-bind="attrs"
-                v-on="on"
-                label="Endzeit"
-                prepend-icon="mdi-clock-time-four-outline"
-                type="text"
-                v-mask="'##:##'"
-                inputmode="numeric"
-                placeholder="HH:mm"
-                :rules="validationRules.time"
-                @click:prepend="timeEndMenu = true"
-              />
-            </template>
-            <v-time-picker
-              v-if="timeEndMenu"
-              v-model="timeEndModel"
-              :min="minBookingTime"
-              :max="maxBookingTime"
-              full-width
-              format="24hr"
-              :allowed-minutes="[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]"
-              @click:minute="$refs.timeEndMenuRef.save(timeEndModel)"
-            />
-          </v-menu>
+          <TimeField
+            :value="timeEndModel"
+            label="Endzeit"
+            :rules="validationRules.time"
+            :min="minBookingTime"
+            :max="maxBookingTime"
+            :allowed-minutes="ALLOWED_MINUTES"
+            @input="timeEndModel = $event"
+          />
         </v-col>
       </v-row>
       <v-row v-if="selectionType === 'time-period'">
@@ -289,9 +177,20 @@ import {
   todayIso,
 } from "@/utils/checkoutDates";
 
+import DateField from "@/components/commons/DateField.vue";
+import TimeField from "@/components/commons/TimeField.vue";
+import { parseGermanDate, parseTime } from "@/utils/dateInput";
+
+// The minutes the time pickers offer: every five.
+const ALLOWED_MINUTES = Object.freeze([
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55,
+]);
+
 export default {
   name: "CheckoutTimeSelector",
   components: {
+    DateField,
+    TimeField,
     TimezoneWarning,
     CheckoutTimePeriodPicker,
     CheckoutBlockPeriodPicker,
@@ -337,11 +236,7 @@ export default {
       valid: true,
       validating: false,
 
-      // Menu Models
-      dateBeginMenu: false,
-      timeBeginMenu: false,
-      dateEndMenu: false,
-      timeEndMenu: false,
+      ALLOWED_MINUTES,
 
       // DateTime Models
       dateBeginModel: null,
@@ -357,23 +252,21 @@ export default {
       validationRules: {
         dateBegin: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
-          (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
-          (v) =>
-            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
+          (v) => !!parseGermanDate(v) || "Ungültiges Datum",
+          (v) => !isBeforeToday(parseGermanDate(v)) || dateBeforeTodayMessage(),
         ],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
-          (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
-          (v) =>
-            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
+          (v) => !!parseGermanDate(v) || "Ungültiges Datum",
+          (v) => !isBeforeToday(parseGermanDate(v)) || dateBeforeTodayMessage(),
           (v) =>
             !this.dateBeginModel ||
-            this.parseDeToIso(v) >= this.dateBeginModel ||
+            parseGermanDate(v) >= this.dateBeginModel ||
             "Enddatum muss nach dem Startdatum liegen",
         ],
         time: [
           (v) => !!v || "Pflichtfeld",
-          (v) => this.isValidTime(v) || "Ungültige Zeit",
+          (v) => !!parseTime(v) || "Ungültige Zeit",
         ],
       },
     };
@@ -413,69 +306,17 @@ export default {
     onGroupBooking() {
       this.$emit("group-booking");
     },
-    formatIsoToDe(iso) {
-      if (!iso) return null;
-      const [y, m, d] = iso.split("-");
-      if (!y || !m || !d) return iso;
-      return `${d}.${m}.${y}`;
+    /** A start date from the field; one before today stays out (rules say so). */
+    setDateBegin(iso) {
+      if (iso && !isBeforeToday(iso)) this.dateBeginModel = iso;
     },
-
-    parseDeToIso(de) {
-      if (!de) return null;
-
-      const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(de);
-      if (!m) return null;
-
-      const d = Number(m[1]);
-      const mo = Number(m[2]);
-      const y = Number(m[3]);
-
-      const dt = new Date(y, mo - 1, d);
-      const valid =
-        dt.getFullYear() === y &&
-        dt.getMonth() === mo - 1 &&
-        dt.getDate() === d;
-
-      if (!valid) return null;
-
-      const iso = `${String(y).padStart(4, "0")}-${String(mo).padStart(
-        2,
-        "0"
-      )}-${String(d).padStart(2, "0")}`;
-
-      return iso;
-    },
-    isValidTime(v) {
-      if (!v) return false;
-      if (!/^\d{2}:\d{2}$/.test(v)) return false;
-
-      const [hh, mm] = v.split(":").map(Number);
-      if (Number.isNaN(hh) || Number.isNaN(mm)) return false;
-
-      return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+    /** An end date from the field, as the start date. */
+    setDateEnd(iso) {
+      if (iso && !isBeforeToday(iso)) this.dateEndModel = iso;
     },
   },
 
   computed: {
-    dateBeginDisplay: {
-      get() {
-        return this.formatIsoToDe(this.dateBeginModel);
-      },
-      set(v) {
-        const iso = this.parseDeToIso(v);
-        if (iso && !isBeforeToday(iso)) this.dateBeginModel = iso;
-      },
-    },
-
-    dateEndDisplay: {
-      get() {
-        return this.formatIsoToDe(this.dateEndModel);
-      },
-      set(v) {
-        const iso = this.parseDeToIso(v);
-        if (iso && !isBeforeToday(iso)) this.dateEndModel = iso;
-      },
-    },
     isNextButtonDisabled() {
       if (this.selectionType === "block-period") {
         return !this.selectedBlockPeriod || !this.leadItem.valid;

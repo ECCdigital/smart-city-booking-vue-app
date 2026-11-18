@@ -117,7 +117,7 @@ describe("BookableFlow", () => {
     await find(wrapper, "flow-next").trigger("click");
     expect(find(wrapper, "flow-title-heading").text()).toBe("Verfügbarkeit");
     expect(find(wrapper, "flow-dot-identity").classes()).toContain(
-      "bookable-flow__dot--done"
+      "flow-frame__dot--done"
     );
 
     await find(wrapper, "flow-back").trigger("click");
@@ -486,7 +486,7 @@ describe("BookableFlow on a wide screen", () => {
     expect(find(wrapper, "flow-title-heading").text()).toBe("Bestätigung");
     expect(blockOf(wrapper, "approval").text()).toContain("Manuell bestätigen");
     expect(find(wrapper, "flow-dot-identity").classes()).toContain(
-      "bookable-flow__dot--done"
+      "flow-frame__dot--done"
     );
   });
 
@@ -669,7 +669,7 @@ describe("BookableFlow on an extra wide screen", () => {
       expect(find(wrapper, "flow-steps").exists()).toBe(false);
       expect(find(wrapper, "flow-progress").exists()).toBe(true);
       expect(find(wrapper, "flow-dot-identity").classes()).toContain(
-        "bookable-flow__dot--done"
+        "flow-frame__dot--done"
       );
       expect(find(wrapper, "stub-BookableFlowAvailability").element).toBe(step);
 

@@ -9,6 +9,14 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/events/${id}`);
   },
+  /**
+   * The bookings of the event's tickets, all of them, for whoever may change
+   * the event (the backend's `event.bookings`, as the attendee list).
+   */
+  getEventBookings(id, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/events/${id}/bookings`);
+  },
   getTags(tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/events/_meta/tags`);
