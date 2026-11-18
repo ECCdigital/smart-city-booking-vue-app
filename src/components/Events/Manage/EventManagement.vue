@@ -4,9 +4,15 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiEventService from "@/services/api/ApiEventService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import SectionCard from "@/components/commons/SectionCard.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import EventOccupancyRail from "./EventOccupancyRail.vue";
-import { statusColor, statusIcon, statusLabel } from "@/utils/bookingStatus";
+import {
+  BOOKING_STATUS,
+  statusColor,
+  statusIcon,
+  statusLabel,
+} from "@/utils/bookingStatus";
 import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 import {
   HOLDING_STATUSES,
@@ -19,12 +25,18 @@ import {
  * The tab „Veranstaltungsmanagement“ of the event editing page: where the
  * event stands. The occupancy of the event and of each ticket - the tickets
  * held per state against the limit (`eventManagement`) - and the
- * participants, one row per booking, each opening its booking page. It reads
+ * participants, one row per booking, each opening its booking page, searched
+ * and filtered by state with the search band of the booking list. It reads
  * the stored event, not the form: tickets and bookings are saved apart.
  */
 export default {
   name: "EventManagement",
-  components: { SectionCard, BookingExportButton, EventOccupancyRail },
+  components: {
+    SectionCard,
+    SearchBar,
+    BookingExportButton,
+    EventOccupancyRail,
+  },
   props: {
     eventId: { type: String, required: true },
   },
@@ -35,7 +47,8 @@ export default {
       loading: false,
       loadFailed: false,
       search: "",
-      showReleased: false,
+      // The states picked behind the funnel; none, every booking.
+      statusFilter: [],
       holdingStatuses: HOLDING_STATUSES,
     };
   },
@@ -56,15 +69,36 @@ export default {
     allParticipants() {
       return participants(this.tickets, this.bookings);
     },
-    releasedCount() {
-      return this.allParticipants.filter((row) => !row.holds).length;
+    /**
+     * The filter card behind the funnel: the states holding tickets, in the
+     * order of the booking list.
+     */
+    filterSections() {
+      return [
+        {
+          key: "status",
+          label: this.$t("booking.filter.status"),
+          selected: this.statusFilter,
+          options: Object.values(BOOKING_STATUS)
+            .filter((status) => HOLDING_STATUSES.includes(status))
+            .map((status) => ({
+              value: status,
+              label: statusLabel(status),
+              color: statusColor(status),
+              icon: statusIcon(status),
+            })),
+        },
+      ];
+    },
+    filtered() {
+      return !!(this.search || "").trim() || this.statusFilter.length > 0;
     },
     shownParticipants() {
-      // The field's clear button sets `null`, not "".
       const term = (this.search || "").trim().toLowerCase();
+      const statuses = this.statusFilter;
       return this.allParticipants.filter(
         (row) =>
-          (this.showReleased || row.holds) &&
+          (!statuses.length || statuses.includes(row.status)) &&
           (!term ||
             [row.name, row.company, row.mail, row.id].some((value) =>
               String(value).toLowerCase().includes(term)
@@ -150,6 +184,9 @@ export default {
       return new Intl.DateTimeFormat("de-DE", { timeStyle: "short" }).format(
         new Date(value)
       );
+    },
+    onFilter(key, selection) {
+      if (key === "status") this.statusFilter = selection;
     },
     openBooking(row) {
       this.$router.push(bookingPageRoute(row.id, this.tenantId));
@@ -312,33 +349,18 @@ export default {
           {{ $t("event.manage.participants.ownReach") }}
         </p>
 
-        <div class="event-manage__tools">
-          <v-text-field
-            v-model="search"
-            dense
-            outlined
-            hide-details
-            clearable
-            prepend-inner-icon="mdi-magnify"
-            :label="$t('event.manage.participants.search')"
-            class="event-manage__search"
-            data-test="manage-search"
-          />
-          <v-switch
-            v-if="releasedCount"
-            v-model="showReleased"
-            dense
-            hide-details
-            inset
-            class="mt-0 pt-0"
-            :label="
-              $tc('event.manage.participants.showReleased', releasedCount)
-            "
-            data-test="manage-show-released"
-          />
-          <v-spacer />
-          <BookingExportButton :bookings="shownBookings" :tenant="tenantId" />
-        </div>
+        <SearchBar
+          v-model="search"
+          :fields="$t('event.manage.participants.search')"
+          :filters="filterSections"
+          class="event-manage__search"
+          data-test="manage-search"
+          @filter="onFilter"
+        >
+          <template #actions>
+            <BookingExportButton :bookings="shownBookings" :tenant="tenantId" />
+          </template>
+        </SearchBar>
 
         <v-data-table
           :headers="headers"
@@ -417,7 +439,7 @@ export default {
           <template #no-data>
             <div class="event-manage__empty py-6">
               {{
-                search
+                filtered
                   ? $t("event.manage.participants.noMatch")
                   : $t("event.manage.participants.none")
               }}
@@ -529,7 +551,9 @@ export default {
   font-weight: var(--scb-font-weight-semibold);
 }
 
-.event-manage__tools {
+/* The band of the booking list, narrower inside the card: the export
+   beside it, at the far end, not in a row beneath. */
+.event-manage__search {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -537,8 +561,13 @@ export default {
   margin-bottom: var(--scb-space-3);
 }
 
-.event-manage__search {
-  flex: 0 1 320px;
+.event-manage__search >>> .scb-search {
+  flex: 0 1 420px;
+}
+
+.event-manage__search >>> .scb-toolbar {
+  margin-top: 0;
+  margin-left: auto;
 }
 
 /* Rounded as the frames around it (the ticket list, the section card),

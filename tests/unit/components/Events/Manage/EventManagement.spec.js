@@ -89,28 +89,44 @@ describe("EventManagement", () => {
     expect(find(wrapper, "manage-tickets").text()).not.toContain("Fremd");
   });
 
-  it("lists the participants holding tickets, the returned on demand", async () => {
+  it("lists every booking, whatever its state, until a state is picked", async () => {
     const { wrapper } = await mount();
     const table = () => find(wrapper, "manage-participants").text();
 
     expect(table()).toContain("Ada Lovelace");
-    expect(table()).not.toContain("Grace Hopper");
-
-    wrapper.setData({ showReleased: true });
-    await wrapper.vm.$nextTick();
     expect(table()).toContain("Grace Hopper");
+
+    wrapper
+      .findComponent({ name: "SearchBar" })
+      .vm.$emit("filter", "status", ["confirmed"]);
+    await wrapper.vm.$nextTick();
+    expect(table()).toContain("Ada Lovelace");
+    expect(table()).not.toContain("Grace Hopper");
+  });
+
+  it("offers the states holding tickets behind the funnel", async () => {
+    const { wrapper } = await mount();
+
+    const bar = wrapper.findComponent({ name: "SearchBar" });
+    const [section] = bar.props("filters");
+    expect(section.key).toBe("status");
+    expect(section.options.map((option) => option.value)).toEqual([
+      "requested",
+      "payment_due",
+      "confirmed",
+    ]);
   });
 
   it("lists everyone again once the search is cleared", async () => {
     const { wrapper } = await mount();
     const table = () => find(wrapper, "manage-participants").text();
 
-    wrapper.setData({ search: "nobody" });
+    wrapper.findComponent({ name: "SearchBar" }).vm.$emit("input", "nobody");
     await wrapper.vm.$nextTick();
     expect(table()).not.toContain("Ada Lovelace");
+    expect(table()).toContain("Keine Buchung passt zu Suche und Filter.");
 
-    // What the field's clear button sets.
-    wrapper.setData({ search: null });
+    wrapper.findComponent({ name: "SearchBar" }).vm.$emit("input", "");
     await wrapper.vm.$nextTick();
     expect(table()).toContain("Ada Lovelace");
   });
