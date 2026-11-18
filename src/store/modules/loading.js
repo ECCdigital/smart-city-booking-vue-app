@@ -1,8 +1,8 @@
 const namespaced = true;
 
-const state = {
+const state = () => ({
   queue: [],
-};
+});
 
 const mutations = {
   START(state, name) {

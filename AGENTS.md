@@ -35,7 +35,7 @@ Do not assume backend or storefront code is in this repo. API or auth changes ma
 ## Commands
 
 ```bash
-npm install          # install dependencies
+npm ci && npm run bff:install  # dependencies, the BFF's too: its specs load bff/node_modules
 npm run serve        # dev server (needs running backend API)
 npm run build        # production build + minified JS web interface
 npm run lint:check   # eslint

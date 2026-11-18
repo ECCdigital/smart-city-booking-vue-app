@@ -1,13 +1,13 @@
 <template>
   <!-- The search band (SearchBar) over a list of bookables or coupons: the
-       tags behind the funnel, sorting in the row beneath (ToolbarRow).
-       Searching, the tag filter and sorting stay here; bar and row only draw
-       them. -->
+       tags and the page's field filters behind the funnel, sorting in the
+       row beneath (ToolbarRow). Searching, filtering and sorting stay here;
+       bar and row only draw them. -->
   <SearchBar
     v-model="searchQuery"
     :fields="fields"
     :filters="filterSections"
-    @filter="(key, tags) => (selectedFilters = tags)"
+    @filter="changeFilter"
   >
     <template v-if="sortable || $slots.actions" #actions>
       <ToolbarRow
@@ -26,6 +26,7 @@
 
 <script>
 import Fuse from "fuse.js";
+import { emptySelection, restrictionCount } from "@/utils/filterSections";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 
@@ -42,6 +43,12 @@ export default {
     filterKey: { type: String, default: "" },
     filterOptions: { type: Array, default: () => [] },
     showFilters: { type: Boolean, default: true },
+    /**
+     * Further filters behind the funnel, before the tags: sections of the
+     * filter card without `selected` (see `@/utils/filterSections`), each
+     * with `matches(item, selection)`. Set filters apply together.
+     */
+    fieldFilters: { type: Array, default: () => [] },
     sortable: { type: Boolean, default: false },
     sortOptions: {
       type: Array,
@@ -56,6 +63,9 @@ export default {
     return {
       searchQuery: "",
       selectedFilters: [],
+      fieldSelections: Object.fromEntries(
+        this.fieldFilters.map((filter) => [filter.key, emptySelection(filter)])
+      ),
       fuse: null,
       searchResults: [],
       sortBy: null,
@@ -63,10 +73,14 @@ export default {
     };
   },
   computed: {
-    /** The tags behind the funnel; no funnel with `showFilters` off. */
+    /**
+     * The tags and the field filters behind the funnel; no funnel with
+     * `showFilters` off.
+     */
     filterSections() {
       if (!this.showFilters) return null;
       return [
+        ...this.fieldSectionsInUse,
         {
           key: "tags",
           label: this.$t("filter.tags"),
@@ -79,16 +93,31 @@ export default {
         },
       ];
     },
+    /** The field filters with their selections. */
+    fieldSectionsInUse() {
+      return this.fieldFilters.map((filter) => ({
+        ...filter,
+        selected: this.fieldSelections[filter.key],
+      }));
+    },
   },
   watch: {
     items: { handler: "_initFuse", immediate: true },
     keys: { handler: "_initFuse", deep: true },
     searchQuery: "performSearch",
     selectedFilters: "performSearch",
+    fieldSelections: { handler: "performSearch", deep: true },
     sortBy: "performSearch",
     sortDir: "performSearch",
   },
   methods: {
+    changeFilter(key, selection) {
+      if (key === "tags") {
+        this.selectedFilters = selection;
+        return;
+      }
+      this.fieldSelections = { ...this.fieldSelections, [key]: selection };
+    },
     getNestedValue(obj, path) {
       return path.split(".").reduce((acc, key) => acc?.[key], obj);
     },
@@ -129,6 +158,14 @@ export default {
           return this.selectedFilters.includes(field);
         });
       }
+
+      this.fieldSectionsInUse
+        .filter((section) => restrictionCount(section) > 0)
+        .forEach((section) => {
+          result = result.filter((item) =>
+            section.matches(item, section.selected)
+          );
+        });
 
       if (this.sortable && this.sortBy) {
         result.sort((a, b) => {

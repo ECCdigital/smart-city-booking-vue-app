@@ -66,7 +66,7 @@ const defaultState = {
   format: 0,
   isPublic: false,
 };
-const state = {
+const state = () => ({
   form: JSON.parse(JSON.stringify(defaultState)),
   // The review (glossary "Prüfstatus") of the loaded event. It is the
   // backend's alone and changes through its own operations, so it lives next
@@ -76,7 +76,7 @@ const state = {
   // `null` for a new event. The backend lets an unchanged location pass
   // whatever it holds, a new or changed one only with a point.
   storedLocation: null,
-};
+});
 
 const mutations = {
   UPDATE(state, payload) {

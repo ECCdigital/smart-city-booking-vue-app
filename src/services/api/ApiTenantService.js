@@ -142,13 +142,6 @@ export default {
   async tenantCountCheck() {
     return (await ApiClient.get("api/tenants/count/check")).data;
   },
-  async updateUserStatus(tenantId, userId, status) {
-    const response = await ApiClient.post(
-      `/api/tenants/${tenantId}/update-user-status`,
-      { userId, status }
-    );
-    return response.data;
-  },
   getPdfPreview(
     tenantId,
     templateType,

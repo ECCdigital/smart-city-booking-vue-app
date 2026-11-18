@@ -1,9 +1,9 @@
 const namespaced = true;
 import PersistenceService from "@/services/PersistenceService";
 
-const state = {
+const state = () => ({
   nextUrl: PersistenceService.getFromLocalStorage("authStore")?.nextUrl || null,
-};
+});
 
 const mutations = {
   SET_NEXT_URL(state, nextUrl) {

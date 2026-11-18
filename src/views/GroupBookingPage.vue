@@ -567,18 +567,24 @@ export default {
     },
     /**
      * The series-wide transitions: the shared state's, for whoever may edit
-     * every member. Reinstate and the withdrawal are per member only.
+     * every member. The withdrawal is per member only; "Serie
+     * wiederherstellen" stands as soon as one member is cancelled or
+     * rejected, whatever the others.
      */
     seriesActions() {
       if (!this.canEditEveryMember) {
         return [];
       }
-      return transitionActions(this.seriesStatus).filter(
+      const actions = transitionActions(this.seriesStatus).filter(
         (action) =>
           action !== BOOKING_ACTION.REINSTATE &&
           action !== BOOKING_ACTION.ACCEPT_WITHDRAWAL &&
           groupAllowsAction(this.members, action)
       );
+      if (groupAllowsAction(this.members, BOOKING_ACTION.REINSTATE)) {
+        actions.push(BOOKING_ACTION.REINSTATE);
+      }
+      return actions;
     },
   },
   beforeRouteEnter(to, from, next) {

@@ -11,6 +11,7 @@ import {
   filterBookingsByStatus,
   freeMarker,
   groupAllowsAction,
+  reinstatableMembers,
   transitionTarget,
   groupBookingStatus,
   groupDisplayStatus,
@@ -440,6 +441,41 @@ describe("groupAllowsAction", () => {
   it("refuses everything without members", () => {
     expect(groupAllowsAction([], "confirm")).toBe(false);
     expect(groupAllowsAction(undefined, "confirm")).toBe(false);
+    expect(groupAllowsAction(undefined, "reinstate")).toBe(false);
+  });
+
+  it("allows reinstate as soon as one member is cancelled or rejected, a mixed series too", () => {
+    expect(
+      groupAllowsAction(
+        [{ status: "confirmed" }, { status: "cancelled" }],
+        "reinstate"
+      )
+    ).toBe(true);
+    expect(
+      groupAllowsAction(
+        [{ status: "rejected" }, { status: "rejected" }],
+        "reinstate"
+      )
+    ).toBe(true);
+    expect(
+      groupAllowsAction(
+        [{ status: "confirmed" }, { status: "withdrawn" }],
+        "reinstate"
+      )
+    ).toBe(false);
+  });
+});
+
+describe("reinstatableMembers", () => {
+  it("are the cancelled and rejected members, in the series' order", () => {
+    const members = [
+      { id: "a", status: "cancelled" },
+      { id: "b", status: "confirmed" },
+      { id: "c", status: "rejected" },
+      { id: "d", status: "withdrawn" },
+    ];
+    expect(reinstatableMembers(members).map((m) => m.id)).toEqual(["a", "c"]);
+    expect(reinstatableMembers(undefined)).toEqual([]);
   });
 });
 

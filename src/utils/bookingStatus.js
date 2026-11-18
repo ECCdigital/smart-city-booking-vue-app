@@ -332,9 +332,21 @@ export function groupBookingStatus(members) {
  * Whether a series-wide action may be offered: only where the members share
  * one state and that state allows the action (spec E9). A mixed series acts
  * per member; `allowedActions(MIXED)` is empty, so it falls out of this too.
+ * Reinstate is the exception: it takes the cancelled and rejected members
+ * and leaves the others as they are, so one such member is enough.
  */
 export function groupAllowsAction(members, action) {
+  if (action === BOOKING_ACTION.REINSTATE) {
+    return reinstatableMembers(members).length > 0;
+  }
   return allowedActions(groupBookingStatus(members)).includes(action);
+}
+
+/** The members a series-wide reinstate brings back: the cancelled and rejected ones. */
+export function reinstatableMembers(members) {
+  return (Array.isArray(members) ? members : []).filter((member) =>
+    allowsAction(member, BOOKING_ACTION.REINSTATE)
+  );
 }
 
 /**

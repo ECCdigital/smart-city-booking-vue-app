@@ -1,6 +1,6 @@
 const namespaced = true;
 
-const state = {
+const state = () => ({
   form: {
     id: null,
     tenantId: "",
@@ -72,7 +72,7 @@ const state = {
     eventId: null,
     ownerUserId: "",
   },
-};
+});
 
 const mutations = {
   UPDATE(state, payload) {

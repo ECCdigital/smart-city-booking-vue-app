@@ -27,6 +27,7 @@ import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
+import InstanceBlacklist from "@/views/Management/InstanceBlacklist.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 import InstanceReviewQueue from "@/views/Management/InstanceReviewQueue.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
@@ -124,6 +125,16 @@ const routes = [
     component: InstanceUsers,
     meta: {
       title: "Benutzer",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/blacklist",
+    name: "instance-blacklist",
+    component: InstanceBlacklist,
+    meta: {
+      title: "Sperrliste",
       requiresAuth: true,
       interfaceName: "instance",
     },

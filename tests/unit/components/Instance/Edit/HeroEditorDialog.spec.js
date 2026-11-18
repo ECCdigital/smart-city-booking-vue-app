@@ -189,10 +189,6 @@ async function switchToEnglish(wrapper) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // The toasts module carries a plain object as its state, so every store
-  // built in this file shares one collection — without this every spec would
-  // read the toasts of the ones before it too.
-  toasts.state.collection = [];
 });
 
 describe("HeroEditorDialog loading", () => {

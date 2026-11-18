@@ -22,7 +22,7 @@
             </v-chip>
             <v-chip class="mr-2" small color="orange" text-color="white">
               <v-icon left x-small>mdi-alert-circle</v-icon>
-              {{ getSuspendedCount() }} Suspendiert
+              {{ getSuspendedCount() }} {{ $t("user.suspension.chip") }}
             </v-chip>
           </v-col>
         </v-row>
@@ -71,7 +71,19 @@
                       class="ml-1"
                     >
                       <v-icon left x-small>mdi-alert</v-icon>
-                      Suspendiert
+                      {{ $t("user.suspension.chip") }}
+                      ({{ suspensionOriginLabel(item) }})
+                    </v-chip>
+                    <v-chip
+                      v-if="item.blacklistMatch"
+                      color="error"
+                      text-color="white"
+                      x-small
+                      class="ml-1"
+                      :title="blacklistMatchText(item)"
+                    >
+                      <v-icon left x-small>mdi-email-off-outline</v-icon>
+                      {{ $t("user.suspension.blacklist.chip") }}
                     </v-chip>
                   </v-list-item-title>
 
@@ -246,6 +258,10 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import ApiMembershipService from "@/services/api/ApiMembershipService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import {
+  blacklistMatchText,
+  suspensionOriginLabel,
+} from "@/utils/userSuspension";
 
 /** The option "Ohne Mandantenzuordnung" among the tenants of the filter. */
 const NO_TENANT = "__no-tenant__";
@@ -304,7 +320,7 @@ export default {
             },
             {
               value: "suspended",
-              label: "Nur suspendiert",
+              label: "Nur gesperrt",
               icon: "mdi-alert-circle",
               color: "orange",
             },
@@ -465,6 +481,8 @@ export default {
       return this.filteredUsers.filter((user) => user.isVerified).length;
     },
 
+    suspensionOriginLabel,
+    blacklistMatchText,
     getSuspendedCount() {
       return this.filteredUsers.filter((user) => user.isSuspended).length;
     },
@@ -545,6 +563,12 @@ export default {
     await this.fetchUsers();
     await this.fetchMemberships();
     await this.fetchTenants();
+    // `?user=` opens the user's editing at once: the jump from the open
+    // reports of the review queue.
+    const userId = this.$route.query.user;
+    if (userId && this.api.users.some((user) => user.id === userId)) {
+      this.onOpenEditUser(userId);
+    }
   },
 };
 </script>

@@ -533,8 +533,9 @@ describe("GroupBookingPage", () => {
       ).toEqual(["1 Angefragt", "2 Bestätigt", "1 Storniert"]);
       expect(hint(wrapper)).toBe("Aktionen je Buchung in der Liste unten");
       expect(wrapper.find(".booking-status-segment").exists()).toBe(false);
+      // Its cancelled member still offers the series' reinstate.
       expect(await offeredActions(wrapper)).toEqual({
-        button: null,
+        button: "Serie wiederherstellen",
         menu: null,
       });
     });
@@ -549,8 +550,9 @@ describe("GroupBookingPage", () => {
         ["Serie stornieren"],
       ],
       [["confirmed", "confirmed"], null, ["Serie stornieren"]],
-      [["rejected", "rejected"], null, null],
-      [["cancelled", "cancelled"], null, null],
+      [["rejected", "rejected"], "Serie wiederherstellen", null],
+      [["cancelled", "cancelled"], "Serie wiederherstellen", null],
+      [["confirmed", "cancelled"], "Serie wiederherstellen", null],
       [["requested", "confirmed"], null, null],
     ])(
       "offers for members %j the button %s and the menu %j",

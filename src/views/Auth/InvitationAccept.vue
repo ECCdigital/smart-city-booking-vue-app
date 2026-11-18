@@ -144,7 +144,6 @@ export default {
         403: this.$t("invitation.error.forbidden"),
         404: this.$t("invitation.error.not_found"),
         410: this.$t("invitation.error.expired"),
-        423: this.$t("invitation.error.membership_suspended"),
       },
       errorCode: null,
     };

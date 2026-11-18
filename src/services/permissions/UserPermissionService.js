@@ -1,3 +1,4 @@
+import store from "@/store";
 import user from "@/store/modules/user";
 
 class UserPermissionService {
@@ -15,6 +16,46 @@ class UserPermissionService {
 
   static allowDelete() {
     return true;
+  }
+
+  /**
+   * Reporting a member or a booker to the instance (glossary „Meldung“):
+   * the backend's `tenantUser.report`,
+   * `manageUsers.updateAny` of the tenant, which its owner holds.
+   */
+  static allowReport(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (user.state.data.permissions.instanceOwner) return true;
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+    return !!permissions.manageUsers?.updateAny;
+  }
+
+  /**
+   * Changing a report about a tenant owner: the
+   * backend's `tenantUser.owner`, the tenant owners' and the instance
+   * owner's alone, as reporting one is.
+   */
+  static allowReportOwner(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (user.state.data.permissions.instanceOwner) return true;
+    return !!user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    )?.isOwner;
+  }
+
+  /**
+   * „Mitgliedschaft beenden“: the tenant's
+   * `remove-user`, the user manager's as reporting is; a tenant owner's
+   * membership only a tenant owner ends.
+   */
+  static allowEndMembership(
+    member,
+    tenantId = store.getters["tenants/currentTenantId"]
+  ) {
+    if (!this.allowReport(tenantId)) return false;
+    return !member?.owner || this.allowReportOwner(tenantId);
   }
 }
 
