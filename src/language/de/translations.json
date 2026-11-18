@@ -1104,7 +1104,6 @@
         "status": "Status",
         "booked": "Gebucht am",
         "search": "Name, Firma, E-Mail oder ID",
-        "ownReach": "Sie sehen nur die Buchungen, die Ihnen zugewiesen sind.",
         "none": "Noch keine Buchungen. Sobald jemand ein Ticket bucht, steht die Person hier.",
         "noMatch": "Keine Buchung passt zu Suche und Filter.",
         "open": "Zur Buchung",

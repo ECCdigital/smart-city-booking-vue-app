@@ -10,7 +10,7 @@ vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEventBookings: vi.fn() },
 }));
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
-  default: { allowReadAny: vi.fn(() => true) },
+  default: { allowRead: vi.fn(() => true) },
 }));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
@@ -50,7 +50,7 @@ async function mount() {
 
 describe("EventManagement", () => {
   beforeEach(() => {
-    BookingPermissionService.allowReadAny.mockReturnValue(true);
+    BookingPermissionService.allowRead.mockReturnValue(true);
     ApiBookablesService.getBookables.mockResolvedValue({
       data: [
         { id: "t1", type: "ticket", eventId: "event-1", title: "Regulär" },
@@ -167,13 +167,15 @@ describe("EventManagement", () => {
     expect(wrapper.emitted("go")).toEqual([[{ tab: "tickets" }]]);
   });
 
-  it("says when only the own bookings are shown", async () => {
-    BookingPermissionService.allowReadAny.mockReturnValue(false);
-    const { wrapper } = await mount();
+  it("lists the bookings it may not open, without the way to them", async () => {
+    BookingPermissionService.allowRead.mockReturnValue(false);
+    const { wrapper, router } = await mount();
+    const table = find(wrapper, "manage-participants");
 
-    expect(wrapper.text()).toContain(
-      "Sie sehen nur die Buchungen, die Ihnen zugewiesen sind."
-    );
+    expect(table.text()).toContain("Ada Lovelace");
+    expect(find(wrapper, "manage-open-b1").exists()).toBe(false);
+    await table.find("tbody tr").trigger("click");
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it("offers to load again after a failure", async () => {

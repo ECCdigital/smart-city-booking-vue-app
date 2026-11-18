@@ -27,7 +27,9 @@ import {
  * held per state against the limit (`eventManagement`) - and the
  * participants, one row per booking, each opening its booking page, searched
  * and filtered by state with the search band of the booking list. It reads
- * the stored event, not the form: tickets and bookings are saved apart.
+ * the stored event, not the form: tickets and bookings are saved apart. The
+ * bookings come whole for whoever may change the event, as its attendee list
+ * does; a row opens its booking only where the user may read it.
  */
 export default {
   name: "EventManagement",
@@ -110,8 +112,13 @@ export default {
       const ids = new Set(this.shownParticipants.map((row) => row.id));
       return this.bookings.filter((booking) => ids.has(booking.id));
     },
-    ownReachOnly() {
-      return !BookingPermissionService.allowReadAny();
+    /** The bookings the user may open (`booking.read`). */
+    readableIds() {
+      return new Set(
+        this.bookings
+          .filter((booking) => BookingPermissionService.allowRead(booking))
+          .map((booking) => booking.id)
+      );
     },
     headline() {
       const { booked, capacity } = this.total;
@@ -188,7 +195,14 @@ export default {
     onFilter(key, selection) {
       if (key === "status") this.statusFilter = selection;
     },
+    canOpen(row) {
+      return this.readableIds.has(row.id);
+    },
+    rowClass(row) {
+      return this.canOpen(row) ? "event-manage__row--open" : "";
+    },
     openBooking(row) {
+      if (!this.canOpen(row)) return;
       this.$router.push(bookingPageRoute(row.id, this.tenantId));
     },
   },
@@ -344,11 +358,6 @@ export default {
           $tc('event.manage.participants.count', shownParticipants.length)
         "
       >
-        <p v-if="ownReachOnly" class="event-edit__note mb-4">
-          <v-icon small>mdi-account-lock-outline</v-icon>
-          {{ $t("event.manage.participants.ownReach") }}
-        </p>
-
         <SearchBar
           v-model="search"
           :fields="$t('event.manage.participants.search')"
@@ -373,6 +382,7 @@ export default {
           }"
           sort-by="timeCreated"
           sort-desc
+          :item-class="rowClass"
           class="event-manage__table"
           data-test="manage-participants"
           @click:row="openBooking"
@@ -418,7 +428,7 @@ export default {
             </div>
           </template>
           <template #item.open="{ item }">
-            <v-tooltip left>
+            <v-tooltip v-if="canOpen(item)" left>
               <template #activator="{ on, attrs }">
                 <v-btn
                   icon
@@ -627,7 +637,7 @@ export default {
   background-color: #e5f5fc !important;
 }
 
-.event-manage__table >>> tbody tr {
+.event-manage__table >>> tbody tr.event-manage__row--open {
   cursor: pointer;
 }
 
