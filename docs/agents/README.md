@@ -20,7 +20,7 @@ docs/agents/
   booking-status-vocabulary.md ← the six booking states, the action verbs, the headline over the path, "read status, never a flag"
   keycloak-realm.md       ← the guide in the tab „Single Sign-On“ as the one source for Keycloak settings; what follows a new requirement on the realm or changed SSO paths
   issue-tracker.md        ← where issues live: GitHub ECC, Produkt-Repo (tickets in ECCdigital/tickets)
-  domain.md               ← how skills consume CONTEXT.md and docs/adr/
+  domain.md               ← how skills consume GLOSSARY.md and docs/adr/
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/

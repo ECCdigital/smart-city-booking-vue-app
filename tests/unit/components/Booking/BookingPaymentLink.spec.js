@@ -62,7 +62,7 @@ async function clickEntry(wrapper, selector, label) {
 
 /**
  * The row "Zahlungslink" of the Zahlung block: the customer's payment URL
- * (CONTEXT.md: not the Buchungslink) to copy or open while the payment is
+ * (GLOSSARY.md: not the Buchungslink) to copy or open while the payment is
  * pending over an online provider; a series member chooses between its own
  * link and the series' aggregated one.
  */

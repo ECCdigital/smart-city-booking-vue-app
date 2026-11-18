@@ -477,7 +477,7 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import { reportableAddresses } from "@/utils/reports";
 
 /**
- * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
+ * The Buchungsseite (GLOSSARY.md): one booking at `/bookings/:bookingId`,
  * reachable by a Buchungslink that names its tenant in `?tenant=`. It is a
  * host of `BookingTransitions` (spec E3): the state as a headline over its
  * path with the state's transitions; every action on the page ends in

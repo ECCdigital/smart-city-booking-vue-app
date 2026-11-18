@@ -13,7 +13,7 @@ function groups(wrapper) {
 }
 
 /**
- * The Dokumente block of CONTEXT.md: the four groups as dense lists with a
+ * The Dokumente block of GLOSSARY.md: the four groups as dense lists with a
  * counter in the heading, "keine" for an empty group and a download icon per
  * row. The producing actions beside a group are the next ticket's; the block
  * only lists.
