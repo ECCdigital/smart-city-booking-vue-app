@@ -64,3 +64,15 @@ describe("the withdrawal receipt template", () => {
     ).toBe(true);
   });
 });
+
+/**
+ * The backend stores these default blocks as a new tenant's cancellation
+ * template, so they keep what the backend's default always showed: how the
+ * refund was calculated („Automatisch nach Mandantenregel“).
+ */
+describe("the cancellation template's default blocks", () => {
+  it("name the calculation mode of the refund", () => {
+    const html = defaultBlocksHtml(getPdfTemplateCatalogEntry("cancellation"));
+    expect(html.match(/\{\{calculationMode\}\}/g)).toHaveLength(2);
+  });
+});
