@@ -11,6 +11,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 -   `docker-publish.yml` refuses to build a tag that is not `v` plus the `version` of `package.json` (ECCdigital/tickets#1018). A release candidate tagged without `npm version` built an image whose app still reported the previous version
 
+### Fixed
+
+-   „iCal-Feed abonnieren“ and „Feed-URL kopieren“ give a full URL in auth mode `bff` (ECCdigital/tickets#782): a relative API base such as the default `/admin/api` is anchored on the origin of the Admin UI, so a calendar can subscribe to it. Mode `direct` is unchanged
+
 ## [4.3.3] — 2026-11-03
 
 ### Added
