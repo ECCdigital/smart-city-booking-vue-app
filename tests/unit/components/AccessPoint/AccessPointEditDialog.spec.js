@@ -1396,7 +1396,7 @@ describe("AccessPointEditDialog - location", () => {
 
     expect(save.attributes("disabled")).toBe("disabled");
     expect(wrapper.find(".save-refusal").text()).toBe(
-      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+      "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte."
     );
     await save.trigger("click");
     await flushPromises();

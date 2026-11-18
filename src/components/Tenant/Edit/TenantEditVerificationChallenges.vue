@@ -2,7 +2,7 @@
   <BaseSection
     title="Verifikationsprozesse"
     icon="mdi-check-decagram"
-    hint="Definiere, wie neue Benutzer verifiziert werden, bevor sie eine Rolle
+    hint="Definieren Sie, wie neue Benutzer verifiziert werden, bevor sie eine Rolle
           erhalten."
   >
     <v-row class="mb-1">
@@ -106,7 +106,7 @@
 
       <v-expansion-panel v-if="!localChallenges.length" disabled>
         <v-expansion-panel-header>
-          Keine Challenges definiert. Klicke auf „Challenge hinzufügen“.
+          Keine Challenges definiert. Klicken Sie auf „Challenge hinzufügen“.
         </v-expansion-panel-header>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -213,7 +213,7 @@
 
             <div v-else>
               <v-alert type="warning" outlined dense>
-                Unbekannter Typ. Bitte wähle einen der unterstützten Typen.
+                Unbekannter Typ. Bitte wählen Sie einen der unterstützten Typen.
               </v-alert>
             </div>
           </v-form>

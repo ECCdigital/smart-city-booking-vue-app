@@ -334,7 +334,7 @@
 
       <v-expansion-panel v-if="!localFields.length" disabled>
         <v-expansion-panel-header>
-          Keine eigenen Felder definiert. Klicke auf „Feld hinzufügen".
+          Keine eigenen Felder definiert. Klicken Sie auf „Feld hinzufügen".
         </v-expansion-panel-header>
       </v-expansion-panel>
     </v-expansion-panels>
