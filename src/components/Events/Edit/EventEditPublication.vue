@@ -33,7 +33,8 @@ export default {
 
 <template>
   <section class="event-publication" data-test="event-publication">
-    <h3 class="event-publication__question">
+    <!-- On the simple page its card „Sichtbarkeit“ asks it. -->
+    <h3 v-if="!simple" class="event-publication__question">
       {{ $t("bookable.publication.question") }}
     </h3>
     <v-switch

@@ -21,7 +21,8 @@ const SPEAKER_FIELDS = Object.freeze({
 /**
  * The tab „Veranstalter & Kontakt“: who invites; „Kontakt für Rückfragen“,
  * the general address for questions (stored with the place,
- * `eventLocation`) and the one contact person; and the speakers.
+ * `eventLocation`) and the one contact person; and the speakers. The
+ * simple page leaves out contact person and speakers.
  */
 export default {
   name: "EventEditPeople",
@@ -127,7 +128,7 @@ export default {
         </v-col>
       </v-row>
 
-      <div class="event-edit__field mt-2">
+      <div v-if="!simple" class="event-edit__field mt-2">
         <div class="event-edit__label">
           {{ $t("event.edit.people.contact") }}
           <span class="event-edit__required">{{
@@ -164,6 +165,7 @@ export default {
     </SectionCard>
 
     <SectionCard
+      v-if="!simple"
       id="event-section-people"
       icon="mdi-account-voice"
       :title="$t('event.edit.cards.people')"

@@ -72,3 +72,21 @@ export const EVENT_EDIT_TABS = Object.freeze([
     sections: [],
   },
 ]);
+
+/**
+ * The tabs of the simple page (`simple-event-creator`), their cards one
+ * below the other: what a new event needs and its tickets, without
+ * program and attachments; the page adds „Sichtbarkeit“ at the end. Its cards leave out more (`simple`, `eventEditing`).
+ */
+export const SIMPLE_EVENT_TABS = Object.freeze(
+  EVENT_EDIT_TABS.filter((tab) =>
+    ["general", "date", "place", "people", "participation", "tickets"].includes(
+      tab.key
+    )
+  ).map((tab) =>
+    // A place only, without format: „Ort“.
+    tab.key === "place"
+      ? { ...tab, labelKey: "event.edit.tabs.placeSimple" }
+      : tab
+  )
+);

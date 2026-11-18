@@ -105,9 +105,10 @@ export default {
   <SectionCard
     id="event-section-place"
     icon="mdi-map-marker-outline"
-    :title="$t('event.edit.cards.place')"
+    :title="$t(`event.edit.cards.${simple ? 'placeSimple' : 'place'}`)"
   >
-    <div class="event-edit__field">
+    <!-- The simple page asks for a place only: its name and location. -->
+    <div v-if="!simple" class="event-edit__field">
       <div class="event-edit__label">
         {{ $t("event.edit.place.format") }}
         <span class="event-edit__required">{{
@@ -155,7 +156,7 @@ export default {
           @input="update('eventLocation', 'name', $event)"
         />
       </div>
-      <v-row dense>
+      <v-row v-if="!simple" dense>
         <v-col cols="12" sm="6">
           <v-select
             :value="place.select"
@@ -187,7 +188,11 @@ export default {
           />
         </v-col>
       </v-row>
-      <div class="event-edit__field mt-5" data-field="location">
+      <div
+        class="event-edit__field"
+        :class="{ 'mt-5': !simple }"
+        data-field="location"
+      >
         <div class="event-edit__label">
           {{ $t("event.edit.place.location") }}
         </div>

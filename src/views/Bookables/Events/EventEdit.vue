@@ -1,6 +1,6 @@
 <template>
   <AdminLayout :title="pageTitle" :hide-page-title="flowMode" scroll-body>
-    <div class="event-edit" ref="contentCol">
+    <div class="event-edit" ref="contentCol" @focusout="touch">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
       <!-- The guided flow's bar stands in for the page title, the meta row
@@ -27,6 +27,22 @@
           </v-chip>
         </template>
       </FlowBar>
+
+      <!-- The simple page: a new event in its main cards, one below the
+           other; the rest follows on its editing page. -->
+      <v-alert
+        v-else-if="simple"
+        dense
+        text
+        color="primary"
+        class="mb-4 text-body-2"
+        data-test="event-simple-intro"
+      >
+        <v-icon small color="primary" class="mr-1">
+          mdi-lightbulb-outline
+        </v-icon>
+        {{ $t("event.edit.simple.intro") }}
+      </v-alert>
 
       <template v-else>
         <div class="event-edit__meta mb-2">
@@ -116,7 +132,7 @@
           @go="goTo"
         />
         <div v-if="$vuetify.breakpoint.lgAndUp" class="event-edit__overview">
-          <EventEditOverview :issues="issues" :tabs="tabs" @go="goTo" />
+          <EventEditOverview :issues="shownIssues" :tabs="tabs" @go="goTo" />
         </div>
       </div>
 
@@ -124,7 +140,7 @@
         v-else-if="flowMode && !isLoading"
         ref="flow"
         :is-new="!eventId"
-        :issues="issues"
+        :issues="shownIssues"
         :in-progress="inProgress"
         :save-failed="flowSaveFailed"
         :allow-public="allowPublic"
@@ -134,6 +150,34 @@
         @update:review="setReview"
         @save="save"
       />
+
+      <div
+        v-else-if="simple && !isLoading"
+        class="event-edit__main"
+        data-test="event-simple"
+      >
+        <div class="event-edit__editor" ref="editor">
+          <component :is="tab.comp" v-for="tab in tabs" :key="tab.key" />
+          <SectionCard
+            id="event-section-visibility"
+            icon="mdi-eye-outline"
+            :title="$t('event.edit.cards.visibility')"
+            :hint="$t('event.edit.visibility.hint')"
+          >
+            <EventEditPublication
+              :allow-public="allowPublic"
+              :review="review"
+              :supervision-level="supervisionLevel"
+              :tenant-id="form.tenantId || tenantId"
+              @update:review="setReview"
+            />
+          </SectionCard>
+        </div>
+
+        <div v-if="$vuetify.breakpoint.lgAndUp" class="event-edit__overview">
+          <EventEditOverview :issues="shownIssues" :tabs="tabs" @go="goTo" />
+        </div>
+      </div>
 
       <div v-else-if="!isLoading" class="event-edit__main">
         <div class="event-edit__nav">
@@ -160,7 +204,7 @@
         </div>
 
         <div v-if="$vuetify.breakpoint.lgAndUp" class="event-edit__overview">
-          <EventEditOverview :issues="issues" :tabs="tabs" @go="goTo" />
+          <EventEditOverview :issues="shownIssues" :tabs="tabs" @go="goTo" />
         </div>
       </div>
 
@@ -190,6 +234,7 @@ import _ from "lodash";
 import { mapActions, mapGetters } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
 import BaseSection from "@/components/commons/BaseSection.vue";
+import SectionCard from "@/components/commons/SectionCard.vue";
 import EditorNav from "@/components/commons/EditorNav.vue";
 import FlowBar from "@/components/commons/FlowBar.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
@@ -205,7 +250,10 @@ import EventEditOverview from "@/components/Events/Edit/EventEditOverview.vue";
 import EventFlow from "@/components/Events/Edit/EventFlow.vue";
 import EventManagement from "@/components/Events/Manage/EventManagement.vue";
 import { isFlowMode, withMode } from "@/utils/bookableFlow";
-import { EVENT_EDIT_TABS } from "@/components/Events/Edit/eventEditTabs";
+import {
+  EVENT_EDIT_TABS,
+  SIMPLE_EVENT_TABS,
+} from "@/components/Events/Edit/eventEditTabs";
 
 // The two views of a saved event, as the tabs above the editor offer them.
 const EVENT_VIEWS = Object.freeze([
@@ -226,13 +274,16 @@ const EVENT_VIEWS = Object.freeze([
  * cards in the middle, the overview right, the publication band above and
  * the save bar below. Its guided flow (`EventFlow`) is a mode of the same
  * page, as the bookable editor's: a new event (no `?id=`) starts in it,
- * `?mode=flow` opens an existing one there (`isFlowMode`).
+ * `?mode=flow` opens an existing one there (`isFlowMode`). The route
+ * `simple-event-creator` (`meta.simpleEvent`) is its simple page: a new
+ * event in the main cards only (`SIMPLE_EVENT_TABS`), one below the other.
  */
 export default {
   name: "EventEdit",
   components: {
     AdminLayout,
     BaseSection,
+    SectionCard,
     EditorNav,
     FlowBar,
     SaveBar,
@@ -246,6 +297,7 @@ export default {
   provide() {
     return {
       eventEditIssues: this.issueState,
+      eventEditSimple: () => this.simple,
       // What a card may ask of the page: whether there is something unsaved,
       // and a save that stays on the page (the tab „Tickets“).
       eventEditPage: {
@@ -259,7 +311,7 @@ export default {
   },
   data() {
     return {
-      tabs: EVENT_EDIT_TABS,
+      tabs: this.$route.meta?.simpleEvent ? SIMPLE_EVENT_TABS : EVENT_EDIT_TABS,
       views: EVENT_VIEWS,
       isLoading: false,
       inProgress: false,
@@ -271,6 +323,10 @@ export default {
       // What the cards read (`eventEditing`): the issues, each shown at its
       // field.
       issueState: { list: [] },
+      // A new event marks a missing field once it was left (`touched`, its
+      // `data-field`) or a save was tried (`saveTried`), not all at once.
+      touched: [],
+      saveTried: false,
     };
   },
   computed: {
@@ -285,7 +341,15 @@ export default {
     eventId() {
       return this.$route.query.id || null;
     },
+    /**
+     * The simple page (`SIMPLE_EVENT_TABS`). It stays so once the event is
+     * saved for a ticket and holds its id.
+     */
+    simple() {
+      return this.$route.meta?.simpleEvent === true;
+    },
     flowMode() {
+      if (this.simple) return false;
       return isFlowMode({
         bookableId: this.eventId,
         mode: this.$route.query.mode,
@@ -309,6 +373,7 @@ export default {
       );
     },
     pageTitle() {
+      if (this.simple) return this.$t("event.edit.title.simple");
       return this.$t(`event.edit.title.${this.eventId ? "edit" : "new"}`);
     },
     activeTab() {
@@ -341,8 +406,17 @@ export default {
         locationRefusal: this.locationRefusal,
       });
     },
+    /**
+     * The issues shown at the fields, in the navigation and the overview: of
+     * a saved event all; of a new one those of the fields left so far, all
+     * after a save was tried. A save checks every issue (`issues`).
+     */
+    shownIssues() {
+      if (this.form.id || this.saveTried) return this.issues;
+      return this.issues.filter((issue) => this.touched.includes(issue.field));
+    },
     tabsWithIssues() {
-      return _.uniq(this.issues.map((issue) => issue.tab));
+      return _.uniq(this.shownIssues.map((issue) => issue.tab));
     },
     hasUnsavedChanges() {
       if (this.isLoading || !this.originalSnapshot) return false;
@@ -350,7 +424,7 @@ export default {
     },
   },
   watch: {
-    issues: {
+    shownIssues: {
       immediate: true,
       handler(list) {
         this.issueState.list = list;
@@ -374,8 +448,15 @@ export default {
     snapshot() {
       return JSON.stringify(_.omit(this.form, ["review"]));
     },
+    /** A field left (`focusout`): its issue may show from now on. */
+    touch(event) {
+      const field = event.target?.closest?.("[data-field]")?.dataset.field;
+      if (field && !this.touched.includes(field)) this.touched.push(field);
+    },
     async init() {
       this.isLoading = true;
+      this.touched = [];
+      this.saveTried = false;
       try {
         if (this.eventId) {
           const response = await ApiEventService.getEvent(this.eventId);
@@ -417,6 +498,15 @@ export default {
      * Opens a tab of the details, and in it the field or section asked for.
      */
     goTo({ tab, field = null, section = null }) {
+      // The simple page shows every card at once: no tab to open.
+      if (this.simple) {
+        const first = this.tabs.find((t) => t.key === tab)?.sections[0];
+        this.$nextTick(() => {
+          if (field) this.revealField(field);
+          else this.scrollToSection(section || first || tab);
+        });
+        return;
+      }
       if ((tab && tab !== this.activeTab) || this.activeView !== "details") {
         const query = { ...this.$route.query, tab: tab || this.activeTab };
         delete query.view;
@@ -449,6 +539,7 @@ export default {
      */
     async save({ stay = false } = {}) {
       if (this.issues.length) {
+        this.saveTried = true;
         const [first] = this.issues;
         if (this.flowMode) this.$refs.flow?.openIssue(first);
         else this.goTo({ tab: first.tab, field: first.field });

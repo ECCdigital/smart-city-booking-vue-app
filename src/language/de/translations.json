@@ -1116,7 +1116,14 @@
     "edit": {
       "title": {
         "edit": "Veranstaltung bearbeiten",
-        "new": "Veranstaltung erstellen"
+        "new": "Veranstaltung erstellen",
+        "simple": "Veranstaltung einfach erstellen"
+      },
+      "visibility": {
+        "hint": "Legen Sie fest, ob die Veranstaltung im Katalog und auf eingebundenen Webseiten erscheint. Sie können das später jederzeit ändern."
+      },
+      "simple": {
+        "intro": "Hier legen Sie eine Veranstaltung mit den wichtigsten Angaben auf einer Seite an. Programm und Anhänge ergänzen Sie nach dem Speichern auf der Bearbeitungsseite der Veranstaltung."
       },
       "untitled": "Ohne Namen",
       "id": "ID: {id}",
@@ -1134,6 +1141,7 @@
         "general": "Allgemein",
         "date": "Termin",
         "place": "Ort & Format",
+        "placeSimple": "Ort",
         "people": "Veranstalter & Kontakt",
         "participation": "Teilnahme",
         "program": "Programm",
@@ -1146,13 +1154,15 @@
         "features": "Merkmale",
         "date": "Termin",
         "place": "Ort & Format",
+        "placeSimple": "Ort",
         "organizer": "Veranstalter",
         "contact": "Kontakt für Rückfragen",
         "people": "Referent:innen",
         "participation": "Teilnahme",
         "program": "Programm",
         "attachments": "Anhänge",
-        "tickets": "Tickets"
+        "tickets": "Tickets",
+        "visibility": "Sichtbarkeit"
       },
       "publication": {
         "effect": {
@@ -1167,7 +1177,7 @@
         "teaser": "Kurzbeschreibung",
         "teaserHint": "Ein kurzer Teaser-Text mit 1-2 Sätzen, um das Interesse der Teilnehmenden zu wecken.",
         "images": "Bilder",
-        "imagesHint": "Das erste Bild ist das Titelbild der Veranstaltung. Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
+        "imagesHint": "Das erste Bild ist das Titelbild — es erscheint in Listen und im Katalog zuerst. Bilder aus der Mediathek wählen, neu hochladen oder extern verlinken. Reihenfolge per Ziehen ändern.",
         "publicOnly": "Diese Veranstaltung ist öffentlich sichtbar. Interne Medien können hier nicht gespeichert werden."
       },
       "description": {

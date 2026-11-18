@@ -54,6 +54,7 @@ export default {
         <Tiptap
           :value="info.teaserText"
           :label="$t('event.edit.basics.teaser')"
+          :min-height="simple ? 80 : null"
           @input="update('information', 'teaserText', $event)"
         />
         <div class="event-edit__hint">
@@ -66,13 +67,11 @@ export default {
         </div>
         <MediaReferenceList
           :value="images"
+          :intro="$t('event.edit.basics.imagesHint')"
           :public-only="isPublic"
           :public-only-reason="$t('event.edit.basics.publicOnly')"
           @input="setImages"
         />
-        <div class="event-edit__hint">
-          {{ $t("event.edit.basics.imagesHint") }}
-        </div>
       </div>
     </SectionCard>
 

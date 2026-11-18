@@ -48,10 +48,14 @@ export default {
           ["date.endDate", date(info.endDate, info.endTime), "end"],
         ],
         place: [
-          [
-            "place.format",
-            t(`place.formats.${FORMAT_KEYS[f.format] || "presence"}`),
-          ],
+          ...(this.simple
+            ? []
+            : [
+                [
+                  "place.format",
+                  t(`place.formats.${FORMAT_KEYS[f.format] || "presence"}`),
+                ],
+              ]),
           ...(f.format !== EVENT_FORMATS.ONLINE
             ? [["place.name", f.eventLocation.name, "placeName"]]
             : []),

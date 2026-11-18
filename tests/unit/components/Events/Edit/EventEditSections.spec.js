@@ -18,6 +18,8 @@ import EventEditParticipation from "@/components/Events/Edit/EventEditParticipat
 import EventEditProgram from "@/components/Events/Edit/EventEditProgram.vue";
 import EventEditDate from "@/components/Events/Edit/EventEditDate.vue";
 import EventEditTickets from "@/components/Events/Edit/EventEditTickets.vue";
+import EventEditPlace from "@/components/Events/Edit/EventEditPlace.vue";
+import EventEditPeople from "@/components/Events/Edit/EventEditPeople.vue";
 import { REGISTRATION } from "@/utils/eventEditing";
 
 const find = (wrapper, name) => wrapper.find(`[data-test='${name}']`);
@@ -31,13 +33,16 @@ function createStore() {
   });
 }
 
-async function mount(component, { event, router, page } = {}) {
+async function mount(component, { event, router, page, simple } = {}) {
   const store = createStore();
   if (event) await store.dispatch("events/restoreFromApi", event);
   const wrapper = mountComponent(component, {
     store,
     mocks: { $router: router || { push: vi.fn() } },
-    ...(page ? { provide: { eventEditPage: page } } : {}),
+    provide: {
+      ...(page ? { eventEditPage: page } : {}),
+      ...(simple ? { eventEditSimple: () => true } : {}),
+    },
     // The ticket dialog is tested through its rules (`eventTickets`).
     stubs: { EventTicketDialog: true },
   });
@@ -125,6 +130,48 @@ describe("EventEditParticipation: changed places", () => {
     await wrapper.vm.$nextTick();
 
     expect(find(wrapper, "places-changed").exists()).toBe(false);
+  });
+});
+
+describe("the simple page", () => {
+  beforeEach(() => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+  });
+
+  it("asks for a place without format or venue, titled „Ort“", async () => {
+    const { wrapper } = await mount(EventEditPlace, { simple: true });
+
+    expect(wrapper.text()).toContain("Ort");
+    expect(wrapper.text()).not.toContain("Ort & Format");
+    expect(find(wrapper, "event-format").exists()).toBe(false);
+    expect(wrapper.findAll(".v-select").length).toBe(0);
+    expect(find(wrapper, "event-place-name").exists()).toBe(true);
+  });
+
+  it("keeps format and venue on the editing page", async () => {
+    const { wrapper } = await mount(EventEditPlace);
+
+    expect(find(wrapper, "event-format").exists()).toBe(true);
+    expect(wrapper.findAll(".v-select").length).toBe(2);
+  });
+
+  it("asks for organizer and contact without contact person or speakers", async () => {
+    const { wrapper } = await mount(EventEditPeople, { simple: true });
+
+    expect(find(wrapper, "event-organizer").exists()).toBe(true);
+    expect(find(wrapper, "event-contact-email").exists()).toBe(true);
+    expect(find(wrapper, "event-add-contact").exists()).toBe(false);
+    expect(find(wrapper, "event-add-speaker").exists()).toBe(false);
+  });
+
+  it("asks the portal for places, not who may register", async () => {
+    const { wrapper } = await mount(EventEditParticipation, { simple: true });
+
+    wrapper.vm.chooseMode(REGISTRATION.PORTAL);
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "event-max-attendees").exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Wer kann sich anmelden?");
   });
 });
 

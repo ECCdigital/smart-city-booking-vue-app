@@ -146,7 +146,8 @@ export default {
           {{ $t("event.edit.participation.placesChanged") }}
         </v-alert>
       </div>
-      <div class="event-edit__field">
+      <!-- The simple page leaves everyone allowed to register. -->
+      <div v-if="!simple" class="event-edit__field">
         <div class="event-edit__label">
           {{ $t("event.edit.participation.audience") }}
         </div>

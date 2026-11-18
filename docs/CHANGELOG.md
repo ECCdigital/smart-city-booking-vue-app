@@ -9,6 +9,9 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Event editing, a new event: a missing required field is marked at the field, in the navigation and in the overview once it was left or a save was tried, not all at once on opening the page
+-   Simple event creation (`/events/create/simple-event`): laid out as the event editing page, its cards Allgemein, Termin, Ort, Veranstalter & Kontakt and Teilnahme one below the other, with the overview and the save bar. The cards ask less there (`simple`): a place by name and location without format or venue, no contact person, no speakers, no audience, a teaser field twice as high. At the end come „Tickets“, as on the editing page (saving the event for a first ticket keeps the simple page), and „Sichtbarkeit“ with the switch „Öffentlich anzeigen“. Program and attachments follow on the editing page. `SimpleEventCreator` is gone
+-   Event editing, Bilder: one hint above the list („Das erste Bild ist das Titelbild — … Reihenfolge per Ziehen ändern.“) instead of a second one below it
 -   Event editing, Termin: the duration names whole days and hours, such as „1 Tag 2 Std.“, instead of a fraction of days („1,1 Tage“)
 -   Event editing, Beschreibung: the hint reads „Geben Sie eine ausführlichere Beschreibung zur Veranstaltung an. Geben Sie an, was Teilnehmende vorher wissen sollten: …“
 -   Cards app-wide are rounded as the section cards (`--scb-radius-surface`, 8px) instead of 25px (`$card-border-radius`): the image list of bookables and events, the tickets of an event, the bookable and event tiles of the lists and every other `v-card`. Dialogs keep their 25px
