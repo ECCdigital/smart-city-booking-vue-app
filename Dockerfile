@@ -21,8 +21,10 @@ RUN npm run build
 FROM nginx:alpine
 WORKDIR /app
 
-# Node runtime for optional embedded BFF (musl, matches alpine)
-RUN apk add --no-cache nodejs
+# Node runtime for optional embedded BFF (musl, matches alpine).
+# Pinned on purpose: the build fails once Alpine drops this revision,
+# so every Node patch is a deliberate bump here.
+RUN apk add --no-cache nodejs=24.22.3-r0
 
 COPY --from=ui-builder /app/dist .
 COPY --from=bff-deps /bff /opt/admin-bff

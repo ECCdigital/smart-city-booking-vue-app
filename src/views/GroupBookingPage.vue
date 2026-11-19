@@ -559,20 +559,24 @@ export default {
     canEditComment() {
       return this.canEditEveryMember;
     },
+    /** The transitions need `updateAny`; updating the own bookings is not enough. */
+    canTransition() {
+      return BookingPermissionService.allowTransition();
+    },
     /** Why a mixed series offers no action - for whoever could act on the members. */
     mixedHint() {
-      return this.mixed && this.canEditEveryMember
+      return this.mixed && this.canTransition
         ? this.$t("group-booking.status.mixedHint")
         : null;
     },
     /**
-     * The series-wide transitions: the shared state's, for whoever may edit
-     * every member. The withdrawal is per member only; "Serie
+     * The series-wide transitions: the shared state's, for whoever may
+     * transition bookings. The withdrawal is per member only; "Serie
      * wiederherstellen" stands as soon as one member is cancelled or
      * rejected, whatever the others.
      */
     seriesActions() {
-      if (!this.canEditEveryMember) {
+      if (!this.canTransition) {
         return [];
       }
       const actions = transitionActions(this.seriesStatus).filter(
@@ -602,9 +606,9 @@ export default {
     statusColor,
     statusIcon,
     statusLabel,
-    /** A member row's transitions: its state's, for whoever may edit it. */
+    /** A member row's transitions: its state's, for whoever may transition bookings. */
     memberActions(member) {
-      if (!BookingPermissionService.allowUpdate(member)) {
+      if (!this.canTransition) {
         return [];
       }
       return bookingTransitionActions(member);

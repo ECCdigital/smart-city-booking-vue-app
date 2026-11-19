@@ -64,9 +64,7 @@
           <v-list-item
             v-for="action in bookingTransitionActions(element.bookingItem)"
             :key="action"
-            :disabled="
-              !BookingPermissionService.allowUpdate(element.bookingItem)
-            "
+            :disabled="!BookingPermissionService.allowTransition()"
             @click.stop="transition(action, element.bookingItem.id)"
           >
             <v-list-item-icon>
