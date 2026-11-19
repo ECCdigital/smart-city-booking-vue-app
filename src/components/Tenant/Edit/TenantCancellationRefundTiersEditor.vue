@@ -40,11 +40,7 @@
                   <v-icon x-small>mdi-calendar-clock</v-icon>
                 </v-chip>
                 <strong class="text-truncate min-width-0">
-                  {{
-                    $t("tenant.cancellationRefundTiers.tierTitle", {
-                      deadline: formatTierDeadline(tier.hoursBeforeStart),
-                    })
-                  }}
+                  {{ tierTitle(tier.hoursBeforeStart) }}
                 </strong>
               </v-col>
 
@@ -99,7 +95,7 @@
           <div class="text-body-2">
             {{
               $t("tenant.cancellationRefundTiers.tierDescription", {
-                deadline: formatTierDeadline(tier.hoursBeforeStart),
+                rule: formatTierRule(tier.hoursBeforeStart),
                 percentage: tier.refundPercentage,
               })
             }}
@@ -226,7 +222,7 @@
               <div class="text-body-2">
                 {{
                   $t("tenant.cancellationRefundTiers.tierDescription", {
-                    deadline: editingDeadlineText,
+                    rule: editingRuleText,
                     percentage: editingTier.refundPercentage ?? "–",
                   })
                 }}
@@ -275,8 +271,8 @@
         <v-card-text class="pa-6">
           {{
             $t("tenant.cancellationRefundTiers.deleteDescription", {
-              deadline: deletingTier
-                ? formatTierDeadline(deletingTier.hoursBeforeStart)
+              rule: deletingTier
+                ? formatTierRule(deletingTier.hoursBeforeStart)
                 : "",
             })
           }}
@@ -301,6 +297,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import {
   HOURS_PER_DAY,
   formatTierDeadline,
+  formatTierRule,
   tierDeadline,
 } from "@/utils/cancellationRefund";
 
@@ -377,9 +374,9 @@ export default {
       const factor = this.editingTier.unit === "days" ? HOURS_PER_DAY : 1;
       return Number(this.editingTier.amount) * factor;
     },
-    editingDeadlineText() {
+    editingRuleText() {
       return this.isValidDeadline(this.editingTier.amount)
-        ? formatTierDeadline(this.editingHours)
+        ? formatTierRule(this.editingHours)
         : "–";
     },
     deadlineRules() {
@@ -472,8 +469,8 @@ export default {
       const values = {
         min,
         max,
-        longer: longer ? formatTierDeadline(longer.hoursBeforeStart) : "",
-        shorter: shorter ? formatTierDeadline(shorter.hoursBeforeStart) : "",
+        longer: longer ? formatTierRule(longer.hoursBeforeStart) : "",
+        shorter: shorter ? formatTierRule(shorter.hoursBeforeStart) : "",
       };
       let key = "refundRangeBoth";
       if (!shorter) key = "refundRangeMax";
@@ -550,7 +547,15 @@ export default {
           Number(tier.hoursBeforeStart) === Number(hours)
       );
     },
-    formatTierDeadline,
+    formatTierRule,
+    /** A tier's title in the list: „Bis 2 Tage vor Beginn“, „Bis zum Beginn“. */
+    tierTitle(hoursBeforeStart) {
+      return Number(hoursBeforeStart) === 0
+        ? this.$t("tenant.cancellationRefundTiers.tierTitleAtStart")
+        : this.$t("tenant.cancellationRefundTiers.tierTitle", {
+            deadline: formatTierDeadline(hoursBeforeStart),
+          });
+    },
     refundColor(percentage) {
       if (percentage >= 100) return "success";
       if (percentage <= 0) return "error";
