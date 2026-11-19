@@ -2532,7 +2532,9 @@
           "message": "Leider ist bei der Einlösung des Rabattcodes ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
         }
       }
-    }
+    },
+    "commitBooking": "Zahlungspflichtig buchen",
+    "commitBookingFree": "Verbindlich buchen"
   },
   "session": {
     "expired": {
