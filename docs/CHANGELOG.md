@@ -11,6 +11,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 -   CI gate „protected files“ ([ECCdigital/tickets#425](https://github.com/ECCdigital/tickets/issues/425)): the new job `protected-files`, required by `ci-ok`, blocks a pull request that deletes or changes an existing test, adds `.skip`, `.only` or `.todo`, or changes an accepted ADR or the CI configuration, unless the ticket it references (`Refs ECCdigital/tickets#<n>`) names the file; new tests are free. It runs the rule from ECCdigital/portolan with the read-only GitHub App „Portolan Gate“ (org secrets `GATE_APP_ID`, `GATE_PRIVATE_KEY`); pull requests from forks get no secrets and stay blocked until an admin bypasses the gate. No code change
 
+### Fixed
+
+-   The transitions of a booking and a series (Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Widerruf akzeptieren, Wiederherstellen) need „Alle bearbeiten“ for bookings (`manageBookings.updateAny`), as in the backend ([ECCdigital/tickets#836](https://github.com/ECCdigital/tickets/issues/836), [ECCdigital/tickets#837](https://github.com/ECCdigital/tickets/issues/837)). With only „Eigene bearbeiten“ the list, calendar, Kanban, booking page and series page offered them on an own booking, and the backend refused with 403. „Bearbeiten“ is unchanged. Characterisation tests changed: the booking page and series page gate the transitions on `allowTransition` instead of `allowUpdate`
+
 ## [4.4.1] — 2026-11-16
 
 ### Fixed
