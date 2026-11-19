@@ -24,6 +24,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
     allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
+    allowTransition: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
     allowReprint: vi.fn(() => true),
@@ -255,6 +256,7 @@ describe("GroupBookingPage", () => {
     vi.clearAllMocks();
     isTenantMember.mockReturnValue(true);
     BookingPermissionService.allowUpdate.mockReturnValue(true);
+    BookingPermissionService.allowTransition.mockReturnValue(true);
     BookingPermissionService.allowReadAny.mockReturnValue(true);
     BookingPermissionService.allowReprint.mockReturnValue(true);
     ApiGroupBookingService.getGroupBooking.mockResolvedValue({
@@ -562,8 +564,8 @@ describe("GroupBookingPage", () => {
       }
     );
 
-    it("offers nothing to a reader without the update right, and no hint either", async () => {
-      BookingPermissionService.allowUpdate.mockReturnValue(false);
+    it("offers nothing to whoever may not transition, and no hint either", async () => {
+      BookingPermissionService.allowTransition.mockReturnValue(false);
 
       const uniform = await mountLoaded(series(["requested", "requested"]));
       expect(await offeredActions(uniform.wrapper)).toEqual({
@@ -766,8 +768,8 @@ describe("GroupBookingPage", () => {
       });
     });
 
-    it("offers no row menu to a reader without the update right", async () => {
-      BookingPermissionService.allowUpdate.mockReturnValue(false);
+    it("offers no row menu to whoever may not transition", async () => {
+      BookingPermissionService.allowTransition.mockReturnValue(false);
       const { wrapper } = await mountLoaded(series(["requested"]));
       expect(wrapper.find(".group-booking-page__member-menu").exists()).toBe(
         false
