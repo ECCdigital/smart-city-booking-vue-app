@@ -194,6 +194,7 @@ export default {
       refundPreview: null,
       previewLoading: false,
       previewError: null,
+      previewRequestId: 0,
       refundPercentage: undefined,
       refundValid: true,
       bankDetails: {
@@ -351,21 +352,27 @@ export default {
       if (!this.toReject?.id || this.isRequest || this.skipCancellation) {
         return;
       }
+      // A reopened dialog races its previews; only the latest one may land.
+      const requestId = ++this.previewRequestId;
       this.previewLoading = true;
       this.previewError = null;
       this.refundPreview = null;
       try {
-        this.refundPreview =
-          await ApiBookingService.getCancellationRefundPreview(
-            this.toReject.id
-          );
+        const preview = await ApiBookingService.getCancellationRefundPreview(
+          this.toReject.id
+        );
+        if (requestId !== this.previewRequestId) return;
+        this.refundPreview = preview;
       } catch (error) {
+        if (requestId !== this.previewRequestId) return;
         this.previewError = getApiErrorMessage(
           error,
           this.$t("booking.cancellationRefund.previewError")
         );
       } finally {
-        this.previewLoading = false;
+        if (requestId === this.previewRequestId) {
+          this.previewLoading = false;
+        }
       }
     },
     async onReject() {

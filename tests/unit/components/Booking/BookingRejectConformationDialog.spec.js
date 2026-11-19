@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 import { activeDialog, activeDialogText } from "@tests/unit/support/dialog";
+import i18n from "@/language/index";
 
 vi.mock("@/services/api/ApiBookingService", () => ({
   default: { getCancellationRefundPreview: vi.fn() },
@@ -36,6 +37,41 @@ function paymentText() {
       .map((line) => line.textContent.replace(/\u00a0/g, " ").trim())
       .join(" ")
   );
+}
+
+function submitButton() {
+  return activeDialog().querySelector("button[type=submit]");
+}
+
+/** A promise the spec settles by hand, to order the answers of the API. */
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+/**
+ * Opens the dialog for A, closes it and opens it for B, with both previews
+ * still pending: the way an admin moves on before a slow answer arrives.
+ */
+async function reopenForAnotherBooking(bookingA, bookingB, answerA, answerB) {
+  ApiBookingService.getCancellationRefundPreview.mockImplementation((id) =>
+    id === bookingA.id ? answerA.promise : answerB.promise
+  );
+  const wrapper = mountComponent(BookingRejectConformationDialog, {
+    propsData: { open: false, toReject: bookingA },
+  });
+  await wrapper.setProps({ open: true });
+  await wrapper.setProps({ open: false });
+  await wrapper.setProps({ toReject: bookingB });
+  await wrapper.setProps({ open: true });
+  await wrapper.find("textarea").setValue("Kein Platz");
+  await flushPromises();
+  return wrapper;
 }
 
 function preview(originalAmountEur, refundAmountEur, overrides = {}) {
@@ -170,5 +206,65 @@ describe("BookingRejectConformationDialog", () => {
 
     expect(paymentText()).toContain("Kostenfreie Buchung");
     expect(paymentText()).toContain("Damit ist alles erledigt.");
+  });
+
+  describe("when the admin moves on to another booking before the preview arrives", () => {
+    const bookingA = { id: "B-A", status: "confirmed", priceEur: 40 };
+    const bookingB = { id: "B-B", status: "confirmed", priceEur: 60 };
+
+    it("shows the refund of the booking now open and keeps cancelling locked until it arrives", async () => {
+      const answerA = deferred();
+      const answerB = deferred();
+      const wrapper = await reopenForAnotherBooking(
+        bookingA,
+        bookingB,
+        answerA,
+        answerB
+      );
+
+      answerA.resolve(preview(40, 20));
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(paymentText()).not.toContain("20,00 €");
+      expect(submitButton().disabled).toBe(true);
+
+      answerB.resolve(preview(60, 45));
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(paymentText()).toContain("Der Buchende bekommt 45,00 € zurück.");
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it("shows no error in the dialog of B when the preview of A fails late", async () => {
+      const answerA = deferred();
+      const answerB = deferred();
+      const wrapper = await reopenForAnotherBooking(
+        bookingA,
+        bookingB,
+        answerA,
+        answerB
+      );
+
+      answerA.reject(new Error("timeout"));
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(activeDialogText()).not.toContain(
+        i18n.t("booking.cancellationRefund.previewError")
+      );
+      expect(submitButton().disabled).toBe(true);
+
+      answerB.resolve(preview(60, 45));
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(activeDialogText()).not.toContain(
+        i18n.t("booking.cancellationRefund.previewError")
+      );
+      expect(paymentText()).toContain("Der Buchende bekommt 45,00 € zurück.");
+      expect(submitButton().disabled).toBe(false);
+    });
   });
 });

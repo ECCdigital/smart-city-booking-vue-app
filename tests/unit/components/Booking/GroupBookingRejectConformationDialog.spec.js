@@ -49,6 +49,21 @@ function radio(label) {
   ).find((el) => el.textContent.trim() === label);
 }
 
+function paymentHint() {
+  return document
+    .querySelector(".v-dialog--active .booking-reject-payment")
+    .textContent.replace(/\u00a0/g, " ");
+}
+
+/** A promise the spec settles by hand, to order the answers of the API. */
+function deferred() {
+  let resolve;
+  const promise = new Promise((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 async function submitWithReason(wrapper) {
   await wrapper.find("textarea").setValue("Grund");
   // A request offers no checkbox: the backend issues it no document.
@@ -162,6 +177,39 @@ describe("GroupBookingRejectConformationDialog", () => {
         .textContent.replace(/\u00a0/g, " ");
       expect(hint).toContain("Bereits bezahlt: 50,00 €");
       expect(hint).toContain("Der Buchende bekommt 37,50 € zurück.");
+    });
+  });
+
+  describe("when the admin switches the scope before the series preview arrives", () => {
+    it("shows the preview of this booking, not the late one of the series", async () => {
+      const seriesAnswer = deferred();
+      const singleAnswer = deferred();
+      ApiGroupBookingService.getCancellationRefundPreview.mockReturnValue(
+        seriesAnswer.promise
+      );
+      ApiBookingService.getCancellationRefundPreview.mockReturnValue(
+        singleAnswer.promise
+      );
+      const wrapper = await openDialog([
+        member("bk-1", "confirmed"),
+        member("bk-2", "confirmed"),
+      ]);
+
+      radio("Nur diese Buchung stornieren").querySelector("input").click();
+      await flushPromises();
+      singleAnswer.resolve({ originalAmountEur: 25, refundAmountEur: 20 });
+      await flushPromises();
+      seriesAnswer.resolve({
+        bookings: [
+          { bookingId: "bk-1", originalAmountEur: 25, refundAmountEur: 25 },
+          { bookingId: "bk-2", originalAmountEur: 25, refundAmountEur: 12.5 },
+        ],
+      });
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(paymentHint()).toContain("Bereits bezahlt: 25,00 €");
+      expect(paymentHint()).toContain("Der Buchende bekommt 20,00 € zurück.");
     });
   });
 
