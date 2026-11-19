@@ -232,6 +232,7 @@
 <script>
 import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
 import { bookingKindLabel } from "@/utils/businessBooking";
+import { checkoutSubmitLabel } from "@/utils/checkoutSubmit";
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 
 export default {
@@ -349,11 +350,14 @@ export default {
       }
       return price;
     },
-    // A total of 0 EUR, also after a discount, has nothing to pay (ECCdigital/tickets#937).
+    // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
     submitLabel() {
-      return this.bookingAttempts.length > 0 && this.totalGrossPrice <= 0.005
-        ? "Verbindlich buchen"
-        : "Zahlungspflichtig buchen";
+      return checkoutSubmitLabel({
+        allItemsValid: this.allItemsValid,
+        grossPrices: this.bookingAttempts.map(
+          (attempt) => attempt.userGrossPriceEur
+        ),
+      });
     },
     totalGrossPrice() {
       let price = 0;

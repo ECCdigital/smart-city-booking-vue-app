@@ -9,7 +9,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
--   Checkout, quick summary and group booking summary: the submit button reads „Verbindlich buchen“ instead of „Zahlungspflichtig buchen“ when the total is 0 EUR, also after a discount, for every tenant ([ECCdigital/tickets#937](https://github.com/ECCdigital/tickets/issues/937)). It changes ECCdigital/tickets#63 for such bookings
+-   Checkout, quick summary and group booking summary: the submit button reads „Verbindlich buchen“ instead of „Zahlungspflichtig buchen“ when every item is valid and the total is 0 EUR, also after a discount, for every tenant ([ECCdigital/tickets#937](https://github.com/ECCdigital/tickets/issues/937)). A missing price, an invalid item or one not checked yet keeps „Zahlungspflichtig buchen“ ([ECCdigital/tickets#1303](https://github.com/ECCdigital/tickets/issues/1303)). It changes ECCdigital/tickets#63 for such bookings
 -   CI gate „protected files“ ([ECCdigital/tickets#425](https://github.com/ECCdigital/tickets/issues/425)): the new job `protected-files`, required by `ci-ok`, blocks a pull request that deletes or changes an existing test, adds `.skip`, `.only` or `.todo`, or changes an accepted ADR or the CI configuration, unless the ticket it references (`Refs ECCdigital/tickets#<n>`) names the file; new tests are free. It runs the rule from ECCdigital/portolan with the read-only GitHub App „Portolan Gate“ (org secrets `GATE_APP_ID`, `GATE_PRIVATE_KEY`); pull requests from forks get no secrets and stay blocked until an admin bypasses the gate. No code change
 
 ### Fixed

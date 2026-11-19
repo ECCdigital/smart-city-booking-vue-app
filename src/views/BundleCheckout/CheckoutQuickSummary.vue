@@ -340,6 +340,7 @@ import {
 } from "@/utils/checkoutErrors";
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 import { continuesToProvider } from "@/utils/checkoutNextStep";
+import { checkoutSubmitLabel } from "@/utils/checkoutSubmit";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 
@@ -702,11 +703,14 @@ export default {
       return price;
     },
 
-    // A total of 0 EUR, also after a discount, has nothing to pay (ECCdigital/tickets#937).
+    // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
     submitLabel() {
-      return this.totalGrossPrice <= 0.005
-        ? "Verbindlich buchen"
-        : "Zahlungspflichtig buchen";
+      return checkoutSubmitLabel({
+        allItemsValid: this.allItemsValid,
+        grossPrices: [this.leadItem, ...this.subsequentItems].map(
+          (item) => item.userGrossPriceEur
+        ),
+      });
     },
 
     totalGrossPrice() {

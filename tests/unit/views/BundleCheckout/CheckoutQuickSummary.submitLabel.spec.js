@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import CheckoutQuickSummary from "@/views/BundleCheckout/CheckoutQuickSummary.vue";
-import CheckoutGroupBookingSummary from "@/views/BundleCheckout/CheckoutGroupBookingSummary.vue";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
@@ -15,17 +14,19 @@ vi.mock("@/services/api/ApiPaymentService", () => ({
 /**
  * ECCdigital/tickets#937: a booking with a total of 0 EUR, also after a
  * discount, is completed with „Verbindlich buchen“ instead of
- * „Zahlungspflichtig buchen“, for every tenant.
+ * „Zahlungspflichtig buchen“, for every tenant. ECCdigital/tickets#1303: only
+ * when every item is valid and every price known; a missing price asks for
+ * payment.
  */
 
 const PAID = "Zahlungspflichtig buchen";
 const FREE = "Verbindlich buchen";
 
-function item(grossEur, regularEur = grossEur) {
+function item(grossEur, regularEur = grossEur, valid = true) {
   return {
     bookableId: "room",
     amount: 1,
-    valid: true,
+    valid,
     userPriceEur: grossEur,
     userGrossPriceEur: grossEur,
     regularPriceEur: regularEur,
@@ -51,12 +52,12 @@ const store = () =>
 const buttonTexts = (wrapper) =>
   wrapper.findAll("button").wrappers.map((b) => b.text());
 
-async function quickSummary(leadItem) {
+async function quickSummary(leadItem, subsequentItems = []) {
   const wrapper = mountComponent(CheckoutQuickSummary, {
     store: store(),
     propsData: {
       leadItem,
-      subsequentItems: [],
+      subsequentItems,
       finalCheck: true,
       tenant: "t1",
       contactDetails: { name: "Max Muster", mail: "max@firma.test" },
@@ -67,16 +68,7 @@ async function quickSummary(leadItem) {
   return wrapper;
 }
 
-async function groupSummary(bookingAttempts) {
-  const wrapper = mountComponent(CheckoutGroupBookingSummary, {
-    store: store(),
-    propsData: { bookingAttempts, contactDetails: {}, activePaymentApps: [] },
-  });
-  await flushPromises();
-  return wrapper;
-}
-
-describe("the submit button of the legacy checkout", () => {
+describe("the submit button of the quick summary", () => {
   it("asks for payment where the booking costs something", async () => {
     const texts = buttonTexts(await quickSummary(item(12)));
     expect(texts).toContain(PAID);
@@ -92,23 +84,20 @@ describe("the submit button of the legacy checkout", () => {
   it("books bindingly at 0 EUR after a discount", async () => {
     const texts = buttonTexts(await quickSummary(item(0, 20)));
     expect(texts).toContain(FREE);
+    expect(texts).not.toContain(PAID);
   });
 
-  it("asks for payment in a series that costs something", async () => {
-    const attempt = {
-      userPriceEur: 8,
-      userGrossPriceEur: 8,
-      bookableItems: [item(8)],
-    };
-    expect(buttonTexts(await groupSummary([attempt, attempt]))).toContain(PAID);
+  it("asks for payment where the check of the lead item failed", async () => {
+    const texts = buttonTexts(await quickSummary(item(null, null, false)));
+    expect(texts).toContain(PAID);
+    expect(texts).not.toContain(FREE);
   });
 
-  it("books a series bindingly at 0 EUR", async () => {
-    const attempt = {
-      userPriceEur: 0,
-      userGrossPriceEur: 0,
-      bookableItems: [item(0)],
-    };
-    expect(buttonTexts(await groupSummary([attempt, attempt]))).toContain(FREE);
+  it("asks for payment where an added item is not checked yet", async () => {
+    const texts = buttonTexts(
+      await quickSummary(item(0), [item(null, null, null)])
+    );
+    expect(texts).toContain(PAID);
+    expect(texts).not.toContain(FREE);
   });
 });
