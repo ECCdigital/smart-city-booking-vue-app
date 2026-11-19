@@ -165,6 +165,83 @@ describe("GroupBookingRejectConformationDialog", () => {
     });
   });
 
+  /**
+   * The hint follows the chosen scope: after every switch it names the
+   * refund of that scope's preview, "Kein Stornobeleg erstellen" or not.
+   */
+  describe("switching the scope of a paid series at 50 % refund", () => {
+    const members = [
+      member("bk-1", "confirmed", 100),
+      member("bk-2", "confirmed", 100),
+    ];
+
+    beforeEach(() => {
+      ApiGroupBookingService.getCancellationRefundPreview.mockResolvedValue({
+        bookings: [
+          { bookingId: "bk-1", originalAmountEur: 100, refundAmountEur: 50 },
+          { bookingId: "bk-2", originalAmountEur: 100, refundAmountEur: 50 },
+        ],
+      });
+      ApiBookingService.getCancellationRefundPreview.mockResolvedValue({
+        originalAmountEur: 100,
+        refundAmountEur: 50,
+      });
+    });
+
+    function paymentHint() {
+      return document
+        .querySelector(".v-dialog--active .booking-reject-payment")
+        .textContent.replace(/\u00a0/g, " ");
+    }
+
+    async function chooseScope(wrapper, label) {
+      radio(label).querySelector("input").click();
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    async function skipDocument(wrapper) {
+      await wrapper.find("input[type=checkbox]").setChecked(true);
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("names the single booking's refund after switching to it without a document", async () => {
+      const wrapper = await openDialog(members);
+      await skipDocument(wrapper);
+
+      await chooseScope(wrapper, "Nur diese Buchung stornieren");
+
+      expect(paymentHint()).toContain("Der Buchende bekommt 50,00 € zurück.");
+    });
+
+    it("names the series' refund again after switching back without a document", async () => {
+      const wrapper = await openDialog(members);
+      await skipDocument(wrapper);
+      await chooseScope(wrapper, "Nur diese Buchung stornieren");
+
+      await chooseScope(wrapper, "Gesamte Serie stornieren");
+
+      expect(paymentHint()).toContain("Der Buchende bekommt 100,00 € zurück.");
+    });
+
+    it("loads the matching preview on both switches with a document", async () => {
+      const wrapper = await openDialog(members);
+
+      await chooseScope(wrapper, "Nur diese Buchung stornieren");
+      expect(
+        ApiBookingService.getCancellationRefundPreview
+      ).toHaveBeenCalledWith("bk-1");
+      expect(paymentHint()).toContain("Der Buchende bekommt 50,00 € zurück.");
+
+      await chooseScope(wrapper, "Gesamte Serie stornieren");
+      expect(
+        ApiGroupBookingService.getCancellationRefundPreview
+      ).toHaveBeenCalledTimes(2);
+      expect(paymentHint()).toContain("Der Buchende bekommt 100,00 € zurück.");
+    });
+  });
+
   describe("with members in mixed states", () => {
     const members = [member("bk-1", "requested"), member("bk-2", "confirmed")];
 
