@@ -13,7 +13,6 @@
 
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
-import { refundPolicyText } from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundAudit",
@@ -23,32 +22,19 @@ export default {
       type: Object,
       default: null,
     },
-    /**
-     * Whether the booking has a time span. Without one there are no days
-     * before its start, whatever an audit stored before 4.3.1 says (it
-     * counted from 01.01.1970).
-     */
-    hasTimeSpan: {
-      type: Boolean,
-      default: true,
-    },
   },
   computed: {
+    /**
+     * The refund was fixed at the cancellation, so the audit names no tier
+     * and no time before the start - only that the administration overrode
+     * the tenant's rule, where it did.
+     */
     policySummary() {
-      if (!this.audit) return "";
-
-      const days = this.hasTimeSpan ? this.audit.daysBeforeStart : null;
-      const percentage = this.audit.appliedRefundPercentage;
-
-      if (this.audit.adminOverride) {
-        return refundPolicyText("auditOverride", {
-          days,
-          suggested: this.audit.suggestedRefundPercentage,
-          applied: percentage,
-        });
-      }
-
-      return refundPolicyText("singlePolicy", { days, percentage });
+      if (!this.audit?.adminOverride) return "";
+      return this.$t("booking.cancellationRefund.auditOverride", {
+        suggested: this.audit.suggestedRefundPercentage,
+        applied: this.audit.appliedRefundPercentage,
+      });
     },
     cancelledAtFooter() {
       if (!this.audit?.cancelledAt) return "";

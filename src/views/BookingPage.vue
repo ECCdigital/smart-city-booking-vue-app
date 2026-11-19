@@ -316,7 +316,6 @@
               v-if="cancellationRefundAudit"
               class="mt-3"
               :audit="cancellationRefundAudit"
-              :has-time-span="!!booking.timeBegin"
             />
             <CancellationRefundState
               class="mt-3"
