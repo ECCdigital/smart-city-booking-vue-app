@@ -91,7 +91,7 @@ import CancellationRefundPanel from "@/components/Booking/CancellationRefundPane
 import FormatService from "@/services/FormatService";
 import {
   bookingStartsInText,
-  formatAppliedTier,
+  formatAppliedTierRule,
   formatTimeBeforeStart,
   hasBegun,
   refundPolicyText,
@@ -205,7 +205,7 @@ export default {
         }
         return this.$t("booking.cancellationRefund.groupPolicyMixed");
       }
-      const tier = formatAppliedTier(this.preview);
+      const tier = formatAppliedTierRule(this.preview);
       const policy = refundPolicyText("singlePolicy", {
         time: formatTimeBeforeStart(this.preview),
         tier,

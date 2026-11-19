@@ -40,7 +40,7 @@ describe("CancellationRefundPreview", () => {
         appliedTierHours: 26,
       })
     ).toBe(
-      "Die Buchung beginnt in 1 Tag und 6 Stunden. Es gilt die Erstattungsstufe „26 Stunden“: Die Mandantenregel schlägt 11 % Erstattung vor."
+      "Die Buchung beginnt in 1 Tag und 6 Stunden. Es gilt die Erstattungsstufe „bis 26 Stunden vor Beginn“: Die Mandantenregel schlägt 11 % Erstattung vor."
     );
   });
 
@@ -51,10 +51,10 @@ describe("CancellationRefundPreview", () => {
         refundAmountEur: 12.5,
         suggestedRefundPercentage: 50,
         hoursBeforeStart: 77,
-        appliedTierHours: 168,
+        appliedTierHours: 72,
       })
     ).toBe(
-      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „7 Tage“: Die Mandantenregel schlägt 50 % Erstattung vor."
+      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „bis 3 Tage vor Beginn“: Die Mandantenregel schlägt 50 % Erstattung vor."
     );
   });
 

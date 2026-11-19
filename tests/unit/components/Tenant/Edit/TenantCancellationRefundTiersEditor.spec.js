@@ -94,6 +94,28 @@ describe("TenantCancellationRefundTiersEditor — a deadline in hours", () => {
   });
 });
 
+describe("TenantCancellationRefundTiersEditor — the wording of a tier", () => {
+  it("names a tier as „bis … vor Beginn“, the lowest at 0 hours as „bis zum Beginn“", async () => {
+    const wrapper = await editing({
+      amount: 3,
+      unit: "days",
+      refundPercentage: 80,
+    });
+
+    expect(wrapper.vm.tierTitle(72)).toBe("Bis 3 Tage vor Beginn");
+    expect(wrapper.vm.tierTitle(0)).toBe("Bis zum Beginn");
+    expect(wrapper.vm.editingRuleText).toBe("bis 3 Tage vor Beginn");
+    expect(
+      wrapper.vm.$t("tenant.cancellationRefundTiers.tierDescription", {
+        rule: wrapper.vm.editingRuleText,
+        percentage: 80,
+      })
+    ).toBe(
+      "Bei Stornierung bis 3 Tage vor Beginn werden 80 % des Buchungspreises erstattet."
+    );
+  });
+});
+
 describe("TenantCancellationRefundTiersEditor — the refund a tier may name", () => {
   it("lies between the tiers with the next shorter and the next longer deadline", async () => {
     const wrapper = await editing({
@@ -105,7 +127,7 @@ describe("TenantCancellationRefundTiersEditor — the refund a tier may name", (
     expect(wrapper.vm.allowedRefundRange).toMatchObject({ min: 50, max: 100 });
     expect(wrapper.vm.refundRangeHint).toBe("Möglich: 50 bis 100 %");
     expect(wrapper.vm.refundRangeMessage).toBe(
-      "Für diese Frist sind 50 bis 100 % möglich. Nicht mehr als bei „2 Tage“ und nicht weniger als bei „12 Stunden“."
+      "Für diese Frist sind 50 bis 100 % möglich. Nicht mehr als bei „bis 2 Tage vor Beginn“ und nicht weniger als bei „bis 12 Stunden vor Beginn“."
     );
     expect(wrapper.vm.isCandidateMonotonic).toBe(false);
   });
@@ -118,7 +140,7 @@ describe("TenantCancellationRefundTiersEditor — the refund a tier may name", (
     });
 
     expect(wrapper.vm.refundRangeMessage).toBe(
-      "Für diese Frist sind 100 bis 100 % möglich. Nicht weniger als bei „2 Tage“."
+      "Für diese Frist sind 100 bis 100 % möglich. Nicht weniger als bei „bis 2 Tage vor Beginn“."
     );
   });
 

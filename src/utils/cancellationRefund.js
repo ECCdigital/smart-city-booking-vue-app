@@ -162,20 +162,16 @@ export function bookingStartsInText(calculation) {
 }
 
 /**
- * The tier a refund calculation applied, as text: its deadline
- * (`formatTierDeadline`), „Bis zum Beginn“ for the lowest at 0 hours. An
- * audit of before backend 4.4 named it in days (`appliedTierDays`). `null`
- * where no tier applied - no scale, or no time span.
+ * A tier of the refund scale as everyone reads it, „bis 36 Stunden vor
+ * Beginn“ or „bis 2 Tage vor Beginn“, „bis zum Beginn“ for the lowest at 0
+ * hours.
  */
-export function formatAppliedTier(calculation) {
-  const hours = calculation?.appliedTierHours;
-  if (Number.isFinite(hours)) {
-    return hours === 0
-      ? i18n.t("booking.cancellationRefund.tierAtStart")
-      : formatTierDeadline(hours);
-  }
-  const days = calculation?.appliedTierDays;
-  return Number.isFinite(days) ? formatDays(days) : null;
+export function formatTierRule(hoursBeforeStart) {
+  return Number(hoursBeforeStart) === 0
+    ? i18n.t("booking.cancellationRefund.tierRuleAtStart")
+    : i18n.t("booking.cancellationRefund.tierRule", {
+        deadline: formatTierDeadline(hoursBeforeStart),
+      });
 }
 
 /**
@@ -228,7 +224,7 @@ export function formatAppliedTierRule(calculation) {
 /**
  * The policy line of a single booking's refund preview or audit: the time
  * before the start where there is one (`formatTimeBeforeStart`) and the tier
- * that applied (`formatAppliedTier`), that the booking has begun where
+ * that applied (`formatAppliedTierRule`), that the booking has begun where
  * `begun` (`hasBegun`), else that the booking has no time span. `key` is
  * `singlePolicy` or `userPolicySummary`.
  */
