@@ -315,7 +315,7 @@
         large
         @click="checkout()"
         :loading="isSubmitting"
-        :disabled="!allItemsValid"
+        :disabled="!allItemsValid || validating"
         block
       >
         <span>{{ submitLabel }}</span>
@@ -350,6 +350,12 @@ export default {
   components: { CheckoutAddressBlacklistedAlert },
 
   props: {
+    // A price check is running: the items still hold the last result
+    // (ECCdigital/tickets#1303).
+    validating: {
+      type: Boolean,
+      default: false,
+    },
     checkoutId: {
       type: String,
     },
@@ -400,7 +406,6 @@ export default {
 
   data() {
     return {
-      validating: false,
       isSubmitting: false,
       // The instance's mail address of a refusal of the address on the
       // blacklist, null while there is none.
@@ -705,7 +710,9 @@ export default {
 
     // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
     submitLabel() {
-      return checkoutSubmitLabel([this.leadItem, ...this.subsequentItems]);
+      return checkoutSubmitLabel([this.leadItem, ...this.subsequentItems], {
+        validating: this.validating,
+      });
     },
 
     totalGrossPrice() {

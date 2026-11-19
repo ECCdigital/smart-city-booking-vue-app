@@ -17,12 +17,17 @@ import { isFree } from "@/utils/bookingStatus";
  * added item pass unchecked (`valid === null`); here it does not, as its last
  * price may be stale.
  *
+ * Nor is a checkout free while a price check is still running
+ * (`validating`): the items still hold the result of the last check, which a
+ * changed discount, coupon or amount may have overturned.
+ *
  * The threshold is the one of `isFree()` (`<= 0`), which also counts a missing
  * price as not free. The prices are never negative, so their sum is exactly 0
  * only when each is, and needs no rounding margin.
  */
-export function isFreeCheckout(items) {
+export function isFreeCheckout(items, { validating = false } = {}) {
   if (
+    validating ||
     items.length === 0 ||
     !items.every(
       (item) => item.valid === true && item.userGrossPriceEur != null
@@ -37,9 +42,9 @@ export function isFreeCheckout(items) {
   return isFree({ priceEur: total });
 }
 
-/** The text of the submit button for the items {@link isFreeCheckout} reads. */
-export function checkoutSubmitLabel(items) {
-  return isFreeCheckout(items)
+/** The text of the submit button, for the arguments of {@link isFreeCheckout}. */
+export function checkoutSubmitLabel(items, options) {
+  return isFreeCheckout(items, options)
     ? i18n.t("checkout.commitBookingFree")
     : i18n.t("checkout.commitBooking");
 }

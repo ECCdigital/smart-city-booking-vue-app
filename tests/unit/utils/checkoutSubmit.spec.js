@@ -35,6 +35,11 @@ describe("isFreeCheckout", () => {
   it("is not free without any item", () => {
     expect(isFreeCheckout([])).toBe(false);
   });
+
+  it("is not free while a check is still running, whatever the last one said", () => {
+    expect(isFreeCheckout([item(0)], { validating: true })).toBe(false);
+    expect(isFreeCheckout([item(0)], { validating: false })).toBe(true);
+  });
 });
 
 describe("checkoutSubmitLabel", () => {

@@ -70,6 +70,7 @@
                 step === steps.length ? 0 : leadItem.bookingDiscountPercent
               "
               :initial-book-without-discount="bookWithoutDiscount"
+              :validating="runningChecks > 0"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
@@ -166,6 +167,11 @@ export default {
       selectedPaymentApp: null,
       allowSeriesFlag: false,
       bookWithoutDiscount: false,
+      // Price checks still waiting for their answer (ECCdigital/tickets#1303).
+      runningChecks: 0,
+      // The latest price check of each item, so an older one that answers
+      // late does not overwrite it. Vue 2 does not observe a WeakMap.
+      latestChecks: new WeakMap(),
     };
   },
 
@@ -570,7 +576,19 @@ export default {
     },
 
     async validateItems() {
+      const check = {};
+      this.runningChecks++;
+      try {
+        await this.runPriceCheck(check);
+      } finally {
+        this.runningChecks--;
+      }
+    },
+
+    async runPriceCheck(check) {
       for (let item of [this.leadItem, ...this.subsequentItems]) {
+        this.latestChecks.set(item, check);
+        const isLatest = () => this.latestChecks.get(item) === check;
         if (
           isTimeDependentBookable(item.bookable) &&
           (this.timeBegin == null || this.timeEnd == null)
@@ -589,7 +607,7 @@ export default {
               this.checkoutId
             );
 
-            if (response.status === 200) {
+            if (response.status === 200 && isLatest()) {
               if (response.data.checkoutId) {
                 this.checkoutId = response.data.checkoutId;
               }
@@ -608,6 +626,9 @@ export default {
           } catch (error) {
             this.checkoutId =
               error.response.data.checkoutId || this.checkoutId || null;
+            if (!isLatest()) {
+              continue;
+            }
 
             item.regularPriceEur = null;
             item.userPriceEur = null;

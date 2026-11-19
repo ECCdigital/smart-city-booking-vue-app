@@ -57,10 +57,20 @@ const store = () =>
 const buttonTexts = (wrapper) =>
   wrapper.findAll("button").wrappers.map((b) => b.text());
 
-async function groupSummary(bookingAttempts) {
+const submitButton = (wrapper) =>
+  wrapper
+    .findAll("button")
+    .wrappers.find((b) => [PAID, FREE].includes(b.text()));
+
+async function groupSummary(bookingAttempts, props = {}) {
   const wrapper = mountComponent(CheckoutGroupBookingSummary, {
     store: store(),
-    propsData: { bookingAttempts, contactDetails: {}, activePaymentApps: [] },
+    propsData: {
+      ...props,
+      bookingAttempts,
+      contactDetails: {},
+      activePaymentApps: [],
+    },
   });
   await flushPromises();
   return wrapper;
@@ -106,5 +116,21 @@ describe("the submit button of the group booking summary", () => {
     );
     expect(texts).toContain(PAID);
     expect(texts).not.toContain(FREE);
+  });
+
+  it("asks for payment and waits while a price check is running", async () => {
+    const wrapper = await groupSummary([attempt(item(0))], {
+      validating: true,
+    });
+    expect(submitButton(wrapper).text()).toBe(PAID);
+    expect(submitButton(wrapper).attributes("disabled")).toBe("disabled");
+  });
+
+  it("can be sent once the price check is done", async () => {
+    const wrapper = await groupSummary([attempt(item(0))], {
+      validating: false,
+    });
+    expect(submitButton(wrapper).text()).toBe(FREE);
+    expect(submitButton(wrapper).attributes("disabled")).toBeUndefined();
   });
 });

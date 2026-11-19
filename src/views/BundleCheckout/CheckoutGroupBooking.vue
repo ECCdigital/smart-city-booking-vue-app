@@ -101,6 +101,11 @@ export default {
         loading: false,
         percentage: 0,
       },
+      // Price checks still waiting for their answer (ECCdigital/tickets#1303).
+      runningChecks: 0,
+      // The latest price check of each item, so an older one that answers
+      // late does not overwrite it. Vue 2 does not observe a WeakMap.
+      latestChecks: new WeakMap(),
       loading: false,
       leadItem: {
         bookableId: null,
@@ -253,6 +258,7 @@ export default {
           activePaymentApps: this.activePaymentApps,
           selectedPaymentApp: this.selectedPaymentApp,
           isSubmitting: this.isSubmitting,
+          validating: this.runningChecks > 0,
           blacklistRefusal: this.blacklistRefusal,
           coupon: this.coupon,
           couponError: this.couponError,
@@ -683,6 +689,16 @@ export default {
     },
 
     async validateItems(bookingAttempts) {
+      const check = {};
+      this.runningChecks++;
+      try {
+        await this.runPriceCheck(bookingAttempts, check);
+      } finally {
+        this.runningChecks--;
+      }
+    },
+
+    async runPriceCheck(bookingAttempts, check) {
       this.progress.percentage = 0;
       const totalBookableItems = bookingAttempts.reduce(
         (sum, bookingAttempt) => sum + bookingAttempt.bookableItems.length,
@@ -691,6 +707,8 @@ export default {
 
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
+          this.latestChecks.set(item, check);
+          const isLatest = () => this.latestChecks.get(item) === check;
           if (
             isTimeDependentBookable(item.bookable) &&
             (bookingAttempt.timeBegin == null || bookingAttempt.timeEnd == null)
@@ -706,7 +724,7 @@ export default {
                 bookingAttempt.timeEnd,
                 this.coupon?.id
               );
-              if (response.status === 200) {
+              if (response.status === 200 && isLatest()) {
                 item.regularPriceEur = response.data.regularPriceEur;
                 item.userPriceEur = response.data.userPriceEur;
                 item.regularGrossPriceEur = response.data.regularGrossPriceEur;
@@ -715,6 +733,9 @@ export default {
                 delete item.error;
               }
             } catch (error) {
+              if (!isLatest()) {
+                continue;
+              }
               item.regularPriceEur = null;
               item.userPriceEur = null;
               item.regularGrossPriceEur = null;

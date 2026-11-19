@@ -52,10 +52,16 @@ const store = () =>
 const buttonTexts = (wrapper) =>
   wrapper.findAll("button").wrappers.map((b) => b.text());
 
-async function quickSummary(leadItem, subsequentItems = []) {
+const submitButton = (wrapper) =>
+  wrapper
+    .findAll("button")
+    .wrappers.find((b) => [PAID, FREE].includes(b.text()));
+
+async function quickSummary(leadItem, subsequentItems = [], props = {}) {
   const wrapper = mountComponent(CheckoutQuickSummary, {
     store: store(),
     propsData: {
+      ...props,
       leadItem,
       subsequentItems,
       finalCheck: true,
@@ -105,5 +111,17 @@ describe("the submit button of the quick summary", () => {
     const texts = buttonTexts(await quickSummary(item(0), [item(0, 0, null)]));
     expect(texts).toContain(PAID);
     expect(texts).not.toContain(FREE);
+  });
+
+  it("asks for payment and waits while a price check is running", async () => {
+    const wrapper = await quickSummary(item(0), [], { validating: true });
+    expect(submitButton(wrapper).text()).toBe(PAID);
+    expect(submitButton(wrapper).attributes("disabled")).toBe("disabled");
+  });
+
+  it("can be sent once the price check is done", async () => {
+    const wrapper = await quickSummary(item(0), [], { validating: false });
+    expect(submitButton(wrapper).text()).toBe(FREE);
+    expect(submitButton(wrapper).attributes("disabled")).toBeUndefined();
   });
 });
