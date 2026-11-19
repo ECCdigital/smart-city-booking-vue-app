@@ -9,6 +9,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   Deleting bookings in every state: whoever may delete every booking (`manageBookings.deleteAny`, tenant owner, instance owner) gets „Löschen“ in the booking list and calendar for every state, to take test bookings out; everyone else still only for Angefragt and Abgelehnt. Without a right to delete the booking (`deleteAny`, or `deleteOwn` on one's own) the entry is not shown at all. The confirmation points out a booking, or a series member, that is Bestätigt and neither cancelled nor withdrawn
+
 -   CI gate „protected files“ ([ECCdigital/tickets#425](https://github.com/ECCdigital/tickets/issues/425)): the new job `protected-files`, required by `ci-ok`, blocks a pull request that deletes or changes an existing test, adds `.skip`, `.only` or `.todo`, or changes an accepted ADR or the CI configuration, unless the ticket it references (`Refs ECCdigital/tickets#<n>`) names the file; new tests are free. It runs the rule from ECCdigital/portolan with the read-only GitHub App „Portolan Gate“ (org secrets `GATE_APP_ID`, `GATE_PRIVATE_KEY`); pull requests from forks get no secrets and stay blocked until an admin bypasses the gate. No code change
 
 ## [4.4.1] — 2026-11-16

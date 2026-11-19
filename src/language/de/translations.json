@@ -1719,6 +1719,10 @@
       "requires-rejection": {
         "title": "Stornierung erforderlich",
         "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
+      },
+      "confirmed-hint": {
+        "message": "Diese Buchung wurde bereits bestätigt und weder storniert noch widerrufen.",
+        "series": "Diese Serie enthält bereits bestätigte Buchungen, die weder storniert noch widerrufen wurden."
       }
     },
     "reject": {

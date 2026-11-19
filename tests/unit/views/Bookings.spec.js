@@ -18,15 +18,19 @@ import {
 vi.mock("@/store", () => ({
   default: { getters: { "tenants/currentTenantId": "tenant-1" } },
 }));
-vi.mock("@/services/permissions/BookingPermissionService", () => ({
-  default: {
-    allowCreate: vi.fn(() => true),
-    allowRead: vi.fn(() => true),
-    allowUpdate: vi.fn(() => true),
-    allowDelete: vi.fn(() => true),
-    allowReadAny: vi.fn(() => true),
-  },
-}));
+vi.mock("@/services/permissions/BookingPermissionService", async () => {
+  const { allowsAction } = await vi.importActual("@/utils/bookingStatus");
+  return {
+    default: {
+      allowCreate: vi.fn(() => true),
+      allowRead: vi.fn(() => true),
+      allowUpdate: vi.fn(() => true),
+      allowDelete: vi.fn(() => true),
+      allowHardDelete: vi.fn((booking) => allowsAction(booking, "delete")),
+      allowReadAny: vi.fn(() => true),
+    },
+  };
+});
 vi.mock("@/services/api/ApiBookingService", () => ({
   default: {
     getBookings: vi.fn(),

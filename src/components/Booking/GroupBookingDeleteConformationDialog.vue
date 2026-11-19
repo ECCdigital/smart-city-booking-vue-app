@@ -14,6 +14,15 @@
         Die Buchung
         <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
         Sie die gesamte Serie löschen?
+        <v-alert
+          v-if="containsConfirmed"
+          type="warning"
+          text
+          dense
+          class="mt-4 mb-0"
+        >
+          {{ $t("booking.delete.confirmed-hint.series") }}
+        </v-alert>
         <div class="d-flex justify-center flex-wrap mt-4">
           <v-tooltip :disabled="!groupDeleteDisabled" top>
             <template v-slot:activator="{ on }">
@@ -84,6 +93,11 @@ export default {
       default: false,
     },
     groupDeleteDisabled: {
+      type: Boolean,
+      default: false,
+    },
+    /** Whether the series holds a confirmed booking - pointed out in the dialog. */
+    containsConfirmed: {
       type: Boolean,
       default: false,
     },

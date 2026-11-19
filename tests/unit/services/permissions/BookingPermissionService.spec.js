@@ -141,4 +141,59 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowReadAny()).toBe(false);
     });
   });
+
+  /**
+   * The hard delete in the list: whoever may
+   * delete every booking (`manageBookings.deleteAny`, the backend's
+   * `booking.delete`) may delete it in every state, to take test bookings
+   * out; everyone else only where the state allows it.
+   */
+  describe("allowHardDelete", () => {
+    const STATES = [
+      "requested",
+      "payment_due",
+      "confirmed",
+      "rejected",
+      "cancelled",
+      "withdrawn",
+    ];
+
+    it.each(STATES)(
+      "lets deleteAny, the tenant owner and the instance owner delete a %s booking",
+      (status) => {
+        const booking = { id: "bk-1", status, assignedUserId: "x" };
+
+        signIn({ tenants: [membership({ deleteAny: true })] });
+        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+
+        signIn({ tenants: [membership({}, { isOwner: true })] });
+        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+
+        signIn({ instanceOwner: true });
+        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+      }
+    );
+
+    it.each([
+      ["requested", true],
+      ["rejected", true],
+      ["payment_due", false],
+      ["confirmed", false],
+      ["cancelled", false],
+      ["withdrawn", false],
+    ])("lets deleteOwn delete an own %s booking: %s", (status, expected) => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+      const own = { id: "bk-1", status, assignedUserId: USER_ID };
+
+      expect(BookingPermissionService.allowHardDelete(own)).toBe(expected);
+    });
+
+    it("refuses a member without a delete right", () => {
+      signIn({ tenants: [membership({ readAny: true })] });
+
+      expect(
+        BookingPermissionService.allowHardDelete({ status: "requested" })
+      ).toBe(false);
+    });
+  });
 });

@@ -1,14 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import { mountComponent } from "@tests/unit/support/mount";
 
-vi.mock("@/services/permissions/BookingPermissionService", () => ({
-  default: {
-    allowRead: vi.fn(() => true),
-    allowUpdate: vi.fn(() => true),
-    allowDelete: vi.fn(() => true),
-  },
-}));
+vi.mock("@/services/permissions/BookingPermissionService", async () => {
+  const { allowsAction } = await vi.importActual("@/utils/bookingStatus");
+  return {
+    default: {
+      allowRead: vi.fn(() => true),
+      allowUpdate: vi.fn(() => true),
+      allowDelete: vi.fn(() => true),
+      allowHardDelete: vi.fn((booking) => allowsAction(booking, "delete")),
+    },
+  };
+});
 
 function booking(overrides = {}) {
   return {
@@ -212,6 +217,35 @@ describe("BookingTable", () => {
 
       expect(menu["Löschen"]).toBe(disabled);
     });
+
+    it("leaves Löschen out for whoever may not delete the booking", async () => {
+      BookingPermissionService.allowDelete.mockReturnValue(false);
+      try {
+        const menu = await openRowMenu(
+          mountTable([booking({ status: "requested" })])
+        );
+
+        expect(menu).not.toHaveProperty("Löschen");
+      } finally {
+        BookingPermissionService.allowDelete.mockReturnValue(true);
+      }
+    });
+
+    it.each(["payment_due", "confirmed", "cancelled", "withdrawn"])(
+      "offers Löschen on a %s booking to whoever may delete every booking",
+      async (status) => {
+        const { allowHardDelete } = BookingPermissionService;
+        const byState = allowHardDelete.getMockImplementation();
+        allowHardDelete.mockImplementation(() => true);
+        try {
+          const menu = await openRowMenu(mountTable([booking({ status })]));
+
+          expect(menu["Löschen"]).toBe(false);
+        } finally {
+          allowHardDelete.mockImplementation(byState);
+        }
+      }
+    );
 
     it("hands the chosen transition and the booking to the host", async () => {
       const wrapper = mountTable([booking({ status: "rejected" })]);

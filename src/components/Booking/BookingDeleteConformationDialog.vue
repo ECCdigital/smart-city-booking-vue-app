@@ -13,16 +13,19 @@
       <v-card-text class="pa-6">
         Sind Sie sicher, dass Sie die Buchung
         <strong>{{ toDelete.id }}</strong> löschen wollen?
+        <v-alert v-if="isConfirmed" type="warning" text dense class="mt-4 mb-0">
+          {{ $t("booking.delete.confirmed-hint.message") }}
+        </v-alert>
       </v-card-text>
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-tooltip :disabled="!isProtectedBooking" top>
+        <v-tooltip :disabled="!deleteDisabled" top>
           <template v-slot:activator="{ on }">
             <div v-on="on" class="ml-2">
               <v-btn
                 color="error"
-                :disabled="isProtectedBooking"
+                :disabled="deleteDisabled"
                 :loading="inProgress"
                 @click="onDelete"
               >
@@ -39,7 +42,7 @@
 </template>
 
 <script>
-import { allowsAction } from "@/utils/bookingStatus";
+import { BOOKING_STATUS } from "@/utils/bookingStatus";
 
 export default {
   name: "BookingDeleteConformationDialog",
@@ -56,6 +59,11 @@ export default {
       type: Boolean,
       default: false,
     },
+    /** The host's answer to `BookingPermissionService.allowHardDelete`, negated. */
+    deleteDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
     openDialog: {
@@ -63,8 +71,9 @@ export default {
         return this.open;
       },
     },
-    isProtectedBooking() {
-      return !allowsAction(this.toDelete, "delete");
+    /** A confirmed booking that was neither cancelled nor withdrawn is pointed out. */
+    isConfirmed() {
+      return this.toDelete?.status === BOOKING_STATUS.CONFIRMED;
     },
   },
   methods: {
