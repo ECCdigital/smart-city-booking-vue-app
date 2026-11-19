@@ -14,6 +14,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 ### Fixed
 
 -   „iCal-Feed abonnieren“ and „Feed-URL kopieren“ give a full URL in auth mode `bff` (ECCdigital/tickets#782): a relative API base such as the default `/admin/api` is anchored on the origin of the Admin UI, so a calendar can subscribe to it. Mode `direct` is unchanged
+-   The overview of the guided flow and the editing page shows an issue of the location at the row „Standort“ instead of „Titel“ (ECCdigital/tickets#558), so a click on it leads to the field Standort
 
 ## [4.3.3] — 2026-11-03
 
