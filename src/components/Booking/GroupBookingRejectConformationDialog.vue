@@ -3,7 +3,7 @@
     <v-card>
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon left color="error">mdi-alert</v-icon>
-        <span class="text-h5">Buchung stornieren</span>
+        <span class="text-h5">{{ $t(`${dialogKey}.title`) }}</span>
         <v-spacer />
         <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
       </v-card-title>
@@ -28,12 +28,12 @@
             <v-radio
               value="group"
               :disabled="!canCancelGroup"
-              :label="$t('booking.cancellationRefund.cancelGroup')"
+              :label="scopeLabel('group')"
             />
             <v-radio
               v-if="!seriesOnly"
               value="single"
-              :label="$t('booking.cancellationRefund.cancelSingle')"
+              :label="scopeLabel('single')"
             />
           </v-radio-group>
           <v-alert v-if="error" type="error" border="left">
@@ -42,19 +42,21 @@
           <v-textarea
             outlined
             v-model="rejectReason"
-            label="Begründung der Stornierung"
-            placeholder="Aus welchem Grund wird die Stornierung durchgeführt?"
+            :label="$t(`${dialogKey}.reasonLabel`)"
+            :placeholder="$t(`${dialogKey}.reasonPlaceholder`)"
             :rules="[
               (value) => !!value?.trim() || 'Begründung ist erforderlich',
             ]"
             rows="2"
           ></v-textarea>
+          <!-- A rejected request costs nothing: it never gets a document. -->
           <v-checkbox
+            v-if="!isRequest"
             v-model="skipCancellation"
             label="Kein Stornobeleg erstellen"
           ></v-checkbox>
           <CancellationRefundPreview
-            v-if="!skipCancellation"
+            v-if="!isRequest && !skipCancellation"
             :preview="refundPreview"
             :loading="previewLoading"
             :error="previewError"
@@ -113,6 +115,16 @@
               :label="$t('booking.cancellationRefund.bankName')"
             ></v-text-field>
           </div>
+          <!-- Last before the actions: what the cancellation leaves the customer. -->
+          <v-alert
+            :type="paymentOutcome.type"
+            text
+            dense
+            class="booking-reject-payment text-body-2 mt-4 mb-0"
+          >
+            <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
+            <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
+          </v-alert>
         </v-form>
       </v-card-text>
       <v-divider />
@@ -126,11 +138,7 @@
           form="group-booking-reject-form"
         >
           <v-icon left small>mdi-cancel</v-icon>
-          {{
-            cancellationScope === "group"
-              ? $t("booking.cancellationRefund.cancelGroup")
-              : $t("booking.cancellationRefund.cancelSingle")
-          }}
+          {{ scopeLabel(cancellationScope) }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -148,7 +156,13 @@ import {
   BOOKING_STATUS,
   groupAllowsAction,
   groupBookingStatus,
+  isFree,
+  isPaid,
 } from "@/utils/bookingStatus";
+import {
+  expectedRefundEur,
+  rejectPaymentOutcome,
+} from "@/utils/cancellationRefund";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -226,6 +240,7 @@ export default {
       refundPreview: null,
       previewLoading: false,
       previewError: null,
+      previewRequestId: 0,
       refundPercentage: undefined,
       refundValid: true,
       bankDetails: {
@@ -258,14 +273,49 @@ export default {
     defaultScope() {
       return this.canCancelGroup ? "group" : "single";
     },
+    /** A request is turned down, anything else cancelled: the dialog's words follow. */
+    isRequest() {
+      return this.scopeIsRequest(this.cancellationScope);
+    },
+    dialogKey() {
+      return `booking.reject.dialog.${this.isRequest ? "request" : "booking"}`;
+    },
+    /**
+     * What the chosen scope costs: for the series what its preview says was
+     * paid, where it names one total - without the members the dialog knows
+     * only the one booking's price - else the prices of the scope's bookings.
+     */
+    scopePriceEur() {
+      if (
+        this.cancellationScope === "group" &&
+        typeof this.refundPreview?.originalAmountEur === "number"
+      ) {
+        return this.refundPreview.originalAmountEur;
+      }
+      return this.membersOf(this.cancellationScope).reduce(
+        (sum, booking) => sum + Number(booking?.priceEur || 0),
+        0
+      );
+    },
+    paymentOutcome() {
+      const members = this.membersOf(this.cancellationScope);
+      return rejectPaymentOutcome({
+        request: this.isRequest,
+        free: members.every((booking) => isFree(booking)),
+        paid: members.every((booking) => isPaid(booking)),
+        priceEur: this.scopePriceEur,
+        refundAmountEur: expectedRefundEur(
+          this.refundPreview,
+          this.refundPercentage
+        ),
+        previewFailed: !!this.previewError,
+      });
+    },
     canProvideBankDetails() {
       if (!this.toReject || this.skipCancellation !== false) return false;
       // Bank details are asked for a paid cancellation: `confirmed` with a
       // price, and for the whole series only where every member is confirmed.
-      const members =
-        this.cancellationScope === "group" && this.groupBookings.length
-          ? this.groupBookings
-          : [this.toReject];
+      const members = this.membersOf(this.cancellationScope);
       return (
         groupBookingStatus(members) === BOOKING_STATUS.CONFIRMED &&
         members.some(
@@ -278,17 +328,13 @@ export default {
       return (
         this.valid &&
         !this.previewLoading &&
-        (this.skipCancellation ||
+        (this.isRequest ||
+          this.skipCancellation ||
           (!!this.refundPreview && !this.previewError && this.refundValid))
       );
     },
     formattedPrice() {
-      const amount =
-        this.cancellationScope === "group" &&
-        typeof this.refundPreview?.originalAmountEur === "number"
-          ? this.refundPreview.originalAmountEur
-          : this.toReject?.priceEur;
-      if (typeof amount !== "number") return "";
+      const amount = this.scopePriceEur;
       try {
         return new Intl.NumberFormat("de-DE", {
           style: "currency",
@@ -328,13 +374,15 @@ export default {
         this.loadRefundPreview();
       }
     },
+    // The payment hint names the refund of the chosen scope even without a
+    // document, so a changed scope always loads that scope's preview.
     cancellationScope() {
-      if (this.open && !this.skipCancellation) {
+      if (this.open) {
         this.loadRefundPreview();
       }
     },
     skipCancellation(value) {
-      if (!value && this.open) {
+      if (!value && this.open && !this.refundPreview) {
         this.loadRefundPreview();
       }
       if (value) {
@@ -353,6 +401,25 @@ export default {
     },
   },
   methods: {
+    /** The bookings a scope cancels: the series, or the one booking. */
+    membersOf(scope) {
+      return scope === "group" && this.groupBookings.length
+        ? this.groupBookings
+        : [this.toReject];
+    },
+    scopeIsRequest(scope) {
+      return (
+        groupBookingStatus(this.membersOf(scope)) === BOOKING_STATUS.REQUESTED
+      );
+    },
+    scopeLabel(scope) {
+      const verb = this.scopeIsRequest(scope) ? "reject" : "cancel";
+      return this.$t(
+        `booking.cancellationRefund.${verb}${
+          scope === "group" ? "Group" : "Single"
+        }`
+      );
+    },
     closeDialog() {
       this.resetDialog();
       this.$emit("close");
@@ -401,31 +468,38 @@ export default {
       return payload;
     },
     async loadRefundPreview() {
-      if (this.skipCancellation || !this.toReject?.id) return;
-      if (this.cancellationScope === "group" && !this.groupBookingId) return;
-      this.previewLoading = true;
+      // A switched scope or reopened dialog races its previews; only the
+      // latest one may land. A scope without a preview of its own (a
+      // request, or the series without its id) drops the previous one too.
+      const requestId = ++this.previewRequestId;
+      this.previewLoading = false;
       this.previewError = null;
       this.refundPreview = null;
+      if (this.isRequest || !this.toReject?.id) return;
+      if (this.cancellationScope === "group" && !this.groupBookingId) return;
+      this.previewLoading = true;
       try {
-        if (this.cancellationScope === "group") {
-          this.refundPreview =
-            await ApiGroupBookingService.getCancellationRefundPreview(
-              null,
-              this.groupBookingId
-            );
-        } else {
-          this.refundPreview =
-            await ApiBookingService.getCancellationRefundPreview(
-              this.toReject.id
-            );
-        }
+        const preview =
+          this.cancellationScope === "group"
+            ? await ApiGroupBookingService.getCancellationRefundPreview(
+                null,
+                this.groupBookingId
+              )
+            : await ApiBookingService.getCancellationRefundPreview(
+                this.toReject.id
+              );
+        if (requestId !== this.previewRequestId) return;
+        this.refundPreview = preview;
       } catch (error) {
+        if (requestId !== this.previewRequestId) return;
         this.previewError = getApiErrorMessage(
           error,
           this.$t("booking.cancellationRefund.previewError")
         );
       } finally {
-        this.previewLoading = false;
+        if (requestId === this.previewRequestId) {
+          this.previewLoading = false;
+        }
       }
     },
     async onReject() {

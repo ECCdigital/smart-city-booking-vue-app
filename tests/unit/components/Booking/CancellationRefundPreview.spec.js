@@ -84,3 +84,31 @@ describe("CancellationRefundPreview", () => {
     );
   });
 });
+
+/**
+ * An override percentage refunds what `refundAtPercentage` names - the
+ * preview rounds the refund no other way than the payment hint does.
+ */
+describe("CancellationRefundPreview with an override percentage", () => {
+  it("refunds the amount refundAtPercentage names", async () => {
+    const wrapper = mountComponent(CancellationRefundPreview, {
+      propsData: {
+        preview: {
+          originalAmountEur: 33.33,
+          refundAmountEur: 33.33,
+          suggestedRefundPercentage: 100,
+          daysBeforeStart: 3,
+        },
+      },
+    });
+
+    await wrapper.find("input[type=checkbox]").setChecked(true);
+    await wrapper.find("input[type=number]").setValue(50);
+
+    const refund = wrapper
+      .find(".refund-amounts__value--refund")
+      .text()
+      .replace(/\u00a0/g, " ");
+    expect(refund).toBe("16,67 €");
+  });
+});
