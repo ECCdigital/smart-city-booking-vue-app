@@ -705,12 +705,7 @@ export default {
 
     // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
     submitLabel() {
-      return checkoutSubmitLabel({
-        allItemsValid: this.allItemsValid,
-        grossPrices: [this.leadItem, ...this.subsequentItems].map(
-          (item) => item.userGrossPriceEur
-        ),
-      });
+      return checkoutSubmitLabel([this.leadItem, ...this.subsequentItems]);
     },
 
     totalGrossPrice() {

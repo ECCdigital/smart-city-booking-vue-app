@@ -100,4 +100,10 @@ describe("the submit button of the quick summary", () => {
     expect(texts).toContain(PAID);
     expect(texts).not.toContain(FREE);
   });
+
+  it("asks for payment where an added item still has an unchecked 0 EUR", async () => {
+    const texts = buttonTexts(await quickSummary(item(0), [item(0, 0, null)]));
+    expect(texts).toContain(PAID);
+    expect(texts).not.toContain(FREE);
+  });
 });
