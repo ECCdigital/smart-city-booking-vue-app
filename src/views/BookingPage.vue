@@ -564,6 +564,10 @@ export default {
         !!this.booking && BookingPermissionService.allowUpdate(this.booking)
       );
     },
+    /** The transitions need `updateAny`; updating the own booking is not enough. */
+    canTransition() {
+      return BookingPermissionService.allowTransition();
+    },
     /** An iCal needs a period, or an event behind one of the objects. */
     hasCalendarEntry() {
       return (
@@ -603,9 +607,9 @@ export default {
     path() {
       return pathOf(this.booking);
     },
-    /** The transitions the state allows, for whoever may edit the booking. */
+    /** The transitions the state allows, for whoever may transition bookings. */
     actions() {
-      if (!this.canUpdate) {
+      if (!this.canTransition) {
         return [];
       }
       return bookingTransitionActions(this.booking);
