@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, serverError } from "@tests/unit/support/api";
+import { deferred, flushPromises, serverError } from "@tests/unit/support/api";
 import { activeDialogText } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
@@ -53,15 +53,6 @@ function paymentHint() {
   return document
     .querySelector(".v-dialog--active .booking-reject-payment")
     .textContent.replace(/\u00a0/g, " ");
-}
-
-/** A promise the spec settles by hand, to order the answers of the API. */
-function deferred() {
-  let resolve;
-  const promise = new Promise((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
 }
 
 async function submitWithReason(wrapper) {
@@ -172,9 +163,7 @@ describe("GroupBookingRejectConformationDialog", () => {
         member("bk-2", "confirmed"),
       ]);
 
-      const hint = document
-        .querySelector(".v-dialog--active .booking-reject-payment")
-        .textContent.replace(/\u00a0/g, " ");
+      const hint = paymentHint();
       expect(hint).toContain("Bereits bezahlt: 50,00 €");
       expect(hint).toContain("Der Buchende bekommt 37,50 € zurück.");
     });
@@ -191,9 +180,7 @@ describe("GroupBookingRejectConformationDialog", () => {
       await wrapper.find("input[type=checkbox]").setChecked(true);
       await wrapper.vm.$nextTick();
 
-      const hint = document
-        .querySelector(".v-dialog--active .booking-reject-payment")
-        .textContent.replace(/\u00a0/g, " ");
+      const hint = paymentHint();
       expect(hint).toContain("Bereits bezahlt: 50,00 €");
       expect(hint).toContain(
         "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht."
@@ -256,12 +243,6 @@ describe("GroupBookingRejectConformationDialog", () => {
         refundAmountEur: 50,
       });
     });
-
-    function paymentHint() {
-      return document
-        .querySelector(".v-dialog--active .booking-reject-payment")
-        .textContent.replace(/\u00a0/g, " ");
-    }
 
     async function chooseScope(wrapper, label) {
       radio(label).querySelector("input").click();
@@ -401,6 +382,53 @@ describe("GroupBookingRejectConformationDialog", () => {
   });
 
   /**
+   * Without the id of the series the dialog loads no preview for it, so on
+   * "Gesamte Serie" it names no refund - never the one booking's refund
+   * from a preview loaded on "Nur diese Buchung", landed or late.
+   */
+  describe("on the series when it was not handed the id of the series", () => {
+    const booking = member("bk-1", "confirmed", 100);
+
+    async function chooseScope(wrapper, label) {
+      radio(label).querySelector("input").click();
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("drops the single booking's landed preview after switching back", async () => {
+      ApiBookingService.getCancellationRefundPreview.mockResolvedValue({
+        originalAmountEur: 100,
+        refundAmountEur: 50,
+      });
+      const wrapper = await openDialog([], booking, { groupBookingId: null });
+      await chooseScope(wrapper, "Nur diese Buchung stornieren");
+      expect(paymentHint()).toContain("Der Buchende bekommt 50,00 € zurück.");
+
+      await chooseScope(wrapper, "Gesamte Serie stornieren");
+
+      expect(paymentHint()).not.toContain("zurück");
+      expect(paymentHint()).not.toContain("50,00 €");
+    });
+
+    it("drops the single booking's preview that lands after switching back", async () => {
+      const singleAnswer = deferred();
+      ApiBookingService.getCancellationRefundPreview.mockReturnValue(
+        singleAnswer.promise
+      );
+      const wrapper = await openDialog([], booking, { groupBookingId: null });
+      await chooseScope(wrapper, "Nur diese Buchung stornieren");
+
+      await chooseScope(wrapper, "Gesamte Serie stornieren");
+      singleAnswer.resolve({ originalAmountEur: 100, refundAmountEur: 50 });
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(paymentHint()).not.toContain("zurück");
+      expect(paymentHint()).not.toContain("50,00 €");
+    });
+  });
+
+  /**
    * Without the members the dialog knows only the one booking's price; on
    * the series it names what the preview of the series says was paid, never
    * the price of the one booking against the refund of the series.
@@ -413,9 +441,7 @@ describe("GroupBookingRejectConformationDialog", () => {
 
     await openDialog([], member("bk-1", "confirmed", 100));
 
-    const hint = document
-      .querySelector(".v-dialog--active .booking-reject-payment")
-      .textContent.replace(/\u00a0/g, " ");
+    const hint = paymentHint();
     expect(hint).toContain("Bereits bezahlt: 300,00 €");
     expect(hint).toContain("Der Buchende bekommt 150,00 € zurück.");
   });

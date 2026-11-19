@@ -280,24 +280,30 @@ export default {
     dialogKey() {
       return `booking.reject.dialog.${this.isRequest ? "request" : "booking"}`;
     },
+    /**
+     * What the chosen scope costs: for the series what its preview says was
+     * paid, where it names one total - without the members the dialog knows
+     * only the one booking's price - else the prices of the scope's bookings.
+     */
+    scopePriceEur() {
+      if (
+        this.cancellationScope === "group" &&
+        typeof this.refundPreview?.originalAmountEur === "number"
+      ) {
+        return this.refundPreview.originalAmountEur;
+      }
+      return this.membersOf(this.cancellationScope).reduce(
+        (sum, booking) => sum + Number(booking?.priceEur || 0),
+        0
+      );
+    },
     paymentOutcome() {
       const members = this.membersOf(this.cancellationScope);
-      // Without the members the series is priced by its preview, as
-      // `formattedPrice` does - never by the one booking's price.
-      const seriesWithoutMembers =
-        this.cancellationScope === "group" && !this.groupBookings.length;
       return rejectPaymentOutcome({
         request: this.isRequest,
         free: members.every((booking) => isFree(booking)),
         paid: members.every((booking) => isPaid(booking)),
-        priceEur:
-          seriesWithoutMembers &&
-          typeof this.refundPreview?.originalAmountEur === "number"
-            ? this.refundPreview.originalAmountEur
-            : members.reduce(
-                (sum, booking) => sum + Number(booking?.priceEur || 0),
-                0
-              ),
+        priceEur: this.scopePriceEur,
         refundAmountEur: expectedRefundEur(
           this.refundPreview,
           this.refundPercentage
@@ -328,12 +334,7 @@ export default {
       );
     },
     formattedPrice() {
-      const amount =
-        this.cancellationScope === "group" &&
-        typeof this.refundPreview?.originalAmountEur === "number"
-          ? this.refundPreview.originalAmountEur
-          : this.toReject?.priceEur;
-      if (typeof amount !== "number") return "";
+      const amount = this.scopePriceEur;
       try {
         return new Intl.NumberFormat("de-DE", {
           style: "currency",
@@ -467,16 +468,16 @@ export default {
       return payload;
     },
     async loadRefundPreview() {
-      if (this.isRequest || !this.toReject?.id) {
-        return;
-      }
-      if (this.cancellationScope === "group" && !this.groupBookingId) return;
       // A switched scope or reopened dialog races its previews; only the
-      // latest one may land.
+      // latest one may land. A scope without a preview of its own (a
+      // request, or the series without its id) drops the previous one too.
       const requestId = ++this.previewRequestId;
-      this.previewLoading = true;
+      this.previewLoading = false;
       this.previewError = null;
       this.refundPreview = null;
+      if (this.isRequest || !this.toReject?.id) return;
+      if (this.cancellationScope === "group" && !this.groupBookingId) return;
+      this.previewLoading = true;
       try {
         const preview =
           this.cancellationScope === "group"

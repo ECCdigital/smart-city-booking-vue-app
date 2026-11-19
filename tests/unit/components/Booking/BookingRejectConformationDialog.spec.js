@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, serverError } from "@tests/unit/support/api";
+import { deferred, flushPromises, serverError } from "@tests/unit/support/api";
 import { activeDialog, activeDialogText } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
@@ -41,17 +41,6 @@ function paymentText() {
 
 function submitButton() {
   return activeDialog().querySelector("button[type=submit]");
-}
-
-/** A promise the spec settles by hand, to order the answers of the API. */
-function deferred() {
-  let resolve;
-  let reject;
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
 }
 
 /**
