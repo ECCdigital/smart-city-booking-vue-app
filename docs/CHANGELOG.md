@@ -11,6 +11,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 -   `docker-publish.yml` refuses to build a tag that is not `v` plus the `version` of `package.json` (ECCdigital/tickets#1018). A release candidate tagged without `npm version` built an image whose app still reported the previous version
 
+### Fixed
+
+-   The overview of the guided flow and the editing page shows an issue of the location at the row „Standort“ instead of „Titel“ (ECCdigital/tickets#558), so a click on it leads to the field Standort
+
 ## [4.3.3] — 2026-11-03
 
 ### Added
