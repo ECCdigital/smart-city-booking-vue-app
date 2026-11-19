@@ -332,12 +332,12 @@ function makeCancellationDefaultBlocks() {
                 "{{#if refundCalculations}}" +
                 "{{#each refundCalculations}}" +
                 "Buchung {{bookingId}}: {{daysBeforeStartLabel}} Kalendertage vor Beginn, " +
-                "{{refundPercentage}} % Erstattung ({{refundAmount}})." +
+                "{{refundPercentage}} % Erstattung ({{refundAmount}}), {{calculationMode}}." +
                 "{{#unless @last}}<br />{{/unless}}" +
                 "{{/each}}" +
                 "{{else}}" +
                 "{{daysBeforeStartLabel}} Kalendertage vor Buchungsbeginn, " +
-                "{{refundPercentage}} % Erstattung." +
+                "{{refundPercentage}} % Erstattung, {{calculationMode}}." +
                 "{{/if}}" +
                 "</div>",
             },
