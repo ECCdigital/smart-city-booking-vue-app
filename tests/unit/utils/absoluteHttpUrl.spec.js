@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
+import { isAbsoluteHttpUrl, toAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
 describe("isAbsoluteHttpUrl", () => {
   it("takes an http or https address with a host", () => {
@@ -18,5 +18,25 @@ describe("isAbsoluteHttpUrl", () => {
     ]) {
       expect(isAbsoluteHttpUrl(value)).toBe(false);
     }
+  });
+});
+
+describe("toAbsoluteHttpUrl", () => {
+  it("anchors a path on the current origin", () => {
+    expect(toAbsoluteHttpUrl("/admin/api/x")).toBe(
+      `${window.location.origin}/admin/api/x`
+    );
+  });
+
+  it("gives a protocol-relative address the current scheme", () => {
+    expect(toAbsoluteHttpUrl("//api.example.org/x")).toBe(
+      `${window.location.protocol}//api.example.org/x`
+    );
+  });
+
+  it("leaves an absolute address unchanged", () => {
+    expect(toAbsoluteHttpUrl("https://api.example.org/x")).toBe(
+      "https://api.example.org/x"
+    );
   });
 });
