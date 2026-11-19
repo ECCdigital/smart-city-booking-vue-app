@@ -1,3 +1,5 @@
+import { isStoredSecret } from "@/utilities/stored-secret";
+
 /**
  * The tenant applications for doors and locker systems.
  *
@@ -147,26 +149,26 @@ function sameValue(a, b) {
 
 /**
  * Where the connection test of Salto KS takes each secret from, by the rule
- * of the backend: a secret in the form is sent, an empty field takes the
- * stored secret - the client secret only while client id and environment are
- * the stored ones, the password only while System-User and environment are.
- * Otherwise the secret is missing, with the reason the backend names.
+ * of the backend: a secret typed into the form is sent, the marker of a
+ * stored secret takes the stored one - the client secret only while client id
+ * and environment are the stored ones, the password only while System-User
+ * and environment are. Otherwise the secret is missing, with the reason the
+ * backend names.
  *
  * @param {Object} form The Salto KS application as the form holds it
  * @param {Object|null} stored The stored Salto KS application
- * @param {{clientSecret: boolean, password: boolean}} configured Whether
- *   each secret is stored
  * @returns {Object<string, {source: "form"|"stored"|"missing", reason?: string}>}
  */
-export function saltoSecretSources(form, stored, configured) {
+export function saltoSecretSources(form, stored) {
   const sameEnvironment =
     !stored || saltoEnvironment(stored) === saltoEnvironment(form);
 
   return Object.fromEntries(
     SALTO_SECRETS.map(({ field, identity, reason }) => {
-      if (form[field]) return [field, { source: "form" }];
-      if (!configured[field]) {
-        return [field, { source: "missing", reason: "not_stored" }];
+      if (!isStoredSecret(form[field])) {
+        return form[field]
+          ? [field, { source: "form" }]
+          : [field, { source: "missing", reason: "not_stored" }];
       }
       if (!sameEnvironment) {
         return [field, { source: "missing", reason: "environment_changed" }];
@@ -177,28 +179,4 @@ export function saltoSecretSources(form, stored, configured) {
       return [field, { source: "stored" }];
     })
   );
-}
-
-/**
- * Drop the secret fields that were left empty. An empty field means
- * "unchanged", and leaving the key out is what keeps the stored (encrypted)
- * value on the server.
- *
- * @param {Object} app A tenant application about to be saved
- * @returns {Object} A copy without the untouched secrets
- */
-export function withoutUnchangedSecrets(app) {
-  const result = { ...app };
-
-  if (result.id === "nuki" && !result.apiToken) {
-    delete result.apiToken;
-  }
-  if (result.id === "salto-ks" && !result.clientSecret) {
-    delete result.clientSecret;
-  }
-  if (result.id === "salto-ks" && !result.password) {
-    delete result.password;
-  }
-
-  return result;
 }

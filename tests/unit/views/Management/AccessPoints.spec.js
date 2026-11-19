@@ -5,6 +5,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { STORED_SECRET } from "@/utilities/stored-secret";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenant: vi.fn(), submitTenant: vi.fn() },
@@ -286,5 +287,59 @@ describe("AccessPoints asks before the identity of Salto KS changes", () => {
     expect(question()).toBeNull();
     expect(ApiTenantService.submitTenant).toHaveBeenCalledTimes(2);
     expect(savedSalto().siteId).toBe("site-1");
+  });
+});
+
+/**
+ * Stored secrets are write only (ECCdigital/tickets#569): the backend answers
+ * with its marker, and the page hands it back to keep the secret, an empty
+ * value to remove it.
+ */
+describe("AccessPoints saves the secrets of Salto KS write only", () => {
+  const STORED = { clientSecret: STORED_SECRET, password: STORED_SECRET };
+
+  function secretInput(wrapper) {
+    return saltoPanel(wrapper).findAll("input[type='password']").at(0);
+  }
+
+  it("hands the marker back for a secret the admin did not touch", async () => {
+    const wrapper = await mountPage({ salto: storedSalto(STORED) });
+
+    await fieldWithValue(wrapper, "client-1").setValue("client-2");
+    await save(wrapper);
+
+    expect(savedSalto().clientSecret).toBe(STORED_SECRET);
+    expect(savedSalto().password).toBe(STORED_SECRET);
+  });
+
+  it("removes a secret through the cross, and no longer says it is stored", async () => {
+    const wrapper = await mountPage({ salto: storedSalto(STORED) });
+    const hint = "Es ist bereits ein Secret hinterlegt.";
+    expect(saltoPanel(wrapper).text()).toContain(hint);
+
+    await saltoPanel(wrapper)
+      .find('[data-test="secret-remove"]')
+      .trigger("click");
+    await save(wrapper);
+
+    expect(savedSalto()).toHaveProperty("clientSecret", "");
+    expect(savedSalto().password).toBe(STORED_SECRET);
+    expect(saltoPanel(wrapper).text()).not.toContain(hint);
+  });
+
+  it("shows a secret typed before the save no more after it", async () => {
+    const wrapper = await mountPage({ salto: storedSalto(STORED) });
+
+    await secretInput(wrapper).setValue("neu-123");
+    await saltoPanel(wrapper)
+      .find('[data-test="secret-visibility"]')
+      .trigger("click");
+    await save(wrapper);
+
+    expect(savedSalto().clientSecret).toBe("neu-123");
+    expect(secretInput(wrapper).element.value).toBe("");
+    expect(
+      saltoPanel(wrapper).find('[data-test="secret-visibility"]').exists()
+    ).toBe(false);
   });
 });
