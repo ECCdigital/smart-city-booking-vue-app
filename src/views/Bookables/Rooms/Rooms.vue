@@ -168,11 +168,11 @@ export default {
       ApiBookablesService.duplicateBookable(bookableId)
         .then(() => {
           this.fetchRooms();
-        })
-        .finally(() => {
           this.addToast(
             ToastService.createToast("bookable.duplicate.success", "success")
           );
+        })
+        .finally(() => {
           this.stopLoading("fetch-duplicate-bookable");
         })
         .catch((error) => {

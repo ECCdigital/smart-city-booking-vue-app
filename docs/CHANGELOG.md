@@ -11,6 +11,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 -   Agent docs: the issue tracker follows the template „GitHub Portolan, Produkt-Repo“ (skills `ecc-12`), with flow `v2` of `ECCdigital/tickets`, sub-tickets and `Refs` in pull requests; the glossary is `GLOSSARY.md` (formerly `CONTEXT.md`, the stale copy of `GLOSSARY.md` is gone)
 
+### Fixed
+
+-   Duplicating an offer shows only one message ([ECCdigital/tickets#750](https://github.com/ECCdigital/tickets/issues/750)): „Erfolgreich dupliziert“ appears only when the copy was created; a refused copy shows only the error. Before, both appeared together
+
 ## [4.4.1] — 2026-11-16
 
 ### Fixed
