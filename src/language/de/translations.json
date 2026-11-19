@@ -1763,6 +1763,8 @@
       "tierAtStart": "Bis zum Beginn",
       "tierRule": "bis {deadline} vor Beginn",
       "tierRuleAtStart": "bis zum Beginn",
+      "tierRuleBelow": "unter {deadline} vor Beginn",
+      "tierRuleAfterStart": "nach Beginn",
       "policyPercentage": "Vorschlag",
       "override": "Erstattung manuell überschreiben",
       "overridePercentage": "Einheitliche Erstattung",

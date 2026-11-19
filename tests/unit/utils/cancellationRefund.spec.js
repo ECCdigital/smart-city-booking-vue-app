@@ -262,6 +262,36 @@ describe("formatAppliedTierRule", () => {
     );
     expect(formatAppliedTierRule({ appliedTierHours: null })).toBeNull();
   });
+
+  it("says „unter“ below the lowest deadline, as mail and PDF do", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 5, appliedTierHours: 12 })
+    ).toBe("unter 12 Stunden vor Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 30, appliedTierHours: 48 })
+    ).toBe("unter 2 Tagen vor Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 10, appliedTierHours: 24 })
+    ).toBe("unter 1 Tag vor Beginn");
+    expect(
+      formatAppliedTierRule({ daysBeforeStart: 1, appliedTierDays: 3 })
+    ).toBe("unter 3 Tagen vor Beginn");
+  });
+
+  it("says „nach Beginn“ once the booking has begun at a tier of 0 hours", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: -3, appliedTierHours: 0 })
+    ).toBe("nach Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 0, appliedTierHours: 0 })
+    ).toBe("bis zum Beginn");
+  });
+
+  it("says „bis“ at or above the deadline", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 12, appliedTierHours: 12 })
+    ).toBe("bis 12 Stunden vor Beginn");
+  });
 });
 
 describe("bookingStartsInText", () => {

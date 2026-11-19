@@ -55,6 +55,11 @@ function formatDays(days) {
   return i18n.tc("booking.cancellationRefund.timeDays", days, { n: days });
 }
 
+/** Days in the dative, „1 Tag“, „2 Tagen“, as after „in“ or „unter“. */
+function formatDaysDative(days) {
+  return i18n.tc("booking.cancellationRefund.inDays", days, { n: days });
+}
+
 function formatHours(hours) {
   return i18n.tc("booking.cancellationRefund.timeHours", hours, { n: hours });
 }
@@ -163,24 +168,50 @@ export function formatAppliedTier(calculation) {
 }
 
 /**
- * The tier a refund calculation applied as the booker reads it, „bis 36
- * Stunden vor Beginn“ or „bis zum Beginn“; `null` where no tier applied.
+ * The tier a refund calculation applied as the booker reads it, worded as
+ * the backend words it (`describeAppliedTier`) in mail and PDF: „bis 36
+ * Stunden vor Beginn“ or „bis zum Beginn“; below the lowest deadline, where
+ * that tier still applies, „unter 12 Stunden vor Beginn“ or „nach Beginn“.
+ * `null` where no tier applied.
  */
 export function formatAppliedTierRule(calculation) {
-  const hours = calculation?.appliedTierHours;
-  if (Number.isFinite(hours)) {
-    return hours === 0
-      ? i18n.t("booking.cancellationRefund.tierRuleAtStart")
-      : i18n.t("booking.cancellationRefund.tierRule", {
-          deadline: formatTierDeadline(hours),
+  const tierHours = calculation?.appliedTierHours;
+  const tierDays = calculation?.appliedTierDays;
+  let deadline;
+  let atStart;
+  let below;
+  if (Number.isFinite(tierHours)) {
+    const { amount, unit } = tierDeadline(tierHours);
+    // „bis“ takes the accusative („bis 2 Tage“), „unter“ the dative
+    // („unter 2 Tagen“); hours read alike in both.
+    deadline = (dative) =>
+      unit === "days"
+        ? dative
+          ? formatDaysDative(amount)
+          : formatDays(amount)
+        : formatHours(amount);
+    atStart = tierHours === 0;
+    below = calculation.hoursBeforeStart < tierHours;
+  } else if (Number.isFinite(tierDays)) {
+    deadline = (dative) =>
+      dative ? formatDaysDative(tierDays) : formatDays(tierDays);
+    atStart = tierDays === 0;
+    below = calculation.daysBeforeStart < tierDays;
+  } else {
+    return null;
+  }
+  if (below) {
+    return atStart
+      ? i18n.t("booking.cancellationRefund.tierRuleAfterStart")
+      : i18n.t("booking.cancellationRefund.tierRuleBelow", {
+          deadline: deadline(true),
         });
   }
-  const days = calculation?.appliedTierDays;
-  return Number.isFinite(days)
-    ? i18n.t("booking.cancellationRefund.tierRule", {
-        deadline: formatDays(days),
-      })
-    : null;
+  return atStart
+    ? i18n.t("booking.cancellationRefund.tierRuleAtStart")
+    : i18n.t("booking.cancellationRefund.tierRule", {
+        deadline: deadline(false),
+      });
 }
 
 /**
