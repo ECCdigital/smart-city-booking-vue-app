@@ -253,4 +253,24 @@ describe("GroupBookingRejectConformationDialog", () => {
 
     expect(wrapper.emitted("reject-group-booking")).toHaveLength(1);
   });
+
+  /**
+   * Without the members the dialog knows only the one booking's price; on
+   * the series it names what the preview of the series says was paid, never
+   * the price of the one booking against the refund of the series.
+   */
+  it("names the amount paid for the series from its preview when it was not handed the members", async () => {
+    ApiGroupBookingService.getCancellationRefundPreview.mockResolvedValue({
+      originalAmountEur: 300,
+      refundAmountEur: 150,
+    });
+
+    await openDialog([], member("bk-1", "confirmed", 100));
+
+    const hint = document
+      .querySelector(".v-dialog--active .booking-reject-payment")
+      .textContent.replace(/\u00a0/g, " ");
+    expect(hint).toContain("Bereits bezahlt: 300,00 €");
+    expect(hint).toContain("Der Buchende bekommt 150,00 € zurück.");
+  });
 });

@@ -281,14 +281,22 @@ export default {
     },
     paymentOutcome() {
       const members = this.membersOf(this.cancellationScope);
+      // Without the members the series is priced by its preview, as
+      // `formattedPrice` does - never by the one booking's price.
+      const seriesWithoutMembers =
+        this.cancellationScope === "group" && !this.groupBookings.length;
       return rejectPaymentOutcome({
         request: this.isRequest,
         free: members.every((booking) => isFree(booking)),
         paid: members.every((booking) => isPaid(booking)),
-        priceEur: members.reduce(
-          (sum, booking) => sum + Number(booking?.priceEur || 0),
-          0
-        ),
+        priceEur:
+          seriesWithoutMembers &&
+          typeof this.refundPreview?.originalAmountEur === "number"
+            ? this.refundPreview.originalAmountEur
+            : members.reduce(
+                (sum, booking) => sum + Number(booking?.priceEur || 0),
+                0
+              ),
         refundAmountEur: expectedRefundEur(
           this.refundPreview,
           this.refundPercentage
@@ -299,10 +307,7 @@ export default {
       if (!this.toReject || this.skipCancellation !== false) return false;
       // Bank details are asked for a paid cancellation: `confirmed` with a
       // price, and for the whole series only where every member is confirmed.
-      const members =
-        this.cancellationScope === "group" && this.groupBookings.length
-          ? this.groupBookings
-          : [this.toReject];
+      const members = this.membersOf(this.cancellationScope);
       return (
         groupBookingStatus(members) === BOOKING_STATUS.CONFIRMED &&
         members.some(

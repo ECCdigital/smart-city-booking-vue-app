@@ -89,7 +89,10 @@
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
-import { refundPolicyText } from "@/utils/cancellationRefund";
+import {
+  refundAtPercentage,
+  refundPolicyText,
+} from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundPreview",
@@ -144,7 +147,7 @@ export default {
       return this.preview.bookings
         .map((booking) => {
           if (!this.useOverride || !this.isOverrideValid) return booking;
-          const refundAmountEur = this.calculateRefund(
+          const refundAmountEur = refundAtPercentage(
             booking.originalAmountEur,
             this.localPercentage
           );
@@ -176,7 +179,7 @@ export default {
       if (!this.useOverride || !this.isOverrideValid) {
         return Number(this.preview?.refundAmountEur || 0);
       }
-      return this.calculateRefund(this.originalAmountEur, this.localPercentage);
+      return refundAtPercentage(this.originalAmountEur, this.localPercentage);
     },
     cancellationFeeEur() {
       return (
@@ -250,12 +253,6 @@ export default {
           0
         ) / 100
       );
-    },
-    calculateRefund(originalAmountEur, percentage) {
-      const originalAmountCents = Math.round(
-        Number(originalAmountEur || 0) * 100
-      );
-      return Math.round((originalAmountCents * Number(percentage)) / 100) / 100;
     },
     currency(value) {
       return FormatService.currency(Number(value || 0));

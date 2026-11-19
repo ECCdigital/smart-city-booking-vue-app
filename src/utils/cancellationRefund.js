@@ -83,7 +83,12 @@ export function getCancellationRefundAudit(booking) {
   return cancellationAttachments[0]?.cancellation || null;
 }
 
-function refundAtPercentage(originalAmountEur, percentage) {
+/**
+ * The refund of `originalAmountEur` at `percentage`, rounded to the cent -
+ * the one rounding of the refund the frontend knows, shared by the refund
+ * preview and the payment hint.
+ */
+export function refundAtPercentage(originalAmountEur, percentage) {
   const originalCents = Math.round(Number(originalAmountEur || 0) * 100);
   return Math.round((originalCents * Number(percentage)) / 100) / 100;
 }
