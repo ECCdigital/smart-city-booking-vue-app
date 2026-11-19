@@ -133,6 +133,7 @@
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
+      "role_in_use": "Die Rolle wird noch verwendet (Mitgliedschaften: {memberships}, offene Einladungen: {invitations}). Weisen Sie den Mitgliedern eine andere Rolle zu oder ziehen Sie die Einladungen zurück.",
       "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
       "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
       "not_cancelled": "Die Buchung ist nicht storniert.",
@@ -3951,6 +3952,7 @@
     "to": "bis"
   },
   "role": {
+    "delete-failed": "Die Rolle konnte nicht gelöscht werden.",
     "list": {
       "search": "Name"
     }

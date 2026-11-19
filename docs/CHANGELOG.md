@@ -11,6 +11,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 -   CI gate „protected files“ ([ECCdigital/tickets#425](https://github.com/ECCdigital/tickets/issues/425)): the new job `protected-files`, required by `ci-ok`, blocks a pull request that deletes or changes an existing test, adds `.skip`, `.only` or `.todo`, or changes an accepted ADR or the CI configuration, unless the ticket it references (`Refs ECCdigital/tickets#<n>`) names the file; new tests are free. It runs the rule from ECCdigital/portolan with the read-only GitHub App „Portolan Gate“ (org secrets `GATE_APP_ID`, `GATE_PRIVATE_KEY`); pull requests from forks get no secrets and stay blocked until an admin bypasses the gate. No code change
 
+### Fixed
+
+-   „Rolle löschen“ no longer closes silently: when the backend refuses because members or usable invitations still hold the role (`409 role_in_use`), the dialog stays open and names both counts („Die Rolle wird noch verwendet (Mitgliedschaften: 2, offene Einladungen: 1) …“); any other failure shows a general message. Needs the backend with `409 role_in_use` on `DELETE /api/:tenant/roles/:id`
+
 ## [4.4.1] — 2026-11-16
 
 ### Fixed

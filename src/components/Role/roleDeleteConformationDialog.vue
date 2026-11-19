@@ -15,6 +15,10 @@
         <strong>{{ toDelete.name || toDelete.id }}</strong
         ><template v-if="toDelete.name"> ({{ toDelete.id }})</template>
         löschen wollen?
+        <v-alert v-if="errorMessage" color="error" text dense class="mt-4 mb-0">
+          <v-icon left>mdi-alert-circle</v-icon>
+          {{ errorMessage }}
+        </v-alert>
       </v-card-text>
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
@@ -30,6 +34,7 @@
 
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 
 export default {
   name: "roleDeleteConformationDialog",
@@ -46,6 +51,7 @@ export default {
   data() {
     return {
       inProgress: false,
+      errorMessage: null,
     };
   },
   computed: {
@@ -57,14 +63,23 @@ export default {
   },
   methods: {
     closeDialog() {
+      this.errorMessage = null;
       this.$emit("close");
     },
     async onDelete() {
       this.inProgress = true;
-      // TODO: darf nicht gelöscht werden, wenn Benutzer noch diese Rolle haben.
-      await ApiRolesService.deleteRole(this.toDelete);
-      this.inProgress = false;
-      this.closeDialog();
+      this.errorMessage = null;
+      try {
+        await ApiRolesService.deleteRole(this.toDelete);
+        this.closeDialog();
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(
+          error,
+          this.$t("role.delete-failed")
+        );
+      } finally {
+        this.inProgress = false;
+      }
     },
   },
 };
