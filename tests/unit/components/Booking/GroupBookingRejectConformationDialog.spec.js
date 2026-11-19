@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import { deferred, flushPromises, serverError } from "@tests/unit/support/api";
+import { flushPromises, serverError } from "@tests/unit/support/api";
+import { deferred } from "@tests/unit/support/deferred";
 import { activeDialogText } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
