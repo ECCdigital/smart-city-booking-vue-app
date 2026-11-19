@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filterBookingsByRefundState,
   getCancellationRefundAudit,
+  refundAtPercentage,
   refundPolicyText,
   refundStateMarker,
   refundStateOf,
@@ -137,5 +138,12 @@ describe("refundPolicyText", () => {
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
+  });
+});
+
+/** The one cent rounding of a refund at a percentage, as preview and payment hint share it. */
+describe("refundAtPercentage", () => {
+  it("rounds the refund to the cent", () => {
+    expect(refundAtPercentage(33.33, 50)).toBe(16.67);
   });
 });
