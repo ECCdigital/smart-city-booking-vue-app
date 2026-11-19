@@ -134,6 +134,31 @@ describe("CheckoutMain — the price check behind the submit button", () => {
     expect(summary(wrapper).vm.$attrs.validating).toBe(false);
   });
 
+  it("keeps the checkout of the newer check when an older one fails late", async () => {
+    const wrapper = await mountCheckout();
+
+    const older = deferred();
+    const newer = deferred();
+    ApiCheckoutService.validateCheckoutItem
+      .mockReturnValueOnce(older.promise)
+      .mockReturnValueOnce(newer.promise);
+    summary(wrapper).vm.$emit("set-book-without-discount", false);
+    summary(wrapper).vm.$emit("set-book-without-discount", true);
+    await flushPromises();
+
+    const fullPrice = price(12);
+    fullPrice.data.checkoutId = "newer";
+    newer.resolve(fullPrice);
+    await flushPromises();
+    const refusal = new Error("Request failed with status code 409");
+    refusal.response = { status: 409, data: { checkoutId: "older" } };
+    older.resolve(Promise.reject(refusal));
+    await flushPromises();
+
+    expect(summary(wrapper).vm.$attrs["checkout-id"]).toBe("newer");
+    expect(summary(wrapper).vm.$attrs["lead-item"].userGrossPriceEur).toBe(12);
+  });
+
   it("keeps the newer price when an older check answers late", async () => {
     const wrapper = await mountCheckout();
 

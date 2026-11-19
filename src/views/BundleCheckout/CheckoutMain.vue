@@ -624,11 +624,11 @@ export default {
               delete item.error;
             }
           } catch (error) {
-            this.checkoutId =
-              error.response?.data?.checkoutId || this.checkoutId || null;
             if (!isLatest()) {
               continue;
             }
+            this.checkoutId =
+              error.response?.data?.checkoutId || this.checkoutId || null;
 
             item.regularPriceEur = null;
             item.userPriceEur = null;
