@@ -373,13 +373,15 @@ export default {
         this.loadRefundPreview();
       }
     },
+    // The payment hint names the refund of the chosen scope even without a
+    // document, so a changed scope always loads that scope's preview.
     cancellationScope() {
-      if (this.open && !this.skipCancellation) {
+      if (this.open) {
         this.loadRefundPreview();
       }
     },
     skipCancellation(value) {
-      if (!value && this.open) {
+      if (!value && this.open && !this.refundPreview) {
         this.loadRefundPreview();
       }
       if (value) {
@@ -465,7 +467,7 @@ export default {
       return payload;
     },
     async loadRefundPreview() {
-      if (this.isRequest || this.skipCancellation || !this.toReject?.id) {
+      if (this.isRequest || !this.toReject?.id) {
         return;
       }
       if (this.cancellationScope === "group" && !this.groupBookingId) return;
