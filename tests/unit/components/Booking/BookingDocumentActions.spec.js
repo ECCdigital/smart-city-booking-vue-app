@@ -443,6 +443,59 @@ describe("BookingDocumentActions", () => {
     });
   });
 
+  /** The withdrawal receipt („Widerrufbeleg“) of an accepted withdrawal. */
+  describe("Widerrufbelege", () => {
+    const WITHDRAWAL = {
+      type: "withdrawal",
+      title: "Widerrufbeleg-WB-2026-0001-1.pdf",
+      timeCreated: 1_700_000_000_000,
+    };
+
+    it("lists the group only for a withdrawn booking or one that carries a receipt", () => {
+      const live = mountActions();
+      expect(group(live.wrapper, "withdrawals").exists()).toBe(false);
+
+      const withdrawn = mountActions({
+        booking: booking({ status: "withdrawn", attachments: [WITHDRAWAL] }),
+      });
+      expect(group(withdrawn.wrapper, "withdrawals").text()).toContain(
+        "Widerrufbeleg-WB-2026-0001-1.pdf"
+      );
+      expect(group(withdrawn.wrapper, "cancellations").text()).toContain(
+        "keine"
+      );
+      expect(
+        group(withdrawn.wrapper, "cancellations")
+          .find(".booking-document-actions__reprint")
+          .exists()
+      ).toBe(false);
+    });
+
+    it("reprints the withdrawal receipt from its own group", async () => {
+      ApiBookingService.reprintCancellationReceipt.mockResolvedValue({
+        success: true,
+        data: booking({ status: "withdrawn", attachments: [WITHDRAWAL] }),
+        errors: [],
+      });
+      const { wrapper, store } = mountActions({
+        booking: booking({ status: "withdrawn", attachments: [WITHDRAWAL] }),
+      });
+
+      await group(wrapper, "withdrawals")
+        .find(".booking-document-actions__reprint-withdrawal")
+        .trigger("click");
+      await flushPromises();
+
+      expect(ApiBookingService.reprintCancellationReceipt).toHaveBeenCalledWith(
+        "bk-1"
+      );
+      expect(toastMessages(store)).toContain(
+        "Der Widerrufbeleg wurde erneut ausgestellt."
+      );
+      expect(wrapper.emitted("reload")).toHaveLength(1);
+    });
+  });
+
   describe("Stornobelege", () => {
     it.each([
       ["requested", false],

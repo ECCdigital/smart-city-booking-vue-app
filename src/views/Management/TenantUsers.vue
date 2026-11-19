@@ -1,6 +1,47 @@
 <template>
   <AdminLayout>
-    <v-row gutters align="stretch" class="mb-16">
+    <!-- „Meldungen“ beside the members, for roles that may edit users. -->
+    <div v-if="allowReport" class="d-flex align-center mb-4">
+      <v-tabs v-model="tab">
+        <v-tab href="#members">
+          <v-icon left small>mdi-account-multiple-outline</v-icon>
+          {{ $t("tenant.users.tab") }}
+        </v-tab>
+        <v-tab href="#reports">
+          <v-icon left small>mdi-flag-outline</v-icon>
+          {{ $t("tenant.reports.title") }}
+          <v-chip
+            v-if="openReportCount"
+            x-small
+            color="warning"
+            text-color="white"
+            class="ml-2"
+          >
+            {{ $t("tenant.reports.open-count", { count: openReportCount }) }}
+          </v-chip>
+        </v-tab>
+      </v-tabs>
+      <v-btn
+        v-if="tab === 'reports'"
+        text
+        color="warning"
+        class="flex-shrink-0"
+        data-test="tenant-report-address"
+        @click="reportingAddress = true"
+      >
+        <v-icon left small>mdi-email-alert-outline</v-icon>
+        {{ $t("tenant.reports.address.open") }}
+      </v-btn>
+    </div>
+    <!-- Kept while the members show, so the tab can count the open ones. -->
+    <TenantReportsList
+      v-if="allowReport"
+      ref="reports"
+      v-show="tab === 'reports'"
+      @count="openReportCount = $event"
+    />
+
+    <v-row v-if="tab === 'members'" gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
         <SearchBar
           v-model="search"
@@ -83,12 +124,12 @@
                   </v-list-item-subtitle>
                   <v-list-item-subtitle class="d-flex align-center flex-wrap">
                     <v-chip
-                      :color="getStatusColor(item.status)"
+                      :color="getStatusColor(item)"
                       text-color="white"
                       x-small
                       class="mr-2"
                     >
-                      {{ getStatusText(item.status) }}
+                      {{ getStatusText(item) }}
                     </v-chip>
                     <span
                       v-if="item.roles && item.roles?.length > 0"
@@ -117,10 +158,7 @@
                   </v-list-item-subtitle>
 
                   <v-list-item-subtitle
-                    v-if="
-                      hasPendingApprovalInvitation(item) &&
-                      item.status !== 'suspended'
-                    "
+                    v-if="hasPendingApprovalInvitation(item)"
                     class="d-flex align-center flex-wrap mt-1"
                   >
                     <v-chip
@@ -165,30 +203,6 @@
                       </v-list-item>
 
                       <v-list-item
-                        v-if="item.status === 'suspended'"
-                        link
-                        @click="activateUser(item.userId)"
-                      >
-                        <v-list-item-icon>
-                          <v-icon small color="green">mdi-account-check</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>Aktivieren</v-list-item-title>
-                      </v-list-item>
-
-                      <v-list-item
-                        v-if="item.status !== 'suspended'"
-                        link
-                        @click="suspendUser(item.userId)"
-                      >
-                        <v-list-item-icon>
-                          <v-icon small color="orange"
-                            >mdi-account-cancel</v-icon
-                          >
-                        </v-list-item-icon>
-                        <v-list-item-title>Sperren</v-list-item-title>
-                      </v-list-item>
-
-                      <v-list-item
                         v-if="hasPendingApprovalInvitation(item)"
                         link
                         @click="approveInvitation(item.userId)"
@@ -201,7 +215,7 @@
                         <v-list-item-title>Freigeben</v-list-item-title>
                       </v-list-item>
 
-                      <v-divider />
+                      <v-divider v-if="hasPendingApprovalInvitation(item)" />
 
                       <v-list-item
                         link
@@ -231,11 +245,34 @@
 
                       <v-divider />
 
-                      <v-list-item link @click="removeTenantUser(item.userId)">
+                      <v-list-item
+                        v-if="allowReport"
+                        link
+                        data-test="tenant-user-report"
+                        @click="openReport(item)"
+                      >
                         <v-list-item-icon>
-                          <v-icon small color="red">mdi-delete</v-icon>
+                          <v-icon small color="warning"
+                            >mdi-flag-outline</v-icon
+                          >
                         </v-list-item-icon>
-                        <v-list-item-title>Entfernen</v-list-item-title>
+                        <v-list-item-title>
+                          {{ $t("user.report.open") }}
+                        </v-list-item-title>
+                      </v-list-item>
+
+                      <v-list-item
+                        v-if="allowEndMembership(item)"
+                        link
+                        data-test="tenant-user-end-membership"
+                        @click="askEndMembership(item)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small color="red">mdi-account-remove</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>
+                          {{ $t("tenant.users.end-membership.action") }}
+                        </v-list-item-title>
                       </v-list-item>
                     </v-list>
                   </v-menu>
@@ -272,6 +309,7 @@
     </v-row>
 
     <v-btn
+      v-if="tab === 'members'"
       fixed
       large
       bottom
@@ -291,9 +329,10 @@
       :challenges="api.challenges"
       :members="members"
       :notify-supervisors-on-booking="notifySupervisorsOnBooking"
+      :allow-report="allowReport"
+      :allow-end-membership="!!selectedUser && allowEndMembership(selectedUser)"
       @close="closeUserDetail"
       @save-roles="updateUserRoles"
-      @update-status="updateUserStatus"
       @update-notification-recipients="updateUserNotificationRecipients"
       @resend-invite="resendInvite(selectedUser?.userId)"
       @approve-challenge="approveChallenge"
@@ -301,6 +340,7 @@
       @add-owner="addTenantOwner(selectedUser?.userId)"
       @remove-owner="removeTenantOwner(selectedUser?.userId)"
       @delete-user="removeTenantUser(selectedUser?.userId)"
+      @report="openReport(selectedUser)"
       @delete-invitation="handleDeleteInvitation"
     />
 
@@ -311,13 +351,52 @@
       :members="members"
       :invitation-links.sync="api.invitations"
       :tenantId="tenantId"
+      :notify-owners-on-invitation-accepted="notifyOwnersOnInvitationAccepted"
+      :can-change-invitation-notice="isTenantOwner"
       @close="showInviteDialog = false"
-      @invite="inviteMultipleUsers"
+      @invite="onInvite"
       @toast="addToast"
       @createLink="createInvitationLink"
       @deleteLink="deleteLink"
-      @add-direct="addUserDirectly"
+      @add-direct="onAddDirect"
+      @change-invitation-notice="updateInvitationNotice"
     ></TenantInviteUserDialog>
+
+    <TenantEndMembershipDialog
+      :open="!!endingMembership"
+      :address="endingMembership ? endingMembership.userId : ''"
+      :allow-report="allowReport"
+      @confirm="confirmEndMembership"
+      @report="reportInsteadOfEnding"
+      @cancel="endingMembership = null"
+    />
+
+    <TenantAddressReportDialog
+      v-if="allowReport"
+      :open="reportingAddress"
+      :tenant-id="tenantId"
+      :member-ids="members.map((member) => member.userId)"
+      @reported="$refs.reports?.load()"
+      @close="reportingAddress = false"
+    />
+
+    <UserReportDialog
+      :open="!!reporting"
+      :name="reporting ? getUserName(reporting) : ''"
+      :tenant-id="tenantId"
+      :user-id="reporting ? reporting.userId : null"
+      offer-end-membership
+      @reported="onReported"
+      @close="reporting = null"
+    />
+
+    <BlacklistWarningConformationDialog
+      :open="!!blacklistWarning"
+      :addresses="blacklistWarning ? blacklistWarning.addresses : []"
+      :action="blacklistWarning ? blacklistWarning.action : 'save'"
+      @confirm="proceedDespiteBlacklist"
+      @cancel="blacklistWarning = null"
+    />
   </AdminLayout>
 </template>
 
@@ -330,9 +409,25 @@ import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import TenantReportsList from "@/components/Tenant/TenantReportsList.vue";
+import TenantAddressReportDialog from "@/components/Tenant/TenantAddressReportDialog.vue";
+import TenantEndMembershipDialog from "@/components/Tenant/TenantEndMembershipDialog.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
+import { blacklistedAmong } from "@/utils/blacklist";
 import { INVITE_QUERY } from "@/utils/tenantUsers";
+
+/**
+ * The status the list shows for a member: „suspended“ for an account
+ * suspended at the instance, whatever its membership, else the membership's.
+ */
+function shownStatus(member) {
+  return member.isSuspended ? "suspended" : member.status;
+}
 
 export default {
   components: {
@@ -340,10 +435,30 @@ export default {
     TenantInviteUserDialog,
     AdminLayout,
     SearchBar,
+    BlacklistWarningConformationDialog,
+    UserReportDialog,
+    TenantReportsList,
+    TenantAddressReportDialog,
+    TenantEndMembershipDialog,
   },
   data() {
     return {
+      /** `members` or `reports`. */
+      tab: "members",
+      /** The open reports of the tenant, as the tab counts them. */
+      openReportCount: 0,
+      /** The member being reported to the instance. */
+      reporting: null,
+      /** The dialog „E-Mailadresse melden“. */
+      reportingAddress: false,
+      /** The member whose membership ending waits for a confirmation. */
+      endingMembership: null,
       valid: true,
+      /**
+       * The open warning before adding or inviting an address on the
+       * blacklist: `{ addresses, action, proceed }`.
+       */
+      blacklistWarning: null,
       search: "",
       statusFilter: [],
       roleFilter: [],
@@ -356,6 +471,7 @@ export default {
       itemsPerPage: 8,
       showInviteDialog: false,
       notifySupervisorsOnBooking: true,
+      notifyOwnersOnInvitationAccepted: true,
       api: {
         users: [],
         roles: [],
@@ -396,6 +512,12 @@ export default {
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",
     }),
+    allowReport() {
+      return UserPermissionService.allowReport(this.tenantId);
+    },
+    isTenantOwner() {
+      return TenantPermissionService.isTenantOwner(this.tenantId);
+    },
     members() {
       return this.api.users.map((user) => {
         const details = this.api.userDetails.find(
@@ -409,6 +531,8 @@ export default {
           lastName,
           fullName: `${firstName} ${lastName}`.trim(),
           isVerified: details?.isVerified || false,
+          isSuspended: details?.isSuspended || false,
+          suspension: details?.suspension || null,
         };
       });
     },
@@ -428,7 +552,7 @@ export default {
 
       if (this.statusFilter.length > 0) {
         filtered = filtered.filter((user) =>
-          this.statusFilter.includes(user.status)
+          this.statusFilter.includes(shownStatus(user))
         );
       }
 
@@ -561,36 +685,6 @@ export default {
       }
     },
 
-    async updateUserStatus(status) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          this.selectedUser.userId,
-          status
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-
-        this.selectedUser = this.members.find(
-          (u) => u.userId === this.selectedUser.userId
-        );
-
-        await this.addToast({
-          type: "success",
-          message: "Status wurde erfolgreich aktualisiert",
-        });
-      } catch (e) {
-        console.error(e);
-        await this.addToast({
-          type: "error",
-          message: "Fehler beim Aktualisieren des Status",
-        });
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
     async updateUserNotificationRecipients(recipients) {
       try {
         this.isLoading = true;
@@ -654,7 +748,7 @@ export default {
     },
 
     getStatusCount(status) {
-      return this.filteredMembers.filter((user) => user.status === status)
+      return this.filteredMembers.filter((user) => shownStatus(user) === status)
         .length;
     },
 
@@ -670,8 +764,7 @@ export default {
       return {
         "owner-item": user.owner,
         "pending-item": user.status === "pending",
-        "suspended-item":
-          user.status === "suspended" || user.status === "rejected",
+        "rejected-item": user.status === "rejected",
       };
     },
 
@@ -683,6 +776,40 @@ export default {
         );
       }
       return user.userId.substring(0, 2).toUpperCase();
+    },
+
+    /**
+     * Adding or inviting an address on the blacklist is no refusal:
+     * the warning names the hit addresses first,
+     * and `proceed` runs once confirmed - at once without a hit.
+     */
+    async warnOfBlacklist(addresses, action, proceed) {
+      this.isLoading = true;
+      const blacklisted = await blacklistedAmong(
+        "tenantUser",
+        addresses,
+        this.tenantId
+      );
+      this.isLoading = false;
+      if (!blacklisted.length) return proceed();
+      this.blacklistWarning = { addresses: blacklisted, action, proceed };
+    },
+    proceedDespiteBlacklist() {
+      const { proceed } = this.blacklistWarning;
+      this.blacklistWarning = null;
+      return proceed();
+    },
+    onInvite(users) {
+      return this.warnOfBlacklist(
+        users.map((user) => user.email),
+        "invite",
+        () => this.inviteMultipleUsers(users)
+      );
+    },
+    onAddDirect(member) {
+      return this.warnOfBlacklist([member.email], "add", () =>
+        this.addUserDirectly(member)
+      );
     },
 
     async addUserDirectly({ email, roles, asOwner }) {
@@ -735,6 +862,32 @@ export default {
       }
     },
 
+    openReport(member) {
+      this.reporting = member;
+    },
+    askEndMembership(member) {
+      this.endingMembership = member;
+    },
+    async confirmEndMembership() {
+      const { userId } = this.endingMembership;
+      this.endingMembership = null;
+      await this.removeTenantUser(userId);
+    },
+    reportInsteadOfEnding() {
+      const member = this.endingMembership;
+      this.endingMembership = null;
+      this.openReport(member);
+    },
+    allowEndMembership(member) {
+      return UserPermissionService.allowEndMembership(member, this.tenantId);
+    },
+    /** A report that ended the membership takes the member off the list. */
+    async onReported({ membershipEnded }) {
+      this.$refs.reports?.load();
+      if (!membershipEnded) return;
+      this.closeUserDetail();
+      await this.fetchTenantUsers();
+    },
     getUserName(user) {
       if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;
@@ -749,23 +902,23 @@ export default {
       return "grey";
     },
 
-    getStatusColor(status) {
+    getStatusColor(member) {
       const colors = {
         active: "green",
         pending: "orange",
         suspended: "red",
       };
-      return colors[status] || "grey";
+      return colors[shownStatus(member)] || "grey";
     },
 
-    getStatusText(status) {
+    getStatusText(member) {
       const texts = {
         active: "Aktiv",
         pending: "Ausstehend",
-        suspended: "Gesperrt",
         rejected: "Abgelehnt",
+        suspended: "Gesperrt",
       };
-      return texts[status] || status;
+      return texts[shownStatus(member)] || member.status;
     },
 
     // The projection `{ id, name, tenantId }` of `?public=true` is all the
@@ -805,8 +958,34 @@ export default {
         const response = await ApiTenantService.getTenant(this.tenantId);
         this.notifySupervisorsOnBooking =
           !!response.data?.notifySupervisorsOnBooking;
+        // The backend treats a missing value as on, so the page does too.
+        this.notifyOwnersOnInvitationAccepted =
+          response.data?.notifyOwnersOnInvitationAccepted !== false;
       } catch (e) {
         console.error(e);
+      }
+    },
+
+    /** Writes only this one field; the backend leaves the rest as it is. */
+    async updateInvitationNotice(value) {
+      const previous = this.notifyOwnersOnInvitationAccepted;
+      this.notifyOwnersOnInvitationAccepted = value;
+      try {
+        await ApiTenantService.submitTenant({
+          id: this.tenantId,
+          notifyOwnersOnInvitationAccepted: value,
+        });
+        await this.addToast({
+          type: "success",
+          message: "Benachrichtigung der Besitzer wurde gespeichert",
+        });
+      } catch (e) {
+        console.error(e);
+        this.notifyOwnersOnInvitationAccepted = previous;
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Speichern der Benachrichtigung der Besitzer",
+        });
       }
     },
 
@@ -851,46 +1030,6 @@ export default {
         );
         await this.fetchTenantUsers();
         await this.fetchInvitations();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async activateUser(userId) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          userId,
-          "active"
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-        await this.addToast(
-          ToastService.createToast("tenant.updateStatus.success", "success")
-        );
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async suspendUser(userId) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.updateUserStatus(
-          this.tenantId,
-          userId,
-          "suspended"
-        );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-        await this.addToast(
-          ToastService.createToast("tenant.updateStatus.success", "success")
-        );
       } catch (e) {
         console.error(e);
       } finally {
@@ -1172,7 +1311,7 @@ export default {
   border-left-color: #ff9800;
 }
 
-.suspended-item {
+.rejected-item {
   border-left-color: #f44336;
   opacity: 0.8;
 }

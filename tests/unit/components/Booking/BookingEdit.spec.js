@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, lifecycleError } from "@tests/unit/support/api";
+import { activeDialogText, dialogButton } from "@tests/unit/support/dialog";
 import toasts from "@/store/modules/toasts";
 
 vi.mock("@/store", () => ({
@@ -23,6 +24,9 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiBookablesService", () => ({
   default: { getBookable: vi.fn(), getBookablePrices: vi.fn() },
 }));
+vi.mock("@/services/api/ApiBlacklistService", () => ({
+  default: { isBlacklisted: vi.fn() },
+}));
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { validateCheckoutItem: vi.fn() },
 }));
@@ -37,8 +41,10 @@ vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
 
 import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import ApiBlacklistService from "@/services/api/ApiBlacklistService";
 
 const CONFLICT_IN_CANCELLED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Storniert).";
@@ -121,6 +127,14 @@ function nameInput(wrapper) {
     .find("input");
 }
 
+/** The E-Mail field; its label is a slot, so it is found by its value. */
+function mailInput(wrapper, mail) {
+  return wrapper
+    .findAllComponents({ name: "v-text-field" })
+    .wrappers.find((field) => field.props("value") === mail)
+    .find("input");
+}
+
 async function submit(wrapper) {
   wrapper.findComponent({ name: "SaveBar" }).vm.$emit("submit");
   await flushPromises();
@@ -152,6 +166,7 @@ function putBody() {
 describe("BookingEdit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ApiBlacklistService.isBlacklisted.mockResolvedValue(false);
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -199,6 +214,50 @@ describe("BookingEdit", () => {
     });
   });
 
+  /** Private or business: the checkbox follows the company until the admin sets it. */
+  describe("Geschäftliche Buchung", () => {
+    function businessBox(wrapper) {
+      return wrapper
+        .findAllComponents({ name: "v-checkbox" })
+        .wrappers.find((box) => box.props("label") === "Geschäftliche Buchung")
+        .find("input");
+    }
+
+    it("reads a booking without the answer off the company", async () => {
+      const withCompany = await mountEdit({
+        booking: booking({ company: "ACME" }),
+      });
+      const withoutCompany = await mountEdit({
+        booking: booking({ company: "" }),
+      });
+
+      expect(businessBox(withCompany.wrapper).element.checked).toBe(true);
+      expect(businessBox(withoutCompany.wrapper).element.checked).toBe(false);
+    });
+
+    it("shows the stored answer over the company", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ company: "ACME", isBusiness: false }),
+      });
+
+      expect(businessBox(wrapper).element.checked).toBe(false);
+    });
+
+    it("sends no answer until the admin sets it, then the one set", async () => {
+      const untouched = await mountEdit({ booking: booking({ company: "" }) });
+      saveAnswers({ data: {} });
+      await submit(untouched.wrapper);
+      expect(putBody()).not.toHaveProperty("isBusiness");
+
+      vi.clearAllMocks();
+      const touched = await mountEdit({ booking: booking({ company: "" }) });
+      saveAnswers({ data: {} });
+      await businessBox(touched.wrapper).trigger("click");
+      await submit(touched.wrapper);
+      expect(putBody()).toMatchObject({ isBusiness: true });
+    });
+  });
+
   describe("Speichern", () => {
     it("sends content only on an update - no flag, no status", async () => {
       const { wrapper } = await mountEdit({
@@ -220,6 +279,94 @@ describe("BookingEdit", () => {
         expect(putBody()).not.toHaveProperty(key)
       );
       expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    describe("a corrected first mail of a booking made by an admin", () => {
+      async function editMail(bookedVia) {
+        const { wrapper } = await mountEdit({
+          booking: booking({
+            bookedVia,
+            mail: "max@exmaple.test",
+            assignedUserId: "max@exmaple.test",
+          }),
+        });
+        saveAnswers({ data: {} });
+        await mailInput(wrapper, "max@exmaple.test").setValue(
+          "max@example.test"
+        );
+        await submit(wrapper);
+        return wrapper;
+      }
+
+      it("asks before the booking moves to the other account", async () => {
+        const wrapper = await editMail("admin");
+
+        expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+        expect(activeDialogText()).toContain("max@exmaple.test");
+        expect(activeDialogText()).toContain("max@example.test");
+        wrapper.destroy();
+      });
+
+      it("saves once the admin confirms", async () => {
+        const wrapper = await editMail("admin");
+
+        dialogButton("Änderung speichern").click();
+        await flushPromises();
+
+        expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+        expect(putBody()).toMatchObject({ mail: "max@example.test" });
+        expect(wrapper.emitted("saved")).toHaveLength(1);
+        wrapper.destroy();
+      });
+
+      it("saves nothing when the admin cancels, and keeps the form", async () => {
+        const wrapper = await editMail("admin");
+
+        dialogButton("Abbrechen").click();
+        await flushPromises();
+
+        expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+        expect(wrapper.emitted("saved")).toBeUndefined();
+        expect(wrapper.vm.selectedBooking.mail).toBe("max@example.test");
+        wrapper.destroy();
+      });
+
+      it("saves a booking made via an account without asking", async () => {
+        const wrapper = await editMail("user");
+
+        expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+        wrapper.destroy();
+      });
+    });
+
+    it("saves the comment of the series alone, not the series", async () => {
+      const { wrapper } = await mountEdit({
+        groupBooking: {
+          id: "grp-1",
+          tenantId: "tenant-1",
+          bookingIds: ["bk-1", "bk-2"],
+          mail: "erika@example.org",
+          hooks: [],
+          internalComments: "Alt",
+        },
+      });
+      saveAnswers({ data: {} });
+      ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
+      await wrapper
+        .findAllComponents({ name: "v-textarea" })
+        .wrappers.find(
+          (field) => field.props("label") === "Interne Bemerkung der Serie"
+        )
+        .find("textarea")
+        .setValue("Neu");
+
+      await submit(wrapper);
+
+      expect(ApiGroupBookingService.updateGroupBooking).toHaveBeenCalledWith(
+        "tenant-1",
+        "grp-1",
+        { internalComments: "Neu" }
+      );
     });
 
     it.each(["rejected", "cancelled"])(
@@ -362,6 +509,132 @@ describe("BookingEdit", () => {
   });
 
   /**
+   * A save with a required field still missing marks that field, besides
+   * the toast, and sends nothing. A create checks the whole form, an update
+   * the custom fields only.
+   */
+  describe("a required field still missing", () => {
+    const RATING = {
+      id: "rating",
+      caption: "Bewerten Sie uns",
+      inputType: "string",
+      usageOptions: { context: "checkout", requiredInCheckout: true },
+    };
+
+    function withRating(base) {
+      const [item] = base.bookableItems;
+      return {
+        ...base,
+        bookableItems: [
+          {
+            ...item,
+            _bookableUsed: { ...item._bookableUsed, customFields: [RATING] },
+          },
+        ],
+        customFieldDefinitions: [RATING],
+        customFieldValues: [],
+      };
+    }
+
+    function invalidLabels(wrapper) {
+      return wrapper
+        .findAll(".v-input.error--text label")
+        .wrappers.map((label) => label.text().replace(/\s+/g, " "));
+    }
+
+    it("marks a missing custom field on a create", async () => {
+      const { wrapper, store } = await mountEdit({
+        booking: withRating(draft()),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+      expect(lastToast(store)).toMatchObject({
+        title: "Fehlende Angaben",
+        type: "error",
+      });
+    });
+
+    it("marks the missing custom field on an update", async () => {
+      const { wrapper } = await mountEdit({ booking: withRating(booking()) });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The end lies after the begin (ECCdigital/tickets#493). The form names a
+   * backwards period before the save; the backend refuses it as well.
+   */
+  describe("a period that ends before it begins", () => {
+    const BEGIN = 1_700_000_000_000;
+    const ENDS_AFTER_BEGIN = "Die Endzeit muss nach der Startzeit liegen.";
+
+    function periodError(wrapper) {
+      return wrapper.find(".booking-period-error");
+    }
+
+    it.each([
+      ["before the begin", BEGIN - 3_600_000],
+      ["at the begin", BEGIN],
+    ])(
+      "is named at the period and not created when it ends %s",
+      async (_, timeEnd) => {
+        const { wrapper, store } = await mountEdit({
+          booking: { ...draft(), timeBegin: BEGIN, timeEnd },
+        });
+        saveAnswers({ data: {} });
+
+        expect(periodError(wrapper).text()).toBe(ENDS_AFTER_BEGIN);
+
+        await submit(wrapper);
+
+        expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+        expect(lastToast(store)).toMatchObject({
+          title: "Ungültige Endzeit",
+          message: ENDS_AFTER_BEGIN,
+          type: "error",
+        });
+      }
+    );
+
+    it("is not saved on an existing booking", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 }),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+
+    it("asks for no availability", async () => {
+      const { wrapper } = await mountEdit({
+        booking: { ...draft(), timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 },
+      });
+
+      await wrapper.vm.validateAllBookableItems();
+      await flushPromises();
+
+      expect(ApiCheckoutService.validateCheckoutItem).not.toHaveBeenCalled();
+    });
+
+    it("names nothing when the end lies after the begin", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+
+      expect(periodError(wrapper).exists()).toBe(false);
+    });
+  });
+
+  /**
    * The staff books backwards (ECCdigital/tickets#188). The form validates
    * over the self-booking's validation, which refuses a begin in the past;
    * for the staff that is no conflict. The backend names a conflict first.
@@ -402,6 +675,84 @@ describe("BookingEdit", () => {
 
       expect(summary(wrapper)).toContain(message);
       expect(wrapper.text()).toContain("bereits belegt");
+    });
+  });
+  /** The warning of a mail on the blacklist. */
+  describe("Blacklist", () => {
+    function warning(wrapper) {
+      return wrapper.findComponent({
+        name: "BlacklistWarningConformationDialog",
+      });
+    }
+    function mailInput(wrapper) {
+      return wrapper
+        .findAllComponents({ name: "v-text-field" })
+        .wrappers.find((field) => field.props("value") === "erika@example.org")
+        .find("input");
+    }
+
+    it("warns before a manual booking to a mail on the blacklist and saves only when confirmed", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).toHaveBeenCalledWith(
+        "manualBooking",
+        "erika@example.org",
+        "tenant-1"
+      );
+      expect(warning(wrapper).props("open")).toBe(true);
+      expect(warning(wrapper).props("addresses")).toEqual([
+        "erika@example.org",
+      ]);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+
+      warning(wrapper).vm.$emit("confirm");
+      await flushPromises();
+
+      expect(ApiBookingService.createBooking).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("saves nothing when the warning is left", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+      await submit(wrapper);
+
+      warning(wrapper).vm.$emit("cancel");
+      await flushPromises();
+
+      expect(warning(wrapper).props("open")).toBe(false);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+    });
+
+    it("does not ask again for the mail a booking already has", async () => {
+      const { wrapper } = await mountEdit();
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).not.toHaveBeenCalled();
+      expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks for a changed mail of a booking", async () => {
+      const { wrapper } = await mountEdit();
+      saveAnswers({ data: {} });
+      ApiBlacklistService.isBlacklisted.mockResolvedValue(true);
+      await mailInput(wrapper).setValue("max@firma.de");
+
+      await submit(wrapper);
+
+      expect(ApiBlacklistService.isBlacklisted).toHaveBeenCalledWith(
+        "bookingMail",
+        "max@firma.de",
+        "tenant-1"
+      );
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
     });
   });
 });

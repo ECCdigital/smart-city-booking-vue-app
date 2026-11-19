@@ -21,6 +21,10 @@
           <v-col> {{ contactDetails.company }} </v-col>
         </v-row>
         <v-row no-gutters>
+          <v-col class="font-weight-bold col-md-2"> Buchungsart: </v-col>
+          <v-col> {{ bookingKind }} </v-col>
+        </v-row>
+        <v-row no-gutters>
           <v-col class="font-weight-bold col-md-2"> Adresse: </v-col>
           <v-col>
             {{ contactDetails.street }}<br />
@@ -202,6 +206,13 @@
       </v-card-text>
     </v-card>
 
+    <checkout-address-blacklisted-alert
+      v-if="blacklistRefusal !== null"
+      ref="blacklistRefusal"
+      class="mt-5"
+      :mail-address="blacklistRefusal"
+    ></checkout-address-blacklisted-alert>
+
     <div class="d-flex mt-5">
       <v-spacer></v-spacer>
       <v-btn
@@ -219,10 +230,13 @@
 </template>
 
 <script>
+import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
+import { bookingKindLabel } from "@/utils/businessBooking";
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 
 export default {
   name: "CheckoutSummary",
+  components: { CheckoutAddressBlacklistedAlert },
   props: {
     bookingAttempts: {
       type: Array,
@@ -249,6 +263,24 @@ export default {
     },
     couponError: {
       type: String,
+    },
+    /**
+     * The instance's mail address of a refusal of the address on the
+     * blacklist, null while there is none.
+     */
+    blacklistRefusal: {
+      type: String,
+      default: null,
+    },
+  },
+  watch: {
+    async blacklistRefusal(value) {
+      if (value === null) return;
+      await this.$nextTick();
+      this.$refs.blacklistRefusal?.$el?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
     },
   },
   data() {
@@ -306,6 +338,10 @@ export default {
     },
   },
   computed: {
+    /** „Privat“ or „Geschäftlich“, as the checkbox of the contact step says. */
+    bookingKind() {
+      return bookingKindLabel(this.contactDetails);
+    },
     totalPrice() {
       let price = 0;
       for (const attempt of this.bookingAttempts) {

@@ -1,0 +1,4 @@
+# Every branch adds its entry at the top of [Unreleased], so catching up with
+# a version/… branch would conflict there each time. Union keeps both sides'
+# lines; check the changelog's diff after a merge.
+docs/CHANGELOG.md merge=union

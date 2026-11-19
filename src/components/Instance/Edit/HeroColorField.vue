@@ -95,6 +95,7 @@ const TOKEN_LABELS = Object.freeze({
   secondary: "Sekundärfarbe",
   white: "Weiß",
   black: "Schwarz",
+  accent: "Akzent",
 });
 
 // What „Eigene…“ starts from when the Block still carries a token and the
@@ -142,7 +143,18 @@ export default {
      * the backend fills in on save.
      */
     current() {
-      return this.value == null ? this.tokens[0] : this.value;
+      return this.value == null ? this.offeredTokens[0] : this.value;
+    },
+    /**
+     * The tokens on offer. „Akzent“ needs an accent colour of the instance;
+     * a Block that already carries it keeps its chip, painted in the primary
+     * colour the storefront falls back to (map #510).
+     */
+    offeredTokens() {
+      const hasAccent = !!(this.themeColors && this.themeColors.accent);
+      return this.tokens.filter(
+        (token) => token !== "accent" || hasAccent || this.value === "accent"
+      );
     },
     isCustom() {
       return isHeroHexColor(this.current);
@@ -151,7 +163,7 @@ export default {
       return this.isCustom ? this.current.toLowerCase() : "Eigene…";
     },
     options() {
-      return this.tokens.map((value) => ({
+      return this.offeredTokens.map((value) => ({
         value,
         label: TOKEN_LABELS[value] || value,
         active: this.current === value,

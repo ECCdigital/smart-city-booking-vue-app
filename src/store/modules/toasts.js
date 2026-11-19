@@ -2,10 +2,10 @@ const namespaced = true;
 
 let nextId = 1;
 
-const state = {
+const state = () => ({
   collection: [],
   timers: {},
-};
+});
 
 const mutations = {
   PUSH(state, toast) {

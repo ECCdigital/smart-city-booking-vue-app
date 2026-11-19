@@ -208,3 +208,43 @@ describe("MediaLibrary on a wide screen", () => {
     expect(tiles(wrapper)).toHaveLength(0);
   });
 });
+
+describe("MediaLibrary with fonts", () => {
+  it("filters by fonts in the facets and behind the funnel", async () => {
+    setViewportWidth(1280);
+    const wide = await mountLibrary();
+
+    const facet = wide
+      .findAll(".media-facets__item")
+      .wrappers.find((item) => item.text() === "Schriften");
+    await facet.trigger("click");
+    await settle(wide);
+    expect(lastListQuery()).toMatchObject({ kind: "font", page: 1 });
+
+    setViewportWidth(PHONE_WIDTH);
+    const phone = await mountLibrary();
+    await openFilterCard(phone);
+    buttonIn(filterCard(), "Schriften").click();
+    await settle(phone);
+    expect(lastListQuery()).toMatchObject({ kind: "font" });
+  });
+
+  it("says which TTF of an upload is to come as woff2", async () => {
+    setViewportWidth(1280);
+    ApiMediaService.uploadMedia.mockRejectedValue({
+      response: { status: 400, data: { code: "unsupported_file_type" } },
+    });
+    const wrapper = await mountLibrary();
+
+    const input = wrapper.find(".media-library__dropzone input[type='file']");
+    Object.defineProperty(input.element, "files", {
+      value: [new File(["x"], "Hausschrift.ttf")],
+    });
+    await input.trigger("change");
+    await settle(wrapper);
+
+    expect(wrapper.text()).toContain(
+      "ist eine TTF-Datei. Schriften bitte als woff2 hochladen."
+    );
+  });
+});

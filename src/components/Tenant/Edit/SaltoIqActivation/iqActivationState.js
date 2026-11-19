@@ -1,5 +1,5 @@
 // Presentation metadata for the local IQ activation states of the Salto KS
-// remote-open wizard (backend spec docs/specs/salto-ks-remote-open.md §2/§3).
+// remote-open wizard, as the backend reports them per IQ.
 // An IQ without otp_enabled needs no activation and gets its own key; labels
 // and hints live in i18n under accessPoint.tenant.salto.iq.state.<key>.
 
@@ -34,6 +34,13 @@ export function stateKey(iq) {
 export function stateMeta(iq) {
   const key = stateKey(iq);
   return { key, ...META[key] };
+}
+
+// Whether the IQ has an activation of the current identity, in any state
+// from the PIN on - all of it rests when site, System-User or environment
+// change.
+export function hasActivation(iq) {
+  return !!iq.state && iq.state !== "not_activated";
 }
 
 export function actionOrder(iq) {

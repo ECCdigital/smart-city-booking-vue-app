@@ -32,7 +32,10 @@ vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn().mockResolvedValue({ data: [] }) },
 }));
 vi.mock("@/services/api/ApiTagsService", () => ({
-  default: { getTags: vi.fn().mockResolvedValue({ data: [] }) },
+  default: {
+    getTags: vi.fn().mockResolvedValue({ data: [] }),
+    getFlags: vi.fn().mockResolvedValue({ data: [] }),
+  },
 }));
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn().mockResolvedValue({ data: [] }) },
@@ -1089,6 +1092,43 @@ describe("BookableEdit - saving with issues", () => {
     expect(
       find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
     ).toBe("true");
+  });
+
+  describe("the location", () => {
+    const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+
+    it("saves a bookable whose old location without point stays untouched", async () => {
+      const wrapper = await mountEdit(
+        { id: "b1", tab: "general" },
+        stored({ location: OLD_TEXT })
+      );
+
+      await find(wrapper, "flow-title").find("input").setValue("Aula");
+      await save(wrapper);
+
+      expect(ApiBookablesService.createOrUpdateBookable).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Aula", location: OLD_TEXT })
+      );
+    });
+
+    it("refuses a changed location without point and opens its tab", async () => {
+      const wrapper = await mountEdit(
+        { id: "b1", tab: "general" },
+        stored({ location: OLD_TEXT })
+      );
+      wrapper.findComponent({ name: "LocationInput" }).vm.$emit("input", {
+        address: { street: null, city: "Guben", country_code: "DE" },
+        display_address: OLD_TEXT,
+        meta: { additional: "Eingang Nord" },
+      });
+      await tab(wrapper, "Preise & Kapazität").trigger("click");
+      await flushPromises();
+
+      await save(wrapper);
+
+      expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+      expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
+    });
   });
 
   it("goes on in the guided flow without a title", async () => {

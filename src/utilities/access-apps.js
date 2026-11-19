@@ -12,6 +12,9 @@
  */
 export const LOCK_AND_ACCESS_APP_IDS = ["pareva", "ifbs", "nuki", "salto-ks"];
 
+/** The id of Salto KS as a provider and as a tenant application. */
+export const SALTO_PROVIDER = "salto-ks";
+
 /**
  * The application a tenant has stored under `id`, if it has one the current
  * schema knows.
@@ -90,10 +93,90 @@ export function createLockAndAccessAppDefaults() {
       username: "",
       password: "",
       siteId: "",
-      environment: "accept",
+      environment: "production",
       active: false,
     },
   };
+}
+
+/**
+ * The environment of a Salto KS application. Configurations from before the
+ * environment switch only carried a free-text API URL: an accept host meant
+ * accept, anything else production. Without a URL it is accept, as the
+ * backend reads it - only a new setup starts on production.
+ *
+ * @param {Object} app A Salto KS application
+ * @returns {"accept"|"production"}
+ */
+export function saltoEnvironment(app) {
+  if (app.environment) return app.environment;
+  const legacyUrl = String(app.apiBaseUrl || "");
+  return legacyUrl && !legacyUrl.includes("accept") ? "production" : "accept";
+}
+
+/**
+ * Whether two Salto KS applications differ in what an IQ activation belongs
+ * to: site, System-User and environment. Client id and secrets are no part
+ * of it, a rotation keeps the activations. The values are compared as
+ * entered, so another spelling of the same site counts as a change.
+ *
+ * @param {Object} stored The stored Salto KS application
+ * @param {Object} next The Salto KS application about to be saved
+ * @returns {boolean}
+ */
+export function saltoIdentityChanged(stored, next) {
+  return (
+    (stored.siteId || "") !== (next.siteId || "") ||
+    (stored.username || "") !== (next.username || "") ||
+    saltoEnvironment(stored) !== saltoEnvironment(next)
+  );
+}
+
+/**
+ * Which stored secret belongs to which part of the identity: a client secret
+ * to a client id, a password to a System-User, both to one environment.
+ */
+const SALTO_SECRETS = [
+  { field: "clientSecret", identity: "clientId", reason: "client_id_changed" },
+  { field: "password", identity: "username", reason: "username_changed" },
+];
+
+function sameValue(a, b) {
+  return String(a ?? "").trim() === String(b ?? "").trim();
+}
+
+/**
+ * Where the connection test of Salto KS takes each secret from, by the rule
+ * of the backend: a secret in the form is sent, an empty field takes the
+ * stored secret - the client secret only while client id and environment are
+ * the stored ones, the password only while System-User and environment are.
+ * Otherwise the secret is missing, with the reason the backend names.
+ *
+ * @param {Object} form The Salto KS application as the form holds it
+ * @param {Object|null} stored The stored Salto KS application
+ * @param {{clientSecret: boolean, password: boolean}} configured Whether
+ *   each secret is stored
+ * @returns {Object<string, {source: "form"|"stored"|"missing", reason?: string}>}
+ */
+export function saltoSecretSources(form, stored, configured) {
+  const sameEnvironment =
+    !stored || saltoEnvironment(stored) === saltoEnvironment(form);
+
+  return Object.fromEntries(
+    SALTO_SECRETS.map(({ field, identity, reason }) => {
+      if (form[field]) return [field, { source: "form" }];
+      if (!configured[field]) {
+        return [field, { source: "missing", reason: "not_stored" }];
+      }
+      if (!sameEnvironment) {
+        return [field, { source: "missing", reason: "environment_changed" }];
+      }
+      if (stored && !sameValue(form[identity], stored[identity])) {
+        return [field, { source: "missing", reason }];
+      }
+      return [field, { source: "stored" }];
+    })
+  );
 }
 
 /**

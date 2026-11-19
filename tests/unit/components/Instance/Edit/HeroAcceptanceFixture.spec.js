@@ -141,7 +141,6 @@ beforeAll(stubProseMirrorLayout);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  toasts.state.collection = [];
 });
 
 /** The editor, opened the way the Portal tab opens it, on an empty layout. */

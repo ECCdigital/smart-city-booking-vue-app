@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import {
+  BOOKABLE_RULE_NAMES,
   bookableIssues,
   bookableRules,
   firstIssue,
@@ -154,6 +155,83 @@ describe("bookableValidation - the rules of the spec", () => {
         step: "permission",
       }),
     ]);
+  });
+});
+
+describe("bookableValidation - the location", () => {
+  const GASSTRASSE = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    meta: { additional: null },
+  };
+  const WITH_POINT = {
+    ...GASSTRASSE,
+    coordinates: { type: "Point", points: [14.714485, 51.950438] },
+    meta: { source: "photon", additional: null },
+  };
+
+  it("refuses an address without point, with the reason and where to fix it", () => {
+    expect(issuesOf({ location: GASSTRASSE })).toEqual([
+      {
+        field: "location",
+        message: "location.reason.addressWithoutPoint",
+        tab: "general",
+        section: "general-catalog",
+        step: "identity",
+      },
+    ]);
+  });
+
+  it.each([
+    ["a location with address and point", WITH_POINT],
+    ["no location", null],
+    ["the empty default", ""],
+  ])("takes %s", (_, location) => {
+    expect(issuesOf({ location })).toEqual([]);
+  });
+
+  it("lets an unchanged old location without point through", () => {
+    const stored = bookable({ location: "Sportplatz, Guben" });
+
+    expect(
+      issuesOf({ location: "Sportplatz, Guben" }, { stored: stored })
+    ).toEqual([]);
+  });
+
+  it("refuses an old location without point once changed", () => {
+    const stored = bookable({ location: GASSTRASSE });
+    const location = { ...GASSTRASSE, meta: { additional: "Halle 2" } };
+
+    expect(issuesOf({ location }, { stored })).toEqual([
+      expect.objectContaining({
+        field: "location",
+        message: "location.reason.addressWithoutPoint",
+      }),
+    ]);
+  });
+
+  it("refuses a text without point of a new bookable", () => {
+    expect(issuesOf({ location: "Sportplatz, Guben" })).toEqual([
+      expect.objectContaining({
+        message: "location.reason.oldTextWithoutPoint",
+      }),
+    ]);
+  });
+
+  it("is a rule like any field's, measured against the stored location", () => {
+    const rule = (stored) => (value) =>
+      bookableRules("location", (key) => key, { stored })[0](value);
+
+    expect(BOOKABLE_RULE_NAMES).toContain("location");
+    expect(rule(null)(GASSTRASSE)).toBe("location.reason.addressWithoutPoint");
+    expect(rule(GASSTRASSE)(GASSTRASSE)).toBe(true);
+    expect(rule(null)(WITH_POINT)).toBe(true);
   });
 });
 

@@ -1,16 +1,21 @@
 <template>
-  <v-dialog :value="open" max-width="600px" persistent>
+  <v-dialog :value="open" max-width="600px" persistent scrollable>
     <v-card data-test="decline-dialog">
-      <v-card-title class="mx-3">
-        <span class="text-h5 error--text">
-          {{ $t("supervision.decline.title") }}
-        </span>
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
+        <div>
+          <div class="text-h5">{{ $t("supervision.decline.title") }}</div>
+          <div class="text-caption text--secondary">
+            {{ tenant.name || tenant.id }}
+          </div>
+        </div>
+        <v-spacer />
+        <v-btn icon :disabled="inProgress" @click="$emit('close')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-subtitle class="mx-3">
-        {{ tenant.name || tenant.id }}
-      </v-card-subtitle>
-      <v-divider class="mx-9 mb-5" />
-      <v-card-text>
+      <v-divider />
+      <v-card-text class="pa-6">
         <p class="mb-1">
           {{ $t("supervision.decline.lead") }}
         </p>
@@ -37,19 +42,19 @@
           {{ errorMessage }}
         </v-alert>
       </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text :disabled="inProgress" @click="$emit('close')">
+      <v-divider />
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined :disabled="inProgress" @click="$emit('close')">
           {{ $t("supervision.level.change.cancel") }}
         </v-btn>
         <v-btn
           color="error"
-          depressed
           :disabled="inProgress"
           :loading="inProgress"
           data-test="decline-submit"
           @click="submit"
         >
+          <v-icon left small>mdi-close-circle</v-icon>
           {{ $t("supervision.decline.submit") }}
         </v-btn>
       </v-card-actions>

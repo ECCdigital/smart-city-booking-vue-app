@@ -533,8 +533,9 @@ describe("GroupBookingPage", () => {
       ).toEqual(["1 Angefragt", "2 Bestätigt", "1 Storniert"]);
       expect(hint(wrapper)).toBe("Aktionen je Buchung in der Liste unten");
       expect(wrapper.find(".booking-status-segment").exists()).toBe(false);
+      // Its cancelled member still offers the series' reinstate.
       expect(await offeredActions(wrapper)).toEqual({
-        button: null,
+        button: "Serie wiederherstellen",
         menu: null,
       });
     });
@@ -549,8 +550,9 @@ describe("GroupBookingPage", () => {
         ["Serie stornieren"],
       ],
       [["confirmed", "confirmed"], null, ["Serie stornieren"]],
-      [["rejected", "rejected"], null, null],
-      [["cancelled", "cancelled"], null, null],
+      [["rejected", "rejected"], "Serie wiederherstellen", null],
+      [["cancelled", "cancelled"], "Serie wiederherstellen", null],
+      [["confirmed", "cancelled"], "Serie wiederherstellen", null],
       [["requested", "confirmed"], null, null],
     ])(
       "offers for members %j the button %s and the menu %j",
@@ -752,6 +754,7 @@ describe("GroupBookingPage", () => {
       );
       expect(entries.map((entry) => entry.textContent.trim())).toEqual([
         "Stornieren",
+        "Widerruf akzeptieren",
       ]);
       entries[0].click();
       await wrapper.vm.$nextTick();
@@ -787,7 +790,7 @@ describe("GroupBookingPage", () => {
       );
     });
 
-    it("saves the internal comment through the series and reloads", async () => {
+    it("saves the internal comment alone through the series and reloads", async () => {
       ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
       const groupBooking = series(["requested"], {
         internalComments: "Alt",
@@ -805,7 +808,7 @@ describe("GroupBookingPage", () => {
       expect(ApiGroupBookingService.updateGroupBooking).toHaveBeenCalledWith(
         "tenant-1",
         "grp-1",
-        expect.objectContaining({ id: "grp-1", internalComments: "Neu" })
+        { internalComments: "Neu" }
       );
       expect(ApiGroupBookingService.getGroupBooking).toHaveBeenCalledTimes(2);
       expect(wrapper.find("textarea").exists()).toBe(false);

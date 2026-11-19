@@ -1,7 +1,8 @@
 <script>
-// The guided first-activation ceremony of a Salto KS IQ (backend spec
-// docs/specs/salto-ks-remote-open.md §3): acknowledge the app ban, secure the
-// first secret and trigger the PIN mail, capture the mailed PIN once, done.
+// The guided first activation of a Salto KS IQ: acknowledge that the system
+// user is never activated in the Salto app (that would rotate the secret the
+// backend stored), secure the first secret and trigger the PIN mail, capture
+// the mailed PIN once, done.
 // The parent owns the API calls and passes them in as async function props
 // that resolve on success and reject with a translated message.
 import { iqDisplayName } from "./iqActivationState";
@@ -89,15 +90,19 @@ export default {
 </script>
 
 <template>
-  <v-dialog :value="!!iq" max-width="640" persistent @input="close">
+  <v-dialog :value="!!iq" max-width="640" persistent scrollable @input="close">
     <v-card v-if="iq">
-      <v-card-title class="headline">
-        {{ $t("accessPoint.tenant.salto.iq.wizard.title") }} {{ iqName }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-cellphone-key</v-icon>
+        <span class="text-h5">
+          {{ $t("accessPoint.tenant.salto.iq.wizard.title") }} {{ iqName }}
+        </span>
         <v-spacer />
         <v-btn icon @click="close"><v-icon>mdi-close</v-icon></v-btn>
       </v-card-title>
+      <v-divider />
 
-      <v-card-text>
+      <v-card-text class="pa-6">
         <v-alert v-if="error" type="error" text dense class="mb-3">
           {{ error }}
         </v-alert>

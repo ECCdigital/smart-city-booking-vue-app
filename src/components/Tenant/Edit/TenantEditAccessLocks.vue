@@ -28,6 +28,12 @@ export default {
       const results = await Promise.all(checks);
       return results.every(Boolean);
     },
+    confirmSave() {
+      if (!this.showAccess || !this.$refs.access?.confirmSave) {
+        return Promise.resolve(true);
+      }
+      return this.$refs.access.confirmSave();
+    },
     resetValidation() {
       this.$refs.locks?.resetValidation?.();
       if (this.showAccess) this.$refs.access?.resetValidation?.();

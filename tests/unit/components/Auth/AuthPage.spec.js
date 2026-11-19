@@ -68,3 +68,15 @@ describe("AuthPage — the provider under the card", () => {
     expect(wrapper.find(".auth-page__footer").exists()).toBe(false);
   });
 });
+
+describe("AuthPage — the instance logo", () => {
+  // A dark logo all but vanished on the dark page (ECCdigital/tickets#307).
+  // The plate is light under .theme--dark and transparent in the light theme.
+  it("sits on the logo plate", () => {
+    const wrapper = mountAuthPage();
+    const logo = wrapper.find("img.auth-page__logo");
+
+    expect(logo.attributes("src")).toBe("/app-logo.png");
+    expect(logo.classes()).toContain("auth-page__logo--plate");
+  });
+});

@@ -35,7 +35,7 @@ Do not assume backend or storefront code is in this repo. API or auth changes ma
 ## Commands
 
 ```bash
-npm install          # install dependencies
+npm ci && npm run bff:install  # dependencies, the BFF's too: its specs load bff/node_modules
 npm run serve        # dev server (needs running backend API)
 npm run build        # production build + minified JS web interface
 npm run lint:check   # eslint
@@ -76,7 +76,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Design tokens (`--scb-*` custom properties, `src/scss/tokens.scss`)                                                                        | [docs/agents/design-tokens.md](docs/agents/design-tokens.md)                                             |
 | API services                                                                                                                               | [docs/agents/api-services.md](docs/agents/api-services.md)                                               |
 | JS web interface (embed)                                                                                                                   | [docs/agents/web-integration.md](docs/agents/web-integration.md)                                         |
-| Issue tracker (local markdown under `.scratch/`)                                                                                           | [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)                                             |
+| Issue tracker (tickets in `ECCdigital/tickets`)                                                                                            | [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)                                             |
 | Bookable editing: one field, one component, one rule (partial patches, derived state, `normalizeBookable`)                                 | [docs/adr/0002-one-field-one-component-one-rule.md](docs/adr/0002-one-field-one-component-one-rule.md)   |
 | Optional Admin BFF / shared session                                                                                                        | [docs/adr/0001-optional-admin-bff-shared-session.md](docs/adr/0001-optional-admin-bff-shared-session.md) |
 | Shared-session deploy                                                                                                                      | [docs/shared-session-deploy.md](docs/shared-session-deploy.md)                                           |

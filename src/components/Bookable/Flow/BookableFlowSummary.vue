@@ -121,6 +121,7 @@ export default {
         shown: this.expertOptionShown,
         eventTitlesById: this.eventTitlesById,
         accessPoints: this.bookableAccessPoints.list,
+        stored: this.bookable.id ? this.bookableExpertMode.stored : null,
       });
     },
     needsEventTitles() {

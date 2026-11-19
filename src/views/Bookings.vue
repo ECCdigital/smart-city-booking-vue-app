@@ -155,6 +155,20 @@ import {
   filterBookingsByRefundState,
   refundStateMarker,
 } from "@/utils/cancellationRefund";
+import {
+  BOOKED_VIA,
+  bookedViaLabel,
+  bookedViaTitle,
+  filterBookingsByBookedVia,
+} from "@/utils/bookedVia";
+
+/** The icon of each way in the Buchungsweg filter. */
+const BOOKED_VIA_ICONS = {
+  [BOOKED_VIA.USER]: "mdi-account-check-outline",
+  [BOOKED_VIA.GUEST]: "mdi-account-outline",
+  [BOOKED_VIA.ADMIN]: "mdi-shield-account-outline",
+  [BOOKED_VIA.UNKNOWN]: "mdi-help-circle-outline",
+};
 
 /**
  * The search term survives a detour to a booking's page or the editor and
@@ -211,6 +225,8 @@ export default {
       // The refund filter (glossary „Erstattungsstand“), like the status
       // filter: nothing selected means no filter.
       refundFilter: [],
+      // The Buchungsweg filter, like the status filter.
+      bookedViaFilter: [],
       api: {
         users: [],
         bookings: [],
@@ -273,8 +289,8 @@ export default {
     },
     /**
      * The filter card behind the funnel (spec N1): the booking type as a
-     * segment switch, the five states and the two refund states as checkbox
-     * lists. One restriction for a type other than "all", one per selected
+     * segment switch, the five states, the four Buchungswege and the two
+     * refund states as checkbox lists. One restriction for a type other than "all", one per selected
      * state. The refund states only for the Reichweite *any*: under *own*
      * the backend leaves them out, and the filter would match nothing.
      */
@@ -314,6 +330,17 @@ export default {
             label: statusLabel(status),
             color: statusColor(status),
             icon: statusIcon(status),
+          })),
+        },
+        // Every reach reads `bookedVia`, so this one is always offered.
+        {
+          key: "bookedVia",
+          label: bookedViaTitle(),
+          selected: this.bookedViaFilter,
+          options: Object.values(BOOKED_VIA).map((way) => ({
+            value: way,
+            label: bookedViaLabel(way),
+            icon: BOOKED_VIA_ICONS[way],
           })),
         },
       ];
@@ -400,6 +427,9 @@ export default {
       if (this.refundFilter.length > 0) {
         bookings = filterBookingsByRefundState(bookings, this.refundFilter);
       }
+      if (this.bookedViaFilter.length > 0) {
+        bookings = filterBookingsByBookedVia(bookings, this.bookedViaFilter);
+      }
       return bookings;
     },
     /**
@@ -439,6 +469,7 @@ export default {
       if (key === "type") this.bookingTypeFilter = selection;
       if (key === "status") this.statusFilter = selection;
       if (key === "refund") this.refundFilter = selection;
+      if (key === "bookedVia") this.bookedViaFilter = selection;
     },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {

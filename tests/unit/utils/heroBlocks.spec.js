@@ -676,6 +676,15 @@ describe("updateHeroBlock", () => {
 
     expect(updateHeroBlock(blocks, "gone", { size: "xl" })).toEqual(blocks);
   });
+
+  it("removes a field the patch sets to undefined", () => {
+    const blocks = [block("a")];
+
+    const next = updateHeroBlock(blocks, "a", { shadow: undefined });
+
+    expect("shadow" in next[0]).toBe(false);
+    expect(next[0].size).toBe("md");
+  });
 });
 
 describe("heroBlockZoneCounts", () => {

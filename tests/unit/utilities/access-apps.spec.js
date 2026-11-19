@@ -52,6 +52,14 @@ describe("lock and access app defaults", () => {
     expect(defaults.pareva).not.toHaveProperty("customerService");
     expect(defaults["salto-ks"]).not.toHaveProperty("customerService");
   });
+
+  // A tenant that sets Salto KS up anew starts on the real installation,
+  // not on the sandbox (ECCdigital/tickets#508).
+  it("starts a new Salto KS setup on production", () => {
+    expect(createLockAndAccessAppDefaults()["salto-ks"].environment).toBe(
+      "production"
+    );
+  });
 });
 
 /**

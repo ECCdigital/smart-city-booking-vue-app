@@ -4,7 +4,6 @@
       v-if="field.inputType === 'string'"
       :value="value"
       @input="$emit('input', $event)"
-      :label="fieldLabel"
       :placeholder="field.placeholder || ''"
       :rules="rules"
       background-color="accent"
@@ -12,13 +11,17 @@
       :hide-details="hideDetails"
       clearable
       @click:clear="$emit('input', null)"
-    />
+    >
+      <template #label>
+        {{ field.caption }}
+        <span v-if="required" class="error--text">*</span>
+      </template>
+    </v-text-field>
 
     <v-textarea
       v-else-if="field.inputType === 'text'"
       :value="value"
       @input="$emit('input', $event)"
-      :label="fieldLabel"
       :placeholder="field.placeholder || ''"
       :rules="rules"
       background-color="accent"
@@ -28,7 +31,12 @@
       auto-grow
       clearable
       @click:clear="$emit('input', null)"
-    />
+    >
+      <template #label>
+        {{ field.caption }}
+        <span v-if="required" class="error--text">*</span>
+      </template>
+    </v-textarea>
 
     <v-text-field
       v-else-if="field.inputType === 'numeric'"
@@ -36,7 +44,6 @@
       @input="
         $emit('input', $event !== '' && $event !== null ? Number($event) : null)
       "
-      :label="fieldLabel"
       :placeholder="field.placeholder || ''"
       :rules="rules"
       type="number"
@@ -45,7 +52,12 @@
       :hide-details="hideDetails"
       clearable
       @click:clear="$emit('input', null)"
-    />
+    >
+      <template #label>
+        {{ field.caption }}
+        <span v-if="required" class="error--text">*</span>
+      </template>
+    </v-text-field>
 
     <v-switch
       v-else-if="field.inputType === 'boolean'"
@@ -63,7 +75,6 @@
       :items="field.options || []"
       item-text="caption"
       item-value="value"
-      :label="fieldLabel"
       :placeholder="field.placeholder || ''"
       :rules="rules"
       :multiple="isMultiselect"
@@ -74,7 +85,12 @@
       :hide-details="hideDetails"
       clearable
       @click:clear="$emit('input', isMultiselect ? [] : null)"
-    />
+    >
+      <template #label>
+        {{ field.caption }}
+        <span v-if="required" class="error--text">*</span>
+      </template>
+    </v-select>
   </component>
 </template>
 
@@ -111,9 +127,6 @@ export default {
     selectValue() {
       if (!this.isMultiselect) return this.value;
       return Array.isArray(this.value) ? this.value : [];
-    },
-    fieldLabel() {
-      return this.required ? `${this.field.caption} *` : this.field.caption;
     },
     rules() {
       if (!this.required) return [];

@@ -34,7 +34,7 @@ const STUBS = {
   BookableEditOpeningHours: editorStub("BookableEditOpeningHours"),
   BookableEditPriceTiers: editorStub("BookableEditPriceTiers"),
   MediaReferenceList: editorStub("MediaReferenceList"),
-  AddressLookup: editorStub("AddressLookup"),
+  LocationInput: editorStub("LocationInput"),
   Tiptap: editorStub("Tiptap"),
 };
 

@@ -30,13 +30,14 @@
           <span class="refund-amounts__value refund-amounts__value--refund">
             {{ currency(refundAmountEur) }}
           </span>
+        </div>
+        <div v-if="refundShareLabel" class="refund-amounts__chip-row">
           <v-chip
-            v-if="refundShareLabel"
             x-small
             label
             color="success"
             text-color="white"
-            class="refund-amounts__chip mt-1"
+            class="refund-amounts__chip"
           >
             {{ refundShareLabel }}
           </v-chip>
@@ -147,8 +148,9 @@ export default {
 
 .refund-amounts__item {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 8px;
+  gap: 4px 8px;
   min-width: 0;
   padding: 2px 6px;
 }
@@ -200,7 +202,9 @@ export default {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Shrinks beside the icon instead of wrapping under it. */
 .refund-amounts__content {
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -228,6 +232,14 @@ export default {
 
 .refund-amounts__value--refund {
   color: var(--v-success-base, #4caf50);
+}
+
+/* A row of its own under icon and amount, the chip centred in it. */
+.refund-amounts__chip-row {
+  display: flex;
+  justify-content: center;
+  flex-basis: 100%;
+  min-width: 0;
 }
 
 .refund-amounts__chip {

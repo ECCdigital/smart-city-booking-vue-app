@@ -195,4 +195,44 @@ describe("RequestRejectBooking", () => {
       expect(wrapper.text()).not.toContain(BANK_DETAILS);
     });
   });
+
+  describe("refund policy line", () => {
+    async function previewWith(preview) {
+      const wrapper = await mountPage(
+        statusEntry({ status: "confirmed", priceEur: 20 })
+      );
+      ApiBookingService.getPublicCancellationRefundPreview.mockResolvedValue({
+        originalAmountEur: 20,
+        refundAmountEur: 10,
+        cancellationFeeEur: 10,
+        suggestedRefundPercentage: 50,
+        ...preview,
+      });
+      const name = wrapper.find("input[type='text']");
+      await name.setValue("Erika Muster");
+      await name.trigger("blur");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      return wrapper;
+    }
+
+    it("names the calendar days before the start", async () => {
+      const wrapper = await previewWith({ daysBeforeStart: 12 });
+
+      expect(wrapper.text()).toContain(
+        "Bei 12 Kalendertagen bis zum Beginn beträgt die Erstattung 50 %."
+      );
+    });
+
+    // ECCdigital/tickets#306: a booking without a time span showed „Bei –
+    // Kalendertagen …“.
+    it("says the booking has no time span where there are no days", async () => {
+      const wrapper = await previewWith({ daysBeforeStart: null });
+
+      expect(wrapper.text()).toContain(
+        "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 50 %."
+      );
+      expect(wrapper.text()).not.toContain("Kalendertagen");
+    });
+  });
 });

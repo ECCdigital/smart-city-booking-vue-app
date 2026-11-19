@@ -29,13 +29,24 @@
             <v-list-item-title>{{ item }}</v-list-item-title>
           </v-list-item-content>
           <v-list-item-icon>
-            <v-btn icon @click="removeOwner(item)">
+            <v-btn icon data-test="remove-owner" @click="removeOwner(item)">
               <v-icon color="error"> mdi-delete</v-icon>
             </v-btn>
           </v-list-item-icon>
         </v-list-item>
       </v-list-item-group>
     </v-list>
+
+    <v-alert
+      v-if="!hasOwner"
+      data-test="owners-missing"
+      type="error"
+      text
+      dense
+      class="mb-0"
+    >
+      {{ $t("instance.edit.owners.missing") }}
+    </v-alert>
   </BaseSection>
 </template>
 
@@ -55,6 +66,12 @@ export default {
       selectedOwner: null,
       selectedUser: null,
     };
+  },
+  computed: {
+    /** The backend refuses an instance without owners. */
+    hasOwner() {
+      return (this.local.ownerUserIds || []).length > 0;
+    },
   },
   watch: {
     instance: {
@@ -92,7 +109,7 @@ export default {
       this.$emit("update:instance", { ...this.local });
     },
     validate() {
-      return true;
+      return this.hasOwner;
     },
     resetValidation() {},
   },

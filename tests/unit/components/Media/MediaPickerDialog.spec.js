@@ -105,3 +105,79 @@ describe("MediaPickerDialog on a phone", () => {
     expect(activeDialogText()).toContain("1 ausgewählt");
   });
 });
+
+describe("MediaPickerDialog for fonts", () => {
+  async function openFontPicker() {
+    const wrapper = mountComponent(MediaPickerDialog, {
+      propsData: { value: false, kind: "font", scope: "instance" },
+      stubs: { MediaImage: true },
+    });
+    await wrapper.setProps({ value: true });
+    await settle(wrapper);
+    await wrapper
+      .findAll(".v-tab")
+      .wrappers.find((tab) => tab.text().trim() === "Upload")
+      .trigger("click");
+    await settle(wrapper);
+    return wrapper;
+  }
+
+  /** The input behind „Datei wählen“ of the sheet. */
+  function filesInput(wrapper) {
+    return wrapper
+      .findAll("input[type='file']")
+      .wrappers.find((input) => input.attributes("accept") !== "image/*");
+  }
+
+  function pickFiles(input, files) {
+    Object.defineProperty(input.element, "files", { value: files });
+    return input.trigger("change");
+  }
+
+  it("offers woff2 alone, up to 500 KB", async () => {
+    const wrapper = await openFontPicker();
+
+    await wrapper.find("[data-test='picker-upload']").trigger("click");
+    await settle(wrapper);
+
+    expect(filesInput(wrapper).attributes("accept")).toBe(".woff2,font/woff2");
+    expect(document.body.textContent).toContain("woff2 bis 500 KB");
+    // A font comes from the files, not from the gallery or the camera.
+    expect(document.querySelector("[data-test='upload-files']")).not.toBeNull();
+    expect(document.querySelector("[data-test='upload-gallery']")).toBeNull();
+    expect(document.querySelector("[data-test='upload-camera']")).toBeNull();
+  });
+
+  it("refuses a TTF, OTF or WOFF before the upload and says to bring it as woff2", async () => {
+    const wrapper = await openFontPicker();
+    await wrapper.find("[data-test='picker-upload']").trigger("click");
+    await settle(wrapper);
+
+    await pickFiles(filesInput(wrapper), [new File(["x"], "Hausschrift.otf")]);
+    await settle(wrapper);
+
+    expect(ApiMediaService.uploadMedia).not.toHaveBeenCalled();
+    expect(activeDialogText()).toContain(
+      "„Hausschrift.otf“ ist eine OTF-Datei. Schriften bitte als woff2 hochladen."
+    );
+  });
+
+  it("uploads a woff2 and picks it", async () => {
+    ApiMediaService.uploadMedia.mockResolvedValue({
+      data: { ...medium("haus"), kind: "font" },
+    });
+    const wrapper = await openFontPicker();
+    await wrapper.find("[data-test='picker-upload']").trigger("click");
+    await settle(wrapper);
+
+    const file = new File(["wOF2"], "Hausschrift.woff2");
+    await pickFiles(filesInput(wrapper), [file]);
+    await settle(wrapper);
+
+    expect(ApiMediaService.uploadMedia).toHaveBeenCalledWith("instance", {
+      file,
+      visibility: "public",
+    });
+    expect(activeDialogText()).toContain("1 ausgewählt");
+  });
+});

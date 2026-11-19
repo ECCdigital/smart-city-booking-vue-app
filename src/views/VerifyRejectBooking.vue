@@ -113,6 +113,7 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import { refundPolicyText } from "@/utils/cancellationRefund";
 
 export default {
   name: "VerifyRejectBooking",
@@ -145,13 +146,8 @@ export default {
     },
     refundPolicySummary() {
       if (!this.refundPreview) return "";
-      const days =
-        this.refundPreview.daysBeforeStart === null ||
-        this.refundPreview.daysBeforeStart === undefined
-          ? "–"
-          : this.refundPreview.daysBeforeStart;
-      return this.$t("booking.cancellationRefund.userPolicySummary", {
-        days,
+      return refundPolicyText("userPolicySummary", {
+        days: this.refundPreview.daysBeforeStart,
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },

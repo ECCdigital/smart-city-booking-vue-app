@@ -141,6 +141,42 @@
       </v-row>
 
       <v-row>
+        <v-col cols="12">
+          <v-checkbox
+            v-model="isBusiness"
+            class="checkout-contact-details__business mt-0"
+            hide-details
+            dense
+          >
+            <template #label>
+              <span class="d-inline-flex align-center">
+                Geschäftliche Buchung
+                <!-- The explanation sits in the tooltip; a click on the
+                     icon does not toggle the checkbox. -->
+                <v-tooltip top max-width="320">
+                  <template #activator="{ on, attrs }">
+                    <v-icon
+                      small
+                      class="ml-1"
+                      aria-label="Für ein Unternehmen, einen Verein oder eine Behörde. Ohne Haken gilt die Buchung als privat."
+                      v-bind="attrs"
+                      v-on="on"
+                      @click.stop.prevent
+                      >mdi-help-circle-outline</v-icon
+                    >
+                  </template>
+                  <span
+                    >Für ein Unternehmen, einen Verein oder eine Behörde. Ohne
+                    Haken gilt die Buchung als privat.</span
+                  >
+                </v-tooltip>
+              </span>
+            </template>
+          </v-checkbox>
+        </v-col>
+      </v-row>
+
+      <v-row>
         <v-col>
           <v-textarea
             filled
@@ -189,6 +225,7 @@ import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiAuthService from "@/services/api/ApiAuthService";
+import { isBusinessBooking } from "@/utils/businessBooking";
 
 export default {
   name: "CheckoutContactDetails",
@@ -272,6 +309,18 @@ export default {
       instance: "instance/instance",
       user: "user/getUser",
     }),
+    /**
+     * Private or business booking: follows the company until the booker
+     * sets the checkbox, then their choice.
+     */
+    isBusiness: {
+      get() {
+        return isBusinessBooking(this.contactDetails);
+      },
+      set(value) {
+        this.$set(this.contactDetails, "isBusiness", Boolean(value));
+      },
+    },
     ssoActive() {
       return !!this.instance?.applications.find(
         (app) => app?.id === "keycloak" && app.active

@@ -75,12 +75,20 @@
       </v-btn>
     </div>
 
-    <v-dialog v-model="dialog" max-width="480">
+    <v-dialog v-model="dialog" persistent scrollable max-width="480">
       <v-card v-if="pendingAction">
-        <v-card-title class="text-h6">
-          {{ $t(`supervision.review.actions.${pendingAction}`) }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">
+            {{ $t(`supervision.review.actions.${pendingAction}`) }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="dialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           <v-textarea
             v-model="reasonInput"
             :label="$t('supervision.review.dialog.reason-label')"
@@ -91,17 +99,19 @@
             auto-grow
           />
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="dialog = false">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="dialog = false">
             {{ $t("supervision.review.dialog.cancel") }}
           </v-btn>
           <v-btn
-            text
             :color="actionColor(pendingAction)"
             :disabled="inProgress"
             @click="confirm"
           >
+            <v-icon left small>
+              {{ pendingAction === "reject" ? "mdi-close-circle" : "mdi-undo" }}
+            </v-icon>
             {{ $t(`supervision.review.actions.${pendingAction}`) }}
           </v-btn>
         </v-card-actions>

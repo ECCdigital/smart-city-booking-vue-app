@@ -10,7 +10,8 @@
   >
     <v-card tile>
       <v-toolbar flat>
-        <v-toolbar-title>Kopfbereich</v-toolbar-title>
+        <v-icon left>mdi-page-layout-header</v-icon>
+        <v-toolbar-title class="text-h5">Kopfbereich</v-toolbar-title>
         <v-chip
           v-if="draft"
           class="ml-4"
@@ -40,7 +41,7 @@
         <v-btn text :disabled="!draft || inProgress" @click="askForReset">
           Auf Standard zurücksetzen
         </v-btn>
-        <v-btn text :disabled="inProgress" @click="requestClose">
+        <v-btn outlined :disabled="inProgress" @click="requestClose">
           {{ cancelLabel }}
         </v-btn>
         <v-btn
@@ -50,7 +51,11 @@
           :loading="saving"
           @click="save"
         >
+          <v-icon left small>mdi-content-save</v-icon>
           Speichern
+        </v-btn>
+        <v-btn icon class="ml-2" :disabled="inProgress" @click="requestClose">
+          <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-toolbar>
 
@@ -246,6 +251,8 @@
               :blocks="blocks"
               :locale="locale"
               :theme-colors="themeColors"
+              :app-logo="appLogo"
+              :app-logo-dark="appLogoDark"
               :background="draft.background"
               :errors="selectedBlockErrors"
               @input="patchSelectedBlock"
@@ -430,6 +437,13 @@ export default {
      * are painted with them, so „Primärfarbe“ shows what the portal shows.
      */
     themeColors: { type: Object, default: null },
+    /**
+     * The instance's saved App-Logo and its variant for dark mode. An image
+     * Block with the source „App-Logo“ shows them, and a Block of the
+     * Mediathek that holds the App-Logo's media id is told it is a copy.
+     */
+    appLogo: { type: Object, default: null },
+    appLogoDark: { type: Object, default: null },
   },
   data() {
     return {

@@ -24,4 +24,24 @@ describe("router", () => {
       ]);
     }
   );
+
+  // vue-router keeps only the first route of a name and warns about the
+  // second, so each name opens its own page (ECCdigital/tickets#317).
+  it("gives every route a name of its own", () => {
+    const names = router
+      .getRoutes()
+      .filter((record) => record.name)
+      .map((record) => record.name);
+
+    expect(names).toEqual([...new Set(names)]);
+  });
+
+  it.each([
+    ["booking-request-reject", "/booking/request-reject/t-1"],
+    ["booking-verify-reject", "/booking/verify-reject/t-1"],
+  ])("resolves the route named %s to %s", (name, path) => {
+    const { route } = router.resolve({ name, params: { tenantId: "t-1" } });
+
+    expect(route.path).toBe(path);
+  });
 });

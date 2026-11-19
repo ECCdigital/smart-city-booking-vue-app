@@ -17,8 +17,17 @@
               elevation="2"
               rounded
               @click="submitForm"
-              :disabled="invalid"
+              :disabled="
+                invalid || !participationLinkValid || !!locationRefusal
+              "
+              data-test="event-submit"
               >Absenden</v-btn
+            >
+            <span
+              v-if="locationRefusal"
+              class="text-caption error--text ml-2"
+              data-test="location-refusal"
+              >{{ $t(locationRefusal) }}</span
             >
           </template>
           <template v-else-if="isFirstStep()">
@@ -58,11 +67,23 @@
 <script>
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
+import { hasValidParticipationLink } from "@/utils/eventParticipationLink";
 
 export default {
   props: {
     invalid: Boolean,
+  },
+  computed: {
+    ...mapGetters({
+      form: "events/form",
+      locationRefusal: "events/locationRefusal",
+    }),
+    // The link is checked on its own step; an existing event can reach
+    // the last step without passing it.
+    participationLinkValid() {
+      return hasValidParticipationLink(this.form);
+    },
   },
   methods: {
     ...mapActions({
@@ -70,6 +91,7 @@ export default {
       clearForm: "events/clearForm",
     }),
     submitForm() {
+      if (this.locationRefusal) return;
       ApiEventService.addEvent()
         .then(() => {
           this.clearForm();

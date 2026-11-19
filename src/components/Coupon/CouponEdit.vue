@@ -1,20 +1,24 @@
 <template>
   <v-row justify="center">
-    <v-dialog v-model="openDialog" persistent max-width="800px">
-      <v-form ref="form" v-model="valid">
-        <v-card class="coupon-edit" elevation="0">
-          <div class="px-6 py-5 d-flex align-center">
-            <v-icon large class="mr-3">
-              {{ coupon.id ? "mdi-pencil" : "mdi-plus-circle" }}
-            </v-icon>
-            <span class="text-h5 font-weight-bold">
-              {{ coupon.id ? "Rabatt bearbeiten" : "Neuen Rabatt erstellen" }}
-            </span>
-          </div>
+    <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
+      <v-card class="coupon-edit" elevation="0">
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>
+            {{ coupon.id ? "mdi-pencil" : "mdi-plus-circle" }}
+          </v-icon>
+          <span class="text-h5">
+            {{ coupon.id ? "Rabatt bearbeiten" : "Neuen Rabatt erstellen" }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
 
-          <v-divider></v-divider>
+        <v-divider></v-divider>
 
-          <v-card-text class="px-6 py-6 coupon-edit-content">
+        <v-card-text class="pa-6 coupon-edit-content">
+          <v-form ref="form" v-model="valid">
             <v-card class="mb-6 section-card" outlined>
               <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-ticket-percent-outline</v-icon>
@@ -346,23 +350,19 @@
                 </v-row>
               </v-card-text>
             </v-card>
-          </v-card-text>
+          </v-form>
+        </v-card-text>
 
-          <v-divider></v-divider>
+        <v-divider></v-divider>
 
-          <v-card-actions class="px-6 py-4">
-            <v-spacer />
-            <v-btn color="primary" @click="submitChanges" :loading="inProgress">
-              <v-icon left>mdi-content-save</v-icon>
-              Speichern
-            </v-btn>
-            <v-btn outlined @click="closeDialog">
-              <v-icon left>mdi-close</v-icon>
-              Abbrechen
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-form>
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+          <v-btn color="primary" @click="submitChanges" :loading="inProgress">
+            <v-icon left small>mdi-content-save</v-icon>
+            Speichern
+          </v-btn>
+        </v-card-actions>
+      </v-card>
     </v-dialog>
   </v-row>
 </template>
@@ -546,9 +546,6 @@ export default {
 }
 
 .coupon-edit-content {
-  max-height: 70vh;
-  overflow-y: auto;
-
   &::-webkit-scrollbar {
     width: 8px;
   }

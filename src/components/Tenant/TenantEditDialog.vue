@@ -1,12 +1,15 @@
 <template>
   <v-row justify="center">
-    <v-dialog v-model="openDialog" persistent max-width="800px">
+    <v-dialog v-model="openDialog" persistent scrollable max-width="800px">
       <v-card>
-        <v-card-title class="mx-3">
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-pencil</v-icon>
           <span class="text-h5">Mandanten bearbeiten</span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
         </v-card-title>
-        <v-divider class="mx-9 mb-5" />
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           <v-container>
             <v-form ref="form" v-model="valid">
               <h3>Allgemeine Informationen</h3>
@@ -714,19 +717,17 @@
             </v-form>
           </v-container>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
           <v-btn
-            class="mb-5"
             color="primary"
             @click="submitChanges"
             :loading="inProgress"
             data-test="tenant-edit-submit"
           >
+            <v-icon left small>mdi-content-save</v-icon>
             Speichern
-          </v-btn>
-          <v-btn class="mb-5 mr-5" outlined @click="closeDialog">
-            Abbrechen
           </v-btn>
         </v-card-actions>
       </v-card>

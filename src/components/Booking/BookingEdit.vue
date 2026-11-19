@@ -412,6 +412,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -454,6 +455,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -479,6 +481,12 @@
                 </v-dialog>
               </v-col>
             </v-row>
+            <div
+              v-if="bookingPeriodInvalid"
+              class="booking-period-error error--text caption mt-1"
+            >
+              {{ $t("booking.validation.timeEnd.greater_than.message") }}
+            </div>
 
             <template v-if="showOccupancyCalendar">
               <div class="d-flex align-center justify-space-between mt-4 mb-1">
@@ -514,6 +522,7 @@
 
           <BookingCustomFieldsSection
             v-if="editableCustomFields.length"
+            ref="customFields"
             :fields="editableCustomFields"
             :values="selectedBooking.customFieldValues || []"
             @update:values="onCustomFieldUpdate"
@@ -597,6 +606,15 @@
                   required
                   v-model="selectedBooking.location"
                 ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-checkbox
+                  v-model="isBusiness"
+                  dense
+                  hide-details
+                  class="mt-1"
+                  label="Geschäftliche Buchung"
+                ></v-checkbox>
               </v-col>
             </v-row>
           </BaseSection>
@@ -847,11 +865,28 @@
       @submit="submitChanges"
       @cancel="resetChanges"
     />
+
+    <BlacklistWarningConformationDialog
+      :open="blacklistedAddresses.length > 0"
+      :addresses="blacklistedAddresses"
+      @confirm="saveDespiteBlacklist"
+      @cancel="blacklistedAddresses = []"
+    />
+
+    <BookingOwnerChangeDialog
+      :open="!!ownerChange"
+      :previous-owner="ownerChange?.previousOwner"
+      :new-owner="ownerChange?.newOwner"
+      @confirm="settleOwnerChange(true)"
+      @cancel="settleOwnerChange(false)"
+    />
   </div>
 </template>
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import BlacklistWarningConformationDialog from "@/components/commons/BlacklistWarningConformationDialog.vue";
+import { addressesToCheck, blacklistedAmong } from "@/utils/blacklist";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -863,6 +898,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import BookingInitialState from "@/components/Booking/BookingInitialState.vue";
 import BookingCustomFieldsSection from "@/components/Booking/BookingCustomFieldsSection.vue";
 import BookingEditSummary from "@/components/Booking/BookingEditSummary.vue";
+import BookingOwnerChangeDialog from "@/components/Booking/BookingOwnerChangeDialog.vue";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
@@ -889,6 +925,8 @@ import {
   toUpdatePayload,
 } from "@/utils/bookingForm";
 import { BOOKING_STATUS } from "@/utils/bookingStatus";
+import { ownerMovedTo } from "@/utils/bookedVia";
+import { isBusinessBooking } from "@/utils/businessBooking";
 import _ from "lodash";
 
 export default {
@@ -900,7 +938,9 @@ export default {
     BookingInitialState,
     BookingCustomFieldsSection,
     BookingEditSummary,
+    BookingOwnerChangeDialog,
     CheckoutCalendar,
+    BlacklistWarningConformationDialog,
   },
   props: {
     booking: {
@@ -924,6 +964,8 @@ export default {
     return {
       valid: true,
       inProgress: false,
+      /** The addresses the blacklist warning names. */
+      blacklistedAddresses: [],
       test: null,
       addBookableValue: null,
 
@@ -1042,9 +1084,25 @@ export default {
       // Create mode: the "Anfangszustand" and a create the backend refused (spec E10).
       initialState: defaultInitialState(),
       createError: null,
+      // The open question whether the save may hand the booking to another
+      // account: `{ previousOwner, newOwner, resolve }`, `null` when none.
+      ownerChange: null,
     };
   },
   computed: {
+    /**
+     * Private or business: the stored answer, or without it the company's
+     * reading. Only a change by the admin writes it; a booking without the
+     * answer keeps none until then.
+     */
+    isBusiness: {
+      get() {
+        return isBusinessBooking(this.selectedBooking);
+      },
+      set(value) {
+        this.$set(this.selectedBooking, "isBusiness", Boolean(value));
+      },
+    },
     ...mapGetters({
       tenants: "tenants/tenants",
       tenantId: "tenants/currentTenantId",
@@ -1175,6 +1233,11 @@ export default {
         this.isCreateMode ||
         this.hasUnsavedChanges
       );
+    },
+    /** The end lies at or before the begin; the backend refuses that too. */
+    bookingPeriodInvalid() {
+      const { timeBegin, timeEnd } = this.selectedBooking;
+      return !!timeBegin && !!timeEnd && timeEnd <= timeBegin;
     },
     hasUnsavedChanges() {
       if (!this.originalSnapshot || !this.editableBooking) return false;
@@ -1512,6 +1575,15 @@ export default {
         return;
       }
 
+      if (this.bookingPeriodInvalid) {
+        if (!isCurrent()) return;
+        this.$set(this.itemValidations, bookableId, {
+          status: "idle",
+          message: "Zeitraum ungültig",
+        });
+        return;
+      }
+
       if (!isCurrent()) return;
       this.$set(this.itemValidations, bookableId, {
         status: "loading",
@@ -1760,37 +1832,97 @@ export default {
     finishSave() {
       this.$emit("saved");
     },
-    async submitChanges() {
-      this.createError = null;
+    /**
+     * Marks every field still missing, brings the first into view and names
+     * the gap as a toast. False while one is missing. A create checks the
+     * whole form, an update the custom fields only, as the backend does.
+     */
+    async validateForm() {
+      const inputs = this.isCreateMode
+        ? this.$refs.form.inputs
+        : this.customFieldInputs();
+      const formValid = inputs
+        .map((input) => input.validate(true))
+        .every(Boolean);
       const missingFields = validateRequiredCustomFields(
         this.editableCustomFields,
         this.selectedBooking.customFieldValues || []
       );
-      if (missingFields.length) {
+      if (formValid && !missingFields.length) return true;
+
+      this.$nextTick(() => {
+        const firstInvalid = inputs.find((input) => input.hasError);
+        firstInvalid?.$el.scrollIntoView?.({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+      await this.addToast(
+        ToastService.createToast("booking.validation.required", "error")
+      );
+      if (this.bookableItems.length === 0) {
         await this.addToast(
-          ToastService.createToast("booking.validation.required", "error")
+          ToastService.createToast(
+            "booking.validation.bookableItems.min_items",
+            "error"
+          )
+        );
+      }
+      return false;
+    },
+    /** The form's inputs within the section „Zusatzfelder“. */
+    customFieldInputs() {
+      const section = this.$refs.customFields?.$el;
+      if (!section) return [];
+      return this.$refs.form.inputs.filter((input) =>
+        section.contains(input.$el)
+      );
+    },
+    /**
+     * The addresses of a new booking's mail, or those a changed mail adds,
+     * that the blacklist hits.
+     */
+    blacklistHits() {
+      return blacklistedAmong(
+        this.isCreateMode ? "manualBooking" : "bookingMail",
+        addressesToCheck(
+          this.selectedBooking.mail,
+          this.isCreateMode ? null : this.booking.mail
+        ),
+        this.tenantId
+      );
+    },
+    saveDespiteBlacklist() {
+      this.blacklistedAddresses = [];
+      this.submitChanges(true);
+    },
+    /**
+     * Saves the booking. A mail on the blacklist is no refusal: the warning
+     * asks first, and `blacklistConfirmed` saves anyway.
+     */
+    async submitChanges(blacklistConfirmed) {
+      this.createError = null;
+      if (!(await this.validateForm())) return;
+
+      if (this.bookingPeriodInvalid) {
+        await this.addToast(
+          ToastService.createToast(
+            "booking.validation.timeEnd.greater_than",
+            "error"
+          )
         );
         return;
       }
 
+      if (blacklistConfirmed !== true) {
+        this.inProgress = true;
+        this.blacklistedAddresses = await this.blacklistHits();
+        this.inProgress = false;
+        if (this.blacklistedAddresses.length) return;
+      }
+
       if (!this.selectedBooking.id) {
         this.inProgress = true;
-        if (!this.$refs.form.validate()) {
-          await this.addToast(
-            ToastService.createToast("booking.validation.required", "error")
-          );
-          if (this.bookableItems.length === 0) {
-            await this.addToast(
-              ToastService.createToast(
-                "booking.validation.bookableItems.min_items",
-                "error"
-              )
-            );
-          }
-          this.inProgress = false;
-          return;
-        }
-
         // The create POST carries the chosen initial state as `status` and
         // no flag (spec E10).
         await ApiBookingService.createBooking(
@@ -1819,6 +1951,7 @@ export default {
             this.inProgress = false;
           });
       } else {
+        if (!(await this.confirmOwnerChange())) return;
         this.inProgress = true;
         // The update PUT carries content only (spec E1.1): no flag, no
         // `status` - the state is moved by the transitions, never by a save.
@@ -1845,6 +1978,25 @@ export default {
             this.inProgress = false;
           });
       }
+    },
+    /**
+     * Whether the save may go ahead: a corrected first mail of a booking made
+     * by an admin hands it to another account, so the admin is asked first.
+     */
+    confirmOwnerChange() {
+      const newOwner = ownerMovedTo(this.booking, this.selectedBooking);
+      if (!newOwner) return Promise.resolve(true);
+      return new Promise((resolve) => {
+        this.ownerChange = {
+          previousOwner: this.booking.assignedUserId || this.booking.mail,
+          newOwner,
+          resolve,
+        };
+      });
+    },
+    settleOwnerChange(confirmed) {
+      this.ownerChange?.resolve(confirmed);
+      this.ownerChange = null;
     },
     padTo2Digits(num) {
       return num.toString().padStart(2, "0");

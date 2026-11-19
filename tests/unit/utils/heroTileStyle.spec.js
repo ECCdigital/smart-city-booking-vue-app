@@ -72,6 +72,15 @@ describe("the Panel's surface", () => {
     ).toBe("rgba(101, 67, 33, 0.6)");
   });
 
+  it("paints „Akzent“ with the accent, or in the primary colour while it is empty", () => {
+    const fillOf = (accent) =>
+      heroPanelStyle({ ...GLASS, color: "accent" }, { ...THEME_COLORS, accent })
+        .backgroundColor;
+
+    expect(fillOf("#ffbf00")).toBe("rgba(255, 191, 0, 0.6)");
+    expect(fillOf("")).toBe("rgba(18, 52, 86, 0.6)");
+  });
+
   it("paints a custom hex as it stands", () => {
     expect(heroPanelStyle({ ...GLASS, color: "#1A2B3C" }).backgroundColor).toBe(
       "rgba(26, 43, 60, 0.6)"
@@ -134,6 +143,17 @@ describe("the Block's own text", () => {
       "#654321",
       "#1A2B3C",
     ]);
+  });
+
+  it("paints „Akzent“ with the accent, or in the primary colour while it is empty", () => {
+    const inkOf = (accent) =>
+      heroTextStyle(
+        { size: "md", color: "accent" },
+        { ...THEME_COLORS, accent }
+      ).color;
+
+    expect(inkOf("#ffbf00")).toBe("#ffbf00");
+    expect(inkOf("")).toBe("#123456");
   });
 
   it("keeps the default ink for a branded token it cannot resolve, so the text stays legible", () => {

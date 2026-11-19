@@ -2,10 +2,10 @@ import PersistenceService from "@/services/PersistenceService";
 
 const namespaced = true;
 
-const state = {
+const state = () => ({
   viewedIds:
     PersistenceService.getFromLocalStorage("viewedNotifications") || [],
-};
+});
 
 const mutations = {
   ADD_VIEWED_NOTIFICATION(state, notificationId) {

@@ -70,15 +70,22 @@ export default {
     :value="open"
     max-width="560"
     persistent
+    scrollable
     @input="!$event && $emit('close')"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon left color="error">mdi-delete</v-icon>
-        {{ $t("accessPoint.management.delete.title") }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left color="error">mdi-alert</v-icon>
+        <span class="text-h5">
+          {{ $t("accessPoint.management.delete.title") }}
+        </span>
+        <v-spacer />
+        <v-btn icon :disabled="deleting" @click="$emit('close')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
-      <v-card-text class="pt-4">
+      <v-card-text class="pa-6">
         <p>{{ $t("accessPoint.management.delete.question", { label }) }}</p>
 
         <v-alert
@@ -163,9 +170,8 @@ export default {
         </v-alert>
       </v-card-text>
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text :disabled="deleting" @click="$emit('close')">
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined :disabled="deleting" @click="$emit('close')">
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
         <!-- Confirming before the booking check has answered would be the
@@ -177,6 +183,7 @@ export default {
           :disabled="loadingBookings"
           @click="$emit('confirm')"
         >
+          <v-icon left small>mdi-delete</v-icon>
           {{ $t("accessPoint.management.delete.confirm") }}
         </v-btn>
       </v-card-actions>

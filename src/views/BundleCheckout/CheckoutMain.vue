@@ -152,6 +152,7 @@ export default {
       contactDetails: {
         name: null,
         company: null,
+        isBusiness: null,
         mail: null,
         phone: null,
         street: null,
@@ -459,6 +460,7 @@ export default {
       this.contactDetails = {
         name: null,
         company: null,
+        isBusiness: null,
         mail: null,
         phone: null,
         street: null,

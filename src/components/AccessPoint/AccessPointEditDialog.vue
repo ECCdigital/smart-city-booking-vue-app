@@ -2,11 +2,16 @@
 import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
-import AddressLookup from "@/components/commons/AddressLookup.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   formatAccessPointErrorMessage,
+  isProviderNotActiveError,
   splitAccessPointFieldError,
 } from "@/utilities/access-point-errors";
+import {
+  createLockAndAccessAppDefaults,
+  SALTO_PROVIDER,
+} from "@/utilities/access-apps";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -20,8 +25,12 @@ import {
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
+import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
+// The origin of a point taken over with „Vorbelegen“: it counts as one set
+// by hand, so a changed address asks before the point follows.
+const PREFILL_ORIGIN = "nuki";
 
 /**
  * The Öffnungsart of a Nuki access point: which action Nuki performs when the
@@ -32,6 +41,7 @@ const GET_LOCATION_CAPABILITY = "getLocation";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
+const SALTO_MODES = ["remote"];
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -66,7 +76,7 @@ function emptyForm() {
 
 export default {
   name: "AccessPointEditDialog",
-  components: { AddressLookup },
+  components: { LocationInput },
   props: {
     open: { type: Boolean, default: false },
     // The access point to edit; `null` opens the dialog in create mode.
@@ -108,8 +118,16 @@ export default {
       providerLocks: [],
       loadingLocks: false,
       lockLoadError: "",
+      // The provider whose listing answered that the tenant has not switched
+      // it on: the access point is saved all the same and checked once it is.
+      inactiveProvider: "",
+      // The mode a Salto door was stored on that Salto KS does not support;
+      // the form proposes `remote` instead.
+      unsupportedStoredMode: "",
       prefilling: false,
       prefillHint: "",
+      // Counts the openings: the location input starts afresh on each.
+      opening: 0,
     };
   },
   computed: {
@@ -202,10 +220,20 @@ export default {
       return this.showModeToggle && this.mode === PROVIDER_MODE;
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
-    // dialog shows what is coming - but they cannot be chosen. An access point
+    // dialog shows what is coming - but they cannot be chosen. A Nuki door
     // already stored on one keeps it; only picking it anew is barred.
+    //
+    // A Salto door opens remotely or not at all, for good: the backend
+    // refuses `authorization` and `both` at every Salto lock (tickets#499), so
+    // the dialog offers `remote` alone, without a „coming soon“ for the rest.
+    // A Salto door stored on one of them opens on `remote`, and the hint
+    // names the stored mode (`reset()`).
     modeOptions() {
-      return ["authorization", "remote", "both"].map((value) => {
+      const modes =
+        this.form.provider === SALTO_PROVIDER
+          ? SALTO_MODES
+          : ["authorization", "remote", "both"];
+      return modes.map((value) => {
         const comingSoon = isComingSoonAccessPointMode(value);
         return {
           value,
@@ -310,30 +338,85 @@ export default {
         (lock) => lock.externalId === this.form.externalId
       );
     },
+    doorModeHint() {
+      if (this.unsupportedStoredMode) {
+        return this.$t("accessPoint.management.storedModeUnsupported", {
+          stored: this.$t(
+            `accessPoint.management.modes.${this.unsupportedStoredMode}`
+          ),
+          proposed: this.$t(`accessPoint.management.modes.${SALTO_MODES[0]}`),
+        });
+      }
+      return this.unsupportedMode
+        ? this.$t("accessPoint.management.modeUnsupported")
+        : "";
+    },
     unsupportedMode() {
       const supported = this.matchingLock?.supportedModes;
       if (!Array.isArray(supported) || supported.length === 0) return false;
       return !supported.includes(this.form.mode);
+    },
+    // A Salto lock whose IQ is not activated, or needs re-activation, lists
+    // no modes: it can do nothing right now. The backend saves the door all
+    // the same (tickets#570); the hint says why it does not open yet and
+    // where the IQ is activated - on the tab of the locking systems, not here.
+    iqNotActivatedHint() {
+      if (this.form.provider !== SALTO_PROVIDER) return "";
+      const supported = this.matchingLock?.supportedModes;
+      if (!Array.isArray(supported) || supported.length > 0) return "";
+
+      return this.$t("accessPoint.management.iqNotActivated", {
+        tab: this.$t("accessPoint.management.providersTab"),
+        section: this.$t("accessPoint.tenant.salto.iq.title"),
+      });
+    },
+    // Lock and mode are judged against the provider's listing. While the
+    // provider is not active there is none, and the backend saves without
+    // it - the hint says so, so a save without a check is no surprise.
+    providerInactiveHint() {
+      const provider = this.inactiveProvider;
+      if (!provider) return "";
+      const picked = this.showPicker && this.pickerProvider === provider;
+      if (!picked && this.form.provider !== provider) return "";
+
+      const title =
+        this.providers.find((p) => p.id === provider)?.title ||
+        createLockAndAccessAppDefaults()[provider]?.title ||
+        provider;
+      const key = this.isLocker ? "locker" : "door";
+      return this.$t(`accessPoint.management.providerInactive.${key}`, {
+        provider: title,
+      });
     },
     canPrefillLocation() {
       if (!this.isEdit) return false;
       const provider = this.providers.find((p) => p.id === this.form.provider);
       return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
-    coordinates() {
-      const points = this.form.location?.coordinates?.points;
-      if (!Array.isArray(points) || points.length < 2) return "";
-      return `${points[1]}, ${points[0]}`;
+    // The location as stored, against which the input measures "unchanged":
+    // none for a new access point.
+    storedLocation() {
+      return this.accessPoint?.location ?? null;
+    },
+    // Why the location may not be saved, or "": the backend's rule, measured
+    // against the stored location the same way the bookable's is.
+    saveRefusal() {
+      const key = locationRefusal(this.form.location, this.storedLocation);
+      return key ? this.$t(key) : "";
     },
   },
   watch: {
     open(isOpen) {
       if (isOpen) this.reset();
     },
+    // The picker's own listing; an access point opened for editing has
+    // none, its listing comes from `reset()`.
     pickerProvider(provider) {
+      if (this.isEdit) return;
       this.providerLocks = [];
       this.pickerLockId = "";
-      if (provider) this.fetchProviderLocks();
+      this.inactiveProvider = "";
+      if (provider) this.fetchProviderLocks(provider);
     },
     // The provider list may still be loading while the dialog opens: a dialog
     // that opened on the bare form for want of a listing chooses its way in
@@ -361,6 +444,22 @@ export default {
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
     },
+    // A provider typed in that is not active for the tenant has its listing
+    // asked all the same, so the dialog can say that lock and mode are
+    // checked once it is (tickets#311). The listing of an active provider is
+    // the picker's; this asks only whether the provider is on.
+    onProviderChange(provider) {
+      this.applyProviderDefaults(provider);
+      if (!provider || this.providers.some((p) => p.id === provider)) return;
+      this.checkProviderActive(provider);
+    },
+    async checkProviderActive(provider) {
+      try {
+        await ApiAccessAppsService.getAccessPoints(this.tenantId, provider);
+      } catch (error) {
+        if (isProviderNotActiveError(error)) this.inactiveProvider = provider;
+      }
+    },
     // True where the lock lists its Öffnungsarten and this one is not among
     // them - a listing that says nothing leaves every option alone.
     isUnsupportedOpenAction(openAction) {
@@ -371,6 +470,15 @@ export default {
       const source = this.accessPoint;
       this.form = source ? { ...emptyForm(), ...source } : emptyForm();
       this.form.providerLocationId = this.form.providerLocationId || "";
+      this.unsupportedStoredMode = "";
+      if (
+        this.form.provider === SALTO_PROVIDER &&
+        !isLockerAccessPoint(this.form) &&
+        !SALTO_MODES.includes(this.form.mode)
+      ) {
+        this.unsupportedStoredMode = this.form.mode;
+        this.form.mode = SALTO_MODES[0];
+      }
       const { openAction, ...config } = source?.config || {};
       // A stored value outside the five - written into the JSON text past an
       // older backend - is kept and saved back unchanged, rather than being
@@ -387,10 +495,12 @@ export default {
       this.saveError = "";
       this.prefillHint = "";
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       this.providerLocks = [];
       this.pickerLockId = "";
       this.advancedPanel = [];
       this.validationRulesTouched = false;
+      this.opening += 1;
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
@@ -400,6 +510,7 @@ export default {
         this.mode = MANUAL_MODE;
         this.pickerProvider = "";
         this.presetProvider = "";
+        if (this.listsOnEdit(source)) this.fetchProviderLocks(source.provider);
       } else {
         this.chooseWayIn();
       }
@@ -432,20 +543,34 @@ export default {
       this.form.mode = blank.mode;
       if (preset) this.applyProviderDefaults(preset);
     },
-    async fetchProviderLocks() {
+    // A stored access point is checked against its provider's listing on
+    // every save, so the dialog reads it too: to say what the save will
+    // find. An active provider that lists nothing (Pareva) is not asked; a
+    // provider that is not active is, and its answer says so.
+    listsOnEdit(accessPoint) {
+      if (!accessPoint.provider || !accessPoint.externalId) return false;
+      const active = this.providers.find((p) => p.id === accessPoint.provider);
+      return !active || canListAccessPoints(active);
+    },
+    async fetchProviderLocks(provider) {
       this.loadingLocks = true;
       this.lockLoadError = "";
+      this.inactiveProvider = "";
       try {
         const response = await ApiAccessAppsService.getAccessPoints(
           this.tenantId,
-          this.pickerProvider
+          provider
         );
         this.providerLocks = response.data || [];
       } catch (error) {
         this.providerLocks = [];
-        this.lockLoadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.load.error.message",
-        });
+        if (isProviderNotActiveError(error)) {
+          this.inactiveProvider = provider;
+        } else {
+          this.lockLoadError = formatAccessPointErrorMessage(error, {
+            fallbackKey: "accessPoint.load.error.message",
+          });
+        }
       } finally {
         this.loadingLocks = false;
       }
@@ -487,16 +612,19 @@ export default {
           this.form.id,
           this.tenantId
         );
-        const location = response.data;
+        const point = pointOf(response.data);
 
-        if (!location) {
+        if (!point) {
           this.prefillHint = this.$t(
             "accessPoint.management.location.prefillEmpty"
           );
           return;
         }
 
-        this.form.location = { ...(this.form.location || {}), ...location };
+        // The input sets the point and asks the reverse search for an
+        // address, which it only suggests. It hands the location out
+        // through `input`, which clears the hint - so the hint comes after.
+        this.$refs.location.setPoint(point, PREFILL_ORIGIN);
         this.prefillHint = this.$t(
           "accessPoint.management.location.prefillApplied"
         );
@@ -598,7 +726,7 @@ export default {
       return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
     },
     async submit() {
-      if (!this.$refs.form.validate()) return;
+      if (this.saveRefusal || !this.$refs.form.validate()) return;
       if (!this.parseConfig()) {
         this.advancedPanel = [0];
         return;
@@ -647,13 +775,17 @@ export default {
     @input="!$event && close()"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon left color="primary">{{ typeIcon }}</v-icon>
-        {{ title }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>{{ typeIcon }}</v-icon>
+        <span class="text-h5">{{ title }}</span>
+        <v-spacer />
+        <v-btn icon :disabled="saving" @click="close">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
 
-      <v-card-text class="pt-4">
+      <v-card-text class="pa-6">
         <v-form ref="form" v-model="valid">
           <!-- The way in: from the provider's listing, or by hand -->
           <template v-if="showModeToggle">
@@ -803,7 +935,7 @@ export default {
                 class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
-                @change="applyProviderDefaults"
+                @change="onProviderChange"
                 :label="$t('accessPoint.management.fields.provider')"
                 background-color="accent"
                 filled
@@ -836,6 +968,7 @@ export default {
             </v-col>
             <v-col v-if="!isLocker" cols="12" md="6">
               <v-select
+                ref="modeSelect"
                 v-model="form.mode"
                 :items="modeOptions"
                 :label="$t('accessPoint.management.fields.mode')"
@@ -843,11 +976,7 @@ export default {
                 filled
                 dense
                 :rules="requiredRule"
-                :hint="
-                  unsupportedMode
-                    ? $t('accessPoint.management.modeUnsupported')
-                    : ''
-                "
+                :hint="doorModeHint"
                 persistent-hint
               >
                 <template v-slot:item="{ item }">
@@ -904,6 +1033,26 @@ export default {
             </v-col>
           </v-row>
 
+          <v-alert
+            v-if="iqNotActivatedHint"
+            class="iq-not-activated-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ iqNotActivatedHint }}
+          </v-alert>
+
+          <v-alert
+            v-if="providerInactiveHint"
+            class="provider-inactive-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ providerInactiveHint }}
+          </v-alert>
+
           <!-- Mode, QR rules and address describe a door; a locker system has
                none of them -->
           <template v-if="!isLocker">
@@ -946,15 +1095,15 @@ export default {
                 {{ $t("accessPoint.management.location.title") }}
               </span>
             </div>
-            <AddressLookup
+            <LocationInput
+              ref="location"
+              :key="opening"
               :value="form.location"
-              :label="$t('accessPoint.management.location.address')"
+              :stored="storedLocation"
+              narrow
+              class="mb-2"
               @input="onLocationChange"
             />
-            <div v-if="coordinates" class="text-caption text--secondary mb-2">
-              {{ $t("accessPoint.management.location.coordinates") }}:
-              {{ coordinates }}
-            </div>
             <div v-if="!isEdit" class="text-caption text--secondary mb-2">
               {{ $t("accessPoint.management.location.prefillAfterSave") }}
             </div>
@@ -1013,17 +1162,24 @@ export default {
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text :disabled="saving" @click="close">
+      <v-card-actions class="justify-end px-6 py-4">
+        <span
+          v-if="saveRefusal"
+          class="save-refusal text-caption error--text px-2"
+        >
+          {{ saveRefusal }}
+        </span>
+        <v-btn outlined :disabled="saving" @click="close">
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
         <v-btn
           class="save-access-point"
           color="primary"
           :loading="saving"
+          :disabled="!!saveRefusal"
           @click="submit"
         >
+          <v-icon left small>mdi-content-save</v-icon>
           {{ $t("accessPoint.management.save") }}
         </v-btn>
       </v-card-actions>

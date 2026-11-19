@@ -4,10 +4,10 @@ const THEME_STORAGE_KEY = "darkMode";
 
 export default {
   namespaced: true,
-  state: {
+  state: () => ({
     isDarkMode:
       PersistenceService.getFromLocalStorage(THEME_STORAGE_KEY) || false,
-  },
+  }),
   getters: {
     isDarkMode: (state) => state.isDarkMode,
   },

@@ -15,9 +15,20 @@ const COLOR_BACKGROUND = Object.freeze({
   light: "#f3f4f6",
 });
 
-function tileOf(block, background = COLOR_BACKGROUND, locale = "de") {
+function tileOf(
+  block,
+  background = COLOR_BACKGROUND,
+  locale = "de",
+  appLogo = null
+) {
   return mountComponent(HeroBlockTile, {
-    propsData: { block, background, themeColors: THEME_COLORS, locale },
+    propsData: {
+      block,
+      background,
+      themeColors: THEME_COLORS,
+      locale,
+      appLogo,
+    },
     stubs: { MediaReferenceImage: true },
   });
 }
@@ -161,6 +172,24 @@ describe("an image Block", () => {
       source: "media",
       mediaId: "m1",
     });
+  });
+
+  it("paints the App-Logo for a Block that follows it", () => {
+    const appLogo = { source: "media", mediaId: "logo" };
+    const block = heroImageBlock({ image: { source: "app-logo" } });
+    const picture = tileOf(block, COLOR_BACKGROUND, "de", appLogo).find(
+      ".hero-block-tile__picture"
+    );
+
+    expect(picture.props("reference")).toEqual(appLogo);
+  });
+
+  it("paints nothing for a Block that follows an App-Logo the instance does not have", () => {
+    const block = heroImageBlock({ image: { source: "app-logo" } });
+
+    expect(tileOf(block).find(".hero-block-tile__picture").exists()).toBe(
+      false
+    );
   });
 
   it("paints nothing where no image has been chosen yet", () => {

@@ -11,11 +11,16 @@
  * takes for the message under the field.
  *
  * The colour helpers — `isHeroHexColor`, `heroHexWithoutAlpha` and the two
- * hex rule arrays — are the contract's, not a Block's: `heroBackground.js`
- * and the Background's colour fields read the same `#rrggbb` from here.
+ * hex rule arrays — are the contract's, not a Block's: `heroBackground.js`,
+ * the Background's colour fields and the colours of the Portal tab read the
+ * same `#rrggbb` from here.
  */
 
-import { heroHtmlFirstLine, heroLocalizedText } from "@/utils/heroBlocks";
+import {
+  heroHtmlFirstLine,
+  heroLocalizedText,
+  isHeroAppLogo,
+} from "@/utils/heroBlocks";
 import { isMediaReference } from "@/utils/mediaReference";
 
 /** The cap the contract puts on `text.text` and `image.alt`, per locale. */
@@ -24,13 +29,31 @@ export const HERO_TEXT_MAX_LENGTH = 200;
 /** The cap the contract puts on `richtext.html`, per locale. */
 export const HERO_RICHTEXT_MAX_LENGTH = 10000;
 
-// A colour is either one of the four tokens or `#rrggbb` — no alpha, no
-// shorthand (Shared contract, „Conventions“).
+// A colour is either a token or `#rrggbb` — no alpha, no shorthand (Shared
+// contract, „Conventions“).
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+/**
+ * The four tokens a run of words in a rich text carries as `hero-color-*`.
+ * The backend's sanitizer knows no `hero-color-accent`, so the accent stays
+ * out of this list.
+ */
 export const HERO_COLOR_TOKENS = Object.freeze([
   "default",
   "primary",
   "secondary",
+  "white",
+]);
+
+/**
+ * The tokens the colour of a text or rich-text Block takes: the four of a run
+ * of words plus `accent`, the accent colour of the branding (map #510).
+ */
+export const HERO_BLOCK_COLOR_TOKENS = Object.freeze([
+  "default",
+  "primary",
+  "secondary",
+  "accent",
   "white",
 ]);
 
@@ -44,6 +67,7 @@ export const HERO_PANEL_COLOR_TOKENS = Object.freeze([
   "black",
   "primary",
   "secondary",
+  "accent",
 ]);
 
 /**
@@ -96,12 +120,19 @@ const BAD_PANEL_COLOR_ISSUE =
  * so it has no colour of its own to show and its control carries an icon
  * instead of a swatch.
  *
+ * „Akzent“ without an accent colour paints the primary colour, as the
+ * storefront does (map #510).
+ *
  * @param {string} token - A colour token.
  * @param {Object|null} themeColors - The instance's `branding.theme.colors`.
  * @returns {?string} The `#rrggbb` to paint, or `null` when there is none.
  */
 export function heroTokenSwatch(token, themeColors) {
-  return HERO_FIXED_TOKEN_COLORS[token] || (themeColors || {})[token] || null;
+  const colors = themeColors || {};
+  const branded =
+    token === "accent" ? colors.accent || colors.primary : colors[token];
+
+  return HERO_FIXED_TOKEN_COLORS[token] || branded || null;
 }
 
 /**
@@ -131,7 +162,7 @@ export function heroHexWithoutAlpha(color) {
  * @returns {boolean} Whether a text or rich-text Block may carry it as colour.
  */
 export function isHeroColor(value) {
-  return HERO_COLOR_TOKENS.includes(value) || isHeroHexColor(value);
+  return HERO_BLOCK_COLOR_TOKENS.includes(value) || isHeroHexColor(value);
 }
 
 /**
@@ -229,13 +260,18 @@ export const heroOptionalHexRules = Object.freeze([
 ]);
 
 /**
- * The rules of the image field. The contract knows one kind of image on a
- * Block: a medium of the library. An external address is refused here rather
- * than by the backend, which rejects `source: "external"` outright.
+ * The rules of the image field. The contract knows two kinds of image on a
+ * Block: a medium of the library, or the App-Logo (`source: "app-logo"`). An
+ * external address is refused here rather than by the backend, which rejects
+ * `source: "external"` outright.
  */
 export const heroImageRules = Object.freeze([
-  (value) => isMediaReference(value) || NO_IMAGE_MESSAGE,
+  (value) => isHeroImage(value) || NO_IMAGE_MESSAGE,
 ]);
+
+function isHeroImage(image) {
+  return isMediaReference(image) || isHeroAppLogo(image);
+}
 
 /**
  * The first message a set of rules refuses a value with — what an input shows
@@ -277,7 +313,7 @@ function richtextIssues(block) {
 }
 
 function imageIssues(block) {
-  const issues = isMediaReference(block.image) ? [] : [NO_IMAGE_ISSUE];
+  const issues = isHeroImage(block.image) ? [] : [NO_IMAGE_ISSUE];
 
   return [
     ...issues,

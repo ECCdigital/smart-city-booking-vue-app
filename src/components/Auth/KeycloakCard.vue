@@ -7,9 +7,12 @@ import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import { addressBlacklistedRefusal } from "@/utils/checkoutErrors";
+import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
 
 export default {
   name: "KeycloakCard",
+  components: { CheckoutAddressBlacklistedAlert },
   data() {
     return {
       nextUrl: null,
@@ -19,10 +22,13 @@ export default {
       ssoConfig: {},
       acceptedDataProtection: false,
       acceptedTerms: false,
+      /** The instance's mail address of a refusal on the blacklist, empty without one. */
+      blacklistedMailAddress: "",
       state: "",
       possibleStates: {
         SIGNUP_SUCCESS: "signup-success",
         SIGNUP_ERROR: "signup-error",
+        SIGNUP_BLACKLISTED: "signup-blacklisted",
         SIGNIN_SUCCESS: "signin-success",
         SIGNIN_ERROR: "signin-error",
         KC_AUTH_SUCCESS: "kc-auth-success",
@@ -251,6 +257,12 @@ export default {
           setTimeout(() => this.signIn(), 2000);
         }
       } catch (error) {
+        const blacklisted = addressBlacklistedRefusal(error.response?.data);
+        if (blacklisted !== null) {
+          this.blacklistedMailAddress = blacklisted;
+          this.setState(this.possibleStates.SIGNUP_BLACKLISTED);
+          return;
+        }
         this.setState(this.possibleStates.SIGNUP_ERROR);
         await this.addToast(
           ToastService.createToast("register.error.default", "error")
@@ -384,6 +396,13 @@ export default {
       </p>
       <v-progress-linear indeterminate color="primary" rounded class="mt-3" />
     </template>
+
+    <CheckoutAddressBlacklistedAlert
+      v-if="state === possibleStates.SIGNUP_BLACKLISTED"
+      :mail-address="blacklistedMailAddress"
+      registration
+      class="mb-0"
+    />
 
     <v-alert
       v-if="

@@ -8,9 +8,9 @@
     @input="$emit('input', $event)"
   >
     <v-card>
-      <v-card-title class="d-flex align-center flex-nowrap">
-        <v-icon color="primary" class="mr-2">mdi-image-multiple-outline</v-icon>
-        <span :class="phone ? 'text-subtitle-1 text-truncate' : 'text-h6'">
+      <v-card-title class="d-flex align-center flex-nowrap py-4 px-6">
+        <v-icon left>mdi-image-multiple-outline</v-icon>
+        <span :class="phone ? 'text-subtitle-1 text-truncate' : 'text-h5'">
           {{ title }}
         </span>
         <v-spacer />
@@ -18,6 +18,7 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
+      <v-divider />
 
       <v-tabs v-model="tab" class="flex-grow-0">
         <v-tab href="#library">Mediathek</v-tab>
@@ -27,7 +28,7 @@
       <v-divider />
 
       <v-card-text
-        class="pa-4"
+        class="pa-6"
         style="min-height: 420px"
         @dragover.prevent="onDragOver"
         @dragleave.prevent="dragOver = false"
@@ -43,7 +44,7 @@
             @filter="onFilter"
           >
             <template v-if="kind || publicOnly" #actions>
-              <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
+              <v-chip v-if="kind" small label>{{ kindOptions.label }}</v-chip>
               <v-chip v-if="publicOnly" small label color="warning" outlined>
                 <v-icon x-small left>mdi-lock-outline</v-icon>
                 intern = nicht wählbar
@@ -155,8 +156,8 @@
             </p>
             <MediaUploadSheet
               v-model="uploadSheet"
-              :accept="acceptAttribute"
-              :hint="uploadHint"
+              :accept="kindOptions.accept"
+              :hint="kindOptions.hint"
               @pick="uploadFiles"
             />
           </div>
@@ -187,7 +188,7 @@
               type="file"
               multiple
               hidden
-              :accept="acceptAttribute"
+              :accept="kindOptions.accept"
               @change="onFilePick"
             />
           </div>
@@ -215,12 +216,11 @@
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <span v-if="tab !== 'external'" class="text--secondary ml-2">
+      <v-card-actions class="justify-end px-6 py-4">
+        <span v-if="tab !== 'external'" class="text--secondary mr-auto">
           {{ selected.length }} ausgewählt
         </span>
-        <v-spacer />
-        <v-btn text @click="close">Abbrechen</v-btn>
+        <v-btn outlined @click="close">Abbrechen</v-btn>
         <v-btn color="primary" :disabled="confirmDisabled" @click="confirm">
           <v-icon small left>mdi-plus</v-icon>
           Übernehmen
@@ -239,7 +239,9 @@ import MediaImage from "@/components/Media/MediaImage.vue";
 import MediaUploadSheet from "@/components/Media/MediaUploadSheet.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import {
+  FONT_UPLOAD_LABEL,
   MEDIA_ALLOWED_TYPES_LABEL,
+  fontFileRefusal,
   mediaUploadErrorMessage,
 } from "@/utils/mediaUploadError";
 import {
@@ -248,6 +250,32 @@ import {
 } from "@/utils/mediaReference";
 
 const PAGE_SIZE = 24;
+
+const IMAGE_UPLOAD_HINT = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
+const DOCUMENT_UPLOAD_HINT = "PDF bis 50 MB";
+
+// What the picker says and takes for each kind of media it can be limited to.
+const KINDS = Object.freeze({
+  image: { label: "Nur Bilder", hint: IMAGE_UPLOAD_HINT, accept: "image/*" },
+  document: {
+    label: "Nur Dokumente",
+    hint: DOCUMENT_UPLOAD_HINT,
+    accept: "application/pdf",
+  },
+  font: {
+    label: "Nur Schriften",
+    hint: FONT_UPLOAD_LABEL,
+    accept: ".woff2,font/woff2",
+  },
+});
+
+// Without a kind the picker offers images and documents alike; the chip of
+// the kind is not shown then.
+const ANY_KIND = Object.freeze({
+  label: "",
+  hint: `${IMAGE_UPLOAD_HINT} · ${DOCUMENT_UPLOAD_HINT}`,
+  accept: undefined,
+});
 
 /**
  * The media picker (§4.11): a gallery grid in a modal that every editor shares.
@@ -320,19 +348,8 @@ export default {
     allowCreate() {
       return MediaPermissionService.allowCreate(this.scope);
     },
-    kindLabel() {
-      return this.kind === "document" ? "Nur Dokumente" : "Nur Bilder";
-    },
-    uploadHint() {
-      const images = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
-      if (this.kind === "image") return images;
-      if (this.kind === "document") return "PDF bis 50 MB";
-      return `${images} · PDF bis 50 MB`;
-    },
-    acceptAttribute() {
-      if (this.kind === "image") return "image/*";
-      if (this.kind === "document") return "application/pdf";
-      return undefined;
+    kindOptions() {
+      return KINDS[this.kind] || ANY_KIND;
     },
     /** The tag behind the funnel, once the listing has shown one. */
     filterSections() {
@@ -506,6 +523,11 @@ export default {
       this.uploadError = null;
       try {
         for (const file of files) {
+          const refusal = this.kind === "font" && fontFileRefusal(file.name);
+          if (refusal) {
+            this.uploadError = refusal;
+            continue;
+          }
           try {
             const response = await ApiMediaService.uploadMedia(this.scope, {
               file,

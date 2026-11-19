@@ -1,9 +1,9 @@
 import PersistenceService from "@/services/PersistenceService";
 const namespaced = true;
 
-const state = {
+const state = () => ({
   data: PersistenceService.getFromLocalStorage("instance") || null,
-};
+});
 
 const mutations = {
   UPDATE(state, instance) {

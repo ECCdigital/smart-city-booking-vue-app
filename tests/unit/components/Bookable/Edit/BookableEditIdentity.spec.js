@@ -9,7 +9,7 @@ vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
 }));
 vi.mock("@/services/api/ApiTagsService", () => ({
-  default: { getTags: vi.fn() },
+  default: { getTags: vi.fn(), getFlags: vi.fn() },
 }));
 
 import ApiEventService from "@/services/api/ApiEventService";
@@ -28,7 +28,10 @@ const STUBS = {
     publicOnly: Boolean,
     publicOnlyReason: String,
   }),
-  AddressLookup: stub("AddressLookup"),
+  LocationInput: stub("LocationInput", {
+    stored: { type: [Object, String], default: undefined },
+    tenantId: String,
+  }),
   Tiptap: stub("Tiptap", { minHeight: [String, Number] }),
 };
 
@@ -58,6 +61,8 @@ describe("BookableEditIdentity - the Grunddaten in two groups", () => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockReset();
     ApiTagsService.getTags.mockResolvedValue({ data: [] });
+    ApiTagsService.getFlags.mockReset();
+    ApiTagsService.getFlags.mockResolvedValue({ data: [] });
   });
 
   it("shows what Buchende see in the catalog, then what only the administration sees", () => {
@@ -212,6 +217,8 @@ describe("BookableEditIdentity - Merkmale and Interne Tags", () => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockReset();
     ApiTagsService.getTags.mockResolvedValue({ data: ["Innenstadt", "Saal"] });
+    ApiTagsService.getFlags.mockReset();
+    ApiTagsService.getFlags.mockResolvedValue({ data: ["WLAN", "Beamer"] });
   });
 
   const take = async (wrapper, test, text) => {
@@ -267,14 +274,15 @@ describe("BookableEditIdentity - Merkmale and Interne Tags", () => {
     expect(tags.props("items")).toEqual(["Innenstadt", "Saal"]);
   });
 
-  it("offers no suggestions for the Merkmale", async () => {
-    const { wrapper } = mountBasics();
+  it("suggests the Merkmale of the tenant's bookables", async () => {
+    const { wrapper } = mountBasics({ expertMode: false });
     await flushPromises();
 
+    expect(ApiTagsService.getFlags).toHaveBeenCalledWith("t-own");
     const flags = wrapper
       .findAllComponents({ name: "v-combobox" })
       .wrappers.find((field) => field.props("label") === "Merkmale");
-    expect(flags.props("items")).toEqual([]);
+    expect(flags.props("items")).toEqual(["WLAN", "Beamer"]);
   });
 
   it.each([
@@ -343,5 +351,55 @@ describe("BookableEditIdentity - Bilder", () => {
     expect(list.props("publicOnlyReason")).toBe(
       "Dieses Buchungsobjekt ist öffentlich sichtbar, interne Medien können hier nicht gespeichert werden."
     );
+  });
+});
+
+describe("BookableEditIdentity - location", () => {
+  beforeEach(() => {
+    ApiEventService.getEvents.mockResolvedValue({ data: [] });
+    ApiTagsService.getTags.mockResolvedValue({ data: [] });
+  });
+
+  const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+  const locationInput = (wrapper) =>
+    wrapper.findComponent({ name: "LocationInput" });
+
+  it("edits the location with the location input, of the bookable's tenant", () => {
+    const { wrapper } = mountBasics({ location: OLD_TEXT });
+
+    expect(locationInput(wrapper).props("value")).toBe(OLD_TEXT);
+    expect(locationInput(wrapper).props("tenantId")).toBe("t-own");
+    expect(wrapper.text()).not.toContain("Adresse");
+  });
+
+  it("patches the location as the input hands it out", () => {
+    const { wrapper, patches } = mountBasics();
+    const location = {
+      address: { city: "Guben", country_code: "DE" },
+      display_address: "Guben",
+      coordinates: { type: "Point", points: [14.71, 51.95] },
+      meta: { source: "manual", additional: null },
+    };
+
+    locationInput(wrapper).vm.$emit("input", location);
+
+    expect(patches).toEqual([{ location }]);
+  });
+
+  it("measures the location against the stored bookable's", () => {
+    const { wrapper } = mountBasics({
+      id: "b1",
+      expertMode: true,
+      location: "edited",
+      saved: { id: "b1", location: OLD_TEXT },
+    });
+
+    expect(locationInput(wrapper).props("stored")).toBe(OLD_TEXT);
+  });
+
+  it("measures a new bookable's location against none", () => {
+    const { wrapper } = mountBasics({ isNew: true, expertMode: true });
+
+    expect(locationInput(wrapper).props("stored")).toBeNull();
   });
 });

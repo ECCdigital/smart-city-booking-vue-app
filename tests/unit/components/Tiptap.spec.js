@@ -904,3 +904,20 @@ describe("Tiptap against the exported token lists", () => {
     expect(wrapper.vm.editor.getHTML()).toBe("<p>einszwei</p><p>drei</p>");
   });
 });
+
+describe("Tiptap's leiste in dark mode", () => {
+  // `grey lighten-4` stayed light grey under .theme--dark, a white strip over
+  // the dark editor. The leiste reads --scb-surface-tint, which follows the
+  // theme.
+  it.each([
+    ["the plain leiste", {}],
+    ["the captioned leiste", { sizes: true }],
+  ])("draws %s on the surface tint", async (_label, props) => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", ...props });
+    const bar = wrapper.find(".tiptap-bar");
+
+    expect(bar.exists()).toBe(true);
+    expect(bar.classes()).not.toContain("grey");
+    expect(bar.classes()).not.toContain("lighten-4");
+  });
+});

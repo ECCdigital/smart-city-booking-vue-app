@@ -1,15 +1,15 @@
 <script>
-// IQ activation checklist for Salto KS remote-open (backend spec
-// docs/specs/salto-ks-remote-open.md §3): a progress header, the IQs sorted
-// by required action, inline PIN capture for pending activations, and the
-// guided modal wizard for first activations. Completed IQs collapse to a
-// single line. This component owns the IQ list and all wizard API calls.
+// IQ activation checklist for Salto KS remote-open: a progress header, the
+// IQs sorted by required action, inline PIN capture for pending activations,
+// and the guided modal wizard for first activations. Completed IQs collapse
+// to a single line. This component owns the IQ list and all wizard API calls.
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SaltoIqActivationWizardDialog from "./SaltoIqActivationWizardDialog.vue";
 import {
   stateMeta,
   actionOrder,
+  hasActivation,
   iqDisplayName,
   formatTimestamp,
 } from "./iqActivationState";
@@ -44,6 +44,9 @@ export default {
     needsAction() {
       return this.iqs.length - this.readyCount;
     },
+    activatedCount() {
+      return this.iqs.filter(hasActivation).length;
+    },
     // The tenant has no stored active Salto app yet - the wizard starts
     // after the tenant is saved with the app switched on.
     notConfigured() {
@@ -57,11 +60,20 @@ export default {
     },
     // Discarding a pending activation only drops the stored secret; on any
     // state beyond that the system user stays activated at Salto, so a fresh
-    // wizard run only works after a Salto-side reset of the user or IQ.
+    // wizard run at that IQ only works with a new system user.
     discardWarningKey() {
       return this.discardIq && this.discardIq.state === "pending_pin"
         ? "accessPoint.tenant.salto.iq.discardConfirm.pendingText"
         : "accessPoint.tenant.salto.iq.discardConfirm.activatedWarning";
+    },
+  },
+  watch: {
+    // The tenant page asks before a change that lets these activations rest.
+    activatedCount: {
+      immediate: true,
+      handler(count) {
+        this.$emit("update:activated-count", count);
+      },
     },
   },
   mounted() {
@@ -452,21 +464,31 @@ export default {
       :value="!!discardIq"
       max-width="480"
       persistent
+      scrollable
       @input="discardIqId = null"
     >
       <v-card v-if="discardIq">
-        <v-card-title class="headline">
-          {{ $t("accessPoint.tenant.salto.iq.discardConfirm.title") }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">
+            {{ $t("accessPoint.tenant.salto.iq.discardConfirm.title") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="discardIqId = null"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
-        <v-card-text>
+        <v-divider />
+        <v-card-text class="pa-6">
           {{ $t(discardWarningKey) }}
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="discardIqId = null">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="discardIqId = null">
             {{ $t("accessPoint.tenant.salto.iq.discardConfirm.cancel") }}
           </v-btn>
-          <v-btn color="error" text @click="confirmDiscard">
+          <v-btn color="error" @click="confirmDiscard">
+            <v-icon left small>mdi-delete</v-icon>
             {{ $t("accessPoint.tenant.salto.iq.discardConfirm.confirm") }}
           </v-btn>
         </v-card-actions>

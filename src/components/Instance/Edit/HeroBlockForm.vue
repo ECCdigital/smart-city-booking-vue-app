@@ -150,6 +150,7 @@
               <HeroColorField
                 :value="block.color"
                 :theme-colors="themeColors"
+                :tokens="blockColorTokens"
                 :error="errorOf('color')"
                 label=""
                 class="hero-block-form__color"
@@ -224,35 +225,98 @@
         </template>
 
         <template v-else-if="isImage">
-          <MediaReferenceField
-            :value="block.image"
-            :scope="mediaScope"
-            label="Bild"
-            kind="image"
-            public-only
-            :public-only-reason="publicOnlyReason"
-            :allow-external="false"
-            empty-label="Kein Bild ausgewählt"
-            @input="patch({ image: $event })"
-          />
-          <div
-            v-for="(message, index) in imageErrors"
-            :key="index"
-            class="error--text text-caption mt-1"
+          <!--
+            „Quelle“ comes first (map #510): a medium of the library, or the
+            App-Logo of the tab „Portal“, which the Block then follows with its
+            variant for dark mode. Without an App-Logo there is nothing to
+            follow, so „App-Logo“ cannot be chosen.
+          -->
+          <div class="text-caption text--secondary mb-1">Quelle</div>
+          <v-btn-toggle
+            :value="followsAppLogo ? 'app-logo' : 'media'"
+            mandatory
+            dense
+            color="primary"
+            class="hero-block-form__source mb-3"
+            @change="setSource"
           >
-            {{ message }}
-          </div>
-          <MediaReferenceImage
-            v-if="block.image"
-            :reference="block.image"
-            :scope="mediaScope"
-            size="sm"
-            lazy-size="thumb"
-            :height="72"
-            contain
-            rounded
-            class="hero-block-form__thumbnail mt-2"
-          />
+            <v-btn small value="media">
+              <v-icon small left>mdi-image-multiple-outline</v-icon>
+              Mediathek
+            </v-btn>
+            <v-btn
+              small
+              value="app-logo"
+              :disabled="!appLogo"
+              :title="appLogo ? '' : noAppLogo"
+            >
+              <v-icon small left>mdi-star-circle-outline</v-icon>
+              App-Logo
+            </v-btn>
+          </v-btn-toggle>
+
+          <template v-if="followsAppLogo">
+            <PortalAppLogoPair
+              :logo="appLogo"
+              :logo-dark="appLogoDark"
+              :height="32"
+              class="hero-block-form__app-logo"
+            />
+            <div class="text-caption text--secondary mt-1">
+              {{ appLogoSentence }}
+            </div>
+          </template>
+
+          <template v-else>
+            <v-alert
+              v-if="holdsAppLogoCopy"
+              type="info"
+              text
+              dense
+              class="hero-block-form__copy-hint text-body-2 mb-3"
+            >
+              {{ copyHint }}
+              <div class="mt-2">
+                <v-btn
+                  small
+                  outlined
+                  color="primary"
+                  @click="setSource('app-logo')"
+                >
+                  Quelle „App-Logo“ verwenden
+                </v-btn>
+              </div>
+            </v-alert>
+            <MediaReferenceField
+              :value="block.image"
+              :scope="mediaScope"
+              label="Bild"
+              kind="image"
+              public-only
+              :public-only-reason="publicOnlyReason"
+              :allow-external="false"
+              empty-label="Kein Bild ausgewählt"
+              @input="patch({ image: $event })"
+            />
+            <div
+              v-for="(message, index) in imageErrors"
+              :key="index"
+              class="error--text text-caption mt-1"
+            >
+              {{ message }}
+            </div>
+            <MediaReferenceImage
+              v-if="block.image"
+              :reference="block.image"
+              :scope="mediaScope"
+              size="sm"
+              lazy-size="thumb"
+              :height="72"
+              contain
+              rounded
+              class="hero-block-form__thumbnail mt-2"
+            />
+          </template>
 
           <v-text-field
             :value="alt"
@@ -283,6 +347,7 @@
           />
 
           <v-switch
+            v-if="!followsAppLogo"
             :input-value="block.invertInDarkMode"
             label="Im Dunkelmodus invertieren"
             hint="Für dunkle Logos auf hellem Grund"
@@ -313,6 +378,7 @@
           :background="background"
           :theme-colors="themeColors"
           :locale="locale"
+          :app-logo="appLogo"
           class="hero-block-form__tile mb-4"
         />
 
@@ -563,8 +629,11 @@ import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import HeroBlockTile from "@/components/Instance/Edit/HeroBlockTile.vue";
 import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 import HeroPositionGrid from "@/components/Instance/Edit/HeroPositionGrid.vue";
+import PortalAppLogoPair from "@/components/Instance/Edit/PortalAppLogoPair.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
+import { referencedMediaId } from "@/utils/mediaReference";
 import {
+  HERO_APP_LOGO_SOURCE,
   HERO_DEFAULT_SIZE,
   HERO_ZONE_LABELS,
   heroBlockLabel,
@@ -573,6 +642,7 @@ import {
   heroGlassPanel,
   heroHtmlFirstLine,
   heroLocalizedText,
+  isHeroAppLogo,
   setHeroLocalizedText,
 } from "@/utils/heroBlocks";
 import {
@@ -584,6 +654,7 @@ import {
   isHeroOffsetZero,
 } from "@/utils/heroOffset";
 import {
+  HERO_BLOCK_COLOR_TOKENS,
   HERO_PANEL_COLOR_TOKENS,
   HERO_RICHTEXT_MAX_LENGTH,
   HERO_TEXT_MAX_LENGTH,
@@ -686,6 +757,19 @@ const CORNER_STEPS = Object.freeze([
 const PUBLIC_ONLY_REASON =
   "Der Kopfbereich wird öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
+// What the source „App-Logo“ says about itself (map #510).
+const APP_LOGO_FOLLOWS = "Folgt dem App-Logo aus dem Tab „Portal“.";
+const APP_LOGO_DARK_VARIANT =
+  "Im Dunkelmodus mit der Variante für den Dunkelmodus.";
+const APP_LOGO_DARK_INVERTED =
+  "Im Dunkelmodus invertiert, weil es keine Variante gibt.";
+const NO_APP_LOGO = "Die Instanz hat kein App-Logo. Der Block zeigt kein Bild.";
+
+// A Block of the Mediathek that holds the App-Logo's media id is a copy: it
+// was stored before the source „App-Logo“ existed (map #510).
+const APP_LOGO_COPY_HINT =
+  "Dieses Bild ist eine Kopie des App-Logos. Ein neues App-Logo und die Variante für den Dunkelmodus erreichen es nicht.";
+
 // What an empty English field does, said at the field itself (spec §4). German
 // is the required locale, so it never carries the hint.
 const TRANSLATION_HINT = "Leer: Deutsch wird angezeigt";
@@ -759,6 +843,7 @@ export default {
     HeroPositionGrid,
     MediaReferenceField,
     MediaReferenceImage,
+    PortalAppLogoPair,
     Tiptap,
   },
   props: {
@@ -770,6 +855,12 @@ export default {
     locale: { type: String, default: "de" },
     /** The instance's `branding.theme.colors`, for the colour chips. */
     themeColors: { type: Object, default: null },
+    /**
+     * The instance's saved App-Logo (`branding.logo`) and its variant for
+     * dark mode (`branding.logoDark`), for an image Block that follows it.
+     */
+    appLogo: { type: Object, default: null },
+    appLogoDark: { type: Object, default: null },
     /**
      * The Draft's Background, for the preview tile alone: the tile paints the
      * Block on a strip of it, so a translucent Panel has something to be
@@ -791,6 +882,7 @@ export default {
       maxHeightSteps: MAX_HEIGHT_STEPS,
       maxTextLength: HERO_TEXT_MAX_LENGTH,
       maxHtmlLength: HERO_RICHTEXT_MAX_LENGTH,
+      blockColorTokens: HERO_BLOCK_COLOR_TOKENS,
       panelColorTokens: HERO_PANEL_COLOR_TOKENS,
       cornerSteps: CORNER_STEPS,
       mediaScope: MEDIA_SCOPE.INSTANCE,
@@ -798,6 +890,8 @@ export default {
       homeOnlyHint: HOME_ONLY_HINT,
       hideOnMobileHint: HIDE_ON_MOBILE_HINT,
       faultedTitle: FAULTED_TITLE,
+      copyHint: APP_LOGO_COPY_HINT,
+      noAppLogo: NO_APP_LOGO,
       // The open section. Editor state, like the selection: never saved.
       tab: "inhalt",
     };
@@ -958,6 +1052,23 @@ export default {
         ? `${ALIGN_HINT} ${ALIGN_NEEDS_WIDTH_HINT}`
         : ALIGN_HINT;
     },
+    followsAppLogo() {
+      return isHeroAppLogo(this.block.image);
+    },
+    appLogoSentence() {
+      if (!this.appLogo) {
+        return NO_APP_LOGO;
+      }
+      const dark = this.appLogoDark
+        ? APP_LOGO_DARK_VARIANT
+        : APP_LOGO_DARK_INVERTED;
+      return `${APP_LOGO_FOLLOWS} ${dark}`;
+    },
+    /** Whether a Block of the Mediathek holds the App-Logo's own medium. */
+    holdsAppLogoCopy() {
+      const logoId = referencedMediaId(this.appLogo);
+      return !!logoId && referencedMediaId(this.block.image) === logoId;
+    },
     imageErrors() {
       return [
         firstHeroRuleError(heroImageRules, this.block.image),
@@ -1035,6 +1146,21 @@ export default {
     /** One step of one of the four scales of „Feinabstimmung“. */
     patchFine(key, value) {
       this.patch({ [key]: value });
+    },
+    /**
+     * „Quelle“. The App-Logo carries no media id and no switch for the dark
+     * mode, which the backend refuses on it; `undefined` drops the switch
+     * from the Draft. Back in the Mediathek no image is chosen yet.
+     */
+    setSource(source) {
+      if (source === HERO_APP_LOGO_SOURCE) {
+        this.patch({
+          image: { source: HERO_APP_LOGO_SOURCE },
+          invertInDarkMode: undefined,
+        });
+      } else if (this.followsAppLogo) {
+        this.patch({ image: null, invertInDarkMode: false });
+      }
     },
     patch(fields) {
       this.$emit("input", fields);

@@ -47,21 +47,132 @@
       @reject-single-booking="cancelSingle"
       @reject-group-booking="cancelGroup"
     />
+    <GroupBookingReinstateDialog
+      v-if="booking"
+      :to-reinstate="booking"
+      :group-bookings="members"
+      :series-only="seriesOnly"
+      :conflicts="groupConflicts"
+      :open="dialog === 'reinstateGroup'"
+      :in-progress="inProgress"
+      :error="error"
+      @close="closeDialog"
+      @reinstate-single-booking="reinstate"
+      @reinstate-group-booking="reinstateGroup"
+    />
     <v-dialog
       v-if="booking"
       :value="dialog === 'reinstate'"
+      persistent
+      scrollable
+      max-width="520px"
+    >
+      <v-card>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-restore</v-icon>
+          <span class="text-h5">{{
+            $t("booking.reinstate.dialog.title")
+          }}</span>
+          <v-spacer />
+          <v-btn icon @click="closeDialog">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
+          <p class="mb-0">{{ reinstateHint }}</p>
+          <v-alert
+            v-if="conflicts.length > 0"
+            type="warning"
+            border="left"
+            text
+            class="mt-4 mb-0 reinstate-conflicts"
+          >
+            <p class="mb-2">
+              {{ $tc("booking.reinstate.conflict.intro", conflictRows.length) }}
+            </p>
+            <ul class="mb-2">
+              <li
+                v-for="{ conflict, other } in conflictRows"
+                :key="`${conflict.bookableId}-${other.id}`"
+              >
+                <a
+                  :href="bookingHref(other.id)"
+                  target="_blank"
+                  rel="noopener"
+                  >{{ other.id }}</a
+                >
+                {{ $t("booking.reinstate.conflict.for") }} „<span
+                  :class="{
+                    'reinstate-conflicts__taken': !takenThrough(other),
+                  }"
+                  >{{ String(conflict.title || "").trim() }}</span
+                >“<template v-if="other.parent">
+                  {{ $t("booking.reinstate.conflict.via-parent") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.parent.title || "").trim() }}</span
+                  >“</template
+                ><template v-else-if="other.child">
+                  {{ $t("booking.reinstate.conflict.via-child") }} „<span
+                    class="reinstate-conflicts__taken"
+                    >{{ String(other.child.title || "").trim() }}</span
+                  >“</template
+                >
+                ({{ formatPeriod(other) }})
+              </li>
+            </ul>
+            <p class="mb-0">{{ $t("booking.reinstate.conflict.question") }}</p>
+          </v-alert>
+          <v-alert
+            v-if="error"
+            type="error"
+            border="left"
+            elevation="2"
+            class="mt-4 mb-0"
+          >
+            {{ error }}
+          </v-alert>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
+          <v-btn color="primary" :loading="inProgress" @click="reinstate">
+            <v-icon left small>mdi-restore</v-icon>
+            {{
+              conflicts.length > 0
+                ? $t("booking.reinstate.conflict.proceed")
+                : $t("booking.action.reinstate")
+            }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+      v-if="booking"
+      :value="dialog === 'acceptWithdrawal'"
       persistent
       max-width="520px"
     >
       <v-card>
         <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="warning">mdi-restore</v-icon>
+          <v-icon class="mr-2" color="orange">mdi-undo-variant</v-icon>
           <span class="text-h6">{{
-            $t("booking.reinstate.dialog.title")
+            $t("booking.acceptWithdrawal.dialog.title")
           }}</span>
         </v-card-title>
         <v-card-text>
-          <p class="mb-0 text-body-2">{{ reinstateHint }}</p>
+          <i18n
+            path="booking.acceptWithdrawal.dialog.hint"
+            tag="p"
+            class="text-body-2"
+          >
+            <template #id>
+              <strong
+                ><em>{{ booking.id }}</em></strong
+              >
+            </template>
+          </i18n>
+          <p class="mb-0 text-body-2">{{ withdrawalPaymentHint }}</p>
         </v-card-text>
         <v-card-text v-if="error" class="pt-0">
           <v-alert type="error" border="left" elevation="2" class="mb-0">
@@ -71,8 +182,12 @@
         <v-card-actions class="px-4 pb-4">
           <v-spacer />
           <v-btn text @click="closeDialog">Abbrechen</v-btn>
-          <v-btn color="primary" :loading="inProgress" @click="reinstate">
-            {{ $t("booking.action.reinstate") }}
+          <v-btn
+            color="primary"
+            :loading="inProgress"
+            @click="acceptWithdrawal"
+          >
+            {{ $t("booking.action.acceptWithdrawal") }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -88,6 +203,7 @@ import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDia
 import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
+import GroupBookingReinstateDialog from "@/components/Booking/GroupBookingReinstateDialog.vue";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import {
@@ -101,12 +217,17 @@ import {
   allowsAction,
   groupAllowsAction,
   groupBookingStatus,
+  isFree,
 } from "@/utils/bookingStatus";
 import {
   getApiErrorMessage,
   getBookingValidationReasons,
+  getGroupReinstatementConflicts,
+  getReinstatementConflicts,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 
 /**
  * The one place the admin's four transitions run (spec E2, E3): Freigeben,
@@ -124,6 +245,7 @@ export default {
     BookingPayDialog,
     BookingRejectConformationDialog,
     GroupBookingRejectConformationDialog,
+    GroupBookingReinstateDialog,
   },
   data() {
     return {
@@ -131,6 +253,10 @@ export default {
       dialog: null,
       inProgress: false,
       error: null,
+      /** What a reinstatement would book twice; once named, the next click reinstates anyway. */
+      conflicts: [],
+      /** The members a series reinstatement would book twice, once the route named them. */
+      groupConflicts: [],
     };
   },
   computed: {
@@ -154,6 +280,23 @@ export default {
           : "booking.reinstate.dialog.hint-rejected";
       return this.$t(key, { id: this.booking?.id });
     },
+    /** One row per booking in the way, with the position it collides on. */
+    conflictRows() {
+      return this.conflicts.flatMap((conflict) =>
+        (conflict.bookings || []).map((other) => ({ conflict, other }))
+      );
+    },
+    /**
+     * A withdrawal costs nothing: a paid booking is refunded in full, the
+     * price of one not yet confirmed or paid lapses.
+     */
+    withdrawalPaymentHint() {
+      const key = "booking.acceptWithdrawal.dialog";
+      if (isFree(this.booking)) return this.$t(`${key}.hint-no-cost`);
+      return this.booking?.status === BOOKING_STATUS.CONFIRMED
+        ? this.$t(`${key}.hint-refund`)
+        : this.$t(`${key}.hint-lapse`);
+    },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
@@ -172,9 +315,12 @@ export default {
     start(action, target) {
       this.target = target;
       this.error = null;
+      this.conflicts = [];
+      this.groupConflicts = [];
       if (this.seriesOnly) {
-        // There is no series-wide reinstate (spec E9).
-        if (action === BOOKING_ACTION.REINSTATE) {
+        // There is no series-wide withdrawal: a withdrawal is accepted per
+        // booking.
+        if (action === BOOKING_ACTION.ACCEPT_WITHDRAWAL) {
           this.refuse(action, "group-booking.transition.not-allowed");
           return;
         }
@@ -201,8 +347,11 @@ export default {
           this.openDialog(this.groupBooking ? "cancelGroup" : "cancel");
           break;
         case BOOKING_ACTION.REINSTATE:
-          // There is no series-wide reinstate; a member is reinstated alone.
-          this.openDialog("reinstate");
+          this.openDialog(this.groupBooking ? "reinstateGroup" : "reinstate");
+          break;
+        case BOOKING_ACTION.ACCEPT_WITHDRAWAL:
+          // A member of a series is withdrawn alone.
+          this.openDialog("acceptWithdrawal");
           break;
         default:
           break;
@@ -224,6 +373,8 @@ export default {
     closeDialog() {
       this.dialog = null;
       this.error = null;
+      this.conflicts = [];
+      this.groupConflicts = [];
     },
 
     async confirmSingle() {
@@ -334,21 +485,94 @@ export default {
       });
     },
 
+    /**
+     * The first click asks the route as it is; a period other bookings took
+     * meanwhile comes back as conflicts, shown in the dialog without a toast
+     * or reload. The next click reinstates anyway. A member reinstated alone
+     * from the series dialog shows its conflicts in the single dialog.
+     */
     async reinstate() {
       const booking = this.booking;
+      const ignoreConflicts = this.conflicts.length > 0;
       return this.run(BOOKING_ACTION.REINSTATE, {
         overlay: "Buchung wird wiederhergestellt...",
-        call: () => ApiBookingService.reinstateBooking(booking.id),
+        call: () =>
+          ApiBookingService.reinstateBooking(booking.id, { ignoreConflicts }),
         successKey: "booking.reinstate.success",
         errorKey: "booking.reinstate.error",
+        result: { bookingId: booking.id },
+        handleError: (error) => {
+          const conflicts = getReinstatementConflicts(error);
+          if (conflicts) {
+            this.conflicts = conflicts;
+            this.dialog = "reinstate";
+          }
+          return conflicts !== null;
+        },
+      });
+    },
+    /** The parent or dependent a booking holds the position through, if any. */
+    takenThrough(other) {
+      return other.parent || other.child || null;
+    },
+    bookingHref(bookingId) {
+      return this.$router?.resolve(
+        bookingPageRoute(bookingId, this.booking?.tenantId)
+      ).href;
+    },
+    formatPeriod({ timeBegin, timeEnd }) {
+      return `${FormatService.dateTime(timeBegin)} – ${FormatService.dateTime(
+        timeEnd
+      )}`;
+    },
+
+    /**
+     * The series' cancelled and rejected members back where they were. The
+     * first click asks the route as it is; periods other bookings took
+     * meanwhile come back as conflicts per member, shown in the dialog
+     * without a toast or reload. The next click reinstates all of them
+     * (`ignoreConflicts`) or only the conflict-free ones (`skipConflicts`).
+     */
+    async reinstateGroup({ ignoreConflicts = false, skipConflicts = false }) {
+      if (!(await this.groupAllows(BOOKING_ACTION.REINSTATE))) return false;
+      return this.run(BOOKING_ACTION.REINSTATE, {
+        overlay: "Serienbuchung wird wiederhergestellt...",
+        call: () =>
+          ApiGroupBookingService.reinstateGroupBooking(
+            null,
+            this.groupBooking.id,
+            { ignoreConflicts, skipConflicts }
+          ),
+        successKey: "group-booking.reinstate.success",
+        errorKey: "group-booking.reinstate.error",
+        result: { groupBookingId: this.groupBooking.id },
+        group: true,
+        handleError: (error) => {
+          const conflicts = getGroupReinstatementConflicts(error);
+          if (conflicts) {
+            this.groupConflicts = conflicts;
+          }
+          return conflicts !== null;
+        },
+      });
+    },
+
+    async acceptWithdrawal() {
+      const booking = this.booking;
+      return this.run(BOOKING_ACTION.ACCEPT_WITHDRAWAL, {
+        overlay: "Widerruf wird akzeptiert...",
+        call: () => ApiBookingService.acceptWithdrawal(booking.id),
+        successKey: "booking.acceptWithdrawal.success",
+        errorKey: "booking.acceptWithdrawal.error",
         result: { bookingId: booking.id },
       });
     },
 
     /**
      * A series-wide action runs only where the members share one state
-     * (spec E9). The group dialogs do not offer it otherwise; this is the
-     * net behind them, for a call that reaches the module anyway.
+     * (spec E9) - a reinstate where one member is cancelled or rejected.
+     * The group dialogs do not offer it otherwise; this is the net behind
+     * them, for a call that reaches the module anyway.
      */
     async groupAllows(action) {
       if (groupAllowsAction(this.members, action)) {
@@ -370,7 +594,15 @@ export default {
      */
     async run(
       action,
-      { overlay, call, successKey, errorKey, result, group = false }
+      {
+        overlay,
+        call,
+        successKey,
+        errorKey,
+        result,
+        group = false,
+        handleError = () => false,
+      }
     ) {
       const operationId = ProcessingService.showOverlay(overlay);
       this.inProgress = true;
@@ -385,6 +617,8 @@ export default {
         this.$emit("transitioned", { action, ...result });
         return true;
       } catch (error) {
+        // An error the action answers itself keeps the dialog open as it is.
+        if (handleError(error)) return false;
         return this.failTransition(action, error, errorKey);
       } finally {
         this.inProgress = false;
@@ -445,4 +679,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* The object booked twice, as the warning names it. */
+.reinstate-conflicts__taken {
+  font-weight: 600;
+}
+</style>

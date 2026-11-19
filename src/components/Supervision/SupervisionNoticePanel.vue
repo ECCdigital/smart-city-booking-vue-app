@@ -85,19 +85,28 @@
     </v-card-text>
 
     <v-dialog v-model="dialog" max-width="960" scrollable>
-      <v-card class="section-card notice-panel__dialog">
-        <v-card-title class="section-header">
-          <v-icon>mdi-email-alert-outline</v-icon>
-          <span>{{ $t("supervision.notifications.title") }}</span>
+      <v-card class="notice-panel__dialog">
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-email-alert-outline</v-icon>
+          <span class="text-h5">
+            {{ $t("supervision.notifications.title") }}
+          </span>
+          <v-spacer />
+          <v-btn icon @click="dialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
         <v-divider />
-        <v-card-text class="notice-panel__dialog-body">
+        <v-card-text class="pa-6">
           <SupervisionNotificationList v-if="dialog" />
         </v-card-text>
         <v-divider />
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text data-test="notice-panel-close" @click="dialog = false">
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn
+            outlined
+            data-test="notice-panel-close"
+            @click="dialog = false"
+          >
             {{ $t("supervision.notifications.close") }}
           </v-btn>
         </v-card-actions>
@@ -193,9 +202,5 @@ export default {
   font-size: var(--scb-font-size-xs);
   line-height: var(--scb-line-height-base);
   color: var(--scb-text-muted);
-}
-
-.notice-panel__dialog-body {
-  padding: var(--scb-section-body-padding);
 }
 </style>

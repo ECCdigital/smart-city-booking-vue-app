@@ -111,11 +111,13 @@
       </v-expansion-panel>
     </v-expansion-panels>
 
-    <v-dialog v-model="editDialog.open" max-width="720px">
+    <v-dialog v-model="editDialog.open" scrollable max-width="720px">
       <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon left color="primary">mdi-shield-check</v-icon>
-          {{ editDialog.isNew ? "Neue Challenge" : "Challenge bearbeiten" }}
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-shield-check</v-icon>
+          <span class="text-h5">
+            {{ editDialog.isNew ? "Neue Challenge" : "Challenge bearbeiten" }}
+          </span>
           <v-spacer />
           <v-switch
             v-model="editModel.enabled"
@@ -124,10 +126,13 @@
             inset
             label="Aktiv"
           />
+          <v-btn icon class="ml-2" @click="closeEdit"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
         <v-divider />
 
-        <v-card-text>
+        <v-card-text class="pa-6">
           <v-form ref="editForm" v-model="editValid">
             <v-row dense>
               <v-col cols="12" md="6">
@@ -215,24 +220,37 @@
         </v-card-text>
 
         <v-divider />
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="closeEdit">Abbrechen</v-btn>
-          <v-btn color="primary" @click="saveEdit">Übernehmen</v-btn>
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="closeEdit">Abbrechen</v-btn>
+          <v-btn color="primary" @click="saveEdit">
+            <v-icon left small>mdi-check</v-icon>
+            Übernehmen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="confirm.open" max-width="420">
+    <v-dialog v-model="confirm.open" persistent scrollable max-width="420">
       <v-card>
-        <v-card-title>Challenge löschen?</v-card-title>
-        <v-card-text>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">Challenge löschen?</span>
+          <v-spacer />
+          <v-btn icon @click="confirm.open = false"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
           Diese Aktion kann nicht rückgängig gemacht werden.
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="confirm.open = false">Abbrechen</v-btn>
-          <v-btn color="error" @click="doRemove">Löschen</v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="confirm.open = false">Abbrechen</v-btn>
+          <v-btn color="error" @click="doRemove">
+            <v-icon left small>mdi-delete</v-icon>
+            Löschen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

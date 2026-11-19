@@ -6,6 +6,8 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import { paymentLabel, statusExportValue } from "@/utils/bookingStatus";
+import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import { paymentProviderLabel } from "@/utils/paymentLabels";
 import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 
 export default {
@@ -42,6 +44,7 @@ export default {
         { header: "ID der Buchung", key: "ID", width: 15 },
 
         { header: "Zugewiesener Benutzer", key: "AssignedUser", width: 30 },
+        { header: bookedViaTitle(), key: "BookedVia", width: 15 },
         { header: "Name", key: "Name", width: 25 },
         { header: "E-Mail", key: "Email", width: 30 },
         { header: "Telefon", key: "Telefon", width: 15 },
@@ -101,6 +104,7 @@ export default {
           ID: booking.id || "",
 
           AssignedUser: booking.assignedUserId || "",
+          BookedVia: bookedViaLabel(booking.bookedVia),
           Name: booking.name || "",
           Email: booking.mail || "",
           Telefon: booking.phone || "",
@@ -124,7 +128,9 @@ export default {
           regularMwSt: this.getRegularVatIncludedSum(booking) || 0,
 
           Bezahlt: paymentLabel(booking),
-          PaymentProvider: booking.PaymentProvider || "",
+          PaymentProvider: booking.paymentProvider
+            ? paymentProviderLabel(booking.paymentProvider)
+            : "",
           PaymentMethod: this.getPaymentMethod(booking.paymentMethod) || "",
 
           AblehnungsGrund: booking.rejectionReason || "-",
@@ -138,7 +144,7 @@ export default {
 
       worksheet.autoFilter = {
         from: "A1",
-        to: "AA1",
+        to: "AB1",
       };
 
       const buffer = await workbook.xlsx.writeBuffer();

@@ -1,5 +1,5 @@
 /**
- * The Buchungslink as a route (CONTEXT.md): the page's named route with the
+ * The Buchungslink as a route (GLOSSARY.md): the page's named route with the
  * tenant in `?tenant=`, the one shape every opener pushes - the list, a
  * series' member rows, a booking's series chip - and the middleware reads.
  */

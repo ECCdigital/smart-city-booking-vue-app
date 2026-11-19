@@ -63,14 +63,15 @@ describe("BookableEditAttachments (Anhänge)", () => {
     expect(bookable).toEqual(stored);
   });
 
-  it("makes an attachment one to accept", async () => {
-    const { wrapper, patches } = mountArea([AGB]);
+  it("makes an attachment shown in the checkout one to accept", async () => {
+    const shown = { ...AGB, show: true };
+    const { wrapper, patches } = mountArea([shown]);
 
     await open(wrapper);
     await toggleSwitch(wrapper, "Muss akzeptiert werden");
 
     expect(lastPatch(patches)).toEqual({
-      attachments: [{ ...AGB, required: true }],
+      attachments: [{ ...shown, required: true }],
     });
   });
 

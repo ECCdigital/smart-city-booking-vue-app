@@ -156,6 +156,42 @@ happens, coupling the checkboxes in the UI is the fastest answer.
 -   Emit `confirm` / `cancel` events; parent handles the actual API call
 -   Use `v-dialog` with `persistent` for destructive actions
 
+### Dialog layout
+
+Every dialog follows the layout of the dialogs for the members of a tenant
+(`TenantInviteUserDialog`, `TenantUserDetailsDialog`):
+
+```vue
+<v-dialog v-model="open" persistent scrollable max-width="600px">
+  <v-card>
+    <v-card-title class="d-flex align-center py-4 px-6">
+      <v-icon left>mdi-pencil</v-icon>
+      <span class="text-h5">Titel</span>
+      <v-spacer />
+      <v-btn icon @click="close"><v-icon>mdi-close</v-icon></v-btn>
+    </v-card-title>
+    <v-divider />
+    <v-card-text class="pa-6">…</v-card-text>
+    <v-divider />
+    <v-card-actions class="justify-end px-6 py-4">
+      <v-btn outlined @click="close">Abbrechen</v-btn>
+      <v-btn color="primary" @click="save">
+        <v-icon left small>mdi-content-save</v-icon>
+        Speichern
+      </v-btn>
+    </v-card-actions>
+  </v-card>
+</v-dialog>
+```
+
+-   Title: an icon and `text-h5`, no coloured card (`color="warning"` and the like), and an X at the right that does what „Abbrechen“ or „Schließen“ does (disabled when that is)
+-   `scrollable`: only the body scrolls, title and actions stay in place. `v-card-title`, the one `v-card-text` and `v-card-actions` are direct children of the `v-card`, so a `v-form` goes inside the `v-card-text`
+-   Body: plain body text, not `text-h6`
+-   Actions bottom right: secondary first (`outlined`, „Abbrechen“ or „Schließen“), primary last (`color="primary"`, icon and verb)
+-   Destructive: title icon `mdi-alert` with `color="error"`, confirm button `color="error"` with the verb („Löschen“, „Entfernen“), never „Ja“/„Nein“
+-   A dialog that only shows something has one outlined „Schließen“
+-   Picker dialogs (`v-date-picker`, `v-time-picker`) keep their own layout
+
 ## Forms
 
 -   Complex forms use `vee-validate` v3 where already established in the file

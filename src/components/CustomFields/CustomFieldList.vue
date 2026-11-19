@@ -350,19 +350,35 @@
     />
 
     <!-- Delete confirmation -->
-    <v-dialog v-model="confirmDelete.open" max-width="420">
+    <v-dialog
+      v-model="confirmDelete.open"
+      persistent
+      scrollable
+      max-width="420"
+    >
       <v-card>
-        <v-card-title class="subtitle-1">Feld löschen?</v-card-title>
-        <v-card-text>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left color="error">mdi-alert</v-icon>
+          <span class="text-h5">Feld löschen?</span>
+          <v-spacer />
+          <v-btn icon @click="confirmDelete.open = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
           Das Feld
           <strong>{{ deletingCaption }}</strong>
           wird entfernt. Bereits gespeicherte Werte bleiben erhalten, werden
           aber nicht mehr angezeigt.
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="confirmDelete.open = false">Abbrechen</v-btn>
-          <v-btn color="error" text @click="doRemove">Löschen</v-btn>
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="confirmDelete.open = false">Abbrechen</v-btn>
+          <v-btn color="error" @click="doRemove">
+            <v-icon left small>mdi-delete</v-icon>
+            Löschen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

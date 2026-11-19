@@ -7,13 +7,19 @@
     scrollable
   >
     <v-card class="custom-field-dialog">
-      <v-card-title class="subtitle-1">
-        <v-icon left color="primary" small>mdi-form-textbox</v-icon>
-        {{ isEdit ? "Feld bearbeiten" : "Neues Feld anlegen" }}
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-form-textbox</v-icon>
+        <span class="text-h5">
+          {{ isEdit ? "Feld bearbeiten" : "Neues Feld anlegen" }}
+        </span>
+        <v-spacer />
+        <v-btn icon @click="close">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
 
-      <v-card-text class="pt-4">
+      <v-card-text class="pa-6">
         <v-form ref="form" v-model="valid" class="custom-field-dialog-form">
           <!-- Basic info -->
           <v-row dense>
@@ -302,10 +308,12 @@
       </v-card-text>
 
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text @click="close">Abbrechen</v-btn>
-        <v-btn color="primary" text :disabled="!canSave" @click="save">
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn outlined @click="close">Abbrechen</v-btn>
+        <v-btn color="primary" :disabled="!canSave" @click="save">
+          <v-icon left small>
+            {{ isEdit ? "mdi-content-save" : "mdi-plus" }}
+          </v-icon>
           {{ isEdit ? "Speichern" : "Anlegen" }}
         </v-btn>
       </v-card-actions>

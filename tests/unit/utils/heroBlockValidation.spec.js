@@ -12,6 +12,7 @@ import {
   isHeroColor,
   isHeroHexColor,
   isHeroPanelColor,
+  heroTokenSwatch,
 } from "@/utils/heroBlockValidation";
 import {
   heroBlock,
@@ -49,16 +50,40 @@ describe("isHeroHexColor", () => {
 });
 
 describe("isHeroColor", () => {
-  it("takes the four named tokens", () => {
-    for (const token of ["default", "primary", "secondary", "white"]) {
+  it("takes the five named tokens, the accent among them", () => {
+    for (const token of [
+      "default",
+      "primary",
+      "secondary",
+      "accent",
+      "white",
+    ]) {
       expect(isHeroColor(token)).toBe(true);
     }
   });
 
   it("takes a hex value and refuses anything else", () => {
     expect(isHeroColor("#001122")).toBe(true);
-    expect(isHeroColor("accent")).toBe(false);
+    expect(isHeroColor("black")).toBe(false);
     expect(isHeroColor(undefined)).toBe(false);
+  });
+});
+
+describe("heroTokenSwatch", () => {
+  const COLORS = {
+    primary: "#123456",
+    secondary: "#654321",
+    accent: "#ffbf00",
+  };
+
+  it("paints „Akzent“ with the instance's accent colour", () => {
+    expect(heroTokenSwatch("accent", COLORS)).toBe("#ffbf00");
+  });
+
+  it("paints „Akzent“ in the primary colour while the accent is empty, as the storefront does", () => {
+    expect(heroTokenSwatch("accent", { ...COLORS, accent: "" })).toBe(
+      "#123456"
+    );
   });
 });
 
@@ -152,6 +177,25 @@ describe("heroBlockIssues of an image Block", () => {
     ]);
   });
 
+  it("takes the source „App-Logo“, as stored and as the export enriched it", () => {
+    expect(
+      heroBlockIssues(heroImageBlock({ image: { source: "app-logo" } }))
+    ).toEqual([]);
+    expect(
+      heroBlockIssues(
+        heroImageBlock({
+          image: {
+            source: "app-logo",
+            url: "/api/v2/instance/media/logo/file",
+            width: 400,
+            height: 100,
+            dark: null,
+          },
+        })
+      )
+    ).toEqual([]);
+  });
+
   it("takes a reference the export enriched with url and size", () => {
     const block = heroImageBlock({
       image: {
@@ -220,7 +264,8 @@ describe("heroBlockIssues of a Panel", () => {
 });
 
 describe("isHeroPanelColor", () => {
-  it("takes the four Panel tokens and a hex value", () => {
+  it("takes the five Panel tokens and a hex value", () => {
+    expect(isHeroPanelColor("accent")).toBe(true);
     expect(isHeroPanelColor("white")).toBe(true);
     expect(isHeroPanelColor("black")).toBe(true);
     expect(isHeroPanelColor("primary")).toBe(true);
@@ -294,6 +339,7 @@ describe("heroImageRules", () => {
     expect(
       apply(heroImageRules, { source: "media", mediaId: "m1" })
     ).toBeUndefined();
+    expect(apply(heroImageRules, { source: "app-logo" })).toBeUndefined();
     expect(apply(heroImageRules, null)).toBe(message);
     expect(
       apply(heroImageRules, { source: "external", url: "https://e.org/a.png" })

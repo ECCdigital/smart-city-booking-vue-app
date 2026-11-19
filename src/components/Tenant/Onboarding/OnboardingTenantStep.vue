@@ -74,6 +74,20 @@
           dense
           data-test="tenant-name"
         />
+        <v-textarea
+          v-model="form.description"
+          :label="$t('tenant.description.label')"
+          :hint="$t('tenant.description.hint')"
+          persistent-hint
+          :counter="descriptionMax"
+          :rules="rules.description"
+          auto-grow
+          rows="2"
+          outlined
+          dense
+          class="mb-2"
+          data-test="tenant-description"
+        />
         <div class="booking-caption">
           {{ $t("tenant.onboarding.tenant.contact") }}
         </div>
@@ -134,6 +148,25 @@
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
+
+        <v-switch
+          v-model="form.notifyOwnersOnInvitationAccepted"
+          hide-details
+          color="primary"
+          class="mt-4"
+          data-test="tenant-invitation-notice"
+        >
+          <template v-slot:label>
+            <div>
+              <div class="font-weight-medium">
+                {{ $t("tenant.onboarding.tenant.invitation-notice") }}
+              </div>
+              <div class="text-caption text--secondary">
+                {{ $t("tenant.onboarding.tenant.invitation-notice-hint") }}
+              </div>
+            </div>
+          </template>
+        </v-switch>
       </v-card-text>
 
       <!-- In a dialog the card is the dialog: the actions close it, and the
@@ -179,6 +212,10 @@ import {
   creationFieldErrorKey,
   isFormallyValidMail,
 } from "@/utils/tenantOnboarding";
+import {
+  TENANT_DESCRIPTION_MAX_LENGTH,
+  tenantDescriptionRule,
+} from "@/entities/tenant";
 import { rateLimitMessage } from "@/utils/rateLimit";
 
 /**
@@ -208,11 +245,13 @@ export default {
     return {
       form: {
         name: "",
+        description: "",
         contactName: this.prefill.contactName || "",
         mail: this.prefill.mail || "",
         phone: "",
         website: "",
         location: "",
+        notifyOwnersOnInvitationAccepted: true,
       },
       rules: {
         required: [
@@ -225,7 +264,9 @@ export default {
             isFormallyValidMail(v) ||
             this.$t("tenant.onboarding.errors.mail-invalid"),
         ],
+        description: [tenantDescriptionRule(this.$t.bind(this))],
       },
+      descriptionMax: TENANT_DESCRIPTION_MAX_LENGTH,
     };
   },
   computed: {

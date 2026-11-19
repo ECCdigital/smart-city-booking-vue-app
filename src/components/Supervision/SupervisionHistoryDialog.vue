@@ -6,21 +6,21 @@
     @click:outside="$emit('close')"
     @keydown.esc="$emit('close')"
   >
-    <v-card
-      class="section-card history-dialog"
-      data-test="supervision-history-dialog"
-    >
-      <v-card-title class="section-header">
-        <v-icon>mdi-history</v-icon>
-        <div class="section-header__text">
-          <div class="section-header__title">{{ title }}</div>
-          <div v-if="tenant" class="section-header__subtitle">
+    <v-card class="history-dialog" data-test="supervision-history-dialog">
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left>mdi-history</v-icon>
+        <div class="flex-grow-1">
+          <div class="text-h5">{{ title }}</div>
+          <div v-if="tenant" class="text-caption text--secondary">
             {{ tenant.name || tenant.id }}
           </div>
         </div>
+        <v-btn icon @click="$emit('close')">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
       <v-divider />
-      <v-card-text class="history-dialog__body">
+      <v-card-text class="pa-6">
         <!-- Rendered while open only: every opening reads the history anew. -->
         <SupervisionHistoryList
           v-if="open"
@@ -30,9 +30,12 @@
         />
       </v-card-text>
       <v-divider />
-      <v-card-actions>
-        <v-spacer />
-        <v-btn text data-test="history-dialog-close" @click="$emit('close')">
+      <v-card-actions class="justify-end px-6 py-4">
+        <v-btn
+          outlined
+          data-test="history-dialog-close"
+          @click="$emit('close')"
+        >
           {{ $t("supervision.history.close") }}
         </v-btn>
       </v-card-actions>
@@ -46,9 +49,9 @@ import SupervisionHistoryList from "@/components/Supervision/SupervisionHistoryL
 /**
  * The supervision history as the instance owner opens it from the instance's
  * tenant list: of one tenant, or - without a tenant - of the whole instance.
- * Drawn as the "Aufsichtsmitteilungen" dialog is: a section card with the
- * header strip, the list as its body, "Schließen" under a hairline. A
- * tenant's history names the tenant under the title.
+ * Drawn in the dialog layout of docs/agents/components.md: the list as its
+ * body, "Schließen" under a hairline. A tenant's history names the tenant
+ * under the title.
  */
 export default {
   name: "SupervisionHistoryDialog",
@@ -69,9 +72,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.history-dialog__body {
-  padding: var(--scb-section-body-padding);
-}
-</style>

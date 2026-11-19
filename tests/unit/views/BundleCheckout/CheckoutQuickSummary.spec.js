@@ -81,3 +81,30 @@ describe("CheckoutQuickSummary - the lead item's amount", () => {
     expect(addOn.amount).toBe(3);
   });
 });
+
+/** Private or business booking: shown in the summary and sent with the booking. */
+describe("CheckoutQuickSummary — Buchungsart", () => {
+  async function mountWithContact(contactDetails) {
+    const wrapper = mountComponent(CheckoutQuickSummary, {
+      propsData: {
+        leadItem: item("room", 1),
+        subsequentItems: [],
+        finalCheck: true,
+        contactDetails: { name: "Erika Muster", ...contactDetails },
+      },
+    });
+    await flushPromises();
+    return wrapper;
+  }
+
+  it.each([
+    [{ company: "" }, "Privat", false],
+    [{ company: "ACME" }, "Geschäftlich", true],
+    [{ company: "ACME", isBusiness: false }, "Privat", false],
+  ])("reads %j as %s and sends isBusiness %s", async (contact, label, sent) => {
+    const wrapper = await mountWithContact(contact);
+
+    expect(wrapper.text()).toMatch(new RegExp(`Buchungsart:\\s*${label}`));
+    expect(wrapper.vm.compileBooking().isBusiness).toBe(sent);
+  });
+});

@@ -6,7 +6,7 @@
       property per row. A control that does not fit its row drops a line
       rather than running out of the editor.
     -->
-    <v-sheet v-if="splitToolbar" class="grey lighten-4 pa-2 tiptap-toolbar">
+    <v-sheet v-if="splitToolbar" class="tiptap-bar pa-2 tiptap-toolbar">
       <div class="tiptap-toolbar__row">
         <span class="tiptap-toolbar__caption text-caption text--secondary">
           {{ $t("richtext.group.character") }}
@@ -159,7 +159,7 @@
         </div>
       </div>
     </v-sheet>
-    <v-sheet v-else class="grey lighten-4 pa-2 d-flex">
+    <v-sheet v-else class="tiptap-bar pa-2 d-flex">
       <v-btn
         v-for="button in legacyButtons"
         :key="button.icon"
@@ -185,10 +185,18 @@
     >
       {{ htmlLength }} / {{ maxLength }}
     </div>
-    <v-dialog v-if="links" v-model="linkDialog" max-width="480">
+    <v-dialog v-if="links" v-model="linkDialog" max-width="480" scrollable>
       <v-card class="tiptap-link-dialog">
-        <v-card-title>{{ $t("richtext.link.title") }}</v-card-title>
-        <v-card-text>
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-icon left>mdi-link-variant</v-icon>
+          <span class="text-h5">{{ $t("richtext.link.title") }}</span>
+          <v-spacer />
+          <v-btn icon @click="linkDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
           <v-text-field
             v-model="linkAddress"
             :label="$t('richtext.link.address')"
@@ -203,15 +211,17 @@
             @keydown.enter.prevent="applyLink"
           />
         </v-card-text>
-        <v-card-actions>
-          <v-btn v-if="linkActive" text @click="removeLink">
+        <v-divider />
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn v-if="linkActive" outlined color="error" @click="removeLink">
+            <v-icon left small>mdi-link-variant-off</v-icon>
             {{ $t("richtext.link.remove") }}
           </v-btn>
-          <v-spacer />
-          <v-btn text @click="linkDialog = false">
+          <v-btn outlined @click="linkDialog = false">
             {{ $t("richtext.link.cancel") }}
           </v-btn>
           <v-btn color="primary" elevation="0" @click="applyLink">
+            <v-icon left small>mdi-check</v-icon>
             {{ $t("richtext.link.apply") }}
           </v-btn>
         </v-card-actions>
@@ -748,6 +758,12 @@ export default {
    and a wrapping controls column, so the six-step scale and the colour dots
    fit a 420 px form column by dropping a line instead of running out of the
    editor. `HeroBlockForm.vue` draws its text Block's rows on the same grid. */
+/* The leiste over the editor: a light strip in the light theme, a faint
+   one under .theme--dark. Above the sheet's own theme background. */
+.v-sheet.tiptap-bar.tiptap-bar {
+  background-color: var(--scb-surface-tint);
+}
+
 .tiptap-toolbar__row {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);

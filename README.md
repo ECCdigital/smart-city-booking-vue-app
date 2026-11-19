@@ -50,6 +50,7 @@ More details: [smart-city-booking-backend/docs/architecture.md](https://github.c
 -   **Fixes** go to the oldest maintained branch that has the bug and are merged forward regularly, branch by branch, up to the newest.
 -   **Maintained** are the `version/<major>.<minor>.x` branches of the current major version. A line that is no longer maintained loses its branch; its tags stay.
 -   **Opening a pull request:** GitHub proposes `develop` as the base. Switch it by hand to the `version/…` branch named above.
+-   **Catching up:** a branch behind its `version/…` base merges it in (`Merge version/<major>.<minor>.x into <branch>`); no rebase, no force push.
 -   **`develop`** is brought up to the newest `version/…` branch by hand: when new branches are cut, and at every release candidate and release of the newest version. A patch of an older version does not move it; the fix arrives with the next catch-up.
 -   **Tags:** every release `v<major>.<minor>.<patch>` is tagged on its `version/<major>.<minor>.x`. v3: tags `v3.x.x` from `version/3.x`.
 

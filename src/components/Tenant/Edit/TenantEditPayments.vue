@@ -13,12 +13,23 @@
         class="mb-2"
       >
         <v-row dense>
-          <v-col cols="12">
+          <v-col class="col-auto">
             <v-switch
               v-model="modelApps.giroCockpit.active"
               color="primary"
               hide-details
               label="GiroCockpit als Zahlungsanbieter aktivieren"
+            />
+          </v-col>
+          <v-col>
+            <v-switch
+              v-model="modelApps.giroCockpit.paymentMode"
+              color="primary"
+              true-value="test"
+              false-value="prod"
+              label="Testmodus"
+              persistent-hint
+              hint=""
             />
           </v-col>
         </v-row>
@@ -222,7 +233,11 @@
           <v-col cols="12">
             <v-card
               :color="
-                modelApps.ePayBL.clientP12
+                $vuetify.theme.dark
+                  ? modelApps.ePayBL.clientP12
+                    ? 'success darken-3'
+                    : 'error darken-3'
+                  : modelApps.ePayBL.clientP12
                   ? 'success lighten-5'
                   : 'error lighten-5'
               "
@@ -231,7 +246,9 @@
               <v-card-text
                 :class="
                   (modelApps.ePayBL.clientP12 ? 'success' : 'error') +
-                  '--text text--darken-1 d-flex justify-space-between align-center'
+                  ($vuetify.theme.dark
+                    ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                    : '--text text--darken-1 d-flex justify-space-between align-center')
                 "
               >
                 <div>
@@ -345,7 +362,11 @@
           <v-col cols="12">
             <v-card
               :color="
-                modelTenant?.invoiceTemplate
+                $vuetify.theme.dark
+                  ? modelTenant?.invoiceTemplate
+                    ? 'success darken-3'
+                    : 'error darken-3'
+                  : modelTenant?.invoiceTemplate
                   ? 'success lighten-5'
                   : 'error lighten-5'
               "
@@ -355,7 +376,9 @@
               <v-card-text
                 :class="
                   (modelTenant?.invoiceTemplate ? 'success' : 'error') +
-                  '--text text--darken-1 d-flex justify-space-between align-center'
+                  ($vuetify.theme.dark
+                    ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                    : '--text text--darken-1 d-flex justify-space-between align-center')
                 "
               >
                 <div>
@@ -519,7 +542,11 @@
         <v-col>
           <v-card
             :color="
-              modelTenant?.receiptTemplate
+              $vuetify.theme.dark
+                ? modelTenant?.receiptTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.receiptTemplate
                 ? 'success lighten-5'
                 : 'error lighten-5'
             "
@@ -528,7 +555,9 @@
             <v-card-text
               :class="
                 (modelTenant?.receiptTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
               "
             >
               <div>
@@ -561,7 +590,11 @@
         <v-col>
           <v-card
             :color="
-              modelTenant?.cancellationTemplate
+              $vuetify.theme.dark
+                ? modelTenant?.cancellationTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.cancellationTemplate
                 ? 'success lighten-5'
                 : 'error lighten-5'
             "
@@ -570,7 +603,9 @@
             <v-card-text
               :class="
                 (modelTenant?.cancellationTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
               "
             >
               <div>
@@ -590,11 +625,60 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-row>
+        <v-col class="col-12 col-md-3"
+          ><v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Widerrufbelegnummer Präfix"
+            placeholder="WB"
+            persistent-placeholder
+            v-model="modelTenant.withdrawalNumberPrefix"
+        /></v-col>
+        <v-col>
+          <v-card
+            :color="
+              $vuetify.theme.dark
+                ? modelTenant?.withdrawalTemplate
+                  ? 'success darken-3'
+                  : 'error darken-3'
+                : modelTenant?.withdrawalTemplate
+                ? 'success lighten-5'
+                : 'error lighten-5'
+            "
+            class="rounded"
+          >
+            <v-card-text
+              :class="
+                (modelTenant?.withdrawalTemplate ? 'success' : 'error') +
+                ($vuetify.theme.dark
+                  ? '--text text--lighten-3 d-flex justify-space-between align-center'
+                  : '--text text--darken-1 d-flex justify-space-between align-center')
+              "
+            >
+              <div>
+                <v-icon left>{{
+                  modelTenant?.withdrawalTemplate ? "mdi-check" : "mdi-close"
+                }}</v-icon>
+                {{
+                  modelTenant?.withdrawalTemplate
+                    ? "Es ist eine Widerrufbelegvorlage hinterlegt."
+                    : "Es ist keine Widerrufbelegvorlage hinterlegt."
+                }}
+              </div>
+              <v-btn small outlined @click="$emit('open-withdrawal-template')"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </SubSection>
 
     <v-dialog v-model="showTestResultDialog" max-width="640" scrollable>
       <v-card>
-        <v-card-title class="d-flex align-center">
+        <v-card-title class="d-flex align-center py-4 px-6">
           <v-icon left :color="ePayBLTestResult?.success ? 'success' : 'error'">
             {{
               ePayBLTestResult?.success
@@ -602,10 +686,15 @@
                 : "mdi-alert-circle"
             }}
           </v-icon>
-          ePayBL Verbindungstest
+          <span class="text-h5">ePayBL Verbindungstest</span>
+          <v-spacer />
+          <v-btn icon @click="showTestResultDialog = false"
+            ><v-icon>mdi-close</v-icon></v-btn
+          >
         </v-card-title>
+        <v-divider />
 
-        <v-card-text>
+        <v-card-text class="pa-6">
           <v-alert v-if="ePayBLTestError" type="error" dense class="mb-0">
             {{ ePayBLTestError }}
           </v-alert>
@@ -765,10 +854,12 @@
             </div>
           </template>
         </v-card-text>
+        <v-divider />
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="showTestResultDialog = false">Schließen</v-btn>
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="showTestResultDialog = false">
+            Schließen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

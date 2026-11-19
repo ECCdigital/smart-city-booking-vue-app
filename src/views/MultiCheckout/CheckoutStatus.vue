@@ -105,6 +105,18 @@
             </p>
           </div>
 
+          <!-- Withdrawn -->
+          <div v-if="status === 'withdrawn'">
+            <v-avatar size="90" color="warning" class="mb-6">
+              <v-icon size="50" color="white">mdi-undo-variant</v-icon>
+            </v-avatar>
+            <h1 class="text-h4 warning--text">Ihre Buchung wurde widerrufen</h1>
+            <p class="text-body-1 grey--text text--darken-1 mt-4">
+              Ihr Widerruf wurde bestätigt. Bitte wenden Sie sich an unsere
+              Koordinator*innen für weitere Info.
+            </p>
+          </div>
+
           <!-- Not Found / Error -->
           <div v-if="status === 'not-found'">
             <v-avatar size="90" color="error" class="mb-6">
@@ -365,6 +377,9 @@ export default {
         case BOOKING_STATUS.CANCELLED:
           this.status = "cancelled";
           break;
+        case BOOKING_STATUS.WITHDRAWN:
+          this.status = "withdrawn";
+          break;
         case BOOKING_STATUS.CONFIRMED:
           this.status = "success";
           break;
@@ -388,6 +403,8 @@ export default {
           return "Abgelehnt";
         case BOOKING_STATUS.CANCELLED:
           return "Storniert";
+        case BOOKING_STATUS.WITHDRAWN:
+          return "Widerrufen";
         case BOOKING_STATUS.CONFIRMED:
           return isFree(booking)
             ? "Abgeschlossen (kostenfrei)"

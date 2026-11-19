@@ -212,9 +212,9 @@ export default {
 }
 
 .pdf-layout-picker__meta-panel {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--scb-surface-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--scb-surface-tint-faint);
   padding: 12px 16px;
 }
 
@@ -228,7 +228,7 @@ export default {
 }
 
 .pdf-layout-picker__meta-vars code {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--scb-hover-tint-strong);
   border-radius: 3px;
   font-size: 0.75rem;
   padding: 1px 4px;

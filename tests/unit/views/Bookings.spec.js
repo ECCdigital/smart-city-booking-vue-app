@@ -293,7 +293,7 @@ describe("Bookings", () => {
       const card = await openFilterCard(wrapper);
 
       expect(funnelBadge(wrapper)).toBeNull();
-      expect(card.textContent).toContain("Keine Einschränkung");
+      expect(card.textContent).toContain("Keine Filter ausgewählt");
       expect(selectedStatusLabels()).toEqual([]);
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
         "bk-requested",
@@ -301,6 +301,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -355,6 +356,7 @@ describe("Bookings", () => {
         "bk-confirmed",
         "bk-rejected",
         "bk-cancelled",
+        "bk-withdrawn",
       ]);
     });
 
@@ -367,13 +369,13 @@ describe("Bookings", () => {
       await chooseType(wrapper, "Einzel");
 
       expect(funnelBadge(wrapper)).toBe("1");
-      expect(card.textContent).toContain("1 Einschränkung aktiv");
+      expect(card.textContent).toContain("1 Filter aktiv");
 
       await toggleStatus(wrapper, "Angefragt");
       await toggleStatus(wrapper, "Bestätigt");
 
       expect(funnelBadge(wrapper)).toBe("3");
-      expect(card.textContent).toContain("3 Einschränkungen aktiv");
+      expect(card.textContent).toContain("3 Filter aktiv");
     });
 
     it("offers a reset per section only while that section restricts", async () => {
@@ -401,7 +403,7 @@ describe("Bookings", () => {
       await clickCardButton(wrapper, "zurücksetzen");
       expect(selectedStatusLabels()).toEqual([]);
       expect(resetButtons()).toEqual([]);
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("resets type and status together with Alle zurücksetzen", async () => {
@@ -417,7 +419,7 @@ describe("Bookings", () => {
       expect(selectedType()).toBe("Alle");
       expect(selectedStatusLabels()).toEqual([]);
       expect(funnelBadge(wrapper)).toBeNull();
-      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(6);
     });
 
     it("stays open while toggling", async () => {
@@ -528,6 +530,55 @@ describe("Bookings", () => {
       const card = await openFilterCard(wrapper);
 
       expect(card.textContent).not.toContain("Rückerstattung");
+    });
+  });
+
+  /**
+   * The Buchungsweg filter: Benutzer, Gast, Admin and Unbekannt as a
+   * checkbox list, narrowing every view; Unbekannt keeps the bookings
+   * without one. Every reach reads `bookedVia`, so it is always offered.
+   */
+  describe("the Buchungsweg filter", () => {
+    function viaEveryWay() {
+      return [
+        booking({ id: "bk-user", bookedVia: "user" }),
+        booking({ id: "bk-guest", bookedVia: "guest" }),
+        booking({ id: "bk-admin", bookedVia: "admin" }),
+        booking({ id: "bk-old" }),
+      ];
+    }
+
+    it("keeps only the guest bookings", async () => {
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      const card = await openFilterCard(wrapper);
+      expect(card.textContent).toContain("Buchungsweg");
+      await toggleStatus(wrapper, "Gast");
+
+      expect(funnelBadge(wrapper)).toBe("1");
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual(["bk-guest"]);
+    });
+
+    it("keeps signed-in and unknown bookings together", async () => {
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "Benutzer");
+      await toggleStatus(wrapper, "Unbekannt");
+
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
+        "bk-user",
+        "bk-old",
+      ]);
+    });
+
+    it("is offered under the Reichweite own too", async () => {
+      BookingPermissionService.allowReadAny.mockReturnValue(false);
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      const card = await openFilterCard(wrapper);
+
+      expect(card.textContent).toContain("Buchungsweg");
     });
   });
 
@@ -645,7 +696,9 @@ describe("Bookings", () => {
       expect(ApiBookingService.reinstateBooking).not.toHaveBeenCalled();
       await clickDialogButton(wrapper, "Wiederherstellen");
 
-      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1", {
+        ignoreConflicts: false,
+      });
       expect(reloads()).toEqual({ list: 1, groups: 1 });
     });
   });

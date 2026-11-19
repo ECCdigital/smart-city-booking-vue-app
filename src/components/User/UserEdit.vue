@@ -46,9 +46,9 @@
             class="mr-2"
           >
             <v-icon left small>mdi-cancel</v-icon>
-            Suspendiert
+            {{ $t("user.suspension.chip") }}
           </v-chip>
-          <v-btn icon @click="closeDialog">
+          <v-btn icon @click="closeDialog" :disabled="inProgress">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -76,7 +76,7 @@
 
         <v-divider />
 
-        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
+        <v-card-text class="pa-6">
           <v-tabs-items v-model="activeTab">
             <v-tab-item>
               <div class="mb-4">
@@ -907,41 +907,11 @@
               </v-card>
 
               <!-- Suspension Section -->
-              <v-card outlined class="suspension-card">
-                <v-card-text class="pa-5">
-                  <div class="d-flex flex-column flex-sm-row align-center">
-                    <div class="flex-grow-1 mb-3 mb-sm-0">
-                      <div class="text-body-1 font-weight-medium mb-1">
-                        <v-icon
-                          :color="selectedUser.isSuspended ? 'error' : 'grey'"
-                          class="mr-1"
-                        >
-                          {{
-                            selectedUser.isSuspended
-                              ? "mdi-cancel"
-                              : "mdi-check-circle-outline"
-                          }}
-                        </v-icon>
-                        Account-Sperrung
-                      </div>
-                      <div class="text-body-2 grey--text">
-                        {{
-                          selectedUser.isSuspended
-                            ? "Der Account ist derzeit gesperrt"
-                            : "Der Account ist aktiv"
-                        }}
-                      </div>
-                    </div>
-                    <v-checkbox
-                      v-model="selectedUser.isSuspended"
-                      label="Suspendiert"
-                      color="error"
-                      hide-details
-                      class="mt-0 pt-0"
-                    />
-                  </div>
-                </v-card-text>
-              </v-card>
+              <UserSuspensionCard
+                :user="selectedUser"
+                :name="getSuspensionName()"
+                @changed="onSuspensionChanged"
+              />
             </v-tab-item>
           </v-tabs-items>
         </v-card-text>
@@ -951,15 +921,9 @@
         <!-- Actions -->
         <v-card-actions class="justify-end px-6 py-4">
           <v-btn outlined @click="closeDialog" :disabled="inProgress">
-            <v-icon left small>mdi-close</v-icon>
             Abbrechen
           </v-btn>
-          <v-btn
-            color="primary"
-            @click="submitChanges"
-            :loading="inProgress"
-            :disabled="!isFormValid()"
-          >
+          <v-btn color="primary" @click="submitChanges" :loading="inProgress">
             <v-icon left small>mdi-content-save</v-icon>
             Speichern
           </v-btn>
@@ -971,10 +935,13 @@
 
 <script>
 import ApiUsersService from "@/services/api/ApiUsersService";
+import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
+import UserSuspensionCard from "@/components/User/UserSuspensionCard.vue";
 
 export default {
   name: "UserEdit",
+  components: { UserSuspensionCard },
   props: {
     open: {
       type: Boolean,
@@ -1025,6 +992,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
+      addToast: "toasts/add",
     }),
     getUserInitials() {
       if (this.selectedUser.firstName && this.selectedUser.lastName) {
@@ -1043,6 +1011,13 @@ export default {
       }
       return "Benutzer bearbeiten";
     },
+    /** The name the suspension dialogs address, the id without one. */
+    getSuspensionName() {
+      const name = `${this.selectedUser.firstName || ""} ${
+        this.selectedUser.lastName || ""
+      }`.trim();
+      return name || this.selectedUser.id;
+    },
     getAvatarColor() {
       if (this.selectedUser.isSuspended) return "red";
       if (this.selectedUser.isVerified) return "green";
@@ -1055,12 +1030,6 @@ export default {
         this.selectedUser.city,
       ].filter(Boolean);
       return parts.join(", ");
-    },
-    isFormValid() {
-      return (
-        this.selectedUser.firstName?.trim() &&
-        this.selectedUser.lastName?.trim()
-      );
     },
     formatDate(timestamp) {
       const date = new Date(timestamp);
@@ -1117,17 +1086,25 @@ export default {
       this.activeTab = 0;
       this.$emit("close");
     },
+    /** The suspension took effect at once: the user as the API answers it. */
+    onSuspensionChanged(user) {
+      this.$set(this.selectedUser, "isSuspended", user.isSuspended);
+      this.$set(this.selectedUser, "suspension", user.suspension);
+      this.$set(this.selectedUser, "blacklistMatch", user.blacklistMatch);
+    },
+    // The name is no condition of the save: the backend stores a person
+    // without one, and the admin must still be able to verify or suspend
+    // them (ECCdigital/tickets#654).
     async submitChanges() {
-      if (!this.isFormValid()) {
-        return;
-      }
-
       try {
         this.inProgress = true;
         await ApiUsersService.submitUser(this.selectedUser);
         this.closeDialog();
       } catch (error) {
         console.error(error);
+        await this.addToast(
+          ToastService.createToast("user.edit.error", "error")
+        );
       } finally {
         this.inProgress = false;
       }
@@ -1227,7 +1204,7 @@ export default {
       const texts = {
         active: "Aktiv",
         pending: "Ausstehend",
-        suspended: "Suspendiert",
+        suspended: "Gesperrt",
         invited: "Eingeladen",
       };
       return texts[status] || status;
@@ -1296,15 +1273,6 @@ export default {
 </script>
 
 <style scoped>
-.suspension-card {
-  border-color: #ef5350 !important;
-  background: linear-gradient(
-    to right,
-    rgba(244, 67, 54, 0.02),
-    rgba(244, 67, 54, 0.05)
-  );
-}
-
 /* Fade Transition */
 .v-fade-transition-enter-active,
 .v-fade-transition-leave-active {

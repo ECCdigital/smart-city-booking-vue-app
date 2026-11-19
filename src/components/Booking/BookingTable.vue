@@ -55,7 +55,13 @@
 
         <template v-slot:item.name="{ item }">
           <div>
-            <div class="font-weight-bold">{{ item.name }}</div>
+            <div class="font-weight-bold">
+              {{ item.name }}
+              <BookedViaBadge
+                v-if="isMarkedBookedVia(item)"
+                :booked-via="item.bookedVia"
+              />
+            </div>
             <div class="text-caption grey--text">
               {{ truncate(item.company, 20) }}
             </div>
@@ -74,18 +80,20 @@
         </template>
 
         <template v-slot:item.bookableIds="{ item }">
-          <div class="">
+          <div class="bookables">
             <v-chip
               v-for="(bookable, key) in item.bookableItems.slice(0, 2)"
               :key="key"
-              class="ma-1"
+              class="bookable-chip ma-1"
               small
               color="secondary"
               text-color="black"
               :title="bookable._bookableUsed?.title"
             >
               <v-icon left x-small>mdi-package-variant</v-icon>
-              {{ truncate(bookable._bookableUsed?.title, 20) }}
+              <span class="bookable-chip-title">
+                {{ truncate(bookable._bookableUsed?.title, 20) }}
+              </span>
             </v-chip>
             <v-chip
               v-if="item.bookableItems.length > 2"
@@ -146,12 +154,12 @@
         <template v-slot:item.status="{ item }">
           <v-chip
             small
-            :color="statusColor(item.status)"
+            :color="statusColor(displayStatus(item))"
             text-color="white"
             class="font-weight-medium"
           >
-            <v-icon left x-small>{{ statusIcon(item.status) }}</v-icon>
-            {{ statusLabel(item.status) }}
+            <v-icon left x-small>{{ statusIcon(displayStatus(item)) }}</v-icon>
+            {{ statusLabel(displayStatus(item)) }}
           </v-chip>
           <v-chip
             v-if="isFree(item)"
@@ -228,7 +236,7 @@
               </v-list-item>
 
               <v-list-item
-                v-for="action in transitionActions(item.status)"
+                v-for="action in bookingTransitionActions(item)"
                 :key="action"
                 link
                 @click="transition(action, item.id)"
@@ -288,16 +296,20 @@ import {
   allowsAction,
   freeMarker,
   isFree,
+  displayStatus,
   statusColor,
   statusIcon,
   statusLabel,
   statusRank,
-  transitionActions,
+  bookingTransitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
+import { BOOKED_VIA } from "@/utils/bookedVia";
+import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
 export default {
   name: "BookingTable",
+  components: { BookedViaBadge },
   props: {
     bookings: {
       type: Array,
@@ -321,7 +333,14 @@ export default {
           value: "id",
         },
         { text: "Name", value: "name" },
-        { text: "Buchungsdatum", value: "timeCreated" },
+        // A soft hyphen and the narrowest width the content allows: the
+        // header breaks as „Buchungs-/datum“ above the date.
+        {
+          text: "Buchungs­datum",
+          value: "timeCreated",
+          width: "1%",
+          class: "wrapping-header",
+        },
         { text: "Buchungsobjekte", value: "bookableIds", sortable: false },
         { text: "Serie", value: "groupBooking" },
         { text: "Von", value: "timeBegin" },
@@ -363,11 +382,16 @@ export default {
     actionIcon,
     actionLabel,
     allowsAction,
+    /** Guest and admin bookings carry a badge; a signed-in one is the rule. */
+    isMarkedBookedVia(item) {
+      return [BOOKED_VIA.GUEST, BOOKED_VIA.ADMIN].includes(item.bookedVia);
+    },
+    displayStatus,
     isFree,
     statusColor,
     statusIcon,
     statusLabel,
-    transitionActions,
+    bookingTransitionActions,
     /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
     refundMarker(booking) {
       return refundStateMarker(refundStateOf(booking));
@@ -445,6 +469,35 @@ export default {
 <style scoped>
 .booking-number {
   color: var(--scb-text-link);
+}
+
+/* The column stays narrow: chips that don't fit side by side wrap below
+   each other, a long title ends in an ellipsis. */
+.bookables {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 220px;
+}
+
+.bookable-chip {
+  max-width: 100%;
+}
+
+/* Only the title is cut: the icon sits on a negative margin and would be
+   clipped by an overflow on the whole content. */
+.bookable-chip ::v-deep .v-chip__content {
+  max-width: 100%;
+}
+
+.bookable-chip-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Headers don't wrap by default; this one may, at its soft hyphen. */
+.booking-table-wrapper ::v-deep th.wrapping-header {
+  white-space: normal;
 }
 
 .booking-table-wrapper {

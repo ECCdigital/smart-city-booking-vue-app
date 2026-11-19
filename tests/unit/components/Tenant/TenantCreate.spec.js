@@ -168,3 +168,40 @@ describe("TenantCreate — a refused creation", () => {
     );
   });
 });
+
+/**
+ * A new tenant starts with the mail to its Besitzer on, as the backend does
+ * for a tenant without the field; the creator can turn it off right away.
+ */
+describe("TenantCreate — notice of an accepted invitation", () => {
+  beforeEach(() => {
+    ApiTenantService.createTenant.mockReset();
+    ApiTenantService.createTenant.mockResolvedValue({ status: 201 });
+  });
+
+  const noticeSwitch = (wrapper) => input(wrapper, "tenant-invitation-notice");
+
+  it("creates the tenant with the mail to the Besitzer on", async () => {
+    const wrapper = await openDialog();
+    await input(wrapper, "tenant-name").setValue("Verein");
+
+    expect(noticeSwitch(wrapper).element.checked).toBe(true);
+    await save(wrapper);
+
+    expect(ApiTenantService.createTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ notifyOwnersOnInvitationAccepted: true })
+    );
+  });
+
+  it("creates the tenant with the mail off once the creator turned it off", async () => {
+    const wrapper = await openDialog();
+    await input(wrapper, "tenant-name").setValue("Verein");
+
+    await noticeSwitch(wrapper).trigger("click");
+    await save(wrapper);
+
+    expect(ApiTenantService.createTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ notifyOwnersOnInvitationAccepted: false })
+    );
+  });
+});

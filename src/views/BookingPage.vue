@@ -131,6 +131,33 @@
           <v-card-title class="section-header">
             <v-icon>mdi-account-outline</v-icon>
             <span>{{ $t("booking.page.customer.title") }}</span>
+            <v-spacer />
+            <v-btn
+              v-if="allowReportBooker"
+              text
+              small
+              color="warning"
+              class="booking-page__report"
+              data-test="booking-report-user"
+              :title="$t('user.report.open-user-hint')"
+              @click="reportingBooker = true"
+            >
+              <v-icon left small>mdi-flag-outline</v-icon>
+              {{ $t("user.report.open-user") }}
+            </v-btn>
+            <v-btn
+              v-if="allowReportAddresses"
+              text
+              small
+              color="warning"
+              class="booking-page__report"
+              data-test="booking-report-addresses"
+              :title="$t('user.report.open-addresses-hint')"
+              @click="reportingAddresses = true"
+            >
+              <v-icon left small>mdi-email-alert-outline</v-icon>
+              {{ $t("user.report.open-addresses") }}
+            </v-btn>
           </v-card-title>
           <v-divider />
           <v-card-text>
@@ -214,6 +241,7 @@
             <div class="section-header__text">
               <div class="section-header__title booking-page__name">
                 {{ booking.name || "–" }}
+                <BookedViaBadge :booked-via="booking.bookedVia" />
               </div>
               <div v-if="booking.mail" class="section-header__subtitle">
                 {{ booking.mail }}
@@ -332,6 +360,21 @@
                   }}
                 </span>
               </div>
+              <div class="booking-fact booking-page__booked-via">
+                <span class="booking-fact__label">
+                  {{ bookedViaTitle }}
+                </span>
+                <span class="booking-fact__value">{{ bookedVia }}</span>
+              </div>
+              <div
+                v-if="bookingUser"
+                class="booking-fact booking-page__booking-user"
+              >
+                <span class="booking-fact__label">
+                  {{ $t("booking.booked-via.booking-user") }}
+                </span>
+                <span class="booking-fact__value">{{ bookingUser }}</span>
+              </div>
               <div class="booking-fact">
                 <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
@@ -367,6 +410,25 @@
       @transitioned="reload"
       @failed="onTransitionFailed"
     />
+    <UserReportDialog
+      v-if="allowReportBooker"
+      :open="reportingBooker"
+      :name="booking.name || booking.assignedUserId"
+      :tenant-id="booking.tenantId || tenantId"
+      :booking-id="booking.id"
+      :report-address="booking.assignedUserId"
+      :report-address-of-booking="bookerAddressInMail"
+      @close="reportingBooker = false"
+    />
+    <UserReportDialog
+      v-if="allowReportAddresses"
+      :open="reportingAddresses"
+      :name="booking.name || reportableAddresses[0]"
+      :tenant-id="booking.tenantId || tenantId"
+      :booking-id="booking.id"
+      :addresses="reportableAddresses"
+      @close="reportingAddresses = false"
+    />
   </AdminLayout>
 </template>
 
@@ -399,13 +461,23 @@ import {
 import {
   pathOf,
   paymentStatusLabel,
-  transitionActions,
+  bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import {
+  bookedViaLabel,
+  bookedViaTitle,
+  bookingUserOf,
+} from "@/utils/bookedVia";
+import { bookingKindLabel } from "@/utils/businessBooking";
+import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
+import UserReportDialog from "@/components/User/UserReportDialog.vue";
+import UserPermissionService from "@/services/permissions/UserPermissionService";
+import { reportableAddresses } from "@/utils/reports";
 
 /**
- * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
+ * The Buchungsseite (GLOSSARY.md): one booking at `/bookings/:bookingId`,
  * reachable by a Buchungslink that names its tenant in `?tenant=`. It is a
  * host of `BookingTransitions` (spec E3): the state as a headline over its
  * path with the state's transitions; every action on the page ends in
@@ -417,6 +489,7 @@ export default {
   name: "BookingPage",
   components: {
     AdminLayout,
+    BookedViaBadge,
     BookingAccessPoints,
     BookingDocumentActions,
     BookingPageEmptyState,
@@ -426,15 +499,58 @@ export default {
     BookingTransitions,
     CancellationRefundAudit,
     CancellationRefundState,
+    UserReportDialog,
   },
   mixins: [bookingPageShell],
   data() {
     return {
       booking: null,
       groupBooking: null,
+      /** The dialog „Benutzer melden“. */
+      reportingBooker: false,
+      /** The dialog „E-Mailadresse melden“. */
+      reportingAddresses: false,
     };
   },
   computed: {
+    /**
+     * „Benutzer melden“ in the card „Kunde“: a booking with a booker whose
+     * address is the only one in `mail`, for a role that may report. Whether
+     * the booker has an account the backend says.
+     */
+    allowReportBooker() {
+      return (
+        !!this.booking?.assignedUserId &&
+        this.reportableAddresses.length === 0 &&
+        UserPermissionService.allowReport(this.tenantId)
+      );
+    },
+    /** Whether the booker's address is of the booking's `mail`. */
+    bookerAddressInMail() {
+      const bookerAddress = this.booking?.assignedUserId?.trim().toLowerCase();
+      return reportableAddresses(this.booking?.mail).includes(bookerAddress);
+    },
+    /**
+     * The addresses of the booking's `mail` but the booker's: a user's id is
+     * their address, reported as the user.
+     */
+    reportableAddresses() {
+      const bookerAddress = this.booking?.assignedUserId?.trim().toLowerCase();
+      return reportableAddresses(this.booking?.mail).filter(
+        (address) => address !== bookerAddress
+      );
+    },
+    /**
+     * „E-Mailadresse melden“ in the card „Kunde“: a guest booking, or one whose
+     * `mail` differs from the booker's address, for a role that may report.
+     * Only one of the two report buttons shows.
+     */
+    allowReportAddresses() {
+      return (
+        this.reportableAddresses.length > 0 &&
+        UserPermissionService.allowReport(this.tenantId)
+      );
+    },
     pageI18nPrefix() {
       return "booking.page";
     },
@@ -474,6 +590,16 @@ export default {
     paymentProvider() {
       return paymentProviderLabel(this.booking.paymentProvider);
     },
+    bookedViaTitle() {
+      return bookedViaTitle();
+    },
+    bookedVia() {
+      return bookedViaLabel(this.booking.bookedVia);
+    },
+    /** The account of a user who booked for someone else, or `null`. */
+    bookingUser() {
+      return bookingUserOf(this.booking);
+    },
     /** The state read as a path (spec N2). */
     path() {
       return pathOf(this.booking);
@@ -483,7 +609,7 @@ export default {
       if (!this.canUpdate) {
         return [];
       }
-      return transitionActions(this.booking.status);
+      return bookingTransitionActions(this.booking);
     },
     objects() {
       return Object.values(this.booking.bookableItems || {});
@@ -499,9 +625,15 @@ export default {
         "zip-code": "zipCode",
         location: "location",
       };
-      return Object.entries(keys)
+      const fields = Object.entries(keys)
         .map(([key, field]) => ({ key, value: this.booking[field] }))
         .filter((field) => field.value != null && field.value !== "");
+      if (fields.length === 0) return [];
+      // Private or business, always stated: it decides the withdrawal.
+      return [
+        ...fields,
+        { key: "kind", value: bookingKindLabel(this.booking) },
+      ];
     },
     customFields() {
       return filledCustomFields(this.booking);

@@ -104,6 +104,7 @@ import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 import { catalogForSave } from "@/utils/instanceCatalog";
 import { legalDocumentsForSave } from "@/utils/instanceLegalDocuments";
 import i18n from "@/language/index";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 
 export default {
   name: "Instances",
@@ -446,7 +447,17 @@ export default {
     },
     async submitChanges() {
       const ok = await this.validateActiveChild();
-      if (!ok) return;
+      if (!ok) {
+        // Without an admin the tab „Admin“ shows its banner; the save still
+        // says that it failed.
+        if (!this.instance.ownerUserIds?.length) {
+          await this.addToast({
+            message: "Instanz muss mindestens einen Admin haben",
+            type: "error",
+          });
+        }
+        return;
+      }
 
       this.inProgress = true;
       try {
@@ -464,7 +475,10 @@ export default {
       } catch (e) {
         this.showApiErrors(e);
         await this.addToast({
-          message: "Fehler beim Aktualisieren der Instanz",
+          message: getApiErrorMessage(
+            e,
+            "Fehler beim Aktualisieren der Instanz"
+          ),
           type: "error",
         });
       } finally {

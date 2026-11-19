@@ -52,7 +52,7 @@ export function refundStateMarker(state) {
 /**
  * The policy line of a single booking's refund preview or audit: the calendar
  * days before the start where there are any, else that the booking has no
- * time span. `key` is `singlePolicy` or `auditOverride`.
+ * time span. `key` is `singlePolicy`, `auditOverride` or `userPolicySummary`.
  */
 export function refundPolicyText(key, { days, ...values }) {
   return days === null || days === undefined

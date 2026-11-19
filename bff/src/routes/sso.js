@@ -380,9 +380,13 @@ router.post("/register", async (req, res) => {
     });
 
     if (!signup.ok && signup.status !== 201) {
+      // The reason and its params go along, e.g. the refusal of an address
+      // on the blacklist with the instance's mail address.
       return res.status(signup.status || 500).json({
         success: false,
         message: signup.data?.message || "SSO registration failed",
+        ...(signup.data?.error ? { error: signup.data.error } : {}),
+        ...(signup.data?.params ? { params: signup.data.params } : {}),
       });
     }
 
