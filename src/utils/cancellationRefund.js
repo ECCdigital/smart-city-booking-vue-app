@@ -55,6 +55,11 @@ function formatDays(days) {
   return i18n.tc("booking.cancellationRefund.timeDays", days, { n: days });
 }
 
+/** Days in the dative, „1 Tag“, „2 Tagen“, as after „in“ or „unter“. */
+function formatDaysDative(days) {
+  return i18n.tc("booking.cancellationRefund.inDays", days, { n: days });
+}
+
 function formatHours(hours) {
   return i18n.tc("booking.cancellationRefund.timeHours", hours, { n: hours });
 }
@@ -79,12 +84,23 @@ export function formatTierDeadline(hoursBeforeStart) {
 }
 
 /**
+ * The booking had begun when the calculation was made: the backend counts
+ * the time before the start negative then.
+ */
+export function hasBegun(calculation) {
+  const hours = calculation?.hoursBeforeStart;
+  if (Number.isFinite(hours)) return hours < 0;
+  return calculation?.daysBeforeStart < 0;
+}
+
+/**
  * The time from the cancellation to the start of a refund calculation as
  * text: whole days of 24 hours from one day on, hours below. An audit of
  * before backend 4.4 counted calendar days (`daysBeforeStart`). `null`
- * without a time span.
+ * without a time span and, as in the backend, once the booking has begun.
  */
 export function formatTimeBeforeStart(calculation) {
+  if (hasBegun(calculation)) return null;
   const hours = calculation?.hoursBeforeStart;
   if (Number.isFinite(hours)) {
     return hours >= HOURS_PER_DAY
@@ -159,28 +175,68 @@ export function formatTierRule(hoursBeforeStart) {
 }
 
 /**
- * The tier a refund calculation applied, as `formatTierRule` words it. An
- * audit of before backend 4.4 named it in days (`appliedTierDays`). `null`
- * where no tier applied - no scale, or no time span.
+ * The tier a refund calculation applied as the booker reads it, worded as
+ * the backend words it (`describeAppliedTier`) in mail and PDF: „bis 36
+ * Stunden vor Beginn“ or „bis zum Beginn“; below the lowest deadline, where
+ * that tier still applies, „unter 12 Stunden vor Beginn“ or „nach Beginn“.
+ * `null` where no tier applied.
  */
 export function formatAppliedTierRule(calculation) {
-  const hours = calculation?.appliedTierHours;
-  if (Number.isFinite(hours)) return formatTierRule(hours);
-  const days = calculation?.appliedTierDays;
-  return Number.isFinite(days)
-    ? i18n.t("booking.cancellationRefund.tierRule", {
-        deadline: formatDays(days),
-      })
-    : null;
+  const tierHours = calculation?.appliedTierHours;
+  const tierDays = calculation?.appliedTierDays;
+  let deadline;
+  let atStart;
+  let below;
+  if (Number.isFinite(tierHours)) {
+    const { amount, unit } = tierDeadline(tierHours);
+    // „bis“ takes the accusative („bis 2 Tage“), „unter“ the dative
+    // („unter 2 Tagen“); hours read alike in both.
+    deadline = (dative) =>
+      unit === "days"
+        ? dative
+          ? formatDaysDative(amount)
+          : formatDays(amount)
+        : formatHours(amount);
+    atStart = tierHours === 0;
+    below = calculation.hoursBeforeStart < tierHours;
+  } else if (Number.isFinite(tierDays)) {
+    deadline = (dative) =>
+      dative ? formatDaysDative(tierDays) : formatDays(tierDays);
+    atStart = tierDays === 0;
+    below = calculation.daysBeforeStart < tierDays;
+  } else {
+    return null;
+  }
+  if (below) {
+    return atStart
+      ? i18n.t("booking.cancellationRefund.tierRuleAfterStart")
+      : i18n.t("booking.cancellationRefund.tierRuleBelow", {
+          deadline: deadline(true),
+        });
+  }
+  return atStart
+    ? i18n.t("booking.cancellationRefund.tierRuleAtStart")
+    : i18n.t("booking.cancellationRefund.tierRule", {
+        deadline: deadline(false),
+      });
 }
 
 /**
  * The policy line of a single booking's refund preview or audit: the time
  * before the start where there is one (`formatTimeBeforeStart`) and the tier
- * that applied (`formatAppliedTierRule`), else that the booking has no time
- * span. `key` is `singlePolicy` or `userPolicySummary`.
+ * that applied (`formatAppliedTierRule`), that the booking has begun where
+ * `begun` (`hasBegun`), else that the booking has no time span. `key` is
+ * `singlePolicy` or `userPolicySummary`.
  */
-export function refundPolicyText(key, { time, tier, ...values }) {
+export function refundPolicyText(key, { time, tier, begun, ...values }) {
+  if (begun) {
+    return tier === null || tier === undefined
+      ? i18n.t(`booking.cancellationRefund.${key}AfterStart`, values)
+      : i18n.t(`booking.cancellationRefund.${key}AfterStartWithTier`, {
+          tier,
+          ...values,
+        });
+  }
   if (time === null || time === undefined) {
     return i18n.t(`booking.cancellationRefund.${key}WithoutTimeSpan`, values);
   }

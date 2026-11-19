@@ -51,10 +51,10 @@ describe("CancellationRefundPreview", () => {
         refundAmountEur: 12.5,
         suggestedRefundPercentage: 50,
         hoursBeforeStart: 77,
-        appliedTierHours: 168,
+        appliedTierHours: 72,
       })
     ).toBe(
-      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „bis 7 Tage vor Beginn“: Die Mandantenregel schlägt 50 % Erstattung vor."
+      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „bis 3 Tage vor Beginn“: Die Mandantenregel schlägt 50 % Erstattung vor."
     );
   });
 

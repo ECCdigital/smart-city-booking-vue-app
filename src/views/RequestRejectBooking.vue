@@ -227,6 +227,7 @@ import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 import {
   formatAppliedTierRule,
   formatTimeBeforeStartForBooker,
+  hasBegun,
   refundPolicyText,
 } from "@/utils/cancellationRefund";
 
@@ -337,6 +338,7 @@ export default {
       return refundPolicyText("userPolicySummary", {
         time: formatTimeBeforeStartForBooker(this.refundPreview),
         tier: formatAppliedTierRule(this.refundPreview),
+        begun: hasBegun(this.refundPreview),
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },

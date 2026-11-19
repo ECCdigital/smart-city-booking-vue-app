@@ -93,6 +93,7 @@ import {
   bookingStartsInText,
   formatAppliedTierRule,
   formatTimeBeforeStart,
+  hasBegun,
   refundPolicyText,
 } from "@/utils/cancellationRefund";
 
@@ -208,6 +209,7 @@ export default {
       const policy = refundPolicyText("singlePolicy", {
         time: formatTimeBeforeStart(this.preview),
         tier,
+        begun: hasBegun(this.preview),
         percentage: this.preview.suggestedRefundPercentage,
       });
       const startsIn = tier ? bookingStartsInText(this.preview) : null;
