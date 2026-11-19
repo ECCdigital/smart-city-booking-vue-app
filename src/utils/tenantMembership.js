@@ -1,7 +1,7 @@
 import store from "@/store";
 
 /**
- * Whether the signed-in user is a Mitglied of the tenant (see CONTEXT.md):
+ * Whether the signed-in user is a Mitglied of the tenant (see GLOSSARY.md):
  * the id is in the user's permissions, or the user is an instance owner and
  * the loaded tenant list carries the id. The one fact about access the
  * client knows without asking the server; the middleware and the booking

@@ -4,4 +4,8 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookables/_meta/tags`);
   },
+  getFlags(tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/bookables/_meta/flags`);
+  },
 };
