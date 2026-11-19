@@ -1,6 +1,10 @@
 import user from "@/store/modules/user";
 import store from "@/store";
-import { allowsAction, BOOKING_ACTION } from "@/utils/bookingStatus";
+import {
+  allowsAction,
+  BOOKING_ACTION,
+  BOOKING_STATUS,
+} from "@/utils/bookingStatus";
 
 class BookingPermissionService {
   static isOwner(booking) {
@@ -114,15 +118,17 @@ class BookingPermissionService {
 
   /**
    * Whether the hard delete is offered for `booking`: where its state allows
-   * it (Angefragt, Abgelehnt) to whoever may delete it, and in every state to
+   * it (Angefragt, Abgelehnt) to whoever may delete it, an own booking also
+   * once its withdrawal was accepted (Widerrufen), and in every state to
    * whoever may delete every booking - so test bookings can be taken out
    * after they were confirmed or cancelled.
    */
   static allowHardDelete(booking) {
     if (BookingPermissionService.allowDeleteAny()) return true;
+    if (!BookingPermissionService.allowDelete(booking)) return false;
     return (
-      !!BookingPermissionService.allowDelete(booking) &&
-      allowsAction(booking, BOOKING_ACTION.DELETE)
+      allowsAction(booking, BOOKING_ACTION.DELETE) ||
+      booking?.status === BOOKING_STATUS.WITHDRAWN
     );
   }
 

@@ -43,7 +43,7 @@ describe("BookingDeleteConformationDialog", () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
     expect(document.body.textContent).toContain(
-      "Nur angefragte oder abgelehnte Buchungen können gelöscht werden"
+      "Nur angefragte, abgelehnte oder widerrufene Buchungen können gelöscht werden"
     );
   });
 

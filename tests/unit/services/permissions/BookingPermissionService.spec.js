@@ -180,12 +180,19 @@ describe("BookingPermissionService", () => {
       ["payment_due", false],
       ["confirmed", false],
       ["cancelled", false],
-      ["withdrawn", false],
+      ["withdrawn", true],
     ])("lets deleteOwn delete an own %s booking: %s", (status, expected) => {
       signIn({ tenants: [membership({ deleteOwn: true })] });
       const own = { id: "bk-1", status, assignedUserId: USER_ID };
 
       expect(BookingPermissionService.allowHardDelete(own)).toBe(expected);
+    });
+
+    it("refuses deleteOwn a withdrawn booking of someone else", () => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+      const foreign = { id: "bk-2", status: "withdrawn", assignedUserId: "x" };
+
+      expect(BookingPermissionService.allowHardDelete(foreign)).toBe(false);
     });
 
     it("refuses a member without a delete right", () => {
