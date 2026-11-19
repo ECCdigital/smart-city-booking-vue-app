@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import Vue from "vue";
 import { mountComponent } from "@tests/unit/support/mount";
 import SecretField, { SECRET_MASK } from "@/components/commons/SecretField.vue";
 
-function mountField(propsData = {}, attrs = {}) {
+function mountField(propsData = {}, attrs = {}, provide = undefined) {
   return mountComponent(SecretField, {
     propsData,
     attrs: { label: "Passwort", ...attrs },
+    provide,
   });
 }
 
@@ -114,5 +116,43 @@ describe("SecretField", () => {
 
     expect(input(wrapper).element.value).toBe("");
     expect(input(wrapper).attributes("placeholder")).toBe(SECRET_MASK);
+  });
+
+  /**
+   * A page counts its saves in `secretsSaved`. What the field handed on is
+   * stored from then on: the page keeps the field, so without the count a
+   * secret typed before the save could still be shown after it.
+   */
+  describe("after the page saved", () => {
+    async function savedAfterTyping(typed) {
+      const secretsSaved = Vue.observable({ count: 0 });
+      const wrapper = mountField({ value: "alt" }, {}, { secretsSaved });
+      await input(wrapper).setValue(typed);
+      await visibilityButton(wrapper).trigger("click");
+      await wrapper.setProps({ value: typed });
+
+      secretsSaved.count += 1;
+      await wrapper.vm.$nextTick();
+      return wrapper;
+    }
+
+    it("shows the secret typed before the save no more, not even through the eye", async () => {
+      const wrapper = await savedAfterTyping("neu");
+
+      expect(input(wrapper).element.value).toBe("");
+      expect(input(wrapper).attributes("type")).toBe("password");
+      expect(input(wrapper).attributes("placeholder")).toBe(SECRET_MASK);
+      expect(visibilityButton(wrapper).exists()).toBe(false);
+      expect(wrapper.html()).not.toContain("neu");
+    });
+
+    it("keeps the saved secret when the admin types and empties the input", async () => {
+      const wrapper = await savedAfterTyping("neu");
+
+      await input(wrapper).setValue("x");
+      await input(wrapper).setValue("");
+
+      expect(handedOn(wrapper).at(-1)).toBe("neu");
+    });
   });
 });

@@ -51,8 +51,17 @@ export const SECRET_MASK = "••••••••";
 export default {
   name: "SecretField",
   inheritAttrs: false,
+  /**
+   * The page that saves provides `secretsSaved` and counts up its `count`
+   * after each save: what the field handed on is stored from then on, so it
+   * is no longer shown, not even through the eye.
+   */
+  inject: { secretsSaved: { default: null } },
   props: {
-    /** The stored secret, handed back unchanged until the admin types. */
+    /**
+     * The stored secret, as the backend answers it the marker
+     * (`STORED_SECRET`), handed back unchanged until the admin types.
+     */
     value: { type: String, default: "" },
     disabled: { type: Boolean, default: false },
   },
@@ -74,8 +83,16 @@ export default {
       const { input, ...rest } = this.$listeners;
       return rest;
     },
+    saves() {
+      return this.secretsSaved?.count || 0;
+    },
   },
   watch: {
+    saves() {
+      this.stored = this.emitted;
+      this.draft = "";
+      this.visible = false;
+    },
     value(v) {
       // A value this field did not hand on is another stored secret, e.g.
       // the dialog opened for another app: start over from it.

@@ -15,6 +15,7 @@ import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vu
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
 import SecretField from "@/components/commons/SecretField.vue";
 import { runConnectionTest } from "@/utilities/access-connection-test";
+import { isStoredSecret } from "@/utilities/stored-secret";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 export default {
@@ -32,9 +33,6 @@ export default {
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
-    nukiTokenConfigured: { type: Boolean, default: false },
-    saltoSecretConfigured: { type: Boolean, default: false },
-    saltoPasswordConfigured: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -65,6 +63,17 @@ export default {
     },
   },
   computed: {
+    // A secret counts as stored while the form holds the backend's marker:
+    // the cross of its field removes it, so the hints go with it.
+    nukiTokenStored() {
+      return isStoredSecret(this.localApps.nuki?.apiToken);
+    },
+    saltoSecretStored() {
+      return isStoredSecret(this.localApps["salto-ks"]?.clientSecret);
+    },
+    saltoPasswordStored() {
+      return isStoredSecret(this.localApps["salto-ks"]?.password);
+    },
     storedSalto() {
       return findTenantApp(this.tenant.applications, SALTO_PROVIDER) || null;
     },
@@ -258,15 +267,9 @@ export default {
                   :label="$t('accessPoint.tenant.apiToken')"
                   v-model="localApps.nuki.apiToken"
                   @input="emitApps()"
-                  :placeholder="
-                    nukiTokenConfigured
-                      ? $t('accessPoint.tenant.apiTokenUnchanged')
-                      : $t('accessPoint.tenant.apiTokenPlaceholder')
-                  "
+                  :placeholder="$t('accessPoint.tenant.apiTokenPlaceholder')"
                   :hint="
-                    nukiTokenConfigured
-                      ? $t('accessPoint.tenant.apiTokenHint')
-                      : ''
+                    nukiTokenStored ? $t('accessPoint.tenant.apiTokenHint') : ''
                   "
                   persistent-hint
                   autocomplete="off"
@@ -406,7 +409,7 @@ export default {
               v-if="
                 localApps['salto-ks'].active &&
                 !localApps['salto-ks'].username &&
-                !saltoPasswordConfigured
+                !saltoPasswordStored
               "
               dense
             >
@@ -503,12 +506,10 @@ export default {
                   v-model="localApps['salto-ks'].clientSecret"
                   @input="emitApps()"
                   :placeholder="
-                    saltoSecretConfigured
-                      ? $t('accessPoint.tenant.salto.clientSecretUnchanged')
-                      : $t('accessPoint.tenant.salto.clientSecretPlaceholder')
+                    $t('accessPoint.tenant.salto.clientSecretPlaceholder')
                   "
                   :hint="
-                    saltoSecretConfigured
+                    saltoSecretStored
                       ? $t('accessPoint.tenant.salto.clientSecretHint')
                       : ''
                   "
@@ -543,12 +544,10 @@ export default {
                   v-model="localApps['salto-ks'].password"
                   @input="emitApps()"
                   :placeholder="
-                    saltoPasswordConfigured
-                      ? $t('accessPoint.tenant.salto.passwordUnchanged')
-                      : $t('accessPoint.tenant.salto.passwordPlaceholder')
+                    $t('accessPoint.tenant.salto.passwordPlaceholder')
                   "
                   :hint="
-                    saltoPasswordConfigured
+                    saltoPasswordStored
                       ? $t('accessPoint.tenant.salto.passwordHint')
                       : ''
                   "
@@ -575,8 +574,6 @@ export default {
               :tenant-id="tenant.id"
               :app="localApps['salto-ks']"
               :stored="storedSalto"
-              :secret-configured="saltoSecretConfigured"
-              :password-configured="saltoPasswordConfigured"
               :activation-shown="localApps['salto-ks'].active"
               @to-activation="toIqActivation"
             />
