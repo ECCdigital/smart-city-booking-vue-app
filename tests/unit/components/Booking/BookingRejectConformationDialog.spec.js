@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import { flushPromises, serverError } from "@tests/unit/support/api";
 import { activeDialog, activeDialogText } from "@tests/unit/support/dialog";
 
 vi.mock("@/services/api/ApiBookingService", () => ({
@@ -170,5 +170,23 @@ describe("BookingRejectConformationDialog", () => {
 
     expect(paymentText()).toContain("Kostenfreie Buchung");
     expect(paymentText()).toContain("Damit ist alles erledigt.");
+  });
+
+  it("says the refund is unknown when the preview failed and no document is made", async () => {
+    ApiBookingService.getCancellationRefundPreview.mockRejectedValue(
+      serverError(500)
+    );
+    const wrapper = await openDialog({
+      id: "B-1",
+      status: "confirmed",
+      priceEur: 40,
+    });
+
+    await wrapper.find("input[type=checkbox]").setChecked(true);
+    await wrapper.vm.$nextTick();
+
+    expect(paymentText()).toBe(
+      "Bereits bezahlt: 40,00 € Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht."
+    );
   });
 });
