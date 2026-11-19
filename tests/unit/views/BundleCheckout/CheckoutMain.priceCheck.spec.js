@@ -118,6 +118,22 @@ describe("CheckoutMain — the price check behind the submit button", () => {
     expect(summary(wrapper).vm.$attrs["lead-item"].userGrossPriceEur).toBe(12);
   });
 
+  it("drops the 0 EUR when the check fails without an answer", async () => {
+    const wrapper = await mountCheckout();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    ApiCheckoutService.validateCheckoutItem.mockRejectedValueOnce(
+      new Error("Network Error")
+    );
+    summary(wrapper).vm.$emit("set-book-without-discount", true);
+    await flushPromises();
+
+    const leadItem = summary(wrapper).vm.$attrs["lead-item"];
+    expect(leadItem.valid).toBe(false);
+    expect(leadItem.userGrossPriceEur).toBe(null);
+    expect(summary(wrapper).vm.$attrs.validating).toBe(false);
+  });
+
   it("keeps the newer price when an older check answers late", async () => {
     const wrapper = await mountCheckout();
 

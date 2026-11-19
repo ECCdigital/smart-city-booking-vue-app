@@ -625,7 +625,7 @@ export default {
             }
           } catch (error) {
             this.checkoutId =
-              error.response.data.checkoutId || this.checkoutId || null;
+              error.response?.data?.checkoutId || this.checkoutId || null;
             if (!isLatest()) {
               continue;
             }
