@@ -240,6 +240,7 @@ export default {
       refundPreview: null,
       previewLoading: false,
       previewError: null,
+      previewRequestId: 0,
       refundPercentage: undefined,
       refundValid: true,
       bankDetails: {
@@ -468,29 +469,34 @@ export default {
         return;
       }
       if (this.cancellationScope === "group" && !this.groupBookingId) return;
+      // A switched scope or reopened dialog races its previews; only the
+      // latest one may land.
+      const requestId = ++this.previewRequestId;
       this.previewLoading = true;
       this.previewError = null;
       this.refundPreview = null;
       try {
-        if (this.cancellationScope === "group") {
-          this.refundPreview =
-            await ApiGroupBookingService.getCancellationRefundPreview(
-              null,
-              this.groupBookingId
-            );
-        } else {
-          this.refundPreview =
-            await ApiBookingService.getCancellationRefundPreview(
-              this.toReject.id
-            );
-        }
+        const preview =
+          this.cancellationScope === "group"
+            ? await ApiGroupBookingService.getCancellationRefundPreview(
+                null,
+                this.groupBookingId
+              )
+            : await ApiBookingService.getCancellationRefundPreview(
+                this.toReject.id
+              );
+        if (requestId !== this.previewRequestId) return;
+        this.refundPreview = preview;
       } catch (error) {
+        if (requestId !== this.previewRequestId) return;
         this.previewError = getApiErrorMessage(
           error,
           this.$t("booking.cancellationRefund.previewError")
         );
       } finally {
-        this.previewLoading = false;
+        if (requestId === this.previewRequestId) {
+          this.previewLoading = false;
+        }
       }
     },
     async onReject() {
