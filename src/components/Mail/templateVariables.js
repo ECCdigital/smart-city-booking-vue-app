@@ -373,7 +373,7 @@ export const CANCELLATION_VARIABLES = [
     name: "cancellationFee",
     placeholder: "{{cancellationFee}}",
     label: "Einbehaltener Betrag",
-    description: "Einbehaltener Betrag / Stornogebühr (formatiert)",
+    description: "Einbehaltener Betrag (formatiert)",
   },
   {
     name: "cancellationReason",

@@ -164,7 +164,7 @@ export const SNIPPET_CATALOG = [
     ({{refundPercentage}}&nbsp;%)
     {{#if hasCancellationFee}}
       <br />
-      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+      Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
     {{/if}}
   </p>
 {{/if}}
@@ -180,7 +180,7 @@ export const SNIPPET_CATALOG = [
     ({{refundPercentage}}&nbsp;%)
     {{#if hasCancellationFee}}
       <br />
-      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+      Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
     {{/if}}
   </p>
 {{/if}}
