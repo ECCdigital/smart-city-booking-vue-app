@@ -8,6 +8,7 @@ import {
   formatTierDeadline,
   formatTimeBeforeStart,
   formatTimeBeforeStartForBooker,
+  hasBegun,
   refundPolicyText,
   refundStateMarker,
   tierDeadline,
@@ -159,6 +160,28 @@ describe("refundPolicyText", () => {
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
   });
+
+  it("says the booking has begun instead of a negative time", () => {
+    expect(
+      refundPolicyText("userPolicySummary", {
+        time: null,
+        tier: "nach Beginn",
+        begun: true,
+        percentage: 0,
+      })
+    ).toBe(
+      "Die Buchung hat bereits begonnen. Es gilt die Erstattungsstufe: nach Beginn.\n\nDie Erstattung beträgt voraussichtlich 0 %."
+    );
+    expect(
+      refundPolicyText("singlePolicy", {
+        time: null,
+        begun: true,
+        percentage: 20,
+      })
+    ).toBe(
+      "Die Buchung hat bereits begonnen. Die Mandantenregel schlägt 20 % Erstattung vor."
+    );
+  });
 });
 
 /**
@@ -182,6 +205,16 @@ describe("tierDeadline", () => {
   });
 });
 
+describe("hasBegun", () => {
+  it("reads a negative time before the start as begun", () => {
+    expect(hasBegun({ hoursBeforeStart: -1 })).toBe(true);
+    expect(hasBegun({ hoursBeforeStart: 0 })).toBe(false);
+    expect(hasBegun({ daysBeforeStart: -2 })).toBe(true);
+    expect(hasBegun({ hoursBeforeStart: null })).toBe(false);
+    expect(hasBegun(null)).toBe(false);
+  });
+});
+
 describe("formatTimeBeforeStart", () => {
   it("names whole days from one day on and hours below", () => {
     expect(formatTimeBeforeStart({ hoursBeforeStart: 47 })).toBe("1 Tag");
@@ -191,6 +224,13 @@ describe("formatTimeBeforeStart", () => {
 
   it("names the calendar days of an audit from before", () => {
     expect(formatTimeBeforeStart({ daysBeforeStart: 3 })).toBe("3 Tage");
+  });
+
+  it("answers null once the booking has begun, as the backend does", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: -3 })).toBeNull();
+    expect(formatTimeBeforeStart({ daysBeforeStart: -1 })).toBeNull();
+    expect(formatTimeBeforeStartForBooker({ hoursBeforeStart: -3 })).toBeNull();
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 0 })).toBe("0 Stunden");
   });
 
   it("answers null without a time span", () => {

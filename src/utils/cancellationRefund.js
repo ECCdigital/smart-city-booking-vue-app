@@ -84,12 +84,23 @@ export function formatTierDeadline(hoursBeforeStart) {
 }
 
 /**
+ * The booking had begun when the calculation was made: the backend counts
+ * the time before the start negative then.
+ */
+export function hasBegun(calculation) {
+  const hours = calculation?.hoursBeforeStart;
+  if (Number.isFinite(hours)) return hours < 0;
+  return calculation?.daysBeforeStart < 0;
+}
+
+/**
  * The time from the cancellation to the start of a refund calculation as
  * text: whole days of 24 hours from one day on, hours below. An audit of
  * before backend 4.4 counted calendar days (`daysBeforeStart`). `null`
- * without a time span.
+ * without a time span and, as in the backend, once the booking has begun.
  */
 export function formatTimeBeforeStart(calculation) {
+  if (hasBegun(calculation)) return null;
   const hours = calculation?.hoursBeforeStart;
   if (Number.isFinite(hours)) {
     return hours >= HOURS_PER_DAY
@@ -217,10 +228,19 @@ export function formatAppliedTierRule(calculation) {
 /**
  * The policy line of a single booking's refund preview or audit: the time
  * before the start where there is one (`formatTimeBeforeStart`) and the tier
- * that applied (`formatAppliedTier`), else that the booking has no time
- * span. `key` is `singlePolicy` or `userPolicySummary`.
+ * that applied (`formatAppliedTier`), that the booking has begun where
+ * `begun` (`hasBegun`), else that the booking has no time span. `key` is
+ * `singlePolicy` or `userPolicySummary`.
  */
-export function refundPolicyText(key, { time, tier, ...values }) {
+export function refundPolicyText(key, { time, tier, begun, ...values }) {
+  if (begun) {
+    return tier === null || tier === undefined
+      ? i18n.t(`booking.cancellationRefund.${key}AfterStart`, values)
+      : i18n.t(`booking.cancellationRefund.${key}AfterStartWithTier`, {
+          tier,
+          ...values,
+        });
+  }
   if (time === null || time === undefined) {
     return i18n.t(`booking.cancellationRefund.${key}WithoutTimeSpan`, values);
   }
