@@ -115,7 +115,8 @@ export function expectedRefundEur(preview, refundPercentage) {
  * booking gets the refund back, an unpaid one owes the fee only. A rejected
  * request costs nothing: what was paid comes back in full, without a
  * preview to weigh. `refundAmountEur` is `null` while no
- * preview is at hand.
+ * preview is at hand; `previewFailed` tells a failed preview from one still
+ * loading - the amount is then unknown, though the tenant's tiers still apply.
  *
  * @returns {{ type: string, status: string, text: string }} The alert's type, its bold line and the line under it
  */
@@ -125,6 +126,7 @@ export function rejectPaymentOutcome({
   paid,
   priceEur,
   refundAmountEur,
+  previewFailed,
 }) {
   const t = (key, values) =>
     i18n.t(`booking.reject.dialog.payment.${key}`, values);
@@ -146,6 +148,9 @@ export function rejectPaymentOutcome({
 
   if (paid) {
     const status = t("paid", { amount: currency(priceEur) });
+    if (refundAmountEur === null && previewFailed) {
+      return { type: "warning", status, text: t("refundUnknown") };
+    }
     if (refundAmountEur === null) return { type: "info", status, text: "" };
     return refundAmountEur > 0
       ? {
@@ -157,6 +162,9 @@ export function rejectPaymentOutcome({
   }
 
   const status = t("unpaid");
+  if (refundAmountEur === null && previewFailed) {
+    return { type: "warning", status, text: t("feeUnknown") };
+  }
   if (refundAmountEur === null) return { type: "info", status, text: "" };
   const fee = Math.round((Number(priceEur || 0) - refundAmountEur) * 100) / 100;
   return fee > 0

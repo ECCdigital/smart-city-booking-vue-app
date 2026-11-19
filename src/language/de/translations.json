@@ -1749,7 +1749,9 @@
           "unpaid": "Noch nicht bezahlt",
           "refund": "Der Buchende bekommt {amount} zurück. Die Rückerstattung bleibt offen, bis Sie sie an der Buchung als erfolgt vermerken.",
           "noRefund": "Der Buchende bekommt nichts zurück. Damit ist alles erledigt.",
+          "refundUnknown": "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht.",
           "feeDue": "Der Buchende muss noch den Einbehalt von {amount} zahlen.",
+          "feeUnknown": "Betrag unbekannt: Der Einbehalt konnte nicht berechnet werden. Er fällt trotzdem nach der Staffel des Mandanten an.",
           "settled": "Der Buchende zahlt nichts und bekommt nichts zurück. Damit ist alles erledigt.",
           "request": {
             "paid": "Buchung bereits bezahlt",

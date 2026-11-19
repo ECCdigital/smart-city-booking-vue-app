@@ -5,6 +5,7 @@ import {
   refundPolicyText,
   refundStateMarker,
   refundStateOf,
+  rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 
 const audit = { cancelledFrom: "confirmed", refundPercentage: 50 };
@@ -137,5 +138,85 @@ describe("refundPolicyText", () => {
     ).toBe(
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
+  });
+});
+
+/**
+ * A preview that failed to load leaves the amount unknown, while the
+ * cancellation still follows the tenant's tiers: the hint says so.
+ */
+describe("rejectPaymentOutcome without a preview", () => {
+  it("warns of an unknown refund on a paid booking once the preview failed", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Bereits bezahlt: 40,00\u00a0€",
+      text: "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht.",
+    });
+  });
+
+  it("warns of an unknown fee on an unpaid booking once the preview failed", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: false,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Noch nicht bezahlt",
+      text: "Betrag unbekannt: Der Einbehalt konnte nicht berechnet werden. Er fällt trotzdem nach der Staffel des Mandanten an.",
+    });
+  });
+
+  it("names no amount while the preview is still loading", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: false,
+      })
+    ).toEqual({
+      type: "info",
+      status: "Bereits bezahlt: 40,00\u00a0€",
+      text: "",
+    });
+  });
+
+  it("leaves a rejected request free of charge, without any tiers", () => {
+    expect(
+      rejectPaymentOutcome({
+        request: true,
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Buchung bereits bezahlt",
+      text: "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Der vollständige Betrag von 40,00\u00a0€ wird zurückerstattet.",
+    });
+    expect(
+      rejectPaymentOutcome({
+        request: true,
+        paid: false,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "success",
+      status: "Noch nicht bezahlt",
+      text: "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Es steht somit keine Zahlung mehr aus.",
+    });
   });
 });

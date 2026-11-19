@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import { flushPromises, serverError } from "@tests/unit/support/api";
 import { activeDialogText } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
@@ -162,6 +162,27 @@ describe("GroupBookingRejectConformationDialog", () => {
         .textContent.replace(/\u00a0/g, " ");
       expect(hint).toContain("Bereits bezahlt: 50,00 €");
       expect(hint).toContain("Der Buchende bekommt 37,50 € zurück.");
+    });
+
+    it("says the refund is unknown when the preview failed and no document is made", async () => {
+      ApiGroupBookingService.getCancellationRefundPreview.mockRejectedValue(
+        serverError(500)
+      );
+      const wrapper = await openDialog([
+        member("bk-1", "confirmed"),
+        member("bk-2", "confirmed"),
+      ]);
+
+      await wrapper.find("input[type=checkbox]").setChecked(true);
+      await wrapper.vm.$nextTick();
+
+      const hint = document
+        .querySelector(".v-dialog--active .booking-reject-payment")
+        .textContent.replace(/\u00a0/g, " ");
+      expect(hint).toContain("Bereits bezahlt: 50,00 €");
+      expect(hint).toContain(
+        "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht."
+      );
     });
   });
 

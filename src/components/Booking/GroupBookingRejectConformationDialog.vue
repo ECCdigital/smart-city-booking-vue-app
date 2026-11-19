@@ -293,6 +293,7 @@ export default {
           this.refundPreview,
           this.refundPercentage
         ),
+        previewFailed: !!this.previewError,
       });
     },
     canProvideBankDetails() {
