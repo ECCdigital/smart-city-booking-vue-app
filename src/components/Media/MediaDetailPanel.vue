@@ -282,7 +282,7 @@
         <v-card-text class="pa-6">
           <p>
             „{{ displayTitle }}" wird noch verwendet und
-            {{ blockedCopy.reason }}. Entferne zuerst diese Verwendungen:
+            {{ blockedCopy.reason }}. Entfernen Sie zuerst diese Verwendungen:
           </p>
           <v-sheet outlined rounded class="pa-3">
             <MediaUsageList :entries="blockingUsage" />

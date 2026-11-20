@@ -125,7 +125,7 @@
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
       "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
-      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr.",
+      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Sie haben keinen Verwaltungszugriff mehr.",
       "report_target_not_of_tenant": "Melden lassen sich nur Mitglieder des Mandanten und Bucher seiner Buchungen.",
       "report_target_tenant_owner": "Einen Besitzer des Mandanten melden nur Besitzer.",
       "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden.",
@@ -2494,9 +2494,9 @@
     "address_blacklisted": {
       "title": "Buchung nicht möglich",
       "registrationTitle": "Registrierung nicht möglich",
-      "registrationNotice": "Mit dieser E-Mail-Adresse ist keine Registrierung möglich. Bei Fragen wende dich per Mail an {contact}.",
-      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
-      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "registrationNotice": "Mit dieser E-Mail-Adresse ist keine Registrierung möglich. Bei Fragen wenden Sie sich per Mail an {contact}.",
+      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an den Betreiber dieses Angebots.",
+      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an {contact}.",
       "operator": "den Betreiber dieses Angebots",
       "copy": "Mailadresse kopieren",
       "copied": "Mailadresse kopiert",
@@ -3585,7 +3585,7 @@
       "notListed": "Nicht dabei? „{text}“ auf der Karte setzen",
       "noHit": "Kein Treffer. „{text}“ auf der Karte setzen",
       "notListedHint": "Der Text kommt in den Zusatz.",
-      "unavailable": "Suche gerade nicht erreichbar, setze den Punkt auf der Karte",
+      "unavailable": "Suche gerade nicht erreichbar, setzen Sie den Punkt auf der Karte",
       "searchText": "Text suchen"
     },
     "fields": {
@@ -3604,7 +3604,7 @@
       "none": "Kein Punkt",
       "missing": "Punkt fehlt.",
       "missingText": "Gespeichert ist nur der Text „{text}“.",
-      "missingAddress": "Setze den Punkt auf der Karte oder suche die Anschrift.",
+      "missingAddress": "Setzen Sie den Punkt auf der Karte oder suchen Sie die Anschrift.",
       "clear": "Standort leeren"
     },
     "suggestion": {
@@ -3616,16 +3616,16 @@
       "keepPoint": "Punkt behalten"
     },
     "map": {
-      "place": "Klicke in die Karte, wo „{text}“ liegt.",
+      "place": "Klicken Sie in die Karte, wo „{text}“ liegt.",
       "cancel": "Abbrechen",
       "unavailable": "Karte gerade nicht erreichbar",
       "sources": "Datenquellen",
       "search": "Suche"
     },
     "reason": {
-      "pointNotSet": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
-      "addressWithoutPoint": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
-      "oldTextWithoutPoint": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+      "pointNotSet": "Ort ohne Punkt. Setzen Sie den Punkt auf der Karte.",
+      "addressWithoutPoint": "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte.",
+      "oldTextWithoutPoint": "Standort ohne Punkt. Suchen Sie den Text oder setzen Sie den Punkt auf der Karte."
     }
   },
   "invoice": {
@@ -3656,7 +3656,7 @@
   "supervision": {
     "pending-banner": {
       "title": "Freigabe ausstehend.",
-      "text": "Der Betreiber prüft den Mandanten ‚{name}‘. Du kannst Angebote vollständig vorbereiten; öffentlich wird nichts, bis der Betreiber freigegeben hat. Du erhältst eine Mail."
+      "text": "Der Betreiber prüft den Mandanten ‚{name}‘. Sie können Angebote vollständig vorbereiten; öffentlich wird nichts, bis der Betreiber freigegeben hat. Sie erhalten eine Mail."
     },
     "declined-tenant": {
       "declined": "Vom Betreiber abgewiesen.",
@@ -3664,7 +3664,7 @@
       "reason": "Begründung: „{reason}“",
       "toast": {
         "title": "Mandant abgewiesen",
-        "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+        "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Sie haben keinen Verwaltungszugriff mehr."
       }
     },
     "offer-types": {

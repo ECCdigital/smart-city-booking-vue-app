@@ -173,7 +173,7 @@ describe("BookingTransitions", () => {
       expect(wrapper.emitted("failed")[0][0]).toMatchObject({
         action: "confirm",
         message:
-          "Die Buchung hat keinen Zahlungsanbieter hinterlegt. Bitte wähle einen aus.",
+          "Die Buchung hat keinen Zahlungsanbieter hinterlegt. Bitte wählen Sie einen aus.",
         refetch: false,
       });
       expect(toastMessages(store)).toContain(

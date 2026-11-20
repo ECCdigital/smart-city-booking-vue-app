@@ -22,11 +22,11 @@
         <v-tabs-items v-model="model">
           <v-tab-item class="mt-4 mx-2">
             <div class="text-body-1">
-              Lade Benutzer zu diesem Mandanten ein.
+              Laden Sie Benutzer zu diesem Mandanten ein.
             </div>
             <div class="text-caption">
-              Trage die E-Mail-Adressen der Personen ein, die du einladen
-              möchtest. Du kannst mehrere E-Mail-Adressen durch Leerzeichen,
+              Tragen Sie die E-Mail-Adressen der Personen ein, die Sie einladen
+              möchten. Sie können mehrere E-Mail-Adressen durch Leerzeichen,
               Kommas oder Semikolons trennen.
             </div>
             <div class="mt-2">
@@ -98,7 +98,7 @@
                   border="left"
                   colored-border
                 >
-                  Du kannst optional einen Verifikationsprozess auswählen, die
+                  Sie können optional einen Verifikationsprozess auswählen, den
                   eingeladene Benutzer bestehen müssen, bevor sie aktiv im
                   Mandanten arbeiten können. Erst dann werden die zugehörigen
                   Rollen automatisch zugewiesen. Wenn kein Verifikationsprozess
@@ -195,11 +195,11 @@
             <div class="d-flex align-center justify-space-between mt-4">
               <div>
                 <div class="text-body-1">
-                  Verwalte die Einladungslinks für diesen Mandanten.
+                  Verwalten Sie die Einladungslinks für diesen Mandanten.
                 </div>
                 <div class="text-caption">
-                  Erstelle Einladungslinks und teile sie, damit Benutzer dem
-                  Mandanten beitreten können.
+                  Erstellen Sie Einladungslinks und teilen Sie sie, damit
+                  Benutzer dem Mandanten beitreten können.
                 </div>
               </div>
 
@@ -372,13 +372,13 @@
                         border="left"
                         colored-border
                       >
-                        Du kannst optional einen Verifikationsprozess auswählen,
-                        die eingeladene Benutzer bestehen müssen, bevor sie
-                        aktiv im Mandanten arbeiten können. Erst dann werden die
-                        zugehörigen Rollen automatisch zugewiesen. Wenn kein
-                        Verifikationsprozess definiert ist, werden Benutzer
-                        direkt nach Annahme der Einladung hinzugefügt und
-                        erhalten sofort die ausgewählten Rollen.
+                        Sie können optional einen Verifikationsprozess
+                        auswählen, den eingeladene Benutzer bestehen müssen,
+                        bevor sie aktiv im Mandanten arbeiten können. Erst dann
+                        werden die zugehörigen Rollen automatisch zugewiesen.
+                        Wenn kein Verifikationsprozess definiert ist, werden
+                        Benutzer direkt nach Annahme der Einladung hinzugefügt
+                        und erhalten sofort die ausgewählten Rollen.
                       </v-alert>
                       <v-select
                         v-model="linkSelectedChallenge"

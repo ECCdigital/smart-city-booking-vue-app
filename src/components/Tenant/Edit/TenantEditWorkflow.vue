@@ -503,7 +503,7 @@ export default {
         disabled
       >
         <v-expansion-panel-header>
-          Keine Workflow-Status definiert. Klicke auf „Workflow-Status
+          Keine Workflow-Status definiert. Klicken Sie auf „Workflow-Status
           hinzufügen“.
         </v-expansion-panel-header>
       </v-expansion-panel>

@@ -11,7 +11,7 @@
           Neue Bausteine landen im aktiven Bereich (<strong>{{
             activeZone === "intro" ? "Einleitung" : "Abschluss"
           }}</strong
-          >). Klicke in einen Bereich, um ihn zu aktivieren.
+          >). Klicken Sie in einen Bereich, um ihn zu aktivieren.
         </div>
       </v-col>
 

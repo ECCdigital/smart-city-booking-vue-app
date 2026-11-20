@@ -239,7 +239,7 @@ describe("getApiErrorMessage", () => {
         supervisionReason: null,
       });
       expect(getApiErrorMessage(error, FALLBACK)).toBe(
-        "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+        "Dieser Mandant wurde vom Betreiber abgewiesen. Sie haben keinen Verwaltungszugriff mehr."
       );
     });
   });

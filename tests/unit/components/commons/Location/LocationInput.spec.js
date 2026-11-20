@@ -254,7 +254,7 @@ describe("LocationInput - the search", () => {
     await search(wrapper, "Gasstraße");
 
     expect(wrapper.text()).toContain(
-      "Suche gerade nicht erreichbar, setze den Punkt auf der Karte"
+      "Suche gerade nicht erreichbar, setzen Sie den Punkt auf der Karte"
     );
     await type(wrapper, "location-city", "Guben");
     expect(lastInput(wrapper).address.city).toBe("Guben");
@@ -496,7 +496,7 @@ describe("LocationInput - a place the search does not know", () => {
       "Neißewiese"
     );
     expect(find(wrapper, "location-placing").text()).toContain(
-      "Klicke in die Karte, wo „Neißewiese“ liegt."
+      "Klicken Sie in die Karte, wo „Neißewiese“ liegt."
     );
 
     map(wrapper).vm.$emit("point-set", { lat: 51.953, lon: 14.7198 });
@@ -596,7 +596,7 @@ describe("LocationInput - whether it may be saved", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.text()).toContain(
-      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+      "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte."
     );
   });
 

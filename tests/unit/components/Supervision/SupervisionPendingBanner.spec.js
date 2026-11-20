@@ -11,8 +11,8 @@ import SupervisionPendingBanner from "@/components/Supervision/SupervisionPendin
 
 const BAND_TEXT =
   "Freigabe ausstehend. Der Betreiber prüft den Mandanten ‚SV Blau-Weiß‘. " +
-  "Du kannst Angebote vollständig vorbereiten; öffentlich wird nichts, bis " +
-  "der Betreiber freigegeben hat. Du erhältst eine Mail.";
+  "Sie können Angebote vollständig vorbereiten; öffentlich wird nichts, bis " +
+  "der Betreiber freigegeben hat. Sie erhalten eine Mail.";
 
 const find = (wrapper, name) => wrapper.find(`[data-test='${name}']`);
 

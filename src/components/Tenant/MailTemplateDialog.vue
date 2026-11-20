@@ -41,7 +41,7 @@
           <v-tab-item :transition="false">
             <div v-if="mode === 'expert' && !wizardConfirmed">
               <v-alert type="warning" text>
-                Dieses Template wurde im Experten-Modus bearbeitet. Du kannst
+                Dieses Template wurde im Experten-Modus bearbeitet. Sie können
                 jederzeit mit einer Wizard-Vorlage neu beginnen, dabei wird das
                 vorhandene HTML ersetzt.
                 <div class="mt-2">

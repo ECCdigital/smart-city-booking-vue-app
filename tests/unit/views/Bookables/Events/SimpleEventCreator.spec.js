@@ -158,7 +158,7 @@ describe("SimpleEventCreator - location", () => {
 
     expect(submit(wrapper).attributes("disabled")).toBe("disabled");
     expect(find(wrapper, "location-refusal").text()).toBe(
-      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+      "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte."
     );
   });
 });
