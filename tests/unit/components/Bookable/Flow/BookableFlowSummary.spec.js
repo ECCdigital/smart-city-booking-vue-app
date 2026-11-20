@@ -113,7 +113,7 @@ describe("BookableFlowSummary", () => {
       find(wrapper, "overview-row-location")
         .find("[data-test='overview-issue']")
         .text()
-    ).toBe("Anschrift ohne Punkt. Setze den Punkt auf der Karte.");
+    ).toBe("Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte.");
     expect(
       find(wrapper, "overview-row-title")
         .find("[data-test='overview-issue']")
