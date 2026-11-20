@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
 
 function mountDialog(toDelete) {
   return mountComponent(BookingDeleteConformationDialog, {
@@ -15,39 +14,63 @@ function yesButton(wrapper) {
     .wrappers.find((button) => button.text() === "Löschen");
 }
 
+const CONFIRMED_HINT = "weder storniert noch widerrufen";
+const PAYMENT_DUE_HINT = "Die Zahlung dieser Buchung ist noch offen";
+
 /**
- * A hard delete is offered only where nothing has been confirmed yet:
- * `requested` and `rejected` (spec E12). A free requested booking used to be
- * undeletable because the backend derives `isPayed` for it - reading the
- * state heals that.
+ * Whether the delete is offered is the host's call
+ * (`BookingPermissionService.allowDelete`); the dialog warns about a
+ * confirmed booking that was neither cancelled nor withdrawn, and about one
+ * awaiting payment, which the booker already has as confirmed.
  */
 describe("BookingDeleteConformationDialog", () => {
-  it.each(["requested", "rejected"])(
-    "lets a %s booking be deleted",
-    async (status) => {
-      const wrapper = mountDialog({ id: "bk-1", status, priceEur: 0 });
+  it.each([
+    "requested",
+    "payment_due",
+    "confirmed",
+    "rejected",
+    "cancelled",
+    "withdrawn",
+  ])("lets a %s booking be deleted", async (status) => {
+    const wrapper = mountDialog({ id: "bk-1", status });
 
-      expect(yesButton(wrapper).attributes("disabled")).toBeUndefined();
-      await yesButton(wrapper).trigger("click");
-      expect(wrapper.emitted("delete-booking")).toEqual([["bk-1"]]);
-    }
-  );
+    expect(yesButton(wrapper).attributes("disabled")).toBeUndefined();
+    await yesButton(wrapper).trigger("click");
+    expect(wrapper.emitted("delete-booking")).toEqual([["bk-1"]]);
+  });
 
-  it.each(["payment_due", "confirmed", "cancelled"])(
-    "blocks the delete of a %s booking and says why",
-    async (status) => {
-      const wrapper = mountDialog({ id: "bk-1", status });
+  it("points out a confirmed booking", () => {
+    const wrapper = mountDialog({ id: "bk-1", status: "confirmed" });
 
-      expect(yesButton(wrapper).attributes("disabled")).toBe("disabled");
+    expect(wrapper.find(".v-dialog").text()).toContain(CONFIRMED_HINT);
+  });
 
-      yesButton(wrapper).element.parentElement.dispatchEvent(
-        new Event("mouseenter")
-      );
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-      expect(document.body.textContent).toContain(
-        "Nur angefragte oder abgelehnte Buchungen können gelöscht werden"
-      );
+  it("shows the hint before the question", () => {
+    const text = mountDialog({ id: "bk-1", status: "confirmed" })
+      .find(".v-dialog")
+      .text();
+
+    expect(text.indexOf(CONFIRMED_HINT)).toBeLessThan(
+      text.indexOf("Sind Sie sicher")
+    );
+  });
+
+  it("points out a booking awaiting payment as confirmed to the booker", () => {
+    const text = mountDialog({ id: "bk-1", status: "payment_due" })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain(PAYMENT_DUE_HINT);
+    expect(text).not.toContain(CONFIRMED_HINT);
+  });
+
+  it.each(["requested", "rejected", "cancelled", "withdrawn"])(
+    "says nothing more about a %s booking",
+    (status) => {
+      const text = mountDialog({ id: "bk-1", status }).find(".v-dialog").text();
+
+      expect(text).not.toContain(CONFIRMED_HINT);
+      expect(text).not.toContain(PAYMENT_DUE_HINT);
     }
   );
 });

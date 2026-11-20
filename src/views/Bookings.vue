@@ -105,8 +105,12 @@
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
       :open="openDeleteGroupBookingDialog"
-      :single-delete-disabled="isSelectedBookingHardDeleteBlocked"
-      :group-delete-disabled="isSelectedGroupHardDeleteBlocked"
+      :single-delete-disabled="
+        !BookingPermissionService.allowDelete(selectedBooking)
+      "
+      :group-delete-disabled="!BookingPermissionService.allowDeleteAny()"
+      :contains-confirmed="selectedGroupContainsConfirmed"
+      :contains-payment-due="selectedGroupContainsPaymentDue"
       @close="openDeleteGroupBookingDialog = false"
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
@@ -143,7 +147,6 @@ import {
 } from "@/utils/bookingPageRoutes";
 import {
   BOOKING_STATUS,
-  allowsAction,
   filterBookingsByStatus,
   statusColor,
   statusIcon,
@@ -358,15 +361,22 @@ export default {
       }
       return sections;
     },
-    isSelectedBookingHardDeleteBlocked() {
-      return !allowsAction(this.selectedBooking, "delete");
+    /** The selected series' members; one that is not loaded is `undefined`. */
+    selectedGroupMembers() {
+      if (!this.selectedGroupBooking?.bookingIds) return [];
+      return this.selectedGroupBooking.bookingIds.map((bookingId) =>
+        this.api.bookings.find((item) => item.id === bookingId)
+      );
     },
-    isSelectedGroupHardDeleteBlocked() {
-      if (!this.selectedGroupBooking?.bookingIds) return false;
-      return this.selectedGroupBooking.bookingIds.some((bookingId) => {
-        const booking = this.api.bookings.find((item) => item.id === bookingId);
-        return !allowsAction(booking, "delete");
-      });
+    selectedGroupContainsConfirmed() {
+      return this.selectedGroupMembers.some(
+        (booking) => booking?.status === BOOKING_STATUS.CONFIRMED
+      );
+    },
+    selectedGroupContainsPaymentDue() {
+      return this.selectedGroupMembers.some(
+        (booking) => booking?.status === BOOKING_STATUS.PAYMENT_DUE
+      );
     },
     mappedBookings() {
       return this.api.bookings.map((booking) => {
@@ -559,9 +569,9 @@ export default {
     },
     async deleteBooking(bookingId) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
-      if (!allowsAction(booking, "delete")) {
+      if (!BookingPermissionService.allowDelete(booking)) {
         await this.addToast(
-          ToastService.createToast("booking.delete.requires-rejection", "error")
+          ToastService.createToast("booking.delete.not-allowed", "error")
         );
         return;
       }
@@ -582,13 +592,9 @@ export default {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
-      const hasProtectedBooking = groupBooking.bookingIds.some((id) => {
-        const booking = this.api.bookings.find((item) => item.id === id);
-        return !allowsAction(booking, "delete");
-      });
-      if (hasProtectedBooking) {
+      if (!BookingPermissionService.allowDeleteAny()) {
         await this.addToast(
-          ToastService.createToast("booking.delete.requires-rejection", "error")
+          ToastService.createToast("booking.delete.not-allowed", "error")
         );
         return;
       }

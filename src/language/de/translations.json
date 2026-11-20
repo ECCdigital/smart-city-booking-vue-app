@@ -1724,9 +1724,18 @@
         "title": "Fehler beim Löschen",
         "message": "Die Buchung konnte nicht gelöscht werden."
       },
-      "requires-rejection": {
-        "title": "Stornierung erforderlich",
-        "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
+      "not-allowed": {
+        "title": "Löschen nicht erlaubt",
+        "message": "Sie dürfen diese Buchung nicht löschen.",
+        "series": "Eine ganze Serie darf nur löschen, wer alle Buchungen löschen darf."
+      },
+      "confirmed-hint": {
+        "message": "Diese Buchung wurde bereits bestätigt. Sie wurde weder storniert noch widerrufen.",
+        "series": "Diese Serie enthält bereits bestätigte Buchungen, die weder storniert noch widerrufen wurden."
+      },
+      "payment-due-hint": {
+        "message": "Diese Buchung wurde bereits bestätigt. Die Zahlung dieser Buchung ist noch offen.",
+        "series": "Diese Serie enthält bereits bestätigte Buchungen. Die Serie enthält Buchungen mit offener Zahlung."
       }
     },
     "reject": {

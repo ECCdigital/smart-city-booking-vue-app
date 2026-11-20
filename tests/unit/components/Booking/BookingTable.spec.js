@@ -204,15 +204,32 @@ describe("BookingTable", () => {
     });
 
     it.each([
-      ["requested", false],
-      ["rejected", false],
-      ["payment_due", true],
-      ["confirmed", true],
-      ["cancelled", true],
-    ])("on a %s booking Löschen is disabled: %s", async (status, disabled) => {
-      const menu = await openRowMenu(mountTable([booking({ status })]));
+      "requested",
+      "payment_due",
+      "confirmed",
+      "rejected",
+      "cancelled",
+      "withdrawn",
+    ])(
+      "offers Löschen on a %s booking to whoever may delete it",
+      async (status) => {
+        const menu = await openRowMenu(mountTable([booking({ status })]));
 
-      expect(menu["Löschen"]).toBe(disabled);
+        expect(menu["Löschen"]).toBe(false);
+      }
+    );
+
+    it("leaves Löschen out for whoever may not delete the booking", async () => {
+      BookingPermissionService.allowDelete.mockReturnValue(false);
+      try {
+        const menu = await openRowMenu(
+          mountTable([booking({ status: "requested" })])
+        );
+
+        expect(menu).not.toHaveProperty("Löschen");
+      } finally {
+        BookingPermissionService.allowDelete.mockReturnValue(true);
+      }
     });
 
     /**
