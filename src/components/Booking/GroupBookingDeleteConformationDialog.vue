@@ -11,18 +11,27 @@
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
-        Die Buchung
-        <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
-        Sie die gesamte Serie löschen?
         <v-alert
           v-if="containsConfirmed"
           type="warning"
           text
           dense
-          class="mt-4 mb-0"
+          class="mb-4"
         >
           {{ $t("booking.delete.confirmed-hint.series") }}
         </v-alert>
+        <v-alert
+          v-if="containsPaymentDue"
+          type="warning"
+          text
+          dense
+          class="mb-4"
+        >
+          {{ $t("booking.delete.payment-due-hint.series") }}
+        </v-alert>
+        Die Buchung
+        <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
+        Sie die gesamte Serie löschen?
         <div class="d-flex justify-center flex-wrap mt-4">
           <v-tooltip :disabled="!groupDeleteDisabled" top>
             <template v-slot:activator="{ on }">
@@ -39,9 +48,7 @@
                 </v-btn>
               </div>
             </template>
-            <span>
-              Bestätigte oder bezahlte Buchungen müssen storniert werden.
-            </span>
+            <span>{{ $t("booking.delete.not-allowed.series") }}</span>
           </v-tooltip>
           <v-tooltip :disabled="!singleDeleteDisabled" top>
             <template v-slot:activator="{ on }">
@@ -58,9 +65,7 @@
                 </v-btn>
               </div>
             </template>
-            <span>
-              Bestätigte oder bezahlte Buchungen müssen storniert werden.
-            </span>
+            <span>{{ $t("booking.delete.not-allowed.message") }}</span>
           </v-tooltip>
         </div>
       </v-card-text>
@@ -98,6 +103,11 @@ export default {
     },
     /** Whether the series holds a confirmed booking - pointed out in the dialog. */
     containsConfirmed: {
+      type: Boolean,
+      default: false,
+    },
+    /** Whether the series holds a booking awaiting payment - pointed out in the dialog. */
+    containsPaymentDue: {
       type: Boolean,
       default: false,
     },

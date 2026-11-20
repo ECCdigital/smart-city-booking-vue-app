@@ -11,31 +11,27 @@
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
-        Sind Sie sicher, dass Sie die Buchung
-        <strong>{{ toDelete.id }}</strong> löschen wollen?
-        <v-alert v-if="isConfirmed" type="warning" text dense class="mt-4 mb-0">
+        <v-alert v-if="isConfirmed" type="warning" text dense class="mb-4">
           {{ $t("booking.delete.confirmed-hint.message") }}
         </v-alert>
+        <v-alert v-if="isPaymentDue" type="warning" text dense class="mb-4">
+          {{ $t("booking.delete.payment-due-hint.message") }}
+        </v-alert>
+        Sind Sie sicher, dass Sie die Buchung
+        <strong>{{ toDelete.id }}</strong> löschen wollen?
       </v-card-text>
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-tooltip :disabled="!deleteDisabled" top>
-          <template v-slot:activator="{ on }">
-            <div v-on="on" class="ml-2">
-              <v-btn
-                color="error"
-                :disabled="deleteDisabled"
-                :loading="inProgress"
-                @click="onDelete"
-              >
-                <v-icon left small>mdi-delete</v-icon>
-                Löschen
-              </v-btn>
-            </div>
-          </template>
-          <span>{{ $t("booking.delete.requires-rejection.message") }}</span>
-        </v-tooltip>
+        <v-btn
+          class="ml-2"
+          color="error"
+          :loading="inProgress"
+          @click="onDelete"
+        >
+          <v-icon left small>mdi-delete</v-icon>
+          Löschen
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -59,11 +55,6 @@ export default {
       type: Boolean,
       default: false,
     },
-    /** The host's answer to `BookingPermissionService.allowHardDelete`, negated. */
-    deleteDisabled: {
-      type: Boolean,
-      default: false,
-    },
   },
   computed: {
     openDialog: {
@@ -74,6 +65,10 @@ export default {
     /** A confirmed booking that was neither cancelled nor withdrawn is pointed out. */
     isConfirmed() {
       return this.toDelete?.status === BOOKING_STATUS.CONFIRMED;
+    },
+    /** A booking awaiting payment was already confirmed to the booker - pointed out too. */
+    isPaymentDue() {
+      return this.toDelete?.status === BOOKING_STATUS.PAYMENT_DUE;
     },
   },
   methods: {

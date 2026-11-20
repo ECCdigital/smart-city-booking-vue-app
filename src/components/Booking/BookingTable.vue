@@ -255,11 +255,7 @@
               <template v-if="BookingPermissionService.allowDelete(item)">
                 <v-divider />
 
-                <v-list-item
-                  link
-                  @click="onOpenDeleteDialog(item.id)"
-                  :disabled="!BookingPermissionService.allowHardDelete(item)"
-                >
+                <v-list-item link @click="onOpenDeleteDialog(item.id)">
                   <v-list-item-icon>
                     <v-icon small color="red">mdi-delete</v-icon>
                   </v-list-item-icon>

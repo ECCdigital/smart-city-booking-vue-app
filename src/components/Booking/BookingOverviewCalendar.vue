@@ -193,9 +193,6 @@
               link
               @click="onOpenDeleteDialog(selectedEvent.id)"
               class="red--text"
-              :disabled="
-                !BookingPermissionService.allowHardDelete(selectedEvent)
-              "
             >
               <v-list-item-icon>
                 <v-icon color="red">mdi-delete</v-icon>

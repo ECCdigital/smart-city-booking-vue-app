@@ -1,10 +1,5 @@
 import user from "@/store/modules/user";
 import store from "@/store";
-import {
-  allowsAction,
-  BOOKING_ACTION,
-  BOOKING_STATUS,
-} from "@/utils/bookingStatus";
 
 class BookingPermissionService {
   static isOwner(booking) {
@@ -83,6 +78,12 @@ class BookingPermissionService {
     return BookingPermissionService.allowReadAny();
   }
 
+  /**
+   * Whether `booking` may be deleted - in every state: `deleteAny` reaches
+   * every booking of the tenant, `deleteOwn` the user's own (the backend's
+   * `booking.delete`). The confirmation warns about a booking that is
+   * confirmed or awaiting payment.
+   */
   static allowDelete(booking) {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
@@ -93,16 +94,17 @@ class BookingPermissionService {
     if (permissions.isOwner) return true;
 
     return (
-      permissions.manageBookings.deleteAny ||
-      (permissions.manageBookings.deleteOwn &&
+      !!permissions.manageBookings?.deleteAny ||
+      (!!permissions.manageBookings?.deleteOwn &&
         BookingPermissionService.isOwner(booking))
     );
   }
 
   /**
-   * The right to delete every booking of the tenant: the backend's
-   * `booking.delete` (`manageBookings.deleteAny`), held by the instance
-   * owner and the tenant owner as well.
+   * The right to delete every booking of the tenant
+   * (`manageBookings.deleteAny`), held by the instance owner and the tenant
+   * owner as well. A whole series takes it: the backend's
+   * `groupBooking.delete` has no `own`.
    */
   static allowDeleteAny() {
     if (BookingPermissionService.isInstanceOwner()) return true;
@@ -114,22 +116,6 @@ class BookingPermissionService {
     if (permissions.isOwner) return true;
 
     return !!permissions.manageBookings?.deleteAny;
-  }
-
-  /**
-   * Whether the hard delete is offered for `booking`: where its state allows
-   * it (Angefragt, Abgelehnt) to whoever may delete it, an own booking also
-   * once its withdrawal was accepted (Widerrufen), and in every state to
-   * whoever may delete every booking - so test bookings can be taken out
-   * after they were confirmed or cancelled.
-   */
-  static allowHardDelete(booking) {
-    if (BookingPermissionService.allowDeleteAny()) return true;
-    if (!BookingPermissionService.allowDelete(booking)) return false;
-    return (
-      allowsAction(booking, BOOKING_ACTION.DELETE) ||
-      booking?.status === BOOKING_STATUS.WITHDRAWN
-    );
   }
 
   static allowRead(booking) {

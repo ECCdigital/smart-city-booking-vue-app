@@ -143,12 +143,11 @@ describe("BookingPermissionService", () => {
   });
 
   /**
-   * The hard delete in the list: whoever may
-   * delete every booking (`manageBookings.deleteAny`, the backend's
-   * `booking.delete`) may delete it in every state, to take test bookings
-   * out; everyone else only where the state allows it.
+   * `allowDelete` mirrors the backend's `booking.delete` (own →
+   * `manageBookings.deleteOwn`, any → `manageBookings.deleteAny`) and holds
+   * in every state - the confirmation warns, the state does not block.
    */
-  describe("allowHardDelete", () => {
+  describe("allowDelete", () => {
     const STATES = [
       "requested",
       "payment_due",
@@ -157,50 +156,69 @@ describe("BookingPermissionService", () => {
       "cancelled",
       "withdrawn",
     ];
+    const own = (status) => ({ id: "bk-1", status, assignedUserId: USER_ID });
+    const foreign = (status) => ({ id: "bk-2", status, assignedUserId: "x" });
 
     it.each(STATES)(
-      "lets deleteAny, the tenant owner and the instance owner delete a %s booking",
+      "lets deleteAny, the tenant owner and the instance owner delete a foreign %s booking",
       (status) => {
-        const booking = { id: "bk-1", status, assignedUserId: "x" };
-
         signIn({ tenants: [membership({ deleteAny: true })] });
-        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
 
         signIn({ tenants: [membership({}, { isOwner: true })] });
-        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
 
         signIn({ instanceOwner: true });
-        expect(BookingPermissionService.allowHardDelete(booking)).toBe(true);
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
       }
     );
 
-    it.each([
-      ["requested", true],
-      ["rejected", true],
-      ["payment_due", false],
-      ["confirmed", false],
-      ["cancelled", false],
-      ["withdrawn", true],
-    ])("lets deleteOwn delete an own %s booking: %s", (status, expected) => {
+    it.each(STATES)("lets deleteOwn delete an own %s booking", (status) => {
       signIn({ tenants: [membership({ deleteOwn: true })] });
-      const own = { id: "bk-1", status, assignedUserId: USER_ID };
 
-      expect(BookingPermissionService.allowHardDelete(own)).toBe(expected);
+      expect(BookingPermissionService.allowDelete(own(status))).toBe(true);
     });
 
-    it("refuses deleteOwn a withdrawn booking of someone else", () => {
+    it("refuses deleteOwn a booking of someone else", () => {
       signIn({ tenants: [membership({ deleteOwn: true })] });
-      const foreign = { id: "bk-2", status: "withdrawn", assignedUserId: "x" };
 
-      expect(BookingPermissionService.allowHardDelete(foreign)).toBe(false);
+      expect(BookingPermissionService.allowDelete(foreign("requested"))).toBe(
+        false
+      );
     });
 
     it("refuses a member without a delete right", () => {
       signIn({ tenants: [membership({ readAny: true })] });
 
-      expect(
-        BookingPermissionService.allowHardDelete({ status: "requested" })
-      ).toBe(false);
+      expect(BookingPermissionService.allowDelete(own("requested"))).toBe(
+        false
+      );
+    });
+  });
+
+  /** A whole series takes `deleteAny`: the backend's `groupBooking.delete` has no `own`. */
+  describe("allowDeleteAny", () => {
+    it("answers deleteAny, the tenant owner and the instance owner", () => {
+      signIn({ tenants: [membership({ deleteAny: true })] });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+    });
+
+    it("refuses deleteOwn alone", () => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+
+      expect(BookingPermissionService.allowDeleteAny()).toBe(false);
     });
   });
 });
