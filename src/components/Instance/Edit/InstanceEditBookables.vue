@@ -3,7 +3,7 @@
     <SubSection
       title="Benutzerdefinierte Felder"
       icon="mdi-form-textbox"
-      description="Definiere benutzerdefinierte Felder, die in allen
+      description="Definieren Sie benutzerdefinierte Felder, die in allen
                    Buchungsobjekten verfügbar sind. Mandanten können die
                    Werte überschreiben, wenn erlaubt."
       no-margin

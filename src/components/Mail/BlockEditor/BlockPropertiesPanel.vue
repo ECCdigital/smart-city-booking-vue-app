@@ -3,7 +3,7 @@
     <div v-if="!selectedBlock" class="empty-state">
       <v-icon color="grey lighten-1">mdi-cursor-default-click-outline</v-icon>
       <div class="text-caption grey--text mt-2">
-        Wähle einen Block aus, um Eigenschaften zu bearbeiten.
+        Wählen Sie einen Block aus, um Eigenschaften zu bearbeiten.
       </div>
     </div>
 

@@ -19,7 +19,7 @@
           <v-alert type="info" text dense class="text-caption mb-0">
             Buchungsdetails, Buttons, QR-Code und der System-Footer werden vom
             Server automatisch zwischen Einleitung und Abschluss eingefügt. Eine
-            eigene Überschrift kannst du am Anfang der Einleitung einbauen
+            eigene Überschrift können Sie am Anfang der Einleitung einbauen
             (z.&nbsp;B. <code>&lt;h1&gt;…&lt;/h1&gt;</code>). Der Abschluss ist
             optional und erscheint danach – vor dem Layout-Footer.
           </v-alert>
@@ -216,7 +216,7 @@
               >
                 Im Experten-Modus wird das visuelle Modell überschrieben. Beim
                 Wechsel zurück lässt sich das Modell nicht automatisch
-                rekonstruieren – du kannst aber jederzeit neu starten.
+                rekonstruieren – Sie können aber jederzeit neu starten.
               </v-alert>
 
               <div class="section-label mb-2">

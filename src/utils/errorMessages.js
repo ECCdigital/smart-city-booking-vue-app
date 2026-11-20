@@ -8,7 +8,7 @@ export const GROUP_BOOKING_ERROR_MESSAGES = {
   PAYMENT_PROVIDER_MISMATCH:
     "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
   PAYMENT_PROVIDER_REQUIRED:
-    "Es gibt Buchungen ohne Zahlungsanbieter. Bitte wähle einen aus.",
+    "Es gibt Buchungen ohne Zahlungsanbieter. Bitte wählen Sie einen aus.",
   PAYED_STATUS: "Die Buchungen sind noch nicht bezahlt.",
 };
 
@@ -16,7 +16,7 @@ export const BOOKING_ERROR_MESSAGES = {
   CONTACT_DETAILS_MISMATCH: "Die Buchung hat unterschiedliche Kontaktdaten.",
   PAYED_STATUS: "Die Buchung ist noch nicht bezahlt.",
   PAYMENT_PROVIDER_REQUIRED:
-    "Die Buchung hat keinen Zahlungsanbieter hinterlegt. Bitte wähle einen aus.",
+    "Die Buchung hat keinen Zahlungsanbieter hinterlegt. Bitte wählen Sie einen aus.",
 };
 
 const ERROR_MESSAGES = {

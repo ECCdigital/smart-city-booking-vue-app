@@ -23,7 +23,7 @@
             <th>{{ $t("booking.cancellationRefund.date") }}</th>
             <th>{{ $t("booking.cancellationRefund.booking") }}</th>
             <th class="text-right">
-              {{ $t("booking.cancellationRefund.days") }}
+              {{ $t("booking.cancellationRefund.timeBeforeStart") }}
             </th>
             <th class="text-right">
               {{ $t("booking.cancellationRefund.policyPercentage") }}
@@ -44,7 +44,7 @@
             <td>{{ formatBookingDate(booking) }}</td>
             <td>{{ booking.bookingId }}</td>
             <td class="text-right">
-              {{ formatDays(booking.daysBeforeStart) }}
+              {{ formatTimeBeforeStart(booking) }}
             </td>
             <td class="text-right">
               {{ booking.suggestedRefundPercentage }} %
@@ -89,7 +89,14 @@
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
-import { refundPolicyText } from "@/utils/cancellationRefund";
+import {
+  bookingStartsInText,
+  formatAppliedTierRule,
+  formatTimeBeforeStart,
+  hasBegun,
+  refundAtPercentage,
+  refundPolicyText,
+} from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundPreview",
@@ -144,7 +151,7 @@ export default {
       return this.preview.bookings
         .map((booking) => {
           if (!this.useOverride || !this.isOverrideValid) return booking;
-          const refundAmountEur = this.calculateRefund(
+          const refundAmountEur = refundAtPercentage(
             booking.originalAmountEur,
             this.localPercentage
           );
@@ -176,7 +183,7 @@ export default {
       if (!this.useOverride || !this.isOverrideValid) {
         return Number(this.preview?.refundAmountEur || 0);
       }
-      return this.calculateRefund(this.originalAmountEur, this.localPercentage);
+      return refundAtPercentage(this.originalAmountEur, this.localPercentage);
     },
     cancellationFeeEur() {
       return (
@@ -199,10 +206,15 @@ export default {
         }
         return this.$t("booking.cancellationRefund.groupPolicyMixed");
       }
-      return refundPolicyText("singlePolicy", {
-        days: this.preview.daysBeforeStart,
+      const tier = formatAppliedTierRule(this.preview);
+      const policy = refundPolicyText("singlePolicy", {
+        time: formatTimeBeforeStart(this.preview),
+        tier,
+        begun: hasBegun(this.preview),
         percentage: this.preview.suggestedRefundPercentage,
       });
+      const startsIn = tier ? bookingStartsInText(this.preview) : null;
+      return startsIn ? `${startsIn} ${policy}` : policy;
     },
   },
   watch: {
@@ -251,17 +263,11 @@ export default {
         ) / 100
       );
     },
-    calculateRefund(originalAmountEur, percentage) {
-      const originalAmountCents = Math.round(
-        Number(originalAmountEur || 0) * 100
-      );
-      return Math.round((originalAmountCents * Number(percentage)) / 100) / 100;
-    },
     currency(value) {
       return FormatService.currency(Number(value || 0));
     },
-    formatDays(value) {
-      return value === null || value === undefined ? "–" : value;
+    formatTimeBeforeStart(booking) {
+      return formatTimeBeforeStart(booking) ?? "–";
     },
     formatBookingDate(booking) {
       if (!booking?.timeBegin) return "–";

@@ -10,7 +10,6 @@ import ToastService from "@/services/ToastService";
 import {
   createLockAndAccessAppDefaults,
   findTenantApp,
-  withoutUnchangedSecrets,
   LOCK_AND_ACCESS_APP_IDS,
 } from "@/utilities/access-apps";
 
@@ -30,11 +29,12 @@ export default {
       tenant: {},
       apps: {},
       originalSnapshot: null,
-      nukiTokenConfigured: false,
-      saltoSecretConfigured: false,
-      saltoPasswordConfigured: false,
+      secretsSaved: { count: 0 },
       defaultApps: createLockAndAccessAppDefaults(),
     };
+  },
+  provide() {
+    return { secretsSaved: this.secretsSaved };
   },
   computed: {
     ...mapGetters({
@@ -112,12 +112,6 @@ export default {
         map[id] = found ? { ...found } : { ...this.defaultApps[id] };
       });
 
-      // Only remember *that* a secret is stored, so an empty field can mean
-      // "leave the existing one alone".
-      this.nukiTokenConfigured = !!map.nuki.apiToken;
-      this.saltoSecretConfigured = !!map["salto-ks"].clientSecret;
-      this.saltoPasswordConfigured = !!map["salto-ks"].password;
-
       this.apps = map;
     },
     /**
@@ -130,9 +124,7 @@ export default {
         (app) => !LOCK_AND_ACCESS_APP_IDS.includes(app.id)
       );
 
-      const managed = Object.values(this.apps).map(withoutUnchangedSecrets);
-
-      return [...untouched, ...managed];
+      return [...untouched, ...Object.values(this.apps)];
     },
     onUpdateTenant(next) {
       this.tenant = { ...this.tenant, ...next };
@@ -171,6 +163,7 @@ export default {
           tenant: this.tenant,
           apps: this.apps,
         });
+        this.secretsSaved.count += 1;
         await this.addToast(
           ToastService.createToast(
             "accessPoint.management.toasts.tenantSaved",
@@ -231,9 +224,6 @@ export default {
             ref="providers"
             :tenant="tenant"
             :apps="apps"
-            :nuki-token-configured="nukiTokenConfigured"
-            :salto-secret-configured="saltoSecretConfigured"
-            :salto-password-configured="saltoPasswordConfigured"
             @update:tenant="onUpdateTenant"
             @update:apps="onUpdateApps"
           />

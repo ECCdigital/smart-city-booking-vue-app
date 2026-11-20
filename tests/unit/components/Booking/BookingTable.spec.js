@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingTable from "@/components/Booking/BookingTable.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { mountComponent } from "@tests/unit/support/mount";
 
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
     allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
+    allowTransition: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
   },
 }));
@@ -229,6 +230,22 @@ describe("BookingTable", () => {
       } finally {
         BookingPermissionService.allowDelete.mockReturnValue(true);
       }
+    });
+
+    /**
+     * Updating the own booking (`updateOwn`) does not open the transitions:
+     * the backend answers them with `updateAny` only, so the menu keeps
+     * them disabled and still lets the booking be edited (#836, #837).
+     */
+    it("disables the transitions for whoever may not transition, keeping Bearbeiten", async () => {
+      BookingPermissionService.allowTransition.mockReturnValue(false);
+      const wrapper = mountTable([booking({ status: "confirmed" })]);
+
+      const menu = await openRowMenu(wrapper);
+      BookingPermissionService.allowTransition.mockReturnValue(true);
+
+      expect(menu["Stornieren"]).toBe(true);
+      expect(menu["Bearbeiten"]).toBe(false);
     });
 
     it("hands the chosen transition and the booking to the host", async () => {

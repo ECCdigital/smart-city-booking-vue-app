@@ -240,7 +240,7 @@
                 :key="action"
                 link
                 @click="transition(action, item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
+                :disabled="!BookingPermissionService.allowTransition()"
               >
                 <v-list-item-icon>
                   <v-icon small :color="actionColor(action)">

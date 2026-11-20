@@ -115,6 +115,36 @@ describe("BookingPermissionService", () => {
     });
   });
   /**
+   * `allowTransition` mirrors the backend's rights for the transitions
+   * (`booking.commit`, `pay`, `reject`, `acceptWithdrawal`, `update` for
+   * reinstate, and the same on `groupBooking`): `manageBookings.updateAny`
+   * only, with no variant for the own booking - `updateOwn` does not open
+   * them (#836, #837).
+   */
+  describe("allowTransition", () => {
+    it("lets the instance owner and the tenant owner through", () => {
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowTransition()).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowTransition()).toBe(true);
+    });
+
+    it("lets updateAny through, updateOwn not", () => {
+      signIn({ tenants: [membership({ updateAny: true })] });
+      expect(BookingPermissionService.allowTransition()).toBe(true);
+
+      signIn({ tenants: [membership({ updateOwn: true })] });
+      expect(BookingPermissionService.allowTransition()).toBe(false);
+    });
+
+    it("returns false without a membership for the current tenant", () => {
+      signIn({ tenants: [membership({ updateAny: true }, { tenantId: "x" })] });
+      expect(BookingPermissionService.allowTransition()).toBe(false);
+    });
+  });
+
+  /**
    * `allowReadAny` is the Reichweite of CONTEXT.md: *any* for the instance
    * owner, the tenant owner and `manageBookings.readAny`, *own* for every
    * other member. It decides only how a 404 on the Buchungsseite is worded.

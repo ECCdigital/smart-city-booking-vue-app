@@ -124,11 +124,15 @@ export default {
     InstanceEditCheckout,
   },
   mixins: [unsavedChangesGuard],
+  provide() {
+    return { secretsSaved: this.secretsSaved };
+  },
   data() {
     return {
       instance: null,
       isLoading: false,
       inProgress: false,
+      secretsSaved: { count: 0 },
       validRoot: true,
       originalSnapshot: null,
       selectedOwner: null,
@@ -467,6 +471,7 @@ export default {
           instance: this.instance,
           catalog: this.catalog,
         });
+        this.secretsSaved.count += 1;
         this.notifySaved();
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",

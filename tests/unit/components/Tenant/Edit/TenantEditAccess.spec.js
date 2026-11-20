@@ -3,6 +3,7 @@ import TenantEditAccess from "@/components/Tenant/Edit/TenantEditAccess.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { STORED_SECRET } from "@/utilities/stored-secret";
 
 vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: {
@@ -207,10 +208,14 @@ describe("TenantEditAccess panel for Salto KS", () => {
   });
 });
 
-const BOTH_STORED = {
-  saltoSecretConfigured: true,
-  saltoPasswordConfigured: true,
-};
+/** Salto KS with both secrets stored, as the backend answers it: the marker. */
+function bothStored(overrides = {}) {
+  return storedSalto({
+    clientSecret: STORED_SECRET,
+    password: STORED_SECRET,
+    ...overrides,
+  });
+}
 
 function testButton(wrapper) {
   return saltoPanel(wrapper)
@@ -227,14 +232,14 @@ async function runTest(wrapper, data) {
 }
 
 /**
- * The connection test of Salto KS runs on the stored secrets when the form
- * leaves them empty: the backend completes them as long as they belong to
+ * The connection test of Salto KS runs on the stored secrets while the form
+ * holds their marker: the backend completes them as long as they belong to
  * the identity in the form, and says per secret what is missing otherwise
  * (ECCdigital/tickets#575).
  */
 describe("TenantEditAccess connection test for Salto KS", () => {
-  it("says it tests with the stored secrets when both fields are empty", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+  it("says it tests with the stored secrets while both are stored", async () => {
+    const wrapper = await mountAccess(bothStored());
 
     expect(saltoPanel(wrapper).text()).toContain(
       "Testet mit den gespeicherten Secrets."
@@ -243,8 +248,7 @@ describe("TenantEditAccess connection test for Salto KS", () => {
 
   it("says it tests with the secrets of the form when both are filled", async () => {
     const wrapper = await mountAccess(
-      storedSalto({ clientSecret: "secret", password: "password" }),
-      BOTH_STORED
+      storedSalto({ clientSecret: "secret", password: "password" })
     );
 
     expect(saltoPanel(wrapper).text()).toContain(
@@ -258,14 +262,11 @@ describe("TenantEditAccess connection test for Salto KS", () => {
    * stored password for the stored System-User and environment.
    */
   describe("with the identity the secrets are stored for", () => {
-    const STORED = storedSalto()["salto-ks"];
-    const STORED_TENANT = {
-      ...BOTH_STORED,
-      tenant: { id: "t1", applications: [STORED] },
-    };
+    const STORED = bothStored()["salto-ks"];
+    const STORED_TENANT = { tenant: { id: "t1", applications: [STORED] } };
 
     async function basisWith(form) {
-      const wrapper = await mountAccess(storedSalto(form), STORED_TENANT);
+      const wrapper = await mountAccess(bothStored(form), STORED_TENANT);
       return saltoPanel(wrapper).text();
     }
 
@@ -313,10 +314,10 @@ describe("TenantEditAccess connection test for Salto KS", () => {
     });
 
     it("names a secret that was never stored", async () => {
-      const wrapper = await mountAccess(storedSalto(), {
-        saltoPasswordConfigured: true,
-        tenant: { id: "t1", applications: [STORED] },
-      });
+      const wrapper = await mountAccess(
+        storedSalto({ password: STORED_SECRET }),
+        { tenant: { id: "t1", applications: [STORED] } }
+      );
 
       expect(saltoPanel(wrapper).text()).toContain(
         "Es ist kein Client Secret gespeichert. Geben Sie es ein."
@@ -324,8 +325,8 @@ describe("TenantEditAccess connection test for Salto KS", () => {
     });
   });
 
-  it("sends empty secret fields empty, next to the identity", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+  it("sends the marker of a stored secret, next to the identity", async () => {
+    const wrapper = await mountAccess(bothStored());
 
     await runTest(wrapper, { success: true, message: "Connection successful" });
 
@@ -333,9 +334,9 @@ describe("TenantEditAccess connection test for Salto KS", () => {
       "t1",
       {
         clientId: "client-1",
-        clientSecret: "",
+        clientSecret: STORED_SECRET,
         username: "biletado@example.com",
-        password: "",
+        password: STORED_SECRET,
         siteId: "site-1",
         environment: "accept",
       },
@@ -344,7 +345,7 @@ describe("TenantEditAccess connection test for Salto KS", () => {
   });
 
   it("keeps testing with the stored secrets when only the site changes", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+    const wrapper = await mountAccess(bothStored());
 
     const siteField = saltoPanel(wrapper)
       .findAll("input")
@@ -360,18 +361,15 @@ describe("TenantEditAccess connection test for Salto KS", () => {
       "t1",
       expect.objectContaining({
         siteId: "site-2",
-        clientSecret: "",
-        password: "",
+        clientSecret: STORED_SECRET,
+        password: STORED_SECRET,
       }),
       "salto-ks"
     );
   });
 
   it("names per secret what is missing and why", async () => {
-    const wrapper = await mountAccess(
-      storedSalto({ clientId: "new-client" }),
-      BOTH_STORED
-    );
+    const wrapper = await mountAccess(bothStored({ clientId: "new-client" }));
 
     await runTest(wrapper, {
       success: false,
@@ -394,7 +392,7 @@ describe("TenantEditAccess connection test for Salto KS", () => {
   });
 
   it("names per field which required entry is missing", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+    const wrapper = await mountAccess(bothStored());
 
     await runTest(wrapper, {
       success: false,
@@ -410,7 +408,7 @@ describe("TenantEditAccess connection test for Salto KS", () => {
   });
 
   it("says in German that the test failed when the backend fails", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+    const wrapper = await mountAccess(bothStored());
     ApiAccessAppsService.testConnection.mockRejectedValueOnce({
       message: "Request failed with status code 500",
       response: { status: 500, data: "Could not test access connection" },
@@ -425,7 +423,7 @@ describe("TenantEditAccess connection test for Salto KS", () => {
   });
 
   it("shows a failure without checks as the plain message", async () => {
-    const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
+    const wrapper = await mountAccess(bothStored());
 
     await runTest(wrapper, {
       success: false,
@@ -483,8 +481,8 @@ function answer({ checks = {}, iqs, ...overrides } = {}) {
   };
 }
 
-async function testedAccess(data, apps = storedSalto()) {
-  const wrapper = await mountAccess(apps, BOTH_STORED);
+async function testedAccess(data, apps = bothStored()) {
+  const wrapper = await mountAccess(apps);
   await runTest(wrapper, data);
   return wrapper;
 }

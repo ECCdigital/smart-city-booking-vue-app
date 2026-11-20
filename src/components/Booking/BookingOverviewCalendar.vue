@@ -178,7 +178,7 @@
             :key="action"
             link
             @click="transition(action, selectedEvent.id)"
-            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
+            :disabled="!BookingPermissionService.allowTransition()"
           >
             <v-list-item-icon>
               <v-icon>{{ actionIcon(action) }}</v-icon>

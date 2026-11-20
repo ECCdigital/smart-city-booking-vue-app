@@ -80,7 +80,7 @@
               color="primary"
               class="mt-0"
               label="System-Footer mit Support-Kontakt anzeigen"
-              hint="Blendet den automatischen Hinweis „Falls Sie Fragen haben … kontaktieren“ ein oder aus. In eigenen Texten kannst du supportEmail weiterhin als Variable nutzen."
+              hint="Blendet den automatischen Hinweis „Falls Sie Fragen haben … kontaktieren“ ein oder aus. In eigenen Texten können Sie supportEmail weiterhin als Variable nutzen."
               persistent-hint
               @change="onSupportFooterChange"
             />

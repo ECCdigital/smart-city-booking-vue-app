@@ -13,7 +13,9 @@ import {
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
+import SecretField from "@/components/commons/SecretField.vue";
 import { runConnectionTest } from "@/utilities/access-connection-test";
+import { isStoredSecret } from "@/utilities/stored-secret";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 export default {
@@ -26,23 +28,16 @@ export default {
     SaltoIqActivationSection,
     SaltoConnectionTest,
     ConnectionTestAlert,
+    SecretField,
   },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
-    nukiTokenConfigured: { type: Boolean, default: false },
-    saltoSecretConfigured: { type: Boolean, default: false },
-    saltoPasswordConfigured: { type: Boolean, default: false },
   },
   data() {
     return {
       valid: false,
       localApps: this.cloneApps(this.apps),
-      showSecret: {
-        nuki: false,
-        "salto-ks": false,
-        "salto-ks-password": false,
-      },
       testing: { nuki: false },
       testResult: { nuki: null },
       // IQs with an activation of the stored identity, as the activation
@@ -68,6 +63,17 @@ export default {
     },
   },
   computed: {
+    // A secret counts as stored while the form holds the backend's marker:
+    // the cross of its field removes it, so the hints go with it.
+    nukiTokenStored() {
+      return isStoredSecret(this.localApps.nuki?.apiToken);
+    },
+    saltoSecretStored() {
+      return isStoredSecret(this.localApps["salto-ks"]?.clientSecret);
+    },
+    saltoPasswordStored() {
+      return isStoredSecret(this.localApps["salto-ks"]?.password);
+    },
     storedSalto() {
       return findTenantApp(this.tenant.applications, SALTO_PROVIDER) || null;
     },
@@ -254,27 +260,18 @@ export default {
             </div>
             <v-row dense>
               <v-col cols="12">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
                   :label="$t('accessPoint.tenant.apiToken')"
                   v-model="localApps.nuki.apiToken"
                   @input="emitApps()"
-                  :placeholder="
-                    nukiTokenConfigured
-                      ? $t('accessPoint.tenant.apiTokenUnchanged')
-                      : $t('accessPoint.tenant.apiTokenPlaceholder')
-                  "
+                  :placeholder="$t('accessPoint.tenant.apiTokenPlaceholder')"
                   :hint="
-                    nukiTokenConfigured
-                      ? $t('accessPoint.tenant.apiTokenHint')
-                      : ''
+                    nukiTokenStored ? $t('accessPoint.tenant.apiTokenHint') : ''
                   "
                   persistent-hint
-                  :append-icon="showSecret.nuki ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="showSecret.nuki = !showSecret.nuki"
-                  :type="showSecret.nuki ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -412,7 +409,7 @@ export default {
               v-if="
                 localApps['salto-ks'].active &&
                 !localApps['salto-ks'].username &&
-                !saltoPasswordConfigured
+                !saltoPasswordStored
               "
               dense
             >
@@ -501,7 +498,7 @@ export default {
                 />
               </v-col>
               <v-col cols="12">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
@@ -509,23 +506,14 @@ export default {
                   v-model="localApps['salto-ks'].clientSecret"
                   @input="emitApps()"
                   :placeholder="
-                    saltoSecretConfigured
-                      ? $t('accessPoint.tenant.salto.clientSecretUnchanged')
-                      : $t('accessPoint.tenant.salto.clientSecretPlaceholder')
+                    $t('accessPoint.tenant.salto.clientSecretPlaceholder')
                   "
                   :hint="
-                    saltoSecretConfigured
+                    saltoSecretStored
                       ? $t('accessPoint.tenant.salto.clientSecretHint')
                       : ''
                   "
                   persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks'] = !showSecret['salto-ks']
-                  "
-                  :type="showSecret['salto-ks'] ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -548,7 +536,7 @@ export default {
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field
+                <SecretField
                   background-color="accent"
                   filled
                   dense
@@ -556,24 +544,14 @@ export default {
                   v-model="localApps['salto-ks'].password"
                   @input="emitApps()"
                   :placeholder="
-                    saltoPasswordConfigured
-                      ? $t('accessPoint.tenant.salto.passwordUnchanged')
-                      : $t('accessPoint.tenant.salto.passwordPlaceholder')
+                    $t('accessPoint.tenant.salto.passwordPlaceholder')
                   "
                   :hint="
-                    saltoPasswordConfigured
+                    saltoPasswordStored
                       ? $t('accessPoint.tenant.salto.passwordHint')
                       : ''
                   "
                   persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks-password'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks-password'] =
-                      !showSecret['salto-ks-password']
-                  "
-                  :type="showSecret['salto-ks-password'] ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -596,8 +574,6 @@ export default {
               :tenant-id="tenant.id"
               :app="localApps['salto-ks']"
               :stored="storedSalto"
-              :secret-configured="saltoSecretConfigured"
-              :password-configured="saltoPasswordConfigured"
               :activation-shown="localApps['salto-ks'].active"
               @to-activation="toIqActivation"
             />

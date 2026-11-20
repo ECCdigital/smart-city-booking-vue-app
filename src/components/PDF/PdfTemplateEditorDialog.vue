@@ -93,8 +93,8 @@
             >
               Pflicht-Platzhalter im visuellen Modell fehlen:
               <code>{{ missingInBlocks.join(", ") }}</code
-              >. Füge sie als Roh-HTML-Baustein oder über den Variablen-Picker
-              im Text-Baustein ein.
+              >. Fügen Sie sie als Roh-HTML-Baustein oder über den
+              Variablen-Picker im Text-Baustein ein.
             </v-alert>
 
             <v-card outlined class="mt-4">
@@ -270,7 +270,8 @@
                     v-else-if="!pdfError"
                     class="pdf-preview-loading text-caption grey--text"
                   >
-                    Noch keine PDF-Vorschau erzeugt. Klicke auf "Aktualisieren".
+                    Noch keine PDF-Vorschau erzeugt. Klicken Sie auf
+                    „Aktualisieren“.
                   </div>
                 </div>
               </v-card-text>
@@ -301,8 +302,8 @@
             >
               Im Experten-Modus wird das visuelle Modell überschrieben. Beim
               Wechsel zurück lässt sich das Modell nicht automatisch
-              rekonstruieren – du kannst aber jederzeit "Mit visueller Vorlage
-              neu starten" wählen.
+              rekonstruieren – Sie können aber jederzeit „Mit visueller Vorlage
+              neu starten“ wählen.
             </v-alert>
             <v-textarea
               v-model="expertHtml"

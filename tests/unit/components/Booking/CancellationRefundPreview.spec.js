@@ -11,21 +11,63 @@ function policyOf(preview) {
 }
 
 /**
- * The policy line of a single booking's refund preview names the calendar
- * days before the start; a booking without a time span has none
- * (`daysBeforeStart: null`), and the line says so instead.
+ * The policy line of a single booking's refund preview names the time before
+ * the start, in days from one day on and in hours below; a booking without a
+ * time span has none (`hoursBeforeStart: null`), and the line says so
+ * instead.
  */
 describe("CancellationRefundPreview", () => {
-  it("names the calendar days before the start", () => {
+  it("names the days before the start", () => {
     expect(
       policyOf({
         originalAmountEur: 25,
         refundAmountEur: 20,
         suggestedRefundPercentage: 80,
-        daysBeforeStart: 3,
+        hoursBeforeStart: 75,
       })
     ).toBe(
-      "Bei 3 Kalendertagen bis zum Beginn schlägt die Mandantenregel 80 % Erstattung vor."
+      "Bei Stornierung 3 Tage vor Beginn schlägt die Mandantenregel 80 % Erstattung vor."
+    );
+  });
+
+  it("names the tier that applied beside the time before the start", () => {
+    expect(
+      policyOf({
+        originalAmountEur: 25,
+        refundAmountEur: 2.75,
+        suggestedRefundPercentage: 11,
+        hoursBeforeStart: 30,
+        appliedTierHours: 26,
+      })
+    ).toBe(
+      "Die Buchung beginnt in 1 Tag und 6 Stunden. Es gilt die Erstattungsstufe „bis 26 Stunden vor Beginn“: Die Mandantenregel schlägt 11 % Erstattung vor."
+    );
+  });
+
+  it("names only whole days of the start from three days on", () => {
+    expect(
+      policyOf({
+        originalAmountEur: 25,
+        refundAmountEur: 12.5,
+        suggestedRefundPercentage: 50,
+        hoursBeforeStart: 77,
+        appliedTierHours: 72,
+      })
+    ).toBe(
+      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „bis 3 Tage vor Beginn“: Die Mandantenregel schlägt 50 % Erstattung vor."
+    );
+  });
+
+  it("names the hours before the start below one day", () => {
+    expect(
+      policyOf({
+        originalAmountEur: 25,
+        refundAmountEur: 20,
+        suggestedRefundPercentage: 80,
+        hoursBeforeStart: 11,
+      })
+    ).toBe(
+      "Bei Stornierung 11 Stunden vor Beginn schlägt die Mandantenregel 80 % Erstattung vor."
     );
   });
 
@@ -35,10 +77,38 @@ describe("CancellationRefundPreview", () => {
         originalAmountEur: 25,
         refundAmountEur: 25,
         suggestedRefundPercentage: 100,
-        daysBeforeStart: null,
+        hoursBeforeStart: null,
       })
     ).toBe(
       "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
     );
+  });
+});
+
+/**
+ * An override percentage refunds what `refundAtPercentage` names - the
+ * preview rounds the refund no other way than the payment hint does.
+ */
+describe("CancellationRefundPreview with an override percentage", () => {
+  it("refunds the amount refundAtPercentage names", async () => {
+    const wrapper = mountComponent(CancellationRefundPreview, {
+      propsData: {
+        preview: {
+          originalAmountEur: 33.33,
+          refundAmountEur: 33.33,
+          suggestedRefundPercentage: 100,
+          daysBeforeStart: 3,
+        },
+      },
+    });
+
+    await wrapper.find("input[type=checkbox]").setChecked(true);
+    await wrapper.find("input[type=number]").setValue(50);
+
+    const refund = wrapper
+      .find(".refund-amounts__value--refund")
+      .text()
+      .replace(/\u00a0/g, " ");
+    expect(refund).toBe("16,67 €");
   });
 });
