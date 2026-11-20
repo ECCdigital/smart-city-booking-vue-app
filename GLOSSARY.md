@@ -92,6 +92,10 @@ _Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are a tenant's open cr
 The fields that say what a bookable is, in two groups: „Das sehen Buchende im Katalog“ (**Titel**, Beschreibung, **Merkmale**, **Bilder**, **Standort**) and „Nur für die Verwaltung“ (Typ, Veranstaltung of a ticket, **Interne Tags**). Merkmale are short advantages beside the description; Interne Tags filter and group in the administration and are never shown to bookers. The Typ (Raum, Gerät / Weiteres, Ticket, Veranstaltungsort) is chosen only when the bookable is created.
 _Avoid_: Bezeichnung or Name for the Titel (a Zeitraum keeps its Bezeichnung), Informationen für Buchende for the Merkmale, Bild or Titelbild for the Bilder (the first image is the cover), Adresse for the Standort, Tags alone
 
+**Standort**:
+Where a bookable, an event or an access point is, in two parts that may differ and may each be missing: the **Anschrift**, the postal address people read (street, house number, postcode, city), and the **Punkt**, the place on the map that the storefront shows and measures distances from. A Punkt found from the Anschrift can be off, such as the town hall instead of the sports hall behind it.
+_Avoid_: Adresse (that is an app's origin), Koordinaten for the Punkt, Lage, Position
+
 **Buchungsart** (admin: „Buchungsart“):
 How a bookable is booked in time, asked in both modes by up to three questions: Ohne Zeit, or for a time **Freie Zeitwahl**, **Feste Zeitfenster**, **Zeiträume** or **Langzeit**, the last as **Ganze Wochen** or **Ganze Monate**. Langzeit is only the answer that leads to the two, not a mode of its own. The settings of the chosen Buchungsart (Buchungsdauer, the Feste Zeitfenster, the Zeiträume, Vorlaufzeit, Puffer zwischen Buchungen) follow it in the same tab or step.
 _Avoid_: Buchungstyp (Typ is Raum, Gerät / Weiteres, Ticket or Veranstaltungsort), Verfügbarkeit as the field's name (the step keeps it), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig

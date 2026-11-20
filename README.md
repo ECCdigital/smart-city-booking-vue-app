@@ -52,7 +52,7 @@ More details: [smart-city-booking-backend/docs/architecture.md](https://github.c
 -   **Opening a pull request:** GitHub proposes `develop` as the base. Switch it by hand to the `version/…` branch named above.
 -   **Catching up:** a branch behind its `version/…` base merges it in (`Merge version/<major>.<minor>.x into <branch>`); no rebase, no force push.
 -   **`develop`** is brought up to the newest `version/…` branch by hand: when new branches are cut, and at every release candidate and release of the newest version. A patch of an older version does not move it; the fix arrives with the next catch-up.
--   **Tags:** every release `v<major>.<minor>.<patch>` is tagged on its `version/<major>.<minor>.x`. v3: tags `v3.x.x` from `version/3.x`.
+-   **Tags:** every release `v<major>.<minor>.<patch>` is tagged on its `version/<major>.<minor>.x`. v3: tags `v3.x.x` from `version/3.x`. Tag with `npm version <version>` on that branch: it writes the version into `package.json` and `package-lock.json`, commits it and creates the tag. `docker-publish.yml` refuses a tag that does not match `package.json`.
 
 The newest branch: `git branch -r --list 'origin/version/[0-9]*.[0-9]*.x' --sort=-v:refname | head -1`.
 

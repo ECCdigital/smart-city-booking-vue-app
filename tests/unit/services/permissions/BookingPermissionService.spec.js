@@ -145,7 +145,7 @@ describe("BookingPermissionService", () => {
   });
 
   /**
-   * `allowReadAny` is the Reichweite of CONTEXT.md: *any* for the instance
+   * `allowReadAny` is the Reichweite of GLOSSARY.md: *any* for the instance
    * owner, the tenant owner and `manageBookings.readAny`, *own* for every
    * other member. It decides only how a 404 on the Buchungsseite is worded.
    */

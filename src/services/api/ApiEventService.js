@@ -1,4 +1,6 @@
 import store from "@/store";
+import { getApiHttpBaseUrl } from "@/services/auth/authMode";
+import { toAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
 export default {
   getEvents(tenant) {
@@ -95,20 +97,24 @@ export default {
     }
     return ApiClient.get(`api/${t}/ical/events${query}`);
   },
+  // The feed URL is subscribed to from outside this app, so it carries
+  // scheme and host also when the API base is relative (BFF mode).
   getEventFeedUrl(eventId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    const base = ApiClient.client.defaults.baseURL.replace(/\/+$/, "");
-    return `${base}/api/${t}/ical/feed/events/${eventId}`;
+    return toAbsoluteHttpUrl(
+      `${getApiHttpBaseUrl()}/api/${t}/ical/feed/events/${eventId}`
+    );
   },
   getEventsFeedUrl(ids, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    const base = ApiClient.client.defaults.baseURL.replace(/\/+$/, "");
     let query;
     if (ids && ids.length > 0) {
       query = `?ids=${ids.join(",")}`;
     } else {
       query = "";
     }
-    return `${base}/api/${t}/ical/feed/events${query}`;
+    return toAbsoluteHttpUrl(
+      `${getApiHttpBaseUrl()}/api/${t}/ical/feed/events${query}`
+    );
   },
 };

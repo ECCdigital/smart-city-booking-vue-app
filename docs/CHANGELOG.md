@@ -21,6 +21,16 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   Rejecting a request is free of charge ([ECCdigital/tickets#753](https://github.com/ECCdigital/tickets/issues/753)): the dialog, for a booking and for a series, reads „Buchungsanfrage ablehnen“ with „Ablehnen“ („Gesamte Serie ablehnen“, „Nur diese Buchung ablehnen“), shows no „Erstattungsvorschau“ and no „Kein Stornobeleg erstellen“, since a rejected request gets no cancellation document. A dialog that cancels stays „Buchung stornieren“. Last in both dialogs, after the „Erstattungsvorschau“ and the bank details, a hint says whether the booking is paid and what is left: for a request that the rejection is free of charge; for a cancellation the amount the customer gets back, a fee still to pay, or that all is settled; where the preview failed, that the amount is unknown but the tenant's tiers still apply. The refund audit of a rejection says it was free of charge. Requires the backend with ECCdigital/tickets#753
 -   The transitions of a booking and a series (Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Widerruf akzeptieren, Wiederherstellen) need „Alle bearbeiten“ for bookings (`manageBookings.updateAny`), as in the backend ([ECCdigital/tickets#836](https://github.com/ECCdigital/tickets/issues/836), [ECCdigital/tickets#837](https://github.com/ECCdigital/tickets/issues/837)). With only „Eigene bearbeiten“ the list, calendar, Kanban, booking page and series page offered them on an own booking, and the backend refused with 403. „Bearbeiten“ is unchanged. Characterisation tests changed: the booking page and series page gate the transitions on `allowTransition` instead of `allowUpdate`
 
+## [4.4.2] — 2026-11-20
+
+### Changed
+
+-   Agent docs: the issue tracker follows the template „GitHub Portolan, Produkt-Repo“ (skills `ecc-12`), with flow `v2` of `ECCdigital/tickets`, sub-tickets and `Refs` in pull requests; the glossary is `GLOSSARY.md` (formerly `CONTEXT.md`, the stale copy of `GLOSSARY.md` is gone)
+
+### Fixed
+
+-   Duplicating an offer shows only one message ([ECCdigital/tickets#750](https://github.com/ECCdigital/tickets/issues/750)): „Erfolgreich dupliziert“ appears only when the copy was created; a refused copy shows only the error. Before, both appeared together
+
 ## [4.4.1] — 2026-11-16
 
 ### Fixed
@@ -99,6 +109,17 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   The booking list keeps the column „Buchungsobjekte“ at most 220px wide, so the table no longer scrolls sideways for it: chips that do not fit side by side wrap below each other, a long title ends in an ellipsis
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
 -   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
+
+## [4.3.4] — 2026-11-20
+
+### Added
+
+-   `docker-publish.yml` refuses to build a tag that is not `v` plus the `version` of `package.json` (ECCdigital/tickets#1018). A release candidate tagged without `npm version` built an image whose app still reported the previous version
+
+### Fixed
+
+-   „iCal-Feed abonnieren“ and „Feed-URL kopieren“ give a full URL in auth mode `bff` (ECCdigital/tickets#782): a relative API base such as the default `/admin/api` is anchored on the origin of the Admin UI, so a calendar can subscribe to it. Mode `direct` is unchanged
+-   The overview of the guided flow and the editing page shows an issue of the location at the row „Standort“ instead of „Titel“ (ECCdigital/tickets#558), so a click on it leads to the field Standort
 
 ## [4.3.3] — 2026-11-03
 
