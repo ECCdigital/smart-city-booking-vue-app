@@ -94,6 +94,17 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
 -   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
 
+## [4.3.4] — 2026-11-20
+
+### Added
+
+-   `docker-publish.yml` refuses to build a tag that is not `v` plus the `version` of `package.json` (ECCdigital/tickets#1018). A release candidate tagged without `npm version` built an image whose app still reported the previous version
+
+### Fixed
+
+-   „iCal-Feed abonnieren“ and „Feed-URL kopieren“ give a full URL in auth mode `bff` (ECCdigital/tickets#782): a relative API base such as the default `/admin/api` is anchored on the origin of the Admin UI, so a calendar can subscribe to it. Mode `direct` is unchanged
+-   The overview of the guided flow and the editing page shows an issue of the location at the row „Standort“ instead of „Titel“ (ECCdigital/tickets#558), so a click on it leads to the field Standort
+
 ## [4.3.3] — 2026-11-03
 
 ### Added
