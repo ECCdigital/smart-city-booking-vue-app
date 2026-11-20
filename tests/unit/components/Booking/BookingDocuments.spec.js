@@ -8,50 +8,54 @@ const INVOICE = { type: "invoice", name: "RE-1.pdf", timeCreated: 3 };
 const CANCELLATION = { type: "cancellation", title: "STORNO-1.pdf" };
 const AGB = { type: "terms", title: "AGB.pdf", url: "https://x/agb.pdf" };
 
-function groups(wrapper) {
-  return wrapper.findAll(".booking-documents__group");
+function sections(wrapper) {
+  return wrapper.findAll(".booking-documents__section");
+}
+
+function headings(wrapper) {
+  return sections(wrapper).wrappers.map((section) =>
+    section.find(".booking-documents__heading").text()
+  );
 }
 
 /**
- * The Dokumente block of CONTEXT.md: the four groups as dense lists with a
- * counter in the heading, "keine" for an empty group and a download icon per
- * row. The producing actions beside a group are the next ticket's; the block
- * only lists.
+ * The Dokumente block of CONTEXT.md: Belege - every issued document, its
+ * kind on each row - and Anhänge as dense lists with a counter in the
+ * heading, "keine" for an empty section and a download icon per row. The
+ * producing actions are BookingDocumentActions'; the block only lists.
  */
 describe("BookingDocuments", () => {
-  it("lists all four groups with their counters, in the glossary's order", () => {
+  it("gathers receipts, invoices and cancellation receipts under Belege, above Anhänge", () => {
     const wrapper = mountComponent(BookingDocuments, {
       propsData: {
         attachments: [AGB, RECEIPT, INVOICE, RECEIPT_2, CANCELLATION],
       },
     });
 
-    const headings = groups(wrapper).wrappers.map((group) =>
-      group.find(".booking-documents__heading").text()
-    );
-    expect(headings).toEqual([
-      "Belege (2)",
-      "Rechnungen (1)",
-      "Stornobelege (1)",
-      "Anhänge (1)",
+    expect(headings(wrapper)).toEqual(["Belege (4)", "Anhänge (1)"]);
+    const rows = wrapper
+      .find(".booking-documents__section--receipts")
+      .findAll(".booking-documents__row");
+    expect(rows.wrappers.map((row) => row.text())).toEqual([
+      expect.stringMatching(/BELEG-1\.pdf\s+Beleg · Ausgestellt am/),
+      expect.stringMatching(/BELEG-2\.pdf\s+Beleg · Ausgestellt am/),
+      expect.stringMatching(/RE-1\.pdf\s+Rechnung · Ausgestellt am/),
+      expect.stringMatching(/STORNO-1\.pdf\s+Stornobeleg$/),
     ]);
   });
 
-  it("reads „keine“ for an empty group and shows every group without attachments", () => {
+  it("reads „keine“ for an empty section and shows both without attachments", () => {
     const wrapper = mountComponent(BookingDocuments, {
       propsData: { attachments: [] },
     });
 
-    expect(groups(wrapper)).toHaveLength(4);
-    groups(wrapper).wrappers.forEach((group) => {
-      expect(group.find(".booking-documents__heading").text()).toMatch(
-        /\(0\)$/
-      );
-      expect(group.find(".booking-documents__empty").text()).toBe("keine");
+    expect(headings(wrapper)).toEqual(["Belege (0)", "Anhänge (0)"]);
+    sections(wrapper).wrappers.forEach((section) => {
+      expect(section.find(".booking-documents__empty").text()).toBe("keine");
     });
   });
 
-  it("lists only the groups named in `groups`, in the glossary's order", () => {
+  it("lists only the kinds named in `groups`, and no Anhänge unless named", () => {
     const wrapper = mountComponent(BookingDocuments, {
       propsData: {
         attachments: [AGB, RECEIPT, INVOICE, CANCELLATION],
@@ -59,10 +63,25 @@ describe("BookingDocuments", () => {
       },
     });
 
-    const headings = groups(wrapper).wrappers.map((group) =>
-      group.find(".booking-documents__heading").text()
+    expect(headings(wrapper)).toEqual(["Belege (2)"]);
+    expect(wrapper.text()).not.toContain("BELEG-1.pdf");
+  });
+
+  it("lists Widerrufbelege under Belege where asked for", () => {
+    const wrapper = mountComponent(BookingDocuments, {
+      propsData: {
+        attachments: [
+          { type: "withdrawal", title: "WIDERRUF-1.pdf" },
+          CANCELLATION,
+        ],
+        groups: ["cancellations", "withdrawals", "attachments"],
+      },
+    });
+
+    expect(headings(wrapper)).toEqual(["Belege (2)", "Anhänge (0)"]);
+    expect(wrapper.find(".booking-documents__row--withdrawals").text()).toMatch(
+      /WIDERRUF-1\.pdf\s+Widerrufbeleg/
     );
-    expect(headings).toEqual(["Rechnungen (1)", "Stornobelege (1)"]);
   });
 
   it("names each document and emits `download` with its group and the item", async () => {

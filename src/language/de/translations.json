@@ -2380,13 +2380,19 @@
           "manual": "Manuelle Zahlung"
         }
       },
+      "refund": {
+        "title": "Erstattung"
+      },
       "documents": {
         "title": "Dokumente",
         "receipts": "Belege",
-        "invoices": "Rechnungen",
-        "cancellations": "Stornobelege",
-        "withdrawals": "Widerrufbelege",
         "attachments": "Anhänge",
+        "kinds": {
+          "receipts": "Beleg",
+          "invoices": "Rechnung",
+          "cancellations": "Stornobeleg",
+          "withdrawals": "Widerrufbeleg"
+        },
         "none": "keine",
         "issued-at": "Ausgestellt am {date}",
         "accepted": "Gelesen und akzeptiert",

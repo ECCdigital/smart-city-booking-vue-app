@@ -73,9 +73,10 @@ function toastMessages(store) {
   return store.getters["toasts/all"].map((toast) => toast.message);
 }
 
-/** The group `key` of the Dokumente block (receipts, invoices, cancellations, attachments). */
+/** The section of kind `key` in the Dokumente block: Belege for every issued kind, Anhänge for attachments. */
 function group(wrapper, key) {
-  return wrapper.find(`.booking-documents__group--${key}`);
+  const section = key === "attachments" ? "attachments" : "receipts";
+  return wrapper.find(`.booking-documents__section--${section}`);
 }
 
 /** The entries of the last opened menu, read off the document. */
@@ -453,21 +454,23 @@ describe("BookingDocumentActions", () => {
 
     it("lists the group only for a withdrawn booking or one that carries a receipt", () => {
       const live = mountActions();
-      expect(group(live.wrapper, "withdrawals").exists()).toBe(false);
+      expect(
+        live.wrapper.find(".booking-documents__row--withdrawals").exists()
+      ).toBe(false);
 
       const withdrawn = mountActions({
         booking: booking({ status: "withdrawn", attachments: [WITHDRAWAL] }),
       });
-      expect(group(withdrawn.wrapper, "withdrawals").text()).toContain(
-        "Widerrufbeleg-WB-2026-0001-1.pdf"
-      );
-      expect(group(withdrawn.wrapper, "cancellations").text()).toContain(
-        "keine"
-      );
       expect(
-        group(withdrawn.wrapper, "cancellations")
-          .find(".booking-document-actions__reprint")
+        withdrawn.wrapper.find(".booking-documents__row--withdrawals").text()
+      ).toContain("Widerrufbeleg-WB-2026-0001-1.pdf");
+      expect(
+        withdrawn.wrapper
+          .find(".booking-documents__row--cancellations")
           .exists()
+      ).toBe(false);
+      expect(
+        withdrawn.wrapper.find(".booking-document-actions__reprint").exists()
       ).toBe(false);
     });
 

@@ -281,6 +281,46 @@
             </div>
           </v-card-text>
         </v-card>
+
+        <v-card
+          v-if="hasRefund"
+          outlined
+          class="booking-page__refund section-card"
+        >
+          <v-card-title class="section-header">
+            <v-icon>mdi-cash-refund</v-icon>
+            <span>{{ $t("booking.page.refund.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <CancellationRefundAudit
+              v-if="cancellationRefundAudit"
+              :audit="cancellationRefundAudit"
+              :has-time-span="!!booking.timeBegin"
+            />
+            <CancellationRefundState
+              :class="{ 'mt-3': cancellationRefundAudit }"
+              :booking="booking"
+              @reload="reload"
+            />
+          </v-card-text>
+        </v-card>
+
+        <v-card outlined class="booking-page__documents section-card">
+          <v-card-title class="section-header">
+            <v-icon>mdi-file-document-multiple-outline</v-icon>
+            <span>{{ $t("booking.page.documents.title") }}</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <BookingDocumentActions
+              :booking="booking"
+              :group-booking="groupBooking"
+              @download="downloadDocument"
+              @reload="reload"
+            />
+          </v-card-text>
+        </v-card>
       </div>
 
       <!-- Detail panel -->
@@ -364,29 +404,6 @@
               class="mt-3"
               :booking="booking"
               :group-booking="groupBooking"
-            />
-            <CancellationRefundAudit
-              v-if="cancellationRefundAudit"
-              class="mt-3"
-              :audit="cancellationRefundAudit"
-              :has-time-span="!!booking.timeBegin"
-            />
-            <CancellationRefundState
-              class="mt-3"
-              :booking="booking"
-              @reload="reload"
-            />
-          </div>
-
-          <div class="booking-page__documents">
-            <div class="booking-caption booking-caption--spaced">
-              {{ $t("booking.page.documents.title") }}
-            </div>
-            <BookingDocumentActions
-              :booking="booking"
-              :group-booking="groupBooking"
-              @download="downloadDocument"
-              @reload="reload"
             />
           </div>
 
@@ -521,7 +538,10 @@ import {
   bookingTransitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
-import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import {
+  getCancellationRefundAudit,
+  refundStateOf,
+} from "@/utils/cancellationRefund";
 import { proofFieldsOf } from "@/utils/customerUploads";
 import {
   bookedViaLabel,
@@ -711,6 +731,10 @@ export default {
     },
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
+    },
+    /** The card „Erstattung“: a cancelled booking with a refund audit or a refund state. */
+    hasRefund() {
+      return !!this.cancellationRefundAudit || !!refundStateOf(this.booking);
     },
     /** The section „Nachweise“: only where the answer carries their state. */
     proofFields() {

@@ -41,7 +41,7 @@ The URL of a booking page or group booking page that one admin hands to another.
 _Avoid_: deep link (the browser mechanism, not the thing shared), Zahlungslink (that is the customer-facing payment URL, a different link)
 
 **Dokumente** (admin: „Dokumente“):
-The files that belong to a booking or group booking, in four groups: Belege (receipts), Rechnungen (invoices), Stornobelege (cancellation receipts) and Anhänge (other attachments). The actions that produce a document belong to its group.
+The files that belong to a booking or group booking, in two sections: Belege - every document the system issues, that is receipts (Beleg), invoices (Rechnung), cancellation receipts (Stornobeleg) and withdrawal receipts (Widerrufbeleg), each row naming its kind - and Anhänge (other attachments). The actions that produce a document sit beside the heading of Belege.
 _Avoid_: Anhänge for the whole set (that is only the fourth group)
 
 **Buchungsseite** (admin: „Buchung #…“):
