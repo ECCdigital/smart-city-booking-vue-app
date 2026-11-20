@@ -78,7 +78,7 @@ class BookingPermissionService {
   }
 
   /**
-   * The Reichweite of CONTEXT.md: *any* for the instance owner, the tenant
+   * The Reichweite of GLOSSARY.md: *any* for the instance owner, the tenant
    * owner and `manageBookings.readAny` at the current tenant, *own* for every
    * other member. The Buchungsseite words a 404 by it.
    */
