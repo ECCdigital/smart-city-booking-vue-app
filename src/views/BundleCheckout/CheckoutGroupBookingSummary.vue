@@ -220,10 +220,10 @@
         large
         @click="performCheckout"
         :loading="isSubmitting"
-        :disabled="!allItemsValid"
+        :disabled="!allItemsValid || validating"
         block
       >
-        <span>Zahlungspflichtig buchen</span>
+        <span>{{ submitLabel }}</span>
       </v-btn>
     </div>
   </div>
@@ -232,6 +232,7 @@
 <script>
 import CheckoutAddressBlacklistedAlert from "@/components/Checkout/CheckoutAddressBlacklistedAlert.vue";
 import { bookingKindLabel } from "@/utils/businessBooking";
+import { checkoutSubmitLabel } from "@/utils/checkoutSubmit";
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 
 export default {
@@ -255,6 +256,12 @@ export default {
       default: null,
     },
     isSubmitting: {
+      type: Boolean,
+      default: false,
+    },
+    // A price check is running: the items still hold the last result
+    // (ECCdigital/tickets#1303).
+    validating: {
       type: Boolean,
       default: false,
     },
@@ -348,6 +355,13 @@ export default {
         price += attempt.userPriceEur || 0;
       }
       return price;
+    },
+    // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
+    submitLabel() {
+      return checkoutSubmitLabel(
+        this.bookingAttempts.flatMap((attempt) => attempt.bookableItems),
+        { validating: this.validating }
+      );
     },
     totalGrossPrice() {
       let price = 0;

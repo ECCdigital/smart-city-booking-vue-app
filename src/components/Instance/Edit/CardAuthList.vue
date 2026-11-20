@@ -419,20 +419,15 @@
                           <v-icon small class="mr-1">mdi-key-variant</v-icon>
                           API-Token
                         </div>
-                        <v-text-field
+                        <SecretField
                           v-model="editDialog.app.apiToken"
                           background-color="accent"
                           filled
                           dense
                           hide-details="auto"
-                          :type="showApiToken ? 'text' : 'password'"
-                          :append-icon="
-                            showApiToken ? 'mdi-eye' : 'mdi-eye-off'
-                          "
                           placeholder="Bearer-Token"
                           persistent-hint
                           hint="Token zur Authentifizierung beim Service"
-                          @click:append="showApiToken = !showApiToken"
                         />
                       </v-col>
                     </v-row>
@@ -644,10 +639,13 @@
 </template>
 
 <script>
+import SecretField from "@/components/commons/SecretField.vue";
+
 let cardIdCounter = 0;
 
 export default {
   name: "CardAuthList",
+  components: { SecretField },
   props: {
     /** Full applications array from the instance */
     applications: { type: Array, default: () => [] },
@@ -655,7 +653,6 @@ export default {
   data() {
     return {
       editActiveTab: 0,
-      showApiToken: false,
       editDialog: {
         open: false,
         index: -1,
@@ -736,7 +733,6 @@ export default {
         index: -1,
         app: this.createEmptyApp(),
       };
-      this.showApiToken = false;
     },
 
     openEdit(idx) {
@@ -746,7 +742,6 @@ export default {
         index: idx,
         app: this.cloneApp(this.localApps[idx]),
       };
-      this.showApiToken = false;
     },
 
     cancelEdit() {

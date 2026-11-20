@@ -315,10 +315,10 @@
         large
         @click="checkout()"
         :loading="isSubmitting"
-        :disabled="!allItemsValid"
+        :disabled="!allItemsValid || validating"
         block
       >
-        <span>Zahlungspflichtig buchen</span>
+        <span>{{ submitLabel }}</span>
       </v-btn>
     </div>
   </div>
@@ -340,6 +340,7 @@ import {
 } from "@/utils/checkoutErrors";
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 import { continuesToProvider } from "@/utils/checkoutNextStep";
+import { checkoutSubmitLabel } from "@/utils/checkoutSubmit";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 
@@ -349,6 +350,12 @@ export default {
   components: { CheckoutAddressBlacklistedAlert },
 
   props: {
+    // A price check is running: the items still hold the last result
+    // (ECCdigital/tickets#1303).
+    validating: {
+      type: Boolean,
+      default: false,
+    },
     checkoutId: {
       type: String,
     },
@@ -399,7 +406,6 @@ export default {
 
   data() {
     return {
-      validating: false,
       isSubmitting: false,
       // The instance's mail address of a refusal of the address on the
       // blacklist, null while there is none.
@@ -700,6 +706,13 @@ export default {
       }
 
       return price;
+    },
+
+    // „Verbindlich buchen“ only at a certain 0 EUR (ECCdigital/tickets#937, #1303).
+    submitLabel() {
+      return checkoutSubmitLabel([this.leadItem, ...this.subsequentItems], {
+        validating: this.validating,
+      });
     },
 
     totalGrossPrice() {
