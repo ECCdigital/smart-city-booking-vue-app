@@ -168,7 +168,7 @@
       <v-expansion-panel v-if="!localApps.length" disabled>
         <v-expansion-panel-header>
           Keine Karten-Services konfiguriert. Klicken Sie auf „Karten-Service
-          hinzufügen".
+          hinzufügen“.
         </v-expansion-panel-header>
       </v-expansion-panel>
     </v-expansion-panels>

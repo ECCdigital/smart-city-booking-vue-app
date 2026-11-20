@@ -98,7 +98,7 @@
                   border="left"
                   colored-border
                 >
-                  Sie können optional einen Verifikationsprozess auswählen, die
+                  Sie können optional einen Verifikationsprozess auswählen, den
                   eingeladene Benutzer bestehen müssen, bevor sie aktiv im
                   Mandanten arbeiten können. Erst dann werden die zugehörigen
                   Rollen automatisch zugewiesen. Wenn kein Verifikationsprozess
@@ -373,7 +373,7 @@
                         colored-border
                       >
                         Sie können optional einen Verifikationsprozess
-                        auswählen, die eingeladene Benutzer bestehen müssen,
+                        auswählen, den eingeladene Benutzer bestehen müssen,
                         bevor sie aktiv im Mandanten arbeiten können. Erst dann
                         werden die zugehörigen Rollen automatisch zugewiesen.
                         Wenn kein Verifikationsprozess definiert ist, werden

@@ -271,7 +271,7 @@
                     class="pdf-preview-loading text-caption grey--text"
                   >
                     Noch keine PDF-Vorschau erzeugt. Klicken Sie auf
-                    "Aktualisieren".
+                    „Aktualisieren“.
                   </div>
                 </div>
               </v-card-text>
@@ -302,8 +302,8 @@
             >
               Im Experten-Modus wird das visuelle Modell überschrieben. Beim
               Wechsel zurück lässt sich das Modell nicht automatisch
-              rekonstruieren – Sie können aber jederzeit "Mit visueller Vorlage
-              neu starten" wählen.
+              rekonstruieren – Sie können aber jederzeit „Mit visueller Vorlage
+              neu starten“ wählen.
             </v-alert>
             <v-textarea
               v-model="expertHtml"
