@@ -426,7 +426,7 @@ import {
 } from "@/utils/bookingStatus";
 
 /**
- * The Serienbuchungsseite (CONTEXT.md): one series with its members at
+ * The Serienbuchungsseite (GLOSSARY.md): one series with its members at
  * `/group-bookings/:groupBookingId`, reachable by a Buchungslink that names
  * its tenant in `?tenant=`. The shell is `bookingPageShell`'s. The page
  * shows the series as a booking (spec E9, N5): the members' shared state as

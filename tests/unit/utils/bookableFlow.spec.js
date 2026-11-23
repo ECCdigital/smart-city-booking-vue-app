@@ -1110,6 +1110,60 @@ describe("overview: issues at their row", () => {
     });
   });
 
+  // ECCdigital/tickets#558: the location's issue at its own row.
+  const GASSTRASSE = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    meta: { additional: null },
+  };
+  const ONLY_ADDITIONAL = {
+    address: {},
+    display_address: "",
+    meta: { additional: "Stadtpark" },
+  };
+  const rowOf = (item, key) =>
+    overviewBlocks(item)
+      .flatMap(({ rows }) => rows)
+      .find((row) => row.key === key);
+
+  it("puts the issue of the location at the row of the location", () => {
+    expect(issuesOf(bookable({ title: "Saal", location: GASSTRASSE }))).toEqual(
+      { location: ["location.reason.addressWithoutPoint"] }
+    );
+  });
+
+  it("puts the issue of a location with only an addition at the row of the location", () => {
+    expect(
+      issuesOf(bookable({ title: "Saal", location: ONLY_ADDITIONAL }))
+    ).toEqual({ location: ["location.reason.addressWithoutPoint"] });
+  });
+
+  it("puts the issues of title and location each at its own row", () => {
+    expect(issuesOf(bookable({ title: " ", location: GASSTRASSE }))).toEqual({
+      title: ["bookable.validation.title"],
+      location: ["location.reason.addressWithoutPoint"],
+    });
+  });
+
+  it("leads the row of the location to the field of the location", () => {
+    expect(
+      rowOf(bookable({ title: "Saal", location: GASSTRASSE }), "location")
+        .target
+    ).toEqual({
+      step: "identity",
+      tab: "general",
+      section: "general-catalog",
+      field: "location",
+      area: null,
+    });
+  });
+
   it("shows no issue in a block still open", () => {
     const blocks = overviewBlocks(bookable({ title: "" }), { visited: [] });
 

@@ -92,6 +92,10 @@ _Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are a tenant's open cr
 The fields that say what a bookable is, in two groups: „Das sehen Buchende im Katalog“ (**Titel**, Beschreibung, **Merkmale**, **Bilder**, **Standort**) and „Nur für die Verwaltung“ (Typ, Veranstaltung of a ticket, **Interne Tags**). Merkmale are short advantages beside the description; Interne Tags filter and group in the administration and are never shown to bookers. The Typ (Raum, Gerät / Weiteres, Ticket, Veranstaltungsort) is chosen only when the bookable is created.
 _Avoid_: Bezeichnung or Name for the Titel (a Zeitraum keeps its Bezeichnung), Informationen für Buchende for the Merkmale, Bild or Titelbild for the Bilder (the first image is the cover), Adresse for the Standort, Tags alone
 
+**Standort**:
+Where a bookable, an event or an access point is, in two parts that may differ and may each be missing: the **Anschrift**, the postal address people read (street, house number, postcode, city), and the **Punkt**, the place on the map that the storefront shows and measures distances from. A Punkt found from the Anschrift can be off, such as the town hall instead of the sports hall behind it.
+_Avoid_: Adresse (that is an app's origin), Koordinaten for the Punkt, Lage, Position
+
 **Buchungsart** (admin: „Buchungsart“):
 How a bookable is booked in time, asked in both modes by up to three questions: Ohne Zeit, or for a time **Freie Zeitwahl**, **Feste Zeitfenster**, **Zeiträume** or **Langzeit**, the last as **Ganze Wochen** or **Ganze Monate**. Langzeit is only the answer that leads to the two, not a mode of its own. The settings of the chosen Buchungsart (Buchungsdauer, the Feste Zeitfenster, the Zeiträume, Vorlaufzeit, Puffer zwischen Buchungen) follow it in the same tab or step.
 _Avoid_: Buchungstyp (Typ is Raum, Gerät / Weiteres, Ticket or Veranstaltungsort), Verfügbarkeit as the field's name (the step keeps it), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig
@@ -103,6 +107,10 @@ _Avoid_: Preisart as a word on screen (the question asks it), Fester Preis as a 
 **Tagespauschale** (admin: „Tagespauschale“):
 The fixed price of an hour price: every day the booking touches costs the amount once, whatever the hours. The same switch is called „Angefangene Tage zählen voll“ for a day price and „Gilt einmal je Buchung“ for Stück and m²; changing the Preisart sets it to the new Preisart's default.
 _Avoid_: Pauschalpreis, Fester Preis, Festpreis
+
+**Angefangene Stunden zählen voll** (admin: „Angefangene Stunden zählen voll“):
+How an hour price counts the time: on, every started hour costs the full price, and an hour Tarif is chosen by the hours so counted, a Tagespauschale Tarif by the minutes; off (the default), by the minute. Asked for „Pro Stunde“ only and not for a Tagespauschale; a day price has „Angefangene Tage zählen voll“ instead. Changing the Preisart or switching on the Tagespauschale of a simple price switches it off.
+_Avoid_: Aufrunden, Stundentakt, Abrechnungsintervall
 
 **Rabattcodes** (admin: „Rabattcodes“):
 The codes bookers type in at checkout for a discount. Per bookable a switch says whether they can be redeemed there, on unless switched off; a bookable never stored with the switch reads as on, as the backend takes it.

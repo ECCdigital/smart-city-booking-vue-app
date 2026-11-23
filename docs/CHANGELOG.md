@@ -7,6 +7,29 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Fixed
+
+-   A release builds its Docker image again ([ECCdigital/tickets#1319](https://github.com/ECCdigital/tickets/issues/1319)): `docker-publish.yml` runs on GitHub's `ubuntu-latest` unless the self-hosted runner is chosen on a manual start. Before, a release left the runner empty and the workflow failed before it started, and a manual start preset the self-hosted runner, which is offline
+
+## [4.4.2] — 2026-11-20
+
+### Changed
+
+-   Agent docs: the issue tracker follows the template „GitHub Portolan, Produkt-Repo“ (skills `ecc-12`), with flow `v2` of `ECCdigital/tickets`, sub-tickets and `Refs` in pull requests; the glossary is `GLOSSARY.md` (formerly `CONTEXT.md`, the stale copy of `GLOSSARY.md` is gone)
+
+### Fixed
+
+-   Duplicating an offer shows only one message ([ECCdigital/tickets#750](https://github.com/ECCdigital/tickets/issues/750)): „Erfolgreich dupliziert“ appears only when the copy was created; a refused copy shows only the error. Before, both appeared together
+
+## [4.4.1] — 2026-11-16
+
+### Fixed
+
+-   The PDF template preview renders the templates a new tenant starts with: it failed with „Vorschau-Fehler: The partial pdfPageNumbers could not be found“, because the preview lacked the backend's page number partial that the default templates use in their footer
+-   The visual default of the cancellation receipt names the calculation mode of the refund again, such as „Automatisch nach Mandantenregel“, as the backend's default did; the backend now stores these default blocks for a new tenant
+
+## [4.4.0] — 2026-11-16
+
 ### Changed
 
 -   Development: the Vuex modules build their state with a factory, so every store gets its own; tests no longer share toasts and other state between stores, and ESLint refuses a plain object as state (`user.js` excepted, the permission services read its state directly). `docs/CHANGELOG.md` merges with `merge=union`, and the README says that a branch catches up with its `version/…` base by a merge
@@ -16,6 +39,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 ### Added
 
 -   Hour price per started hour ([ECCdigital/tickets#811](https://github.com/ECCdigital/tickets/issues/811)): „Angefangene Stunden zählen voll“ under „Wonach richtet sich der Preis?“ for „Pro Stunde“, simple price and Tarife alike, not for a Tagespauschale; stored as `priceCountStartedHours`, off by default (minutengenau). The example under the amount, the overview („25,00 € je angefangene Stunde“) and the price preview of a manual booking count the same way; changing the Preisart or switching on the Tagespauschale of a simple price switches it off. The hint of „Angefangene Tage zählen voll“ ends alike: „Andernfalls wird der Preis minutengenau berechnet.“ Requires the backend with ECCdigital/tickets#811
+-   Flags are suggested like the tags ([ECCdigital/tickets#1114](https://github.com/ECCdigital/tickets/issues/1114)): the field „Flags“ of an event (and „Schlagwörter“ of the simple event creator) offers the flags of all the tenant's events, „Merkmale“ of a bookable those of all its bookables; a new one can still be typed. Needs the backend with `GET /api/:tenant/events/_meta/flags` and `GET /api/:tenant/bookables/_meta/flags`
 -   Wiederherstellen warns of a double booking ([ECCdigital/tickets#643](https://github.com/ECCdigital/tickets/issues/643)): when other bookings took the period of a cancelled or rejected booking meanwhile, the dialog names each object and the booking in the way, linked to its Buchungsseite, and offers „Trotzdem wiederherstellen“ or „Abbrechen“; a booking that takes a parent object, or a dependent object without room left, names it („mit dem übergeordneten Objekt …“, „über das untergeordnete Objekt …“); the object booked twice is set in semibold. Requires the backend with ECCdigital/tickets#643
 -   Reports of guest addresses ([ECCdigital/tickets#632](https://github.com/ECCdigital/tickets/issues/632)): „E-Mailadresse melden“ in the card „Kunde“ of the booking page reports addresses from `mail` of the booking, several ticked as one report each; it shows for a guest booking or one whose `mail` is not the booker's address, otherwise only „Benutzer melden“; „E-Mailadresse melden“ beside the tabs in „Meldungen“ of „Mitglieder“ opens „E-Mailadresse an die Instanz melden“ and reports a single address entered by hand, a member's too, with a hint to the list of members; one already on the blacklist gets none and a toast says so. „Offene Meldungen“ groups by user or address and settles an address with „Auf Blacklist setzen“, prefilled with the address and the reasons, optionally its domain, with the accounts it suspends; „Ablehnen“ works for addresses too. New origin „aus Meldungen“ in the blacklist
 -   Reports in the tenant ([ECCdigital/tickets#631](https://github.com/ECCdigital/tickets/issues/631)): the tab „Meldungen“ of the page „Mitglieder“, shown only to roles that may edit users (`manageUsers.updateAny`) and counting the open reports, lists the tenant's own reports with their standing (offen, gesperrt, auf Blacklist, abgelehnt with its reason, zurückgezogen), open ones first; an open one can be added to („Ergänzen“) or withdrawn („Zurückziehen“). „Melden“ at a member offers the checkbox „Mitgliedschaft beenden“, which ends the membership with its open invitations. Needs the backend with `GET /api/tenants/:tenant/reports`, `…/reports/:id/additions` and `…/reports/:id/withdraw`
@@ -50,6 +74,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   The cross on a flag's chip removes the flag again in the event form and the simple event creator ([ECCdigital/tickets#1114](https://github.com/ECCdigital/tickets/issues/1114)); it threw an error before
 -   The icon in the title of the dialogs for reports, suspensions and the blacklist sits level with the first line of the title
 -   Group checkout names its failure ([ECCdigital/tickets#298](https://github.com/ECCdigital/tickets/issues/298)): the backend's bare `404 "Bookable not found"` shows „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“ as the single checkout does, any other failure the general error toast, instead of only a line in the console
 -   „Passwort vergessen“ names a hit rate limit ([ECCdigital/tickets#302](https://github.com/ECCdigital/tickets/issues/302)): a `429` of `POST /auth/forgot-password` shows the toast „Zu viele Versuche“ (`auth.rate-limit.unknown`) instead of the general error; the form stays
@@ -75,6 +100,17 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   The booking list keeps the column „Buchungsobjekte“ at most 220px wide, so the table no longer scrolls sideways for it: chips that do not fit side by side wrap below each other, a long title ends in an ellipsis
 -   The booking list heads its column „Buchungsdatum“ with a soft hyphen and lets it wrap there, so the column is no wider than the date
 -   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
+
+## [4.3.4] — 2026-11-20
+
+### Added
+
+-   `docker-publish.yml` refuses to build a tag that is not `v` plus the `version` of `package.json` (ECCdigital/tickets#1018). A release candidate tagged without `npm version` built an image whose app still reported the previous version
+
+### Fixed
+
+-   „iCal-Feed abonnieren“ and „Feed-URL kopieren“ give a full URL in auth mode `bff` (ECCdigital/tickets#782): a relative API base such as the default `/admin/api` is anchored on the origin of the Admin UI, so a calendar can subscribe to it. Mode `direct` is unchanged
+-   The overview of the guided flow and the editing page shows an issue of the location at the row „Standort“ instead of „Titel“ (ECCdigital/tickets#558), so a click on it leads to the field Standort
 
 ## [4.3.3] — 2026-11-03
 
