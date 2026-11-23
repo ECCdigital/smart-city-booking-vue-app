@@ -688,7 +688,8 @@ const AVAILABILITY_ROWS = [
 
 /**
  * A simple price's amount with its unit; a fixed price that holds once per
- * booking, or an hour price as Tagespauschale, in the words of the price.
+ * booking, an hour price as Tagespauschale or counting started hours, in the
+ * words of the price.
  */
 function simpleAmountValue(bookable) {
   const category = bookable.priceCategories[0];
@@ -698,6 +699,9 @@ function simpleAmountValue(bookable) {
   }
   if (bookable.priceType === "per-hour" && category.fixedPrice) {
     return asWord(`${VALUES}.daily-flat`, { price: amount });
+  }
+  if (bookable.priceType === "per-hour" && bookable.priceCountStartedHours) {
+    return asWord(`${VALUES}.started-hour`, { price: amount });
   }
   // The price with the unit of its Preisart, as „25,00 €/h“.
   if (PRICE_TYPES.includes(bookable.priceType)) {

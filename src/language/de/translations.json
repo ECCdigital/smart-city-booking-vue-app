@@ -260,6 +260,7 @@
           "tiers": "{count} Tarif | {count} Tarife",
           "once": "{price} für die ganze Buchung",
           "daily-flat": "{price} Tagespauschale",
+          "started-hour": "{price} je angefangene Stunde",
           "price-per": {
             "per-hour": "{price}/h",
             "per-day": "{price}/Tag",

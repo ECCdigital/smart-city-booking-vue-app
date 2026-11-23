@@ -700,6 +700,19 @@ describe("overview", () => {
     ]);
   });
 
+  it("names an hour price counting started hours as such", () => {
+    const item = bookable({
+      priceCategories: [category(25)],
+      priceType: "per-hour",
+      priceCountStartedHours: true,
+    });
+
+    expect(shown(blockOf("price", item))[0]).toEqual([
+      "Preis",
+      "25,00 € je angefangene Stunde",
+    ]);
+  });
+
   it("names a coupon setting never stored as switched on", () => {
     const item = bookable({ priceCategories: [category(25)] });
     delete item.enableCoupons;
