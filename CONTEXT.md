@@ -109,7 +109,7 @@ The fixed price of an hour price: every day the booking touches costs the amount
 _Avoid_: Pauschalpreis, Fester Preis, Festpreis
 
 **Angefangene Stunden zählen voll** (admin: „Angefangene Stunden zählen voll“):
-How an hour price counts the time: on, every started hour costs the full price, and an hour Tarif is chosen by the hours so counted, a Tagespauschale Tarif by the minutes; off (the default), by the minute. Asked for „Pro Stunde“ only and not for a Tagespauschale; a day price has „Angefangene Tage zählen voll“ instead. Changing the Preisart switches it off.
+How an hour price counts the time: on, every started hour costs the full price, and an hour Tarif is chosen by the hours so counted, a Tagespauschale Tarif by the minutes; off (the default), by the minute. Asked for „Pro Stunde“ only and not for a Tagespauschale; a day price has „Angefangene Tage zählen voll“ instead. Changing the Preisart or switching on the Tagespauschale of a simple price switches it off.
 _Avoid_: Aufrunden, Stundentakt, Abrechnungsintervall
 
 **Rabattcodes** (admin: „Rabattcodes“):

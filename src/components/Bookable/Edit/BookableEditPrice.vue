@@ -111,7 +111,7 @@
             dense
             hide-details
             class="bookable-price__switch"
-            @change="setCategory({ fixedPrice: !!$event })"
+            @change="setFixed(!!$event)"
           >
             <template #label>
               <div>
@@ -231,6 +231,7 @@ import bookableEditing from "@/mixins/bookableEditing";
 import {
   PRICE_TYPES,
   VAT_RATES,
+  applyFixedPrice,
   applyPriceMode,
   applyPriceType,
   priceExplanation,
@@ -376,6 +377,10 @@ export default {
             index === 0 ? { ...category, ...changes } : category
         ),
       });
+    },
+    setFixed(fixedPrice) {
+      this.chosenMode = this.mode;
+      this.apply((next) => applyFixedPrice(next, fixedPrice));
     },
     setVat(rate) {
       this.patch({ priceValueAddedTax: toNumber(rate) });

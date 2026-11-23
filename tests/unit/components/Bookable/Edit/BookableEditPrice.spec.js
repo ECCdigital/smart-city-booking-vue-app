@@ -304,6 +304,50 @@ describe("BookableEditPrice - started hours", () => {
     }
   });
 
+  it("switches off with the Tagespauschale, so Tarife do not find it on", async () => {
+    const { wrapper, patches } = mountPrice(
+      hourly({ priceCountStartedHours: true })
+    );
+
+    await find(wrapper, "flow-price-fixed").find("input").trigger("click");
+
+    expect(lastPatch(patches)).toEqual({
+      priceCategories: [category(20, { fixedPrice: true })],
+      priceCountStartedHours: false,
+    });
+  });
+
+  it("stays as it is when the Tagespauschale is switched off", async () => {
+    const { wrapper, patches } = mountPrice(
+      hourly({ priceCategories: [category(20, { fixedPrice: true })] })
+    );
+
+    await find(wrapper, "flow-price-fixed").find("input").trigger("click");
+
+    expect(lastPatch(patches)).toEqual({
+      priceCategories: [category(20)],
+    });
+  });
+
+  it("switches off when Tarife become a simple Tagespauschale", async () => {
+    const { wrapper, patches } = mountPrice(
+      hourly({
+        priceCountStartedHours: true,
+        priceCategories: [
+          category(50, { fixedPrice: true, interval: { start: null, end: 2 } }),
+          category(80, { fixedPrice: true, interval: { start: 2, end: null } }),
+        ],
+      })
+    );
+
+    await find(wrapper, "flow-price-mode-simple").trigger("click");
+
+    expect(lastPatch(patches)).toMatchObject({
+      priceCategories: [category(50, { fixedPrice: true })],
+      priceCountStartedHours: false,
+    });
+  });
+
   it("starts off again on a change of the Preisart", async () => {
     const { wrapper, patches } = mountPrice(
       hourly({ priceCountStartedHours: true })

@@ -224,6 +224,38 @@ export function applyPriceType(bookable, priceType) {
 }
 
 /**
+ * A simple hour price as Tagespauschale is not billed by the hour, so
+ * counting started hours goes off with it; hidden there, it would come
+ * back on with Tarife.
+ */
+function dropStartedHoursOfFlatRate(bookable) {
+  const categories = bookable.priceCategories || [];
+  if (
+    bookable.priceCountStartedHours &&
+    bookable.priceType === "per-hour" &&
+    categories.length === 1 &&
+    categories[0].fixedPrice
+  ) {
+    bookable.priceCountStartedHours = false;
+  }
+}
+
+/**
+ * Sets the fixed price of a simple price (Tagespauschale, full days, once
+ * per booking); a Tagespauschale switches counting started hours off.
+ */
+export function applyFixedPrice(bookable, fixedPrice) {
+  const categories = bookable.priceCategories?.length
+    ? bookable.priceCategories
+    : [{}];
+  bookable.priceCategories = categories.map((category, index) =>
+    index === 0 ? { ...category, fixedPrice } : category
+  );
+  dropStartedHoursOfFlatRate(bookable);
+  return bookable;
+}
+
+/**
  * Lands the price form on the bookable. Free keeps one category at 0 €;
  * simple keeps the first category's amount; tiers start from what is
  * stored. Leaving free takes the Preisart the availability suggests, with
@@ -248,6 +280,7 @@ export function applyPriceMode(bookable, mode) {
     bookable.priceCategories = [
       plainCategory(toNumber(first.priceEur), first.fixedPrice),
     ];
+    dropStartedHoursOfFlatRate(bookable);
   }
   return bookable;
 }
