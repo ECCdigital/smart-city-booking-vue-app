@@ -56,51 +56,72 @@
           </div>
         </div>
 
-        <template v-if="mode === 'simple'">
-          <div class="bookable-price__field" data-test="flow-price-amount">
-            <v-text-field
-              :value="firstCategory.priceEur"
-              :label="amountLabel"
-              type="number"
-              min="0"
-              step="0.01"
-              suffix="€"
-              outlined
-              dense
-              hide-details="auto"
-              :rules="fieldRules.price"
-              @input="setCategory({ priceEur: $event })"
-            />
-            <div class="bookable-price__hint" data-test="flow-price-explain">
-              {{ explanation }}
-            </div>
+        <div
+          v-if="mode === 'simple'"
+          class="bookable-price__field"
+          data-test="flow-price-amount"
+        >
+          <v-text-field
+            :value="firstCategory.priceEur"
+            :label="amountLabel"
+            type="number"
+            min="0"
+            step="0.01"
+            suffix="€"
+            outlined
+            dense
+            hide-details="auto"
+            :rules="fieldRules.price"
+            @input="setCategory({ priceEur: $event })"
+          />
+          <div class="bookable-price__hint" data-test="flow-price-explain">
+            {{ explanation }}
           </div>
-
-          <div data-test="flow-price-fixed">
-            <v-switch
-              :input-value="!!firstCategory.fixedPrice"
-              dense
-              hide-details
-              class="bookable-price__switch"
-              @change="setCategory({ fixedPrice: !!$event })"
-            >
-              <template #label>
-                <div>
-                  <div>{{ $t(`${fixedKey}.label`) }}</div>
-                  <div class="bookable-price__hint mt-0">
-                    {{ $t(`${fixedKey}.hint`) }}
-                  </div>
-                </div>
-              </template>
-            </v-switch>
-          </div>
-        </template>
+        </div>
 
         <div v-else class="bookable-price__field">
           <BookableEditPriceTiers
             :bookable="bookable"
             @update:bookable="$emit('update:bookable', $event)"
           />
+        </div>
+
+        <div v-if="startedHoursShown" data-test="flow-price-started-hours">
+          <v-switch
+            :input-value="!!bookable.priceCountStartedHours"
+            dense
+            hide-details
+            class="bookable-price__switch"
+            @change="patch({ priceCountStartedHours: !!$event })"
+          >
+            <template #label>
+              <div>
+                <div>{{ $t("bookable.price.started-hours.label") }}</div>
+                <div class="bookable-price__hint mt-0">
+                  {{ $t("bookable.price.started-hours.hint") }}
+                </div>
+              </div>
+            </template>
+          </v-switch>
+        </div>
+
+        <div v-if="mode === 'simple'" data-test="flow-price-fixed">
+          <v-switch
+            :input-value="!!firstCategory.fixedPrice"
+            dense
+            hide-details
+            class="bookable-price__switch"
+            @change="setFixed(!!$event)"
+          >
+            <template #label>
+              <div>
+                <div>{{ $t(`${fixedKey}.label`) }}</div>
+                <div class="bookable-price__hint mt-0">
+                  {{ $t(`${fixedKey}.hint`) }}
+                </div>
+              </div>
+            </template>
+          </v-switch>
         </div>
 
         <!-- Mehrwertsteuer is one number: 19 % and 7 % set it, any other is
@@ -210,6 +231,7 @@ import bookableEditing from "@/mixins/bookableEditing";
 import {
   PRICE_TYPES,
   VAT_RATES,
+  applyFixedPrice,
   applyPriceMode,
   applyPriceType,
   priceExplanation,
@@ -279,6 +301,14 @@ export default {
         : "per-item";
       return `bookable.price.fixed.${type}`;
     },
+    /**
+     * Counting started hours is a question of the hour price only, and none
+     * while a simple price is a Tagespauschale.
+     */
+    startedHoursShown() {
+      if (this.bookable.priceType !== "per-hour") return false;
+      return !(this.mode === "simple" && this.firstCategory.fixedPrice);
+    },
     typeQuestion() {
       return this.mode === "tiers"
         ? this.$t("bookable.price.type-tiers")
@@ -347,6 +377,10 @@ export default {
             index === 0 ? { ...category, ...changes } : category
         ),
       });
+    },
+    setFixed(fixedPrice) {
+      this.chosenMode = this.mode;
+      this.apply((next) => applyFixedPrice(next, fixedPrice));
     },
     setVat(rate) {
       this.patch({ priceValueAddedTax: toNumber(rate) });

@@ -210,14 +210,48 @@ export function suggestedPriceType(bookable) {
  * Sets the Preisart. `fixedPrice` means something else for each of them
  * (Tagespauschale, full days, once per booking), so every category falls
  * back to the new Preisart's default rather than silently changing meaning.
+ * Counting started hours belongs to the hour price and starts off again.
  * The same Preisart again changes nothing.
  */
 export function applyPriceType(bookable, priceType) {
   if (bookable.priceType === priceType) return bookable;
   bookable.priceType = priceType;
+  bookable.priceCountStartedHours = false;
   (bookable.priceCategories || []).forEach((category) => {
     category.fixedPrice = defaultFixedPrice(priceType);
   });
+  return bookable;
+}
+
+/**
+ * A simple hour price as Tagespauschale is not billed by the hour, so
+ * counting started hours goes off with it; hidden there, it would come
+ * back on with Tarife.
+ */
+function dropStartedHoursOfFlatRate(bookable) {
+  const categories = bookable.priceCategories || [];
+  if (
+    bookable.priceCountStartedHours &&
+    bookable.priceType === "per-hour" &&
+    categories.length === 1 &&
+    categories[0].fixedPrice
+  ) {
+    bookable.priceCountStartedHours = false;
+  }
+}
+
+/**
+ * Sets the fixed price of a simple price (Tagespauschale, full days, once
+ * per booking); a Tagespauschale switches counting started hours off.
+ */
+export function applyFixedPrice(bookable, fixedPrice) {
+  const categories = bookable.priceCategories?.length
+    ? bookable.priceCategories
+    : [{}];
+  bookable.priceCategories = categories.map((category, index) =>
+    index === 0 ? { ...category, fixedPrice } : category
+  );
+  dropStartedHoursOfFlatRate(bookable);
   return bookable;
 }
 
@@ -246,6 +280,7 @@ export function applyPriceMode(bookable, mode) {
     bookable.priceCategories = [
       plainCategory(toNumber(first.priceEur), first.fixedPrice),
     ];
+    dropStartedHoursOfFlatRate(bookable);
   }
   return bookable;
 }
@@ -255,8 +290,9 @@ export function applyPriceMode(bookable, mode) {
  * backend reckons it (`_internalRegularPriceEur`). The booking is split into
  * calendar days; per day an hour price counts the hours, a day price the
  * share of 24 hours, and `fixedPrice` drops that factor, so each touched day
- * costs the price once. Item and m² ignore the duration; with `fixedPrice`
- * they ignore the booked quantity too. The key below
+ * costs the price once; with `priceCountStartedHours` an hour price counts
+ * every started hour in full. Item and m² ignore the duration; with
+ * `fixedPrice` they ignore the booked quantity too. The key below
  * `bookable.price.explain` and the amounts (net, in euros) its
  * parameters need. The examples: 2.5 hours, Friday 14:00 to Sunday 12:00
  * (three touched days), 6 hours, 3 items.
@@ -271,8 +307,10 @@ export function priceExplanation(bookable) {
   switch (bookable.priceType) {
     case "per-hour":
       // Tagespauschale: no time factor, once per touched calendar day.
-      return fixed
-        ? { key: "per-hour-daily", amounts: { total: price * 3 } }
+      if (fixed)
+        return { key: "per-hour-daily", amounts: { total: price * 3 } };
+      return bookable.priceCountStartedHours
+        ? { key: "per-hour-started", amounts: { total: price * 3 } }
         : { key: "per-hour", amounts: { total: price * 2.5 } };
     case "per-day":
       if (mode === "week")
@@ -651,7 +689,8 @@ const AVAILABILITY_ROWS = [
 
 /**
  * A simple price's amount with its unit; a fixed price that holds once per
- * booking, or an hour price as Tagespauschale, in the words of the price.
+ * booking, an hour price as Tagespauschale or counting started hours, in the
+ * words of the price.
  */
 function simpleAmountValue(bookable) {
   const category = bookable.priceCategories[0];
@@ -661,6 +700,9 @@ function simpleAmountValue(bookable) {
   }
   if (bookable.priceType === "per-hour" && category.fixedPrice) {
     return asWord(`${VALUES}.daily-flat`, { price: amount });
+  }
+  if (bookable.priceType === "per-hour" && bookable.priceCountStartedHours) {
+    return asWord(`${VALUES}.started-hour`, { price: amount });
   }
   // The price with the unit of its Preisart, as „25,00 €/h“.
   if (PRICE_TYPES.includes(bookable.priceType)) {

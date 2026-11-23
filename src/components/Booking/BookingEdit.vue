@@ -1660,8 +1660,8 @@ export default {
       const base = Number(category.priceEur) || 0;
       if (category.fixedPrice) return base;
 
-      const duration = this.getBookingDuration();
       const bookable = item._bookableUsed;
+      const duration = this.getBilledDuration(bookable);
       const amount = item.amount || 1;
 
       switch (bookable?.priceType) {
@@ -1674,6 +1674,20 @@ export default {
         default:
           return base * amount;
       }
+    },
+    /**
+     * The booking's minutes as the price counts them: an hour price with
+     * `priceCountStartedHours` counts every started hour in full.
+     */
+    getBilledDuration(bookable) {
+      const minutes = this.getBookingDuration();
+      if (
+        bookable?.priceType === "per-hour" &&
+        bookable.priceCountStartedHours
+      ) {
+        return Math.ceil(minutes / 60) * 60;
+      }
+      return minutes;
     },
     getItemPriceLabel(item) {
       const price = this.calculateItemPrice(item);
@@ -1711,31 +1725,39 @@ export default {
       }
 
       const bookingDurationInMinutes = this.getBookingDuration();
+      const billedDurationInMinutes = this.getBilledDuration(
+        bookableItem._bookableUsed
+      );
 
+      // The value a Tarif's bounds are checked against.
       let valueToCheck;
       switch (priceType) {
         case "per-hour":
-          valueToCheck = bookingDurationInMinutes / 60;
+          // Started hours count for an hour Tarif only: a Tagespauschale is
+          // not billed by the hour, so its bounds take the minutes as they are.
+          valueToCheck = ({ fixedPrice }) =>
+            (fixedPrice ? bookingDurationInMinutes : billedDurationInMinutes) /
+            60;
           break;
         case "per-day":
-          valueToCheck = bookingDurationInMinutes / 60 / 24;
+          valueToCheck = () => bookingDurationInMinutes / 60 / 24;
           break;
         case "per-item":
-          valueToCheck = bookableItem.amount;
+          valueToCheck = () => bookableItem.amount;
           break;
         case "per-square-meter":
-          valueToCheck = bookableItem.amount;
+          valueToCheck = () => bookableItem.amount;
           break;
         default:
           return null;
       }
 
       const category =
-        priceCategories.find(({ interval }) => {
-          const { start, end } = interval;
+        priceCategories.find((pc) => {
+          const { start, end } = pc.interval;
+          const value = valueToCheck(pc);
           return (
-            (start === null || start <= valueToCheck) &&
-            (end === null || end >= valueToCheck)
+            (start === null || start <= value) && (end === null || end >= value)
           );
         }) || priceCategories[0];
 
