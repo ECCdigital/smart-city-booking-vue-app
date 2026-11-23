@@ -1724,34 +1724,40 @@ export default {
         return priceCategories[0];
       }
 
-      const bookingDurationInMinutes = this.getBilledDuration(
+      const bookingDurationInMinutes = this.getBookingDuration();
+      const billedDurationInMinutes = this.getBilledDuration(
         bookableItem._bookableUsed
       );
 
+      // The value a Tarif's bounds are checked against.
       let valueToCheck;
       switch (priceType) {
         case "per-hour":
-          valueToCheck = bookingDurationInMinutes / 60;
+          // Started hours count for an hour Tarif only: a Tagespauschale is
+          // not billed by the hour, so its bounds take the minutes as they are.
+          valueToCheck = ({ fixedPrice }) =>
+            (fixedPrice ? bookingDurationInMinutes : billedDurationInMinutes) /
+            60;
           break;
         case "per-day":
-          valueToCheck = bookingDurationInMinutes / 60 / 24;
+          valueToCheck = () => bookingDurationInMinutes / 60 / 24;
           break;
         case "per-item":
-          valueToCheck = bookableItem.amount;
+          valueToCheck = () => bookableItem.amount;
           break;
         case "per-square-meter":
-          valueToCheck = bookableItem.amount;
+          valueToCheck = () => bookableItem.amount;
           break;
         default:
           return null;
       }
 
       const category =
-        priceCategories.find(({ interval }) => {
-          const { start, end } = interval;
+        priceCategories.find((pc) => {
+          const { start, end } = pc.interval;
+          const value = valueToCheck(pc);
           return (
-            (start === null || start <= valueToCheck) &&
-            (end === null || end >= valueToCheck)
+            (start === null || start <= value) && (end === null || end >= value)
           );
         }) || priceCategories[0];
 

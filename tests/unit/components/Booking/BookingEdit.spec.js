@@ -221,6 +221,29 @@ describe("BookingEdit", () => {
       const [item] = wrapper.vm.bookableItems;
       expect(wrapper.vm.calculateItemPrice(item)).toBe(50);
     });
+
+    it("picks a Tagespauschale Tarif by the minutes, not the counted hours", async () => {
+      const { wrapper } = await mountEdit({
+        booking: seventyMinutes({
+          priceCountStartedHours: true,
+          priceCategories: [
+            {
+              priceEur: 50,
+              fixedPrice: true,
+              interval: { start: 0, end: 1.5 },
+            },
+            {
+              priceEur: 80,
+              fixedPrice: true,
+              interval: { start: 2, end: null },
+            },
+          ],
+        }),
+      });
+
+      const [item] = wrapper.vm.bookableItems;
+      expect(wrapper.vm.calculateItemPrice(item)).toBe(50);
+    });
   });
 
   describe("the paid date", () => {
