@@ -29,6 +29,21 @@
         >
           {{ $t("booking.delete.payment-due-hint.series") }}
         </v-alert>
+        <v-alert v-if="containsPaid" type="warning" text dense class="mb-4">
+          {{ $t("booking.delete.paid-hint.series") }}
+          <template v-if="containsOpenRefund">
+            {{ $t("booking.delete.paid-hint.series-refund-open") }}
+          </template>
+        </v-alert>
+        <v-alert
+          v-if="confirmationRequired"
+          type="warning"
+          text
+          dense
+          class="mb-4"
+        >
+          {{ $t("booking.delete.confirmation-required.message") }}
+        </v-alert>
         Die Buchung
         <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
         Sie die gesamte Serie löschen?
@@ -108,6 +123,21 @@ export default {
     },
     /** Whether the series holds a booking awaiting payment - pointed out in the dialog. */
     containsPaymentDue: {
+      type: Boolean,
+      default: false,
+    },
+    /** Whether the series holds a paid booking that is no longer confirmed. */
+    containsPaid: {
+      type: Boolean,
+      default: false,
+    },
+    /** Whether a refund of the series is still to be paid out. */
+    containsOpenRefund: {
+      type: Boolean,
+      default: false,
+    },
+    /** The backend asked for the confirmation (409 `confirmation_required`). */
+    confirmationRequired: {
       type: Boolean,
       default: false,
     },

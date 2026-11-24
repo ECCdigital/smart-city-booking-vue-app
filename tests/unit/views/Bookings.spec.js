@@ -38,6 +38,7 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     rejectBooking: vi.fn(),
     reinstateBooking: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
+    deleteBooking: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
@@ -47,6 +48,7 @@ vi.mock("@/services/api/ApiGroupBookingService", () => ({
     payGroupBooking: vi.fn(),
     rejectGroupBooking: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
+    deleteGroupBooking: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiWorkflowService", () => ({
@@ -824,6 +826,75 @@ describe("Bookings", () => {
         i18n.t("booking.cancellationRefund.percentageRange")
       );
       expect(reloads()).toEqual({ list: 0, groups: 0 });
+    });
+  });
+
+  /**
+   * The delete sends the confirmation the backend asks for of a confirmed
+   * or paid booking (`?confirmed=true`) once the dialog has warned about
+   * it; a 409 `confirmation_required` keeps the dialog open with its
+   * warning, and the next „Löschen“ sends it - also for a series whose
+   * members are not all loaded.
+   */
+  describe("deleting", () => {
+    function dialogText() {
+      return document.querySelector(".v-dialog--active")?.textContent || "";
+    }
+
+    it("sends the confirmation for a confirmed booking", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking({ status: "confirmed" })],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: true,
+      });
+    });
+
+    it("sends none for a requested booking", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({ bookings: [booking()] });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: false,
+      });
+    });
+
+    it("asks again after a 409 confirmation_required for a series with members not loaded, then sends it", async () => {
+      ApiGroupBookingService.deleteGroupBooking
+        .mockRejectedValueOnce(
+          lifecycleError(409, "confirmation_required", {
+            bookingIds: ["bk-elsewhere"],
+          })
+        )
+        .mockResolvedValueOnce({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking()],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1", "bk-elsewhere"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(
+        ApiGroupBookingService.deleteGroupBooking
+      ).toHaveBeenLastCalledWith(null, "grp-1", { confirmed: false });
+      expect(dialogText()).toContain(
+        "Das Löschen betrifft bestätigte oder bezahlte Buchungen"
+      );
+
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(
+        ApiGroupBookingService.deleteGroupBooking
+      ).toHaveBeenLastCalledWith(null, "grp-1", { confirmed: true });
     });
   });
 });

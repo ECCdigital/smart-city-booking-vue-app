@@ -87,9 +87,14 @@ export default {
     );
     return response.data;
   },
-  deleteGroupBooking(tenantId, groupBookingId) {
+  /** `confirmed` sends the confirmation a confirmed or paid member takes. */
+  deleteGroupBooking(tenantId, groupBookingId, { confirmed = false } = {}) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.delete(`api/${t}/group-bookings/${groupBookingId}`);
+    return ApiClient.delete(
+      `api/${t}/group-bookings/${groupBookingId}${
+        confirmed ? "?confirmed=true" : ""
+      }`
+    );
   },
   async generateGroupReceipt(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];

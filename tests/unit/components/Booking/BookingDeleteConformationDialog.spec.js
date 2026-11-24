@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
 import { mountComponent } from "@tests/unit/support/mount";
 
-function mountDialog(toDelete) {
+function mountDialog(toDelete, props = {}) {
   return mountComponent(BookingDeleteConformationDialog, {
-    propsData: { open: true, toDelete },
+    propsData: { open: true, toDelete, ...props },
   });
 }
 
@@ -15,6 +15,8 @@ function yesButton(wrapper) {
 }
 
 const CONFIRMED_HINT = "weder storniert noch widerrufen";
+const REFUND_HINT =
+  "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat";
 const PAYMENT_DUE_HINT = "Die Zahlung dieser Buchung ist noch offen";
 
 /**
@@ -73,4 +75,62 @@ describe("BookingDeleteConformationDialog", () => {
       expect(text).not.toContain(PAYMENT_DUE_HINT);
     }
   );
+
+  it("points out a paid booking that was cancelled", () => {
+    const text = mountDialog({
+      id: "bk-1",
+      status: "cancelled",
+      priceEur: 25,
+      cancellationRefund: { cancelledFrom: "confirmed" },
+    })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).not.toContain(CONFIRMED_HINT);
+  });
+
+  it("asks for the confirmation once the backend required it", () => {
+    const text = mountDialog(
+      { id: "bk-1", status: "requested" },
+      { confirmationRequired: true }
+    )
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain(
+      "Das Löschen betrifft bestätigte oder bezahlte Buchungen"
+    );
+  });
+
+  it("asks to make sure of the refund while it is still open", () => {
+    const text = mountDialog({
+      id: "bk-1",
+      status: "cancelled",
+      priceEur: 25,
+      cancellationRefund: { cancelledFrom: "confirmed", refundState: "open" },
+    })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).toContain(REFUND_HINT);
+  });
+
+  it("says nothing of the refund once it is completed", () => {
+    const text = mountDialog({
+      id: "bk-1",
+      status: "cancelled",
+      priceEur: 25,
+      cancellationRefund: {
+        cancelledFrom: "confirmed",
+        refundState: "completed",
+      },
+    })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).not.toContain(REFUND_HINT);
+  });
 });

@@ -17,6 +17,21 @@
         <v-alert v-if="isPaymentDue" type="warning" text dense class="mb-4">
           {{ $t("booking.delete.payment-due-hint.message") }}
         </v-alert>
+        <v-alert v-if="isPaidOnly" type="warning" text dense class="mb-4">
+          {{ $t("booking.delete.paid-hint.message") }}
+          <template v-if="isRefundOpen">
+            {{ $t("booking.delete.paid-hint.refund-open") }}
+          </template>
+        </v-alert>
+        <v-alert
+          v-if="confirmationRequired"
+          type="warning"
+          text
+          dense
+          class="mb-4"
+        >
+          {{ $t("booking.delete.confirmation-required.message") }}
+        </v-alert>
         Sind Sie sicher, dass Sie die Buchung
         <strong>{{ toDelete.id }}</strong> löschen wollen?
       </v-card-text>
@@ -38,7 +53,8 @@
 </template>
 
 <script>
-import { BOOKING_STATUS } from "@/utils/bookingStatus";
+import { BOOKING_STATUS, isFree, isPaid } from "@/utils/bookingStatus";
+import { REFUND_STATE, refundStateOf } from "@/utils/cancellationRefund";
 
 export default {
   name: "BookingDeleteConformationDialog",
@@ -52,6 +68,11 @@ export default {
       required: true,
     },
     inProgress: {
+      type: Boolean,
+      default: false,
+    },
+    /** The backend asked for the confirmation (409 `confirmation_required`). */
+    confirmationRequired: {
       type: Boolean,
       default: false,
     },
@@ -69,6 +90,16 @@ export default {
     /** A booking awaiting payment was already confirmed to the booker - pointed out too. */
     isPaymentDue() {
       return this.toDelete?.status === BOOKING_STATUS.PAYMENT_DUE;
+    },
+    /** A paid booking that is no longer confirmed - cancelled or withdrawn. */
+    isPaidOnly() {
+      return (
+        !this.isConfirmed && isPaid(this.toDelete) && !isFree(this.toDelete)
+      );
+    },
+    /** The refund of the cancellation is still to be paid out. */
+    isRefundOpen() {
+      return refundStateOf(this.toDelete) === REFUND_STATE.OPEN;
     },
   },
   methods: {

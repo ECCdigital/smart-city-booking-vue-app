@@ -1733,6 +1733,15 @@
         "message": "Diese Buchung wurde bereits bestätigt. Sie wurde weder storniert noch widerrufen.",
         "series": "Diese Serie enthält bereits bestätigte Buchungen, die weder storniert noch widerrufen wurden."
       },
+      "paid-hint": {
+        "message": "Diese Buchung wurde bereits bezahlt.",
+        "series": "Diese Serie enthält bereits bezahlte Buchungen.",
+        "refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Buchung löschen.",
+        "series-refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Serie löschen."
+      },
+      "confirmation-required": {
+        "message": "Das Löschen betrifft bestätigte oder bezahlte Buchungen. Bestätigen Sie es bitte mit „Löschen“."
+      },
       "payment-due-hint": {
         "message": "Diese Buchung wurde bereits bestätigt. Die Zahlung dieser Buchung ist noch offen.",
         "series": "Diese Serie enthält bereits bestätigte Buchungen. Die Serie enthält Buchungen mit offener Zahlung."

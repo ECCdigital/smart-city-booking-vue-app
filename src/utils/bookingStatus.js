@@ -302,6 +302,18 @@ export function paymentStatusLabel(booking) {
     : i18n.t("booking.payment.status.unpaid");
 }
 
+/**
+ * Whether deleting the booking takes the explicit confirmation the backend
+ * asks for (`?confirmed=true`): a confirmed booking, and a paid one with a
+ * price, also once cancelled or withdrawn.
+ */
+export function deletionRequiresConfirmation(booking) {
+  return (
+    booking?.status === BOOKING_STATUS.CONFIRMED ||
+    (isPaid(booking) && !isFree(booking))
+  );
+}
+
 /** Whether the booking no longer lives: Abgelehnt, Storniert or Widerrufen. */
 export function isRejectedOrCancelled(booking) {
   return (
