@@ -101,22 +101,18 @@ class BookingPermissionService {
   /**
    * Whether `booking` may be deleted - in every state: `deleteAny` reaches
    * every booking of the tenant, `deleteOwn` the user's own (the backend's
-   * `booking.delete`). The confirmation warns about a booking that is
-   * confirmed or awaiting payment.
+   * `booking.delete`). The confirmation warns about a confirmed or paid
+   * booking.
    */
   static allowDelete(booking) {
-    if (BookingPermissionService.isInstanceOwner()) return true;
+    if (BookingPermissionService.allowDeleteAny()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
     const permissions = user.state.data.permissions.tenants.find(
       (p) => p.tenantId === tenantId
     );
-    if (!permissions) return false;
-    if (permissions.isOwner) return true;
-
     return (
-      !!permissions.manageBookings?.deleteAny ||
-      (!!permissions.manageBookings?.deleteOwn &&
-        BookingPermissionService.isOwner(booking))
+      !!permissions?.manageBookings?.deleteOwn &&
+      BookingPermissionService.isOwner(booking)
     );
   }
 

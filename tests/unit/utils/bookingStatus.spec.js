@@ -76,13 +76,10 @@ describe("presentation of a booking status", () => {
  */
 describe("allowedActions", () => {
   it.each([
-    [
-      BOOKING_STATUS.REQUESTED,
-      ["confirm", "cancel", "acceptWithdrawal", "delete"],
-    ],
+    [BOOKING_STATUS.REQUESTED, ["confirm", "cancel", "acceptWithdrawal"]],
     [BOOKING_STATUS.PAYMENT_DUE, ["pay", "cancel", "acceptWithdrawal"]],
     [BOOKING_STATUS.CONFIRMED, ["cancel", "acceptWithdrawal"]],
-    [BOOKING_STATUS.REJECTED, ["reinstate", "delete"]],
+    [BOOKING_STATUS.REJECTED, ["reinstate"]],
     [BOOKING_STATUS.CANCELLED, ["reinstate"]],
     // A withdrawal is final: nothing leaves Widerrufen.
     [BOOKING_STATUS.WITHDRAWN, []],
