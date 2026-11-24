@@ -8,6 +8,10 @@ function mountDialog(toDelete, props = {}) {
   });
 }
 
+function checkbox() {
+  return document.querySelector(".v-dialog--active input[type=checkbox]");
+}
+
 function yesButton(wrapper) {
   return wrapper
     .findAll(".v-dialog button")
@@ -28,19 +32,65 @@ const PAYMENT_DUE_HINT = "Die Zahlung dieser Buchung ist noch offen";
  * awaiting payment, which the booker already has as confirmed.
  */
 describe("BookingDeleteConformationDialog", () => {
-  it.each([
-    "requested",
-    "payment_due",
-    "confirmed",
-    "rejected",
-    "cancelled",
-    "withdrawn",
-  ])("lets a %s booking be deleted", async (status) => {
-    const wrapper = mountDialog({ id: "bk-1", status });
+  it.each(["requested", "payment_due", "rejected", "cancelled", "withdrawn"])(
+    "lets an unpaid %s booking be deleted at once, without the confirmation",
+    async (status) => {
+      const wrapper = mountDialog({ id: "bk-1", status });
 
-    expect(yesButton(wrapper).attributes("disabled")).toBeUndefined();
+      expect(checkbox()).toBeNull();
+      expect(yesButton(wrapper).attributes("disabled")).toBeUndefined();
+      await yesButton(wrapper).trigger("click");
+      expect(wrapper.emitted("delete-booking")).toEqual([
+        ["bk-1", { confirmed: false }],
+      ]);
+    }
+  );
+
+  it.each([
+    ["confirmed", { status: "confirmed", priceEur: 25 }],
+    [
+      "paid and cancelled",
+      {
+        status: "cancelled",
+        priceEur: 25,
+        cancellationRefund: { cancelledFrom: "confirmed" },
+      },
+    ],
+  ])(
+    "keeps „Löschen“ locked for a %s booking until the checkbox, then sends the confirmation",
+    async (_, booking) => {
+      const wrapper = mountDialog({ id: "bk-1", ...booking });
+
+      expect(checkbox()).not.toBeNull();
+      expect(document.querySelector(".v-dialog--active").textContent).toContain(
+        "Ich habe den Hinweis gelesen und will die Buchung trotzdem löschen."
+      );
+      expect(yesButton(wrapper).attributes("disabled")).toBe("disabled");
+
+      checkbox().click();
+      await wrapper.vm.$nextTick();
+
+      expect(yesButton(wrapper).attributes("disabled")).toBeUndefined();
+      await yesButton(wrapper).trigger("click");
+      expect(wrapper.emitted("delete-booking")).toEqual([
+        ["bk-1", { confirmed: true }],
+      ]);
+    }
+  );
+
+  it("asks for the checkbox once the backend required the confirmation", async () => {
+    const wrapper = mountDialog(
+      { id: "bk-1", status: "requested" },
+      { confirmationRequired: true }
+    );
+
+    expect(yesButton(wrapper).attributes("disabled")).toBe("disabled");
+    checkbox().click();
+    await wrapper.vm.$nextTick();
     await yesButton(wrapper).trigger("click");
-    expect(wrapper.emitted("delete-booking")).toEqual([["bk-1"]]);
+    expect(wrapper.emitted("delete-booking")).toEqual([
+      ["bk-1", { confirmed: true }],
+    ]);
   });
 
   it("points out a confirmed booking", () => {

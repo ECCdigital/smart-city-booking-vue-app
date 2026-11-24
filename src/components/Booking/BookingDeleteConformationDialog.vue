@@ -10,7 +10,7 @@
         </v-btn>
       </v-card-title>
       <v-divider />
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-6 delete-dialog-text">
         <!-- A confirmed booking says its payment in the same block. -->
         <v-alert v-if="isConfirmed" type="warning" text dense class="mb-4">
           <template v-if="isPaidWithPrice">
@@ -49,6 +49,13 @@
         </v-alert>
         Sind Sie sicher, dass Sie die Buchung
         <strong>{{ toDelete.id }}</strong> löschen wollen?
+        <v-checkbox
+          v-if="requiresConfirmation"
+          v-model="acknowledged"
+          class="mt-4"
+          hide-details
+          :label="$t('booking.delete.acknowledge.message')"
+        />
       </v-card-text>
       <v-divider />
       <v-card-actions class="justify-end px-6 py-4">
@@ -57,6 +64,7 @@
           class="ml-2"
           color="error"
           :loading="inProgress"
+          :disabled="requiresConfirmation && !acknowledged"
           @click="onDelete"
         >
           <v-icon left small>mdi-delete</v-icon>
@@ -68,7 +76,11 @@
 </template>
 
 <script>
-import { BOOKING_STATUS, isPaid } from "@/utils/bookingStatus";
+import {
+  BOOKING_STATUS,
+  deletionRequiresConfirmation,
+  isPaid,
+} from "@/utils/bookingStatus";
 import { REFUND_STATE, refundStateOf } from "@/utils/cancellationRefund";
 import FormatService from "@/services/FormatService";
 
@@ -93,7 +105,29 @@ export default {
       default: false,
     },
   },
+  data() {
+    return { acknowledged: false };
+  },
+  watch: {
+    // A new dialog, or a new booking in it, asks again.
+    open() {
+      this.acknowledged = false;
+    },
+    toDelete() {
+      this.acknowledged = false;
+    },
+  },
   computed: {
+    /**
+     * A confirmed or paid booking, or one the backend asked about, is
+     * deleted only after the checkbox: then the request carries the
+     * confirmation.
+     */
+    requiresConfirmation() {
+      return (
+        deletionRequiresConfirmation(this.toDelete) || this.confirmationRequired
+      );
+    },
     openDialog: {
       get() {
         return this.open;
@@ -127,10 +161,22 @@ export default {
       this.$emit("close");
     },
     async onDelete() {
-      this.$emit("delete-booking", this.toDelete.id);
+      this.$emit("delete-booking", this.toDelete.id, {
+        confirmed: this.requiresConfirmation && this.acknowledged,
+      });
     },
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/*
+ * The warnings and the checkbox read in the size of the question; Vuetify
+ * sets 16px on `.v-input` itself, so the checkbox root inherits too.
+ */
+.delete-dialog-text .v-alert,
+.delete-dialog-text ::v-deep .v-input--checkbox,
+.delete-dialog-text ::v-deep .v-input--checkbox .v-label {
+  font-size: inherit;
+}
+</style>

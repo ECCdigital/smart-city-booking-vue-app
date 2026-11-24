@@ -56,4 +56,35 @@ describe("GroupBookingDeleteConformationDialog", () => {
     expect(alerts).toHaveLength(1);
     expect(alerts[0]).toContain("Buchungen mit offener Zahlung");
   });
+
+  it("keeps „Serie löschen“ locked until the checkbox, then sends the confirmation; „Nur diese Buchung löschen“ stays free", async () => {
+    const wrapper = mountComponent(GroupBookingDeleteConformationDialog, {
+      propsData: {
+        open: true,
+        bookingId: "bk-1",
+        paidCount: 1,
+        requiresConfirmation: true,
+      },
+    });
+    const button = (label) =>
+      wrapper
+        .findAll(".v-dialog button")
+        .wrappers.find((b) => b.text() === label);
+
+    expect(button("Serie löschen").attributes("disabled")).toBe("disabled");
+    expect(
+      button("Nur diese Buchung löschen").attributes("disabled")
+    ).toBeUndefined();
+    expect(document.querySelector(".v-dialog--active").textContent).toContain(
+      "Ich habe den Hinweis gelesen und will die Serie trotzdem löschen."
+    );
+
+    document.querySelector(".v-dialog--active input[type=checkbox]").click();
+    await wrapper.vm.$nextTick();
+    await button("Serie löschen").trigger("click");
+
+    expect(wrapper.emitted("delete-group-booking")).toEqual([
+      ["bk-1", { confirmed: true }],
+    ]);
+  });
 });

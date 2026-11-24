@@ -841,13 +841,23 @@ describe("Bookings", () => {
       return document.querySelector(".v-dialog--active")?.textContent || "";
     }
 
-    it("sends the confirmation for a confirmed booking", async () => {
+    /** Ticks „Ich habe den Hinweis gelesen …“ in the open dialog. */
+    async function acknowledge(wrapper) {
+      document.querySelector(".v-dialog--active input[type=checkbox]").click();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("sends the confirmation for a confirmed booking only after the checkbox", async () => {
       ApiBookingService.deleteBooking.mockResolvedValue({});
       const { wrapper } = await mountBookings({
         bookings: [booking({ status: "confirmed" })],
       });
 
       await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Löschen");
+      expect(ApiBookingService.deleteBooking).not.toHaveBeenCalled();
+
+      await acknowledge(wrapper);
       await clickDialogButton(wrapper, "Löschen");
 
       expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
@@ -931,6 +941,7 @@ describe("Bookings", () => {
       );
       expect(dialogText()).not.toContain("Diese Serie enthält");
 
+      await acknowledge(wrapper);
       await clickDialogButton(wrapper, "Löschen");
 
       expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
@@ -961,6 +972,7 @@ describe("Bookings", () => {
         "Das Löschen betrifft bestätigte oder bezahlte Buchungen"
       );
 
+      await acknowledge(wrapper);
       await clickDialogButton(wrapper, "Serie löschen");
 
       expect(

@@ -10,7 +10,7 @@
         </v-btn>
       </v-card-title>
       <v-divider />
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-6 delete-dialog-text">
         <!--
           One warning, the most urgent: paid members and their refund; else
           confirmed members; else members awaiting payment.
@@ -49,6 +49,13 @@
         Die Buchung
         <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
         Sie die gesamte Serie löschen?
+        <v-checkbox
+          v-if="seriesRequiresConfirmation"
+          v-model="acknowledged"
+          class="mt-4"
+          hide-details
+          :label="$t('booking.delete.acknowledge.series')"
+        />
         <div class="d-flex justify-center flex-wrap mt-4">
           <v-tooltip :disabled="!groupDeleteDisabled" top>
             <template v-slot:activator="{ on }">
@@ -57,7 +64,10 @@
                   large
                   color="error"
                   :loading="inProgress"
-                  :disabled="groupDeleteDisabled"
+                  :disabled="
+                    groupDeleteDisabled ||
+                    (seriesRequiresConfirmation && !acknowledged)
+                  "
                   @click="onDeleteGroup"
                 >
                   <v-icon left small>mdi-delete</v-icon>
@@ -133,13 +143,34 @@ export default {
       type: Number,
       default: 0,
     },
+    /** A member is confirmed or paid: the series goes only after the checkbox. */
+    requiresConfirmation: {
+      type: Boolean,
+      default: false,
+    },
     /** The backend asked for the confirmation (409 `confirmation_required`). */
     confirmationRequired: {
       type: Boolean,
       default: false,
     },
   },
+  data() {
+    return { acknowledged: false };
+  },
+  watch: {
+    // A new dialog, or a new booking in it, asks again.
+    open() {
+      this.acknowledged = false;
+    },
+    bookingId() {
+      this.acknowledged = false;
+    },
+  },
   computed: {
+    /** Confirmed or paid members, or the backend asked about the series. */
+    seriesRequiresConfirmation() {
+      return this.requiresConfirmation || this.confirmationRequired;
+    },
     openDialog: {
       get() {
         return this.open;
@@ -151,7 +182,9 @@ export default {
       this.$emit("close");
     },
     onDeleteGroup() {
-      this.$emit("delete-group-booking", this.bookingId);
+      this.$emit("delete-group-booking", this.bookingId, {
+        confirmed: this.seriesRequiresConfirmation && this.acknowledged,
+      });
     },
     onDeleteSingle() {
       this.$emit("delete-single-booking", this.bookingId);
@@ -160,4 +193,14 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/*
+ * The warnings and the checkbox read in the size of the question; Vuetify
+ * sets 16px on `.v-input` itself, so the checkbox root inherits too.
+ */
+.delete-dialog-text .v-alert,
+.delete-dialog-text ::v-deep .v-input--checkbox,
+.delete-dialog-text ::v-deep .v-input--checkbox .v-label {
+  font-size: inherit;
+}
+</style>

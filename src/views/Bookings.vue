@@ -113,6 +113,7 @@
       :contains-confirmed="selectedGroupContainsConfirmed"
       :contains-payment-due="selectedGroupContainsPaymentDue"
       :paid-count="selectedGroupPaidCount"
+      :requires-confirmation="selectedGroupRequiresConfirmation"
       :confirmation-required="deleteConfirmationRequired"
       @close="openDeleteGroupBookingDialog = false"
       @delete-single-booking="onDeleteSingleOfSeries"
@@ -385,6 +386,10 @@ export default {
         (booking) => booking?.status === BOOKING_STATUS.PAYMENT_DUE
       );
     },
+    /** A confirmed or paid member: the series goes only after the checkbox. */
+    selectedGroupRequiresConfirmation() {
+      return this.selectedGroupMembers.some(deletionRequiresConfirmation);
+    },
     /** The paid members with a price - confirmed, cancelled or withdrawn. */
     selectedGroupPaidCount() {
       return this.selectedGroupMembers.filter(
@@ -580,7 +585,11 @@ export default {
           console.log(error);
         });
     },
-    async deleteBooking(bookingId) {
+    /**
+     * `confirmed` comes from the dialog, set only after its checkbox: the
+     * confirmation a confirmed or paid booking takes at the backend.
+     */
+    async deleteBooking(bookingId, { confirmed = false } = {}) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
       if (!BookingPermissionService.allowDelete(booking)) {
         await this.addToast(
@@ -588,11 +597,6 @@ export default {
         );
         return;
       }
-      // The flag goes along once the dialog has warned about the booking,
-      // or after the backend asked for it.
-      const confirmed =
-        deletionRequiresConfirmation(booking) ||
-        this.deleteConfirmationRequired;
       const optionId = ProcessingService.showOverlay("Lösche Buchung...");
       try {
         await this.startLoading("delete-booking");
@@ -640,7 +644,7 @@ export default {
       this.deleteConfirmationRequired = true;
       return true;
     },
-    async deleteGroupBooking(bookingId) {
+    async deleteGroupBooking(bookingId, { confirmed = false } = {}) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
@@ -650,9 +654,6 @@ export default {
         );
         return;
       }
-      const confirmed =
-        this.selectedGroupMembers.some(deletionRequiresConfirmation) ||
-        this.deleteConfirmationRequired;
       const optionId = ProcessingService.showOverlay("Lösche Serienbuchung...");
       try {
         await this.startLoading("delete-booking");

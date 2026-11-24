@@ -1744,8 +1744,12 @@
         "refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Buchung löschen.",
         "series-refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Serie löschen."
       },
+      "acknowledge": {
+        "message": "Ich habe den Hinweis gelesen und will die Buchung trotzdem löschen.",
+        "series": "Ich habe den Hinweis gelesen und will die Serie trotzdem löschen."
+      },
       "confirmation-required": {
-        "message": "Das Löschen betrifft bestätigte oder bezahlte Buchungen. Bestätigen Sie es bitte mit „Löschen“."
+        "message": "Das Löschen betrifft bestätigte oder bezahlte Buchungen. Bitte bestätigen Sie es unten."
       },
       "payment-due-hint": {
         "message": "Diese Buchung wurde bereits bestätigt. Die Zahlung dieser Buchung ist noch offen.",
