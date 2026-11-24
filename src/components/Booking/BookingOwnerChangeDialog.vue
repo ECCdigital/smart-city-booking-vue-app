@@ -8,7 +8,11 @@
         </v-avatar>
         <div class="flex-grow-1">
           <div class="text-h5 font-weight-medium">
-            {{ $t("booking.owner-change.title") }}
+            {{
+              kept
+                ? $t("booking.owner-change.kept.title")
+                : $t("booking.owner-change.title")
+            }}
           </div>
           <div class="text-caption grey--text">
             {{ $t("booking.owner-change.subtitle") }}
@@ -23,7 +27,10 @@
 
       <v-card-text class="pa-6">
         <p class="text-body-1">{{ $t("booking.owner-change.message") }}</p>
-        <p class="text-body-1">
+        <v-alert v-if="kept" type="info" text dense class="mb-4">
+          {{ $t("booking.owner-change.kept.message") }}
+        </v-alert>
+        <p v-else class="text-body-1">
           {{ $t("booking.owner-change.consequence") }}
         </p>
 
@@ -78,6 +85,11 @@ export default {
     open: { type: Boolean, default: false },
     previousOwner: { type: String, default: "" },
     newOwner: { type: String, default: "" },
+    /**
+     * The corrected address is the editor's own and they may not delete
+     * every booking: the booking stays with the previous account.
+     */
+    kept: { type: Boolean, default: false },
   },
 };
 </script>

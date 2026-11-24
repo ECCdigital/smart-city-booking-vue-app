@@ -877,6 +877,7 @@
       :open="!!ownerChange"
       :previous-owner="ownerChange?.previousOwner"
       :new-owner="ownerChange?.newOwner"
+      :kept="!!ownerChange?.kept"
       @confirm="settleOwnerChange(true)"
       @cancel="settleOwnerChange(false)"
     />
@@ -926,6 +927,7 @@ import {
 } from "@/utils/bookingForm";
 import { BOOKING_STATUS } from "@/utils/bookingStatus";
 import { ownerMovedTo } from "@/utils/bookedVia";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { isBusinessBooking } from "@/utils/businessBooking";
 import _ from "lodash";
 
@@ -1982,14 +1984,19 @@ export default {
     /**
      * Whether the save may go ahead: a corrected first mail of a booking made
      * by an admin hands it to another account, so the admin is asked first.
+     * Where the address is the editor's own and they may not delete every
+     * booking, the backend keeps the owner - the dialog says so and why.
      */
     confirmOwnerChange() {
       const newOwner = ownerMovedTo(this.booking, this.selectedBooking);
       if (!newOwner) return Promise.resolve(true);
+      const previousOwner = this.booking.assignedUserId || this.booking.mail;
+      const kept = !BookingPermissionService.mayTakeOverByMail(newOwner);
       return new Promise((resolve) => {
         this.ownerChange = {
-          previousOwner: this.booking.assignedUserId || this.booking.mail,
-          newOwner,
+          previousOwner,
+          newOwner: kept ? previousOwner : newOwner,
+          kept,
           resolve,
         };
       });

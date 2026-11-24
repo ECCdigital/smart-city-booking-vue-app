@@ -251,4 +251,35 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowDeleteAny()).toBe(false);
     });
   });
+
+  /**
+   * The backend's `ownerAfterEdit`: a corrected first mail never hands a
+   * booking to its editor, unless they may delete every booking anyway.
+   */
+  describe("mayTakeOverByMail", () => {
+    it("refuses the editor's own address with deleteOwn alone", () => {
+      signIn({ tenants: [membership({ updateAny: true, deleteOwn: true })] });
+
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(false);
+    });
+
+    it("lets another address through", () => {
+      signIn({ tenants: [membership({ updateAny: true, deleteOwn: true })] });
+
+      expect(
+        BookingPermissionService.mayTakeOverByMail("max@example.test")
+      ).toBe(true);
+    });
+
+    it("lets the own address through with deleteAny, as tenant owner and as instance owner", () => {
+      signIn({ tenants: [membership({ deleteAny: true })] });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+    });
+  });
 });

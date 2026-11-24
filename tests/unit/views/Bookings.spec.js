@@ -867,6 +867,51 @@ describe("Bookings", () => {
       });
     });
 
+    it.each([
+      ["refused", 403, "forbidden"],
+      ["not found", 404, "booking_not_found"],
+    ])(
+      "says so in a toast when the delete is %s, closes the dialog and reloads",
+      async (_, status, code) => {
+        ApiBookingService.deleteBooking.mockRejectedValue(
+          lifecycleError(status, code)
+        );
+        const { wrapper, store, reloads } = await mountBookings({
+          bookings: [booking()],
+        });
+
+        await clickRowMenuEntry(wrapper, "Löschen");
+        await clickDialogButton(wrapper, "Löschen");
+
+        expect(toastMessages(store)).toContain(
+          "Die Buchung konnte nicht gelöscht werden."
+        );
+        expect(
+          wrapper
+            .findComponent({ name: "BookingDeleteConformationDialog" })
+            .props("open")
+        ).toBe(false);
+        expect(reloads()).toEqual({ list: 1, groups: 1 });
+      }
+    );
+
+    it("says so in a toast when the delete of a series fails", async () => {
+      ApiGroupBookingService.deleteGroupBooking.mockRejectedValue(
+        lifecycleError(500, "internal")
+      );
+      const { wrapper, store } = await mountBookings({
+        bookings: [booking()],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(toastMessages(store)).toContain(
+        "Die Buchung konnte nicht gelöscht werden."
+      );
+    });
+
     it("asks again after a 409 confirmation_required for a series with members not loaded, then sends it", async () => {
       ApiGroupBookingService.deleteGroupBooking
         .mockRejectedValueOnce(

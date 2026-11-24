@@ -138,6 +138,18 @@ class BookingPermissionService {
     return !!permissions.manageBookings?.deleteAny;
   }
 
+  /**
+   * Whether correcting the first mail of a booking of the Buchungsweg Admin
+   * to `primaryMail` hands the booking over, as the backend decides
+   * (`ownerAfterEdit`): never to the editor themself, unless they may delete
+   * every booking anyway - with `deleteOwn` alone they could delete it.
+   */
+  static mayTakeOverByMail(primaryMail) {
+    const ownId = String(user.state.data?.user?.id || "").toLowerCase();
+    if (!ownId || primaryMail !== ownId) return true;
+    return BookingPermissionService.allowDeleteAny();
+  }
+
   static allowRead(booking) {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];

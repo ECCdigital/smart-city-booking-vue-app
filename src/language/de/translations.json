@@ -1697,7 +1697,11 @@
       "previous": "Bisher",
       "next": "Künftig",
       "confirm": "Änderung speichern",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "kept": {
+        "title": "E-Mail-Adresse ändern, Konto bleibt",
+        "message": "Die neue E-Mail-Adresse ist Ihre eigene. Sie wird an der Buchung gespeichert, die Buchung bleibt aber dem bisherigen Konto zugeordnet und wird nicht Ihrem Konto zugeordnet. Da Sie nur eigene Buchungen löschen dürfen, können Sie diese Buchung deshalb nicht löschen."
+      }
     },
     "booked-via": {
       "title": "Buchungsweg",

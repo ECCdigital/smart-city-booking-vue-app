@@ -614,11 +614,27 @@ export default {
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } catch (error) {
-        if (!this.askForDeleteConfirmation(error)) throw error;
+        if (!this.askForDeleteConfirmation(error)) {
+          await this.reportDeleteFailure();
+        }
       } finally {
         await this.stopLoading("delete-booking");
         ProcessingService.hide(optionId);
       }
+    },
+    /**
+     * Any other refusal of a delete - such as a booking that is not the
+     * user's after all - is said in a toast; the dialog closes and the list
+     * reloads, so it shows what the backend holds.
+     */
+    async reportDeleteFailure() {
+      await this.addToast(
+        ToastService.createToast("booking.delete.error", "error")
+      );
+      this.openDeleteDialog = false;
+      this.openDeleteGroupBookingDialog = false;
+      await this.fetchBookings();
+      await this.fetchGroupBookings();
     },
     /**
      * A 409 `confirmation_required` keeps the dialog open with its warning,
@@ -660,7 +676,9 @@ export default {
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } catch (error) {
-        if (!this.askForDeleteConfirmation(error)) throw error;
+        if (!this.askForDeleteConfirmation(error)) {
+          await this.reportDeleteFailure();
+        }
       } finally {
         ProcessingService.hide(optionId);
         await this.stopLoading("delete-booking");
