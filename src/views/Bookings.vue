@@ -93,6 +93,7 @@
       :to-delete="selectedBooking"
       :open="openDeleteDialog"
       :in-progress="loading"
+      :confirmation-required="deleteConfirmationRequired"
       @close="onCloseDeleteDialog"
       @delete-booking="deleteBooking"
     />
@@ -105,10 +106,17 @@
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
       :open="openDeleteGroupBookingDialog"
-      :single-delete-disabled="isSelectedBookingHardDeleteBlocked"
-      :group-delete-disabled="isSelectedGroupHardDeleteBlocked"
+      :single-delete-disabled="
+        !BookingPermissionService.allowDelete(selectedBooking)
+      "
+      :group-delete-disabled="!BookingPermissionService.allowDeleteAny()"
+      :contains-confirmed="selectedGroupContainsConfirmed"
+      :contains-payment-due="selectedGroupContainsPaymentDue"
+      :paid-count="selectedGroupPaidCount"
+      :requires-confirmation="selectedGroupRequiresConfirmation"
+      :confirmation-required="deleteConfirmationRequired"
       @close="openDeleteGroupBookingDialog = false"
-      @delete-single-booking="deleteBooking"
+      @delete-single-booking="onDeleteSingleOfSeries"
       @delete-group-booking="deleteGroupBooking"
     />
     <ProcessingIndicator ref="processingIndicator" />
@@ -143,8 +151,9 @@ import {
 } from "@/utils/bookingPageRoutes";
 import {
   BOOKING_STATUS,
-  allowsAction,
+  deletionRequiresConfirmation,
   filterBookingsByStatus,
+  isPaid,
   statusColor,
   statusIcon,
   statusLabel,
@@ -250,6 +259,8 @@ export default {
       ],
       openDeleteDialog: false,
       openDeleteGroupBookingDialog: false,
+      /** The backend answered 409 `confirmation_required` to the last delete. */
+      deleteConfirmationRequired: false,
       selectedBooking: {},
       selectedGroupBooking: {},
       currentView: "list",
@@ -358,15 +369,32 @@ export default {
       }
       return sections;
     },
-    isSelectedBookingHardDeleteBlocked() {
-      return !allowsAction(this.selectedBooking, "delete");
+    /** The selected series' members; one that is not loaded is `undefined`. */
+    selectedGroupMembers() {
+      if (!this.selectedGroupBooking?.bookingIds) return [];
+      return this.selectedGroupBooking.bookingIds.map((bookingId) =>
+        this.api.bookings.find((item) => item.id === bookingId)
+      );
     },
-    isSelectedGroupHardDeleteBlocked() {
-      if (!this.selectedGroupBooking?.bookingIds) return false;
-      return this.selectedGroupBooking.bookingIds.some((bookingId) => {
-        const booking = this.api.bookings.find((item) => item.id === bookingId);
-        return !allowsAction(booking, "delete");
-      });
+    selectedGroupContainsConfirmed() {
+      return this.selectedGroupMembers.some(
+        (booking) => booking?.status === BOOKING_STATUS.CONFIRMED
+      );
+    },
+    selectedGroupContainsPaymentDue() {
+      return this.selectedGroupMembers.some(
+        (booking) => booking?.status === BOOKING_STATUS.PAYMENT_DUE
+      );
+    },
+    /** A confirmed or paid member: the series goes only after the checkbox. */
+    selectedGroupRequiresConfirmation() {
+      return this.selectedGroupMembers.some(deletionRequiresConfirmation);
+    },
+    /** The paid members with a price - confirmed, cancelled or withdrawn. */
+    selectedGroupPaidCount() {
+      return this.selectedGroupMembers.filter(
+        (booking) => isPaid(booking) && Number(booking?.priceEur) > 0
+      ).length;
     },
     mappedBookings() {
       return this.api.bookings.map((booking) => {
@@ -557,49 +585,89 @@ export default {
           console.log(error);
         });
     },
-    async deleteBooking(bookingId) {
+    /**
+     * `confirmed` comes from the dialog, set only after its checkbox: the
+     * confirmation a confirmed or paid booking takes at the backend.
+     */
+    async deleteBooking(bookingId, { confirmed = false } = {}) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
-      if (!allowsAction(booking, "delete")) {
+      if (!BookingPermissionService.allowDelete(booking)) {
         await this.addToast(
-          ToastService.createToast("booking.delete.requires-rejection", "error")
+          ToastService.createToast("booking.delete.not-allowed", "error")
         );
         return;
       }
       const optionId = ProcessingService.showOverlay("Lösche Buchung...");
       try {
         await this.startLoading("delete-booking");
-        await ApiBookingService.deleteBooking(bookingId);
+        await ApiBookingService.deleteBooking(bookingId, { confirmed });
         await this.fetchBookings();
         await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
+      } catch (error) {
+        if (!this.askForDeleteConfirmation(error)) {
+          await this.reportDeleteFailure();
+        }
       } finally {
         await this.stopLoading("delete-booking");
         ProcessingService.hide(optionId);
       }
     },
-    async deleteGroupBooking(bookingId) {
+    /**
+     * Any other refusal of a delete - such as a booking that is not the
+     * user's after all - is said in a toast; the dialog closes and the list
+     * reloads, so it shows what the backend holds.
+     */
+    async reportDeleteFailure() {
+      await this.addToast(
+        ToastService.createToast("booking.delete.error", "error")
+      );
+      this.openDeleteDialog = false;
+      this.openDeleteGroupBookingDialog = false;
+      await this.fetchBookings();
+      await this.fetchGroupBookings();
+    },
+    /**
+     * A 409 `confirmation_required` keeps the dialog open with its warning,
+     * so the next „Löschen“ sends the confirmation - also for members of a
+     * series that are not loaded here.
+     */
+    askForDeleteConfirmation(error) {
+      const answer = error?.response;
+      if (
+        answer?.status !== 409 ||
+        answer.data?.code !== "confirmation_required"
+      ) {
+        return false;
+      }
+      this.deleteConfirmationRequired = true;
+      return true;
+    },
+    async deleteGroupBooking(bookingId, { confirmed = false } = {}) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
-      const hasProtectedBooking = groupBooking.bookingIds.some((id) => {
-        const booking = this.api.bookings.find((item) => item.id === id);
-        return !allowsAction(booking, "delete");
-      });
-      if (hasProtectedBooking) {
+      if (!BookingPermissionService.allowDeleteAny()) {
         await this.addToast(
-          ToastService.createToast("booking.delete.requires-rejection", "error")
+          ToastService.createToast("booking.delete.not-allowed", "error")
         );
         return;
       }
       const optionId = ProcessingService.showOverlay("Lösche Serienbuchung...");
       try {
         await this.startLoading("delete-booking");
-        await ApiGroupBookingService.deleteGroupBooking(null, groupBooking.id);
+        await ApiGroupBookingService.deleteGroupBooking(null, groupBooking.id, {
+          confirmed,
+        });
         await this.fetchBookings();
         await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
+      } catch (error) {
+        if (!this.askForDeleteConfirmation(error)) {
+          await this.reportDeleteFailure();
+        }
       } finally {
         ProcessingService.hide(optionId);
         await this.stopLoading("delete-booking");
@@ -640,6 +708,7 @@ export default {
       });
     },
     onOpenDeleteDialog(bookingId) {
+      this.deleteConfirmationRequired = false;
       const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
@@ -654,6 +723,15 @@ export default {
         this.selectedGroupBooking = null;
         this.openDeleteDialog = true;
       }
+    },
+    /**
+     * „Nur diese Buchung löschen“ leads to the dialog of that one booking,
+     * with its own warnings rather than the series', where it is confirmed.
+     */
+    onDeleteSingleOfSeries() {
+      this.deleteConfirmationRequired = false;
+      this.openDeleteGroupBookingDialog = false;
+      this.openDeleteDialog = true;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();

@@ -25,6 +25,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowUpdate: vi.fn(() => true),
     allowTransition: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
+    allowDeleteAny: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
   },
 }));
@@ -37,6 +38,7 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     rejectBooking: vi.fn(),
     reinstateBooking: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
+    deleteBooking: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
@@ -46,6 +48,7 @@ vi.mock("@/services/api/ApiGroupBookingService", () => ({
     payGroupBooking: vi.fn(),
     rejectGroupBooking: vi.fn(),
     getCancellationRefundPreview: vi.fn(),
+    deleteGroupBooking: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiWorkflowService", () => ({
@@ -823,6 +826,158 @@ describe("Bookings", () => {
         i18n.t("booking.cancellationRefund.percentageRange")
       );
       expect(reloads()).toEqual({ list: 0, groups: 0 });
+    });
+  });
+
+  /**
+   * The delete sends the confirmation the backend asks for of a confirmed
+   * or paid booking (`?confirmed=true`) once the dialog has warned about
+   * it; a 409 `confirmation_required` keeps the dialog open with its
+   * warning, and the next „Löschen“ sends it - also for a series whose
+   * members are not all loaded.
+   */
+  describe("deleting", () => {
+    function dialogText() {
+      return document.querySelector(".v-dialog--active")?.textContent || "";
+    }
+
+    /** Ticks „Ich habe den Hinweis gelesen …“ in the open dialog. */
+    async function acknowledge(wrapper) {
+      document.querySelector(".v-dialog--active input[type=checkbox]").click();
+      await wrapper.vm.$nextTick();
+    }
+
+    it("sends the confirmation for a confirmed booking only after the checkbox", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking({ status: "confirmed" })],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Löschen");
+      expect(ApiBookingService.deleteBooking).not.toHaveBeenCalled();
+
+      await acknowledge(wrapper);
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: true,
+      });
+    });
+
+    it("sends none for a requested booking", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({ bookings: [booking()] });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: false,
+      });
+    });
+
+    it.each([
+      ["refused", 403, "forbidden"],
+      ["not found", 404, "booking_not_found"],
+    ])(
+      "says so in a toast when the delete is %s, closes the dialog and reloads",
+      async (_, status, code) => {
+        ApiBookingService.deleteBooking.mockRejectedValue(
+          lifecycleError(status, code)
+        );
+        const { wrapper, store, reloads } = await mountBookings({
+          bookings: [booking()],
+        });
+
+        await clickRowMenuEntry(wrapper, "Löschen");
+        await clickDialogButton(wrapper, "Löschen");
+
+        expect(toastMessages(store)).toContain(
+          "Die Buchung konnte nicht gelöscht werden."
+        );
+        expect(
+          wrapper
+            .findComponent({ name: "BookingDeleteConformationDialog" })
+            .props("open")
+        ).toBe(false);
+        expect(reloads()).toEqual({ list: 1, groups: 1 });
+      }
+    );
+
+    it("says so in a toast when the delete of a series fails", async () => {
+      ApiGroupBookingService.deleteGroupBooking.mockRejectedValue(
+        lifecycleError(500, "internal")
+      );
+      const { wrapper, store } = await mountBookings({
+        bookings: [booking()],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(toastMessages(store)).toContain(
+        "Die Buchung konnte nicht gelöscht werden."
+      );
+    });
+
+    it("leads „Nur diese Buchung löschen“ to the dialog of that booking, with its own warning", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking({ status: "confirmed" }), booking({ id: "bk-2" })],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1", "bk-2"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Nur diese Buchung löschen");
+
+      expect(ApiBookingService.deleteBooking).not.toHaveBeenCalled();
+      expect(dialogText()).toContain(
+        "Sind Sie sicher, dass Sie die Buchung bk-1 löschen wollen?"
+      );
+      expect(dialogText()).toContain(
+        "Diese Buchung wurde bestätigt und ist bereits bezahlt"
+      );
+      expect(dialogText()).not.toContain("Diese Serie enthält");
+
+      await acknowledge(wrapper);
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: true,
+      });
+    });
+
+    it("asks again after a 409 confirmation_required for a series with members not loaded, then sends it", async () => {
+      ApiGroupBookingService.deleteGroupBooking
+        .mockRejectedValueOnce(
+          lifecycleError(409, "confirmation_required", {
+            bookingIds: ["bk-elsewhere"],
+          })
+        )
+        .mockResolvedValueOnce({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking()],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1", "bk-elsewhere"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(
+        ApiGroupBookingService.deleteGroupBooking
+      ).toHaveBeenLastCalledWith(null, "grp-1", { confirmed: false });
+      expect(dialogText()).toContain(
+        "Das Löschen betrifft bestätigte oder bezahlte Buchungen"
+      );
+
+      await acknowledge(wrapper);
+      await clickDialogButton(wrapper, "Serie löschen");
+
+      expect(
+        ApiGroupBookingService.deleteGroupBooking
+      ).toHaveBeenLastCalledWith(null, "grp-1", { confirmed: true });
     });
   });
 });

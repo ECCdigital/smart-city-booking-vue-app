@@ -154,9 +154,12 @@ export default {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings/${id}/hooks/${hookId}/release`);
   },
-  deleteBooking(id) {
+  /** `confirmed` sends the confirmation a confirmed or paid booking takes. */
+  deleteBooking(id, { confirmed = false } = {}) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}`
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}${
+        confirmed ? "?confirmed=true" : ""
+      }`
     );
   },
   async generateReceipt(id) {

@@ -98,7 +98,31 @@ class BookingPermissionService {
     return BookingPermissionService.allowReadAny();
   }
 
+  /**
+   * Whether `booking` may be deleted - in every state: `deleteAny` reaches
+   * every booking of the tenant, `deleteOwn` the user's own (the backend's
+   * `booking.delete`). The confirmation warns about a confirmed or paid
+   * booking.
+   */
   static allowDelete(booking) {
+    if (BookingPermissionService.allowDeleteAny()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    return (
+      !!permissions?.manageBookings?.deleteOwn &&
+      BookingPermissionService.isOwner(booking)
+    );
+  }
+
+  /**
+   * The right to delete every booking of the tenant
+   * (`manageBookings.deleteAny`), held by the instance owner and the tenant
+   * owner as well. A whole series takes it: the backend's
+   * `groupBooking.delete` has no `own`.
+   */
+  static allowDeleteAny() {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
     const permissions = user.state.data.permissions.tenants.find(
@@ -107,11 +131,19 @@ class BookingPermissionService {
     if (!permissions) return false;
     if (permissions.isOwner) return true;
 
-    return (
-      permissions.manageBookings.deleteAny ||
-      (permissions.manageBookings.deleteOwn &&
-        BookingPermissionService.isOwner(booking))
-    );
+    return !!permissions.manageBookings?.deleteAny;
+  }
+
+  /**
+   * Whether correcting the first mail of a booking of the Buchungsweg Admin
+   * to `primaryMail` hands the booking over, as the backend decides
+   * (`ownerAfterEdit`): never to the editor themself, unless they may delete
+   * every booking anyway - with `deleteOwn` alone they could delete it.
+   */
+  static mayTakeOverByMail(primaryMail) {
+    const ownId = String(user.state.data?.user?.id || "").toLowerCase();
+    if (!ownId || primaryMail !== ownId) return true;
+    return BookingPermissionService.allowDeleteAny();
   }
 
   static allowRead(booking) {

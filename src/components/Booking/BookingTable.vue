@@ -252,21 +252,16 @@
                 </v-list-item-title>
               </v-list-item>
 
-              <v-divider />
+              <template v-if="BookingPermissionService.allowDelete(item)">
+                <v-divider />
 
-              <v-list-item
-                link
-                @click="onOpenDeleteDialog(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowDelete(item) ||
-                  !allowsAction(item, 'delete')
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon small color="red">mdi-delete</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Löschen</v-list-item-title>
-              </v-list-item>
+                <v-list-item link @click="onOpenDeleteDialog(item.id)">
+                  <v-list-item-icon>
+                    <v-icon small color="red">mdi-delete</v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-title>Löschen</v-list-item-title>
+                </v-list-item>
+              </template>
             </v-list>
           </v-menu>
         </template>
@@ -293,7 +288,6 @@ import {
   actionColor,
   actionIcon,
   actionLabel,
-  allowsAction,
   freeMarker,
   isFree,
   displayStatus,
@@ -381,7 +375,6 @@ export default {
     actionColor,
     actionIcon,
     actionLabel,
-    allowsAction,
     /** Guest and admin bookings carry a badge; a signed-in one is the rule. */
     isMarkedBookedVia(item) {
       return [BOOKED_VIA.GUEST, BOOKED_VIA.ADMIN].includes(item.bookedVia);

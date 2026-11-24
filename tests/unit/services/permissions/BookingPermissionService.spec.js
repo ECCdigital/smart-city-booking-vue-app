@@ -171,4 +171,115 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowReadAny()).toBe(false);
     });
   });
+
+  /**
+   * `allowDelete` mirrors the backend's `booking.delete` (own →
+   * `manageBookings.deleteOwn`, any → `manageBookings.deleteAny`) and holds
+   * in every state - the confirmation warns, the state does not block.
+   */
+  describe("allowDelete", () => {
+    const STATES = [
+      "requested",
+      "payment_due",
+      "confirmed",
+      "rejected",
+      "cancelled",
+      "withdrawn",
+    ];
+    const own = (status) => ({ id: "bk-1", status, assignedUserId: USER_ID });
+    const foreign = (status) => ({ id: "bk-2", status, assignedUserId: "x" });
+
+    it.each(STATES)(
+      "lets deleteAny, the tenant owner and the instance owner delete a foreign %s booking",
+      (status) => {
+        signIn({ tenants: [membership({ deleteAny: true })] });
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
+
+        signIn({ tenants: [membership({}, { isOwner: true })] });
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
+
+        signIn({ instanceOwner: true });
+        expect(BookingPermissionService.allowDelete(foreign(status))).toBe(
+          true
+        );
+      }
+    );
+
+    it.each(STATES)("lets deleteOwn delete an own %s booking", (status) => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+
+      expect(BookingPermissionService.allowDelete(own(status))).toBe(true);
+    });
+
+    it("refuses deleteOwn a booking of someone else", () => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+
+      expect(BookingPermissionService.allowDelete(foreign("requested"))).toBe(
+        false
+      );
+    });
+
+    it("refuses a member without a delete right", () => {
+      signIn({ tenants: [membership({ readAny: true })] });
+
+      expect(BookingPermissionService.allowDelete(own("requested"))).toBe(
+        false
+      );
+    });
+  });
+
+  /** A whole series takes `deleteAny`: the backend's `groupBooking.delete` has no `own`. */
+  describe("allowDeleteAny", () => {
+    it("answers deleteAny, the tenant owner and the instance owner", () => {
+      signIn({ tenants: [membership({ deleteAny: true })] });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowDeleteAny()).toBe(true);
+    });
+
+    it("refuses deleteOwn alone", () => {
+      signIn({ tenants: [membership({ deleteOwn: true })] });
+
+      expect(BookingPermissionService.allowDeleteAny()).toBe(false);
+    });
+  });
+
+  /**
+   * The backend's `ownerAfterEdit`: a corrected first mail never hands a
+   * booking to its editor, unless they may delete every booking anyway.
+   */
+  describe("mayTakeOverByMail", () => {
+    it("refuses the editor's own address with deleteOwn alone", () => {
+      signIn({ tenants: [membership({ updateAny: true, deleteOwn: true })] });
+
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(false);
+    });
+
+    it("lets another address through", () => {
+      signIn({ tenants: [membership({ updateAny: true, deleteOwn: true })] });
+
+      expect(
+        BookingPermissionService.mayTakeOverByMail("max@example.test")
+      ).toBe(true);
+    });
+
+    it("lets the own address through with deleteAny, as tenant owner and as instance owner", () => {
+      signIn({ tenants: [membership({ deleteAny: true })] });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.mayTakeOverByMail(USER_ID)).toBe(true);
+    });
+  });
 });

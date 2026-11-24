@@ -1697,7 +1697,11 @@
       "previous": "Bisher",
       "next": "Künftig",
       "confirm": "Änderung speichern",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "kept": {
+        "title": "E-Mail-Adresse ändern, Konto bleibt",
+        "message": "Die neue E-Mail-Adresse ist Ihre eigene. Sie wird an der Buchung gespeichert, die Buchung bleibt aber dem bisherigen Konto zugeordnet und wird nicht Ihrem Konto zugeordnet. Da Sie nur eigene Buchungen löschen dürfen, können Sie diese Buchung deshalb nicht löschen."
+      }
     },
     "booked-via": {
       "title": "Buchungsweg",
@@ -1724,9 +1728,32 @@
         "title": "Fehler beim Löschen",
         "message": "Die Buchung konnte nicht gelöscht werden."
       },
-      "requires-rejection": {
-        "title": "Stornierung erforderlich",
-        "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
+      "not-allowed": {
+        "title": "Löschen nicht erlaubt",
+        "message": "Sie dürfen diese Buchung nicht löschen.",
+        "series": "Eine ganze Serie darf nur löschen, wer alle Buchungen löschen darf."
+      },
+      "confirmed-hint": {
+        "message": "Diese Buchung wurde bereits bestätigt. Sie wurde weder storniert noch widerrufen.",
+        "paid": "Diese Buchung wurde bestätigt und ist bereits bezahlt ({amount}). Sie wurde weder storniert noch widerrufen.",
+        "series": "Diese Serie enthält bereits bestätigte Buchungen, die weder storniert noch widerrufen wurden."
+      },
+      "paid-hint": {
+        "message": "Diese Buchung ist bereits bezahlt ({amount}).",
+        "series": "Diese Serie enthält eine bereits bezahlte Buchung. | Diese Serie enthält {n} bereits bezahlte Buchungen.",
+        "refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Buchung löschen.",
+        "series-refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Serie löschen."
+      },
+      "acknowledge": {
+        "message": "Ich habe den Hinweis gelesen und will die Buchung trotzdem löschen.",
+        "series": "Ich habe den Hinweis gelesen und will die Serie trotzdem löschen."
+      },
+      "confirmation-required": {
+        "message": "Das Löschen betrifft bestätigte oder bezahlte Buchungen. Bitte bestätigen Sie es unten."
+      },
+      "payment-due-hint": {
+        "message": "Diese Buchung wurde bereits bestätigt. Die Zahlung dieser Buchung ist noch offen.",
+        "series": "Diese Serie enthält bereits bestätigte Buchungen. Die Serie enthält Buchungen mit offener Zahlung."
       }
     },
     "reject": {

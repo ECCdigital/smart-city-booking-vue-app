@@ -78,26 +78,28 @@ export function statusIcon(status) {
   return PRESENTATION[status]?.icon || "mdi-help-circle-outline";
 }
 
-/** The admin's transitions (spec E2), plus the hard delete. */
+/**
+ * The admin's transitions. The hard delete is no transition: the
+ * delete right alone decides it, in every state
+ * (`BookingPermissionService.allowDelete`).
+ */
 export const BOOKING_ACTION = Object.freeze({
   CONFIRM: "confirm",
   PAY: "pay",
   CANCEL: "cancel",
   REINSTATE: "reinstate",
   ACCEPT_WITHDRAWAL: "acceptWithdrawal",
-  DELETE: "delete",
 });
 
 /**
  * Widerruf akzeptieren is offered at every live state; Widerrufen is final -
- * no reinstate, no delete.
+ * no reinstate.
  */
 const ACTIONS_BY_STATUS = {
   [BOOKING_STATUS.REQUESTED]: [
     BOOKING_ACTION.CONFIRM,
     BOOKING_ACTION.CANCEL,
     BOOKING_ACTION.ACCEPT_WITHDRAWAL,
-    BOOKING_ACTION.DELETE,
   ],
   [BOOKING_STATUS.PAYMENT_DUE]: [
     BOOKING_ACTION.PAY,
@@ -108,7 +110,7 @@ const ACTIONS_BY_STATUS = {
     BOOKING_ACTION.CANCEL,
     BOOKING_ACTION.ACCEPT_WITHDRAWAL,
   ],
-  [BOOKING_STATUS.REJECTED]: [BOOKING_ACTION.REINSTATE, BOOKING_ACTION.DELETE],
+  [BOOKING_STATUS.REJECTED]: [BOOKING_ACTION.REINSTATE],
   [BOOKING_STATUS.CANCELLED]: [BOOKING_ACTION.REINSTATE],
   [BOOKING_STATUS.WITHDRAWN]: [],
 };
@@ -161,15 +163,9 @@ export function seriesActionLabel(action, status) {
   return verbOf("group-booking.action", action, status);
 }
 
-/**
- * The transitions a host's menu offers (spec E2): the actions the state
- * allows except the hard delete, which is not a transition and keeps its own
- * entry.
- */
+/** The transitions a host's menu offers: the actions the state allows. */
 export function transitionActions(status) {
-  return allowedActions(status).filter(
-    (action) => action !== BOOKING_ACTION.DELETE
-  );
+  return allowedActions(status);
 }
 
 /** The transitions one booking's menu offers: its state's, as `allowsAction` answers them. */
@@ -300,6 +296,18 @@ export function paymentStatusLabel(booking) {
   return isPaid(booking)
     ? i18n.t("booking.payment.status.paid")
     : i18n.t("booking.payment.status.unpaid");
+}
+
+/**
+ * Whether deleting the booking takes the explicit confirmation the backend
+ * asks for (`?confirmed=true`): a confirmed booking, and a paid one with a
+ * price, also once cancelled or withdrawn.
+ */
+export function deletionRequiresConfirmation(booking) {
+  return (
+    booking?.status === BOOKING_STATUS.CONFIRMED ||
+    (isPaid(booking) && Number(booking?.priceEur) > 0)
+  );
 }
 
 /** Whether the booking no longer lives: Abgelehnt, Storniert or Widerrufen. */
@@ -580,7 +588,7 @@ export function mixedCounts(members) {
 /**
  * The one action that moves along the path (Freigeben, Als bezahlt
  * markieren, Wiederherstellen), and the side ways (Ablehnen / Stornieren,
- * the delete) in their order (spec N2).
+ * Widerruf akzeptieren) in their order.
  */
 export function splitActions(actions) {
   const primary =

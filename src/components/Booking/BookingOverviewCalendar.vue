@@ -187,21 +187,19 @@
               {{ actionLabel(action, selectedEvent.status) }}
             </v-list-item-title>
           </v-list-item>
-          <v-divider />
-          <v-list-item
-            link
-            @click="onOpenDeleteDialog(selectedEvent.id)"
-            class="red--text"
-            :disabled="
-              !BookingPermissionService.allowDelete(selectedEvent) ||
-              !allowsAction(selectedEvent, 'delete')
-            "
-          >
-            <v-list-item-icon>
-              <v-icon color="red">mdi-delete</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Buchung löschen</v-list-item-title>
-          </v-list-item>
+          <template v-if="BookingPermissionService.allowDelete(selectedEvent)">
+            <v-divider />
+            <v-list-item
+              link
+              @click="onOpenDeleteDialog(selectedEvent.id)"
+              class="red--text"
+            >
+              <v-list-item-icon>
+                <v-icon color="red">mdi-delete</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Buchung löschen</v-list-item-title>
+            </v-list-item>
+          </template>
         </v-list>
       </v-card>
     </v-menu>
@@ -214,7 +212,6 @@ import {
   BOOKING_STATUS,
   actionIcon,
   actionLabel,
-  allowsAction,
   isRejectedOrCancelled,
   bookingTransitionActions,
 } from "@/utils/bookingStatus";
@@ -314,7 +311,6 @@ export default {
   methods: {
     actionIcon,
     actionLabel,
-    allowsAction,
     bookingTransitionActions,
     getBookingTitle(booking) {
       const bookableItems = booking.bookableItems;
