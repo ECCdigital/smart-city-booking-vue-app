@@ -11,8 +11,16 @@
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
+        <!--
+          One warning, the most urgent: paid members and their refund; else
+          confirmed members; else members awaiting payment.
+        -->
+        <v-alert v-if="paidCount > 0" type="warning" text dense class="mb-4">
+          {{ $tc("booking.delete.paid-hint.series", paidCount) }}
+          {{ $t("booking.delete.paid-hint.series-refund-open") }}
+        </v-alert>
         <v-alert
-          v-if="containsConfirmed"
+          v-else-if="containsConfirmed"
           type="warning"
           text
           dense
@@ -21,19 +29,13 @@
           {{ $t("booking.delete.confirmed-hint.series") }}
         </v-alert>
         <v-alert
-          v-if="containsPaymentDue"
+          v-else-if="containsPaymentDue"
           type="warning"
           text
           dense
           class="mb-4"
         >
           {{ $t("booking.delete.payment-due-hint.series") }}
-        </v-alert>
-        <v-alert v-if="containsPaid" type="warning" text dense class="mb-4">
-          {{ $t("booking.delete.paid-hint.series") }}
-          <template v-if="containsOpenRefund">
-            {{ $t("booking.delete.paid-hint.series-refund-open") }}
-          </template>
         </v-alert>
         <v-alert
           v-if="confirmationRequired"
@@ -126,15 +128,10 @@ export default {
       type: Boolean,
       default: false,
     },
-    /** Whether the series holds a paid booking that is no longer confirmed. */
-    containsPaid: {
-      type: Boolean,
-      default: false,
-    },
-    /** Whether a refund of the series is still to be paid out. */
-    containsOpenRefund: {
-      type: Boolean,
-      default: false,
+    /** How many members are paid with a price - confirmed, cancelled or withdrawn. */
+    paidCount: {
+      type: Number,
+      default: 0,
     },
     /** The backend asked for the confirmation (409 `confirmation_required`). */
     confirmationRequired: {

@@ -11,14 +11,29 @@
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-6">
+        <!-- A confirmed booking says its payment in the same block. -->
         <v-alert v-if="isConfirmed" type="warning" text dense class="mb-4">
-          {{ $t("booking.delete.confirmed-hint.message") }}
+          <template v-if="isPaidWithPrice">
+            {{
+              $t("booking.delete.confirmed-hint.paid", { amount: paidAmount })
+            }}
+            {{ $t("booking.delete.paid-hint.refund-open") }}
+          </template>
+          <template v-else>
+            {{ $t("booking.delete.confirmed-hint.message") }}
+          </template>
         </v-alert>
         <v-alert v-if="isPaymentDue" type="warning" text dense class="mb-4">
           {{ $t("booking.delete.payment-due-hint.message") }}
         </v-alert>
-        <v-alert v-if="isPaidOnly" type="warning" text dense class="mb-4">
-          {{ $t("booking.delete.paid-hint.message") }}
+        <v-alert
+          v-if="isPaidWithPrice && !isConfirmed"
+          type="warning"
+          text
+          dense
+          class="mb-4"
+        >
+          {{ $t("booking.delete.paid-hint.message", { amount: paidAmount }) }}
           <template v-if="isRefundOpen">
             {{ $t("booking.delete.paid-hint.refund-open") }}
           </template>
@@ -53,8 +68,9 @@
 </template>
 
 <script>
-import { BOOKING_STATUS, isFree, isPaid } from "@/utils/bookingStatus";
+import { BOOKING_STATUS, isPaid } from "@/utils/bookingStatus";
 import { REFUND_STATE, refundStateOf } from "@/utils/cancellationRefund";
+import FormatService from "@/services/FormatService";
 
 export default {
   name: "BookingDeleteConformationDialog",
@@ -91,11 +107,15 @@ export default {
     isPaymentDue() {
       return this.toDelete?.status === BOOKING_STATUS.PAYMENT_DUE;
     },
-    /** A paid booking that is no longer confirmed - cancelled or withdrawn. */
-    isPaidOnly() {
-      return (
-        !this.isConfirmed && isPaid(this.toDelete) && !isFree(this.toDelete)
-      );
+    /**
+     * A paid booking with a price - confirmed, or cancelled or withdrawn after
+     * it was (the backend's `isPayed`, read off `cancelledFrom`).
+     */
+    isPaidWithPrice() {
+      return isPaid(this.toDelete) && Number(this.toDelete?.priceEur) > 0;
+    },
+    paidAmount() {
+      return FormatService.currency(Number(this.toDelete?.priceEur));
     },
     /** The refund of the cancellation is still to be paid out. */
     isRefundOpen() {

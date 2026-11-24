@@ -17,6 +17,8 @@ function yesButton(wrapper) {
 const CONFIRMED_HINT = "weder storniert noch widerrufen";
 const REFUND_HINT =
   "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat";
+/** „Diese Buchung ist bereits bezahlt (25,00 €).“ - the space before € is a no-break one. */
+const PAID_HINT_25 = /Diese Buchung ist bereits bezahlt \(25,00\s€\)\./;
 const PAYMENT_DUE_HINT = "Die Zahlung dieser Buchung ist noch offen";
 
 /**
@@ -86,7 +88,7 @@ describe("BookingDeleteConformationDialog", () => {
       .find(".v-dialog")
       .text();
 
-    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).toMatch(PAID_HINT_25);
     expect(text).not.toContain(CONFIRMED_HINT);
   });
 
@@ -113,7 +115,7 @@ describe("BookingDeleteConformationDialog", () => {
       .find(".v-dialog")
       .text();
 
-    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).toMatch(PAID_HINT_25);
     expect(text).toContain(REFUND_HINT);
   });
 
@@ -130,7 +132,38 @@ describe("BookingDeleteConformationDialog", () => {
       .find(".v-dialog")
       .text();
 
-    expect(text).toContain("Diese Buchung wurde bereits bezahlt.");
+    expect(text).toMatch(PAID_HINT_25);
     expect(text).not.toContain(REFUND_HINT);
+  });
+
+  it("says a confirmed paid booking in one block, with its amount and the refund to make sure of", () => {
+    mountDialog({ id: "bk-1", status: "confirmed", priceEur: 25 });
+
+    const alerts = Array.from(
+      document.querySelectorAll(".v-dialog--active .v-alert")
+    ).map((el) => el.textContent);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatch(
+      /Diese Buchung wurde bestätigt und ist bereits bezahlt \(25,00\s€\)\. Sie wurde weder storniert noch widerrufen\./
+    );
+    expect(alerts[0]).toContain(REFUND_HINT);
+  });
+
+  it("says nothing of a payment for a confirmed booking without a price", () => {
+    const text = mountDialog({ id: "bk-1", status: "confirmed" })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain("Diese Buchung wurde bereits bestätigt.");
+    expect(text).not.toContain("bezahlt");
+  });
+
+  it("says nothing of a payment for a free confirmed booking", () => {
+    const text = mountDialog({ id: "bk-1", status: "confirmed", priceEur: 0 })
+      .find(".v-dialog")
+      .text();
+
+    expect(text).toContain(CONFIRMED_HINT);
+    expect(text).not.toContain("bereits bezahlt");
   });
 });

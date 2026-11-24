@@ -912,6 +912,32 @@ describe("Bookings", () => {
       );
     });
 
+    it("leads „Nur diese Buchung löschen“ to the dialog of that booking, with its own warning", async () => {
+      ApiBookingService.deleteBooking.mockResolvedValue({});
+      const { wrapper } = await mountBookings({
+        bookings: [booking({ status: "confirmed" }), booking({ id: "bk-2" })],
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1", "bk-2"] }],
+      });
+
+      await clickRowMenuEntry(wrapper, "Löschen");
+      await clickDialogButton(wrapper, "Nur diese Buchung löschen");
+
+      expect(ApiBookingService.deleteBooking).not.toHaveBeenCalled();
+      expect(dialogText()).toContain(
+        "Sind Sie sicher, dass Sie die Buchung bk-1 löschen wollen?"
+      );
+      expect(dialogText()).toContain(
+        "Diese Buchung wurde bestätigt und ist bereits bezahlt"
+      );
+      expect(dialogText()).not.toContain("Diese Serie enthält");
+
+      await clickDialogButton(wrapper, "Löschen");
+
+      expect(ApiBookingService.deleteBooking).toHaveBeenCalledWith("bk-1", {
+        confirmed: true,
+      });
+    });
+
     it("asks again after a 409 confirmation_required for a series with members not loaded, then sends it", async () => {
       ApiGroupBookingService.deleteGroupBooking
         .mockRejectedValueOnce(

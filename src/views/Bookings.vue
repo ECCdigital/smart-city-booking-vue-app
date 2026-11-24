@@ -112,11 +112,10 @@
       :group-delete-disabled="!BookingPermissionService.allowDeleteAny()"
       :contains-confirmed="selectedGroupContainsConfirmed"
       :contains-payment-due="selectedGroupContainsPaymentDue"
-      :contains-paid="selectedGroupContainsPaid"
-      :contains-open-refund="selectedGroupContainsOpenRefund"
+      :paid-count="selectedGroupPaidCount"
       :confirmation-required="deleteConfirmationRequired"
       @close="openDeleteGroupBookingDialog = false"
-      @delete-single-booking="deleteBooking"
+      @delete-single-booking="onDeleteSingleOfSeries"
       @delete-group-booking="deleteGroupBooking"
     />
     <ProcessingIndicator ref="processingIndicator" />
@@ -153,7 +152,6 @@ import {
   BOOKING_STATUS,
   deletionRequiresConfirmation,
   filterBookingsByStatus,
-  isFree,
   isPaid,
   statusColor,
   statusIcon,
@@ -164,7 +162,6 @@ import {
   REFUND_STATE,
   filterBookingsByRefundState,
   refundStateMarker,
-  refundStateOf,
 } from "@/utils/cancellationRefund";
 import {
   BOOKED_VIA,
@@ -388,20 +385,11 @@ export default {
         (booking) => booking?.status === BOOKING_STATUS.PAYMENT_DUE
       );
     },
-    /** A paid member that is no longer confirmed - cancelled or withdrawn. */
-    selectedGroupContainsPaid() {
-      return this.selectedGroupMembers.some(
-        (booking) =>
-          booking &&
-          booking.status !== BOOKING_STATUS.CONFIRMED &&
-          isPaid(booking) &&
-          !isFree(booking)
-      );
-    },
-    selectedGroupContainsOpenRefund() {
-      return this.selectedGroupMembers.some(
-        (booking) => refundStateOf(booking) === REFUND_STATE.OPEN
-      );
+    /** The paid members with a price - confirmed, cancelled or withdrawn. */
+    selectedGroupPaidCount() {
+      return this.selectedGroupMembers.filter(
+        (booking) => isPaid(booking) && Number(booking?.priceEur) > 0
+      ).length;
     },
     mappedBookings() {
       return this.api.bookings.map((booking) => {
@@ -734,6 +722,15 @@ export default {
         this.selectedGroupBooking = null;
         this.openDeleteDialog = true;
       }
+    },
+    /**
+     * „Nur diese Buchung löschen“ leads to the dialog of that one booking,
+     * with its own warnings rather than the series', where it is confirmed.
+     */
+    onDeleteSingleOfSeries() {
+      this.deleteConfirmationRequired = false;
+      this.openDeleteGroupBookingDialog = false;
+      this.openDeleteDialog = true;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();

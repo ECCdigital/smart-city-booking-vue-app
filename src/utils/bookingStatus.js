@@ -310,7 +310,7 @@ export function paymentStatusLabel(booking) {
 export function deletionRequiresConfirmation(booking) {
   return (
     booking?.status === BOOKING_STATUS.CONFIRMED ||
-    (isPaid(booking) && !isFree(booking))
+    (isPaid(booking) && Number(booking?.priceEur) > 0)
   );
 }
 

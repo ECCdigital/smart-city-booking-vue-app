@@ -1735,11 +1735,12 @@
       },
       "confirmed-hint": {
         "message": "Diese Buchung wurde bereits bestätigt. Sie wurde weder storniert noch widerrufen.",
+        "paid": "Diese Buchung wurde bestätigt und ist bereits bezahlt ({amount}). Sie wurde weder storniert noch widerrufen.",
         "series": "Diese Serie enthält bereits bestätigte Buchungen, die weder storniert noch widerrufen wurden."
       },
       "paid-hint": {
-        "message": "Diese Buchung wurde bereits bezahlt.",
-        "series": "Diese Serie enthält bereits bezahlte Buchungen.",
+        "message": "Diese Buchung ist bereits bezahlt ({amount}).",
+        "series": "Diese Serie enthält eine bereits bezahlte Buchung. | Diese Serie enthält {n} bereits bezahlte Buchungen.",
         "refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Buchung löschen.",
         "series-refund-open": "Bitte stellen Sie sicher, dass der Buchende seine Rückzahlung erhalten hat, bevor Sie die Serie löschen."
       },
