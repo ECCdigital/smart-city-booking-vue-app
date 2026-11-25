@@ -25,13 +25,31 @@
         <div class="text-caption text--secondary mt-2">
           Auf dem Telefon höchstens M.
         </div>
+        <v-switch
+          :input-value="glass"
+          label="Glas-Effekt"
+          color="primary"
+          class="mt-5"
+          dense
+          hide-details
+          :aria-describedby="glassHintId"
+          @change="setGlass"
+        />
+        <div :id="glassHintId" class="text-caption text--secondary mt-1">
+          Die Karte ist durchscheinend und lässt den Hintergrund verschwommen
+          durch. Ausgeschaltet ist sie deckend, der Text darauf ist dann besser
+          lesbar.
+        </div>
       </v-col>
       <v-col cols="12" md="8" class="d-flex portal-auth-pages__previews">
         <div
           v-for="mode in modes"
           :key="mode.value"
           class="portal-login-preview"
-          :class="`portal-login-preview--${mode.value}`"
+          :class="[
+            `portal-login-preview--${mode.value}`,
+            { 'portal-login-preview--glass': glass },
+          ]"
           :data-mode="mode.value"
           :style="backdropStyle"
         >
@@ -77,6 +95,11 @@ const AUTH_LOGO_SIZES = Object.freeze([
 ]);
 const DEFAULT_SIZE = "sm";
 
+// The surface of the storefront's login card (`branding.authCardStyle`):
+// translucent and blurred over the Background, as every portal showed it
+// before, or opaque.
+const AUTH_CARD_STYLES = Object.freeze({ GLASS: "glass", SOLID: "solid" });
+
 // The card is drawn at half its size, so light and dark fit the column.
 const PREVIEW_SCALE = 0.5;
 
@@ -87,10 +110,11 @@ const MODES = Object.freeze([
 
 /**
  * The section „Anmeldeseiten“ of the Portal tab: the height of the logo in the
- * login card, and beside it that card in light and dark as the storefront
- * draws it, with logo and Portal Name on top. In dark the logo is the variant
- * for dark or, without one, the logo inverted. It changes the branding only
- * through `patch` events with the top-level fields it changes.
+ * login card, whether the card is glass or opaque, and beside it that card in
+ * light and dark as the storefront draws it, with logo and Portal Name on top.
+ * In dark the logo is the variant for dark or, without one, the logo
+ * inverted. It changes the branding only through `patch` events with the
+ * top-level fields it changes.
  */
 export default {
   name: "PortalAuthPages",
@@ -104,6 +128,7 @@ export default {
     return {
       sizes: AUTH_LOGO_SIZES,
       modes: MODES,
+      glassHintId: `portal-auth-glass-hint-${this._uid}`,
     };
   },
   computed: {
@@ -113,6 +138,10 @@ export default {
       return AUTH_LOGO_SIZES.some((option) => option.value === size)
         ? size
         : DEFAULT_SIZE;
+    },
+    // Anything but an opaque card reads as glass, as in the storefront.
+    glass() {
+      return this.branding.authCardStyle !== AUTH_CARD_STYLES.SOLID;
     },
     logoHeight() {
       const option = AUTH_LOGO_SIZES.find((item) => item.value === this.size);
@@ -141,6 +170,11 @@ export default {
   methods: {
     setSize(value) {
       this.$emit("patch", { authLogoSize: value });
+    },
+    setGlass(value) {
+      this.$emit("patch", {
+        authCardStyle: value ? AUTH_CARD_STYLES.GLASS : AUTH_CARD_STYLES.SOLID,
+      });
     },
   },
 };
@@ -189,6 +223,20 @@ export default {
 .portal-login-preview--dark .portal-login-preview__card {
   background: #111827;
   color: #ffffff;
+}
+
+/* The storefront's `.glass`: slate-50 at 60 % in light, gray-900 at 80 % in
+   dark, blurred. */
+.portal-login-preview--glass.portal-login-preview--light
+  .portal-login-preview__card {
+  background: rgba(248, 250, 252, 0.6);
+  backdrop-filter: blur(16px);
+}
+
+.portal-login-preview--glass.portal-login-preview--dark
+  .portal-login-preview__card {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(16px);
 }
 
 .portal-login-preview__logo {

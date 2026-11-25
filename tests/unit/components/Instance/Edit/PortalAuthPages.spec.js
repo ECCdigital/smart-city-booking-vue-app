@@ -161,3 +161,66 @@ describe("PortalAuthPages login card", () => {
     );
   });
 });
+
+function glassSwitch(wrapper) {
+  return wrapper.find(".v-input--switch input");
+}
+
+/**
+ * The glass effect of the login card (ECCdigital/tickets#1365): on as today,
+ * off for an opaque card, and the preview beside it follows.
+ */
+describe("PortalAuthPages glass effect", () => {
+  it("starts with the glass effect on, as today", () => {
+    const wrapper = mountSection();
+
+    expect(glassSwitch(wrapper).attributes("aria-checked")).toBe("true");
+    expect(card(wrapper, "light").classes()).toContain(
+      "portal-login-preview--glass"
+    );
+  });
+
+  it("shows a stored opaque card as off, in light and in dark", () => {
+    const wrapper = mountSection({ authCardStyle: "solid" });
+
+    expect(glassSwitch(wrapper).attributes("aria-checked")).toBe("false");
+    for (const mode of ["light", "dark"]) {
+      expect(card(wrapper, mode).classes()).not.toContain(
+        "portal-login-preview--glass"
+      );
+    }
+  });
+
+  it("reads a style it does not know as glass", () => {
+    const wrapper = mountSection({ authCardStyle: "frosted" });
+
+    expect(glassSwitch(wrapper).attributes("aria-checked")).toBe("true");
+  });
+
+  it("sends the opaque card as a patch when switched off", async () => {
+    const wrapper = mountSection();
+
+    await glassSwitch(wrapper).trigger("change");
+
+    expect(wrapper.emitted("patch")).toEqual([[{ authCardStyle: "solid" }]]);
+  });
+
+  it("sends glass as a patch when switched on", async () => {
+    const wrapper = mountSection({ authCardStyle: "solid" });
+
+    await glassSwitch(wrapper).trigger("change");
+
+    expect(wrapper.emitted("patch")).toEqual([[{ authCardStyle: "glass" }]]);
+  });
+
+  it("names the switch and ties the explanation to it", () => {
+    const wrapper = mountSection();
+    const input = glassSwitch(wrapper);
+    const label = wrapper.find(`label[for="${input.attributes("id")}"]`);
+    const hint = wrapper.find(`#${input.attributes("aria-describedby")}`);
+
+    expect(input.attributes("role")).toBe("switch");
+    expect(label.text()).toBe("Glas-Effekt");
+    expect(hint.text()).toContain("deckend");
+  });
+});

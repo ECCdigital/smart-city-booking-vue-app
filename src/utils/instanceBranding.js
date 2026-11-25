@@ -41,6 +41,8 @@ export function defaultBranding() {
     footerLogos: [],
     // The height of the logo on the auth pages: S is today's 56 px.
     authLogoSize: "sm",
+    // The cards on the auth pages: glass, as before the setting, or solid.
+    authCardStyle: "glass",
   };
 }
 
