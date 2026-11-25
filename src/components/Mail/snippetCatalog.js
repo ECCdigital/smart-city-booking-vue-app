@@ -159,12 +159,24 @@ export const SNIPPET_CATALOG = [
 
 {{#if hasRefundPreview}}
   <p>
-    <strong>Erstattung</strong>:
-    {{priceFormatted refundAmountEur}}
-    ({{refundPercentage}}&nbsp;%)
-    {{#if hasCancellationFee}}
-      <br />
-      Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
+    {{#if alreadyPaid}}
+      <strong>Erstattung</strong>:
+      {{priceFormatted refundAmountEur}}
+      ({{refundPercentage}}&nbsp;%)
+      {{#if hasCancellationFee}}
+        <br />
+        Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
+      {{/if}}
+    {{else}}
+      <strong>Entfallener Betrag</strong>:
+      {{priceFormatted refundAmountEur}}
+      von
+      {{priceFormatted originalAmountEur}}
+      ({{refundPercentage}}&nbsp;%)
+      {{#if hasCancellationFee}}
+        <br />
+        Noch ausstehend: {{priceFormatted cancellationFeeEur}}
+      {{/if}}
     {{/if}}
   </p>
 {{/if}}
@@ -175,12 +187,24 @@ export const SNIPPET_CATALOG = [
 
 {{#if hasRefundPreview}}
   <p>
-    <strong>Erstattung</strong>:
-    {{priceFormatted refundAmountEur}}
-    ({{refundPercentage}}&nbsp;%)
-    {{#if hasCancellationFee}}
-      <br />
-      Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
+    {{#if alreadyPaid}}
+      <strong>Erstattung</strong>:
+      {{priceFormatted refundAmountEur}}
+      ({{refundPercentage}}&nbsp;%)
+      {{#if hasCancellationFee}}
+        <br />
+        Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
+      {{/if}}
+    {{else}}
+      <strong>Entfallener Betrag</strong>:
+      {{priceFormatted refundAmountEur}}
+      von
+      {{priceFormatted originalAmountEur}}
+      ({{refundPercentage}}&nbsp;%)
+      {{#if hasCancellationFee}}
+        <br />
+        Noch ausstehend: {{priceFormatted cancellationFeeEur}}
+      {{/if}}
     {{/if}}
   </p>
 {{/if}}
