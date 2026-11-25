@@ -118,3 +118,62 @@ describe("ApiEventService", () => {
     expect(body.information.name).toBe("Konzert (Kopie)");
   });
 });
+
+/**
+ * The feed URL leaves the app: a calendar subscribes to it. It carries scheme
+ * and host in both auth modes, also when the base is relative (BFF default).
+ */
+describe("ApiEventService feed URLs", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  describe("bff mode, relative base", () => {
+    beforeEach(() => {
+      vi.stubEnv("VUE_APP_AUTH_MODE", "bff");
+      vi.stubEnv("VUE_APP_BFF_BASE_URL", "/admin/api");
+    });
+
+    it("anchors the feed of all events on the current origin", () => {
+      expect(ApiEventService.getEventsFeedUrl()).toBe(
+        `${window.location.origin}/admin/api/api/t1/ical/feed/events`
+      );
+    });
+
+    it("keeps a selection of events as query", () => {
+      expect(ApiEventService.getEventsFeedUrl(["e1", "e2"])).toBe(
+        `${window.location.origin}/admin/api/api/t1/ical/feed/events?ids=e1,e2`
+      );
+    });
+
+    it("anchors the feed of one event the same way", () => {
+      expect(ApiEventService.getEventFeedUrl("e1")).toBe(
+        `${window.location.origin}/admin/api/api/t1/ical/feed/events/e1`
+      );
+    });
+  });
+
+  it("falls back to the BFF default base", () => {
+    vi.stubEnv("VUE_APP_AUTH_MODE", "bff");
+    vi.stubEnv("VUE_APP_BFF_BASE_URL", "");
+
+    expect(ApiEventService.getEventsFeedUrl()).toMatch(
+      new RegExp(`^${window.location.origin}/admin/api/`)
+    );
+    expect(ApiEventService.getEventFeedUrl("e1")).toMatch(
+      new RegExp(`^${window.location.origin}/admin/api/`)
+    );
+  });
+
+  it("keeps an absolute base in direct mode", () => {
+    vi.stubEnv("VUE_APP_AUTH_MODE", "direct");
+    vi.stubEnv("VUE_APP_SERVER_BASE_URL", "https://api.example.org");
+
+    expect(ApiEventService.getEventsFeedUrl()).toBe(
+      "https://api.example.org/api/t1/ical/feed/events"
+    );
+    expect(ApiEventService.getEventFeedUrl("e1")).toBe(
+      "https://api.example.org/api/t1/ical/feed/events/e1"
+    );
+  });
+});

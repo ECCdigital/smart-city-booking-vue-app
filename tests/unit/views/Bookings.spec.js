@@ -23,6 +23,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowCreate: vi.fn(() => true),
     allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
+    allowTransition: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
   },

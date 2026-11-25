@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest";
+import { checkoutSubmitLabel, isFreeCheckout } from "@/utils/checkoutSubmit";
+
+/**
+ * ECCdigital/tickets#1303: the legacy checkout completes with „Verbindlich
+ * buchen“ only when every item is valid, every price is known and they add
+ * up to 0 EUR. Anything less certain asks for payment (§ 312j Abs. 3 BGB).
+ */
+const item = (userGrossPriceEur, valid = true) => ({
+  valid,
+  userGrossPriceEur,
+});
+
+describe("isFreeCheckout", () => {
+  it("is free when every item is valid at 0 EUR", () => {
+    expect(isFreeCheckout([item(0), item(0)])).toBe(true);
+  });
+
+  it("is not free when one price is missing", () => {
+    expect(isFreeCheckout([item(0), item(null)])).toBe(false);
+  });
+
+  it("is not free when one item is invalid", () => {
+    expect(isFreeCheckout([item(0), item(0, false)])).toBe(false);
+  });
+
+  it("is not free when one item is not checked yet, whatever its last price", () => {
+    expect(isFreeCheckout([item(0), item(0, null)])).toBe(false);
+  });
+
+  it("is not free when something costs money", () => {
+    expect(isFreeCheckout([item(0), item(0.01)])).toBe(false);
+  });
+
+  it("is not free without any item", () => {
+    expect(isFreeCheckout([])).toBe(false);
+  });
+
+  it("is not free while a check is still running, whatever the last one said", () => {
+    expect(isFreeCheckout([item(0)], { validating: true })).toBe(false);
+    expect(isFreeCheckout([item(0)], { validating: false })).toBe(true);
+  });
+});
+
+describe("checkoutSubmitLabel", () => {
+  it("books bindingly when the checkout is free", () => {
+    expect(checkoutSubmitLabel([item(0)])).toBe("Verbindlich buchen");
+  });
+
+  it("asks for payment otherwise", () => {
+    expect(checkoutSubmitLabel([item(null)])).toBe("Zahlungspflichtig buchen");
+  });
+});

@@ -100,7 +100,7 @@
           ></v-text-field>
         </v-col>
         <v-col class="">
-          <v-text-field
+          <SecretField
             background-color="accent"
             filled
             dense
@@ -109,10 +109,7 @@
             :disabled="disabled"
             v-model="selectedMailConfig.noreplyPassword"
             @input="changeData"
-            :append-icon="showNoreplyPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append="showNoreplyPassword = !showNoreplyPassword"
-            :type="showNoreplyPassword ? 'text' : 'password'"
-          ></v-text-field>
+          />
         </v-col>
       </v-row>
       <v-row>
@@ -173,7 +170,7 @@
       </v-row>
       <v-row>
         <v-col class="">
-          <v-text-field
+          <SecretField
             background-color="accent"
             filled
             dense
@@ -181,10 +178,7 @@
             :disabled="disabled"
             v-model="selectedMailConfig.noreplyGraphClientSecret"
             @input="changeData"
-            :append-icon="showClientSecret ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append="showClientSecret = !showClientSecret"
-            :type="showClientSecret ? 'text' : 'password'"
-          ></v-text-field>
+          />
         </v-col>
       </v-row>
     </AppPanel>
@@ -194,10 +188,11 @@
 <script>
 import MailTemplateStatus from "@/components/Tenant/MailTemplateStatus.vue";
 import AppPanel from "@/components/AppPanel.vue";
+import SecretField from "@/components/commons/SecretField.vue";
 
 export default {
   name: "MailKonfiguration",
-  components: { MailTemplateStatus, AppPanel },
+  components: { MailTemplateStatus, AppPanel, SecretField },
   props: {
     mailConfig: {
       type: Object,
@@ -223,8 +218,6 @@ export default {
   },
   data() {
     return {
-      showNoreplyPassword: false,
-      showClientSecret: false,
       validationRules: {
         mail: [
           (v) => !!v || "Pflichtfeld",

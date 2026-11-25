@@ -17,6 +17,7 @@ tests/unit/                          ← mirrors the src/ tree
   setup.js                           ← global setup, loaded by vitest.config.js
   support/mount.js                   ← Vuetify/Vuex/i18n boilerplate for component specs
   support/api.js                     ← shared API failure doubles and `flushPromises`
+  support/deferred.js                ← `deferred`, a promise the spec settles by hand
   services/api/apiErrorMessage.spec.js
   services/permissions/TenantPermissionService.spec.js
   utils/bookingStatus.spec.js
@@ -60,7 +61,7 @@ vi.mock("@/layouts/Admin.vue", () => ({
 }));
 ```
 
-`tests/unit/support/api.js` holds the shared API failure doubles — `forbiddenError()` (the 4.3.x `ForbiddenError` body), `serverError()` and `flushPromises()`, which lets a component's awaited API call settle before `$nextTick`.
+`tests/unit/support/api.js` holds the shared API failure doubles — `forbiddenError()` (the 4.3.x `ForbiddenError` body), `serverError()` and `flushPromises()`, which lets a component's awaited API call settle before `$nextTick`. `tests/unit/support/deferred.js` holds `deferred()`, a promise the spec resolves or rejects by hand to order the answers of the API.
 
 Drive the real DOM (`trigger("click")`, `setValue(…)`) instead of calling component methods, so the spec breaks when the markup stops matching the behaviour.
 

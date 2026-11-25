@@ -17,3 +17,22 @@ export function isAbsoluteHttpUrl(value) {
     return false;
   }
 }
+
+/**
+ * Makes `url` callable from outside this app (a calendar, the clipboard): an
+ * absolute http(s) address stays, a protocol-relative one gets the current
+ * scheme, anything else is anchored on the current origin. The API base may
+ * be relative — the BFF default is `/admin/api`.
+ *
+ * @param {string} url - An absolute, protocol-relative or root-relative address.
+ * @returns {string} The address with scheme and host.
+ */
+export function toAbsoluteHttpUrl(url) {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  if (url.startsWith("//")) {
+    return `${window.location.protocol}${url}`;
+  }
+  return `${window.location.origin}${url}`;
+}

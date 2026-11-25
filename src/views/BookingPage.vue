@@ -476,7 +476,7 @@ import UserPermissionService from "@/services/permissions/UserPermissionService"
 import { reportableAddresses } from "@/utils/reports";
 
 /**
- * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
+ * The Buchungsseite (GLOSSARY.md): one booking at `/bookings/:bookingId`,
  * reachable by a Buchungslink that names its tenant in `?tenant=`. It is a
  * host of `BookingTransitions` (spec E3): the state as a headline over its
  * path with the state's transitions; every action on the page ends in
@@ -564,6 +564,10 @@ export default {
         !!this.booking && BookingPermissionService.allowUpdate(this.booking)
       );
     },
+    /** The transitions need `updateAny`; updating the own booking is not enough. */
+    canTransition() {
+      return BookingPermissionService.allowTransition();
+    },
     /** An iCal needs a period, or an event behind one of the objects. */
     hasCalendarEntry() {
       return (
@@ -603,9 +607,9 @@ export default {
     path() {
       return pathOf(this.booking);
     },
-    /** The transitions the state allows, for whoever may edit the booking. */
+    /** The transitions the state allows, for whoever may transition bookings. */
     actions() {
-      if (!this.canUpdate) {
+      if (!this.canTransition) {
         return [];
       }
       return bookingTransitionActions(this.booking);

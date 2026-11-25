@@ -37,8 +37,9 @@ const leadItem = {
   bookableId: "room",
   amount: 1,
   valid: true,
-  userPriceEur: 0,
-  regularPriceEur: 0,
+  userPriceEur: 10,
+  userGrossPriceEur: 10,
+  regularPriceEur: 10,
   bookable: {
     id: "room",
     title: "Werkstatt",
@@ -115,7 +116,7 @@ describe("the legacy checkout refuses an address on the blacklist", () => {
 
     expect(addToast).not.toHaveBeenCalled();
     expect(text(notice(wrapper))).toBe(
-      `Buchung nicht möglich Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an ${OPERATOR}.`
+      `Buchung nicht möglich Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an ${OPERATOR}.`
     );
     const link = notice(wrapper).find("a");
     expect(link.attributes("href")).toBe(`mailto:${OPERATOR}`);
@@ -149,7 +150,7 @@ describe("the legacy checkout refuses an address on the blacklist", () => {
     expect(notice(wrapper).find("a").exists()).toBe(false);
     expect(notice(wrapper).find("button").exists()).toBe(false);
     expect(text(notice(wrapper))).toBe(
-      "Buchung nicht möglich Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots."
+      "Buchung nicht möglich Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an den Betreiber dieses Angebots."
     );
   });
 

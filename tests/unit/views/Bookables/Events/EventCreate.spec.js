@@ -361,7 +361,7 @@ describe("EventCreate - location", () => {
 
     expect(save(wrapper).attributes("disabled")).toBe("disabled");
     expect(find(wrapper, "location-refusal").text()).toBe(
-      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+      "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte."
     );
   });
 
@@ -414,7 +414,7 @@ describe("EventCreate - location", () => {
 
     expect(save(wrapper).attributes("disabled")).toBe("disabled");
     expect(find(wrapper, "location-refusal").text()).toBe(
-      "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+      "Standort ohne Punkt. Suchen Sie den Text oder setzen Sie den Punkt auf der Karte."
     );
   });
 });

@@ -527,6 +527,7 @@ const IDENTITY_ROWS = [
     key: "location",
     label: "bookable.identity.location",
     section: "general-catalog",
+    fields: ["location"],
     value: (b) => asText(locationLabel(b)),
   },
   {

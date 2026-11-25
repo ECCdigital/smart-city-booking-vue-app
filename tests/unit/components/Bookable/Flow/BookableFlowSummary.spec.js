@@ -91,6 +91,42 @@ describe("BookableFlowSummary", () => {
     ).toBe("Bitte einen Titel eingeben.");
   });
 
+  // ECCdigital/tickets#558
+  it("shows the issue of the location at the row of the location", async () => {
+    const wrapper = mountSummary(
+      bookable({
+        location: {
+          address: {
+            street: "Gasstraße",
+            house_number: "4",
+            postcode: "03172",
+            city: "Guben",
+            country_code: "DE",
+          },
+          display_address: "Gasstraße 4, 03172 Guben",
+          meta: { additional: null },
+        },
+      })
+    );
+
+    expect(
+      find(wrapper, "overview-row-location")
+        .find("[data-test='overview-issue']")
+        .text()
+    ).toBe("Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte.");
+    expect(
+      find(wrapper, "overview-row-title")
+        .find("[data-test='overview-issue']")
+        .exists()
+    ).toBe(false);
+
+    await find(wrapper, "overview-row-location").trigger("click");
+
+    expect(wrapper.emitted("go")).toEqual([
+      [expect.objectContaining({ step: "identity", field: "location" })],
+    ]);
+  });
+
   it("asks for the field of a row clicked", async () => {
     const wrapper = mountSummary(
       bookable({

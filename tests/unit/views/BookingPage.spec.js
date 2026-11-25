@@ -23,6 +23,7 @@ vi.mock("@/utils/tenantMembership", () => ({
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
     allowUpdate: vi.fn(() => true),
+    allowTransition: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
     allowReprint: vi.fn(() => true),
   },
@@ -232,6 +233,7 @@ describe("BookingPage", () => {
     vi.clearAllMocks();
     isTenantMember.mockReturnValue(true);
     BookingPermissionService.allowUpdate.mockReturnValue(true);
+    BookingPermissionService.allowTransition.mockReturnValue(true);
     BookingPermissionService.allowReadAny.mockReturnValue(true);
     UserPermissionService.allowReport.mockReturnValue(false);
     ApiBookingService.getBooking.mockResolvedValue({ data: booking() });
@@ -1052,14 +1054,20 @@ describe("BookingPage", () => {
       });
     });
 
-    it("offers nothing to a reader without the update right", async () => {
-      BookingPermissionService.allowUpdate.mockReturnValue(false);
+    /**
+     * The transitions need `manageBookings.updateAny` in the backend, with no
+     * variant for the own booking: whoever may only update their own booking
+     * keeps „Bearbeiten“ but gets no transition (#836, #837).
+     */
+    it("offers nothing to whoever may not transition, keeping „Bearbeiten“", async () => {
+      BookingPermissionService.allowTransition.mockReturnValue(false);
       const { wrapper } = mountPage();
       await settle(wrapper);
       expect(await offeredActions(wrapper)).toEqual({
         button: null,
         menu: null,
       });
+      expect(toolbar(wrapper).text()).toContain("Bearbeiten");
     });
 
     it("hands a single booking to the transition module", async () => {

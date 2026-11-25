@@ -110,7 +110,7 @@ describe("handleTenantDeclined", () => {
           type: "error",
           message:
             "Der Mandant ‚Makerspace Nord‘ wurde vom Betreiber abgewiesen. " +
-            "Du hast keinen Verwaltungszugriff mehr.",
+            "Sie haben keinen Verwaltungszugriff mehr.",
         }),
       ],
     ]);

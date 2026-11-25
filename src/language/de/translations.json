@@ -125,7 +125,7 @@
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
       "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
       "booking_withdrawal_not_private": "Eine geschäftliche Buchung kann nicht widerrufen werden.",
-      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr.",
+      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Sie haben keinen Verwaltungszugriff mehr.",
       "report_target_not_of_tenant": "Melden lassen sich nur Mitglieder des Mandanten und Bucher seiner Buchungen.",
       "report_target_tenant_owner": "Einen Besitzer des Mandanten melden nur Besitzer.",
       "report_target_instance_owner": "Einen Instanz-Owner kann niemand melden.",
@@ -1427,8 +1427,9 @@
       "add": "Stufe hinzufügen",
       "edit": "Bearbeiten",
       "remove": "Stufe entfernen",
-      "tierTitle": "{deadline} vor Beginn",
-      "tierDescription": "Bei Stornierung mindestens {deadline} vor Buchungsbeginn werden {percentage} % des Buchungspreises erstattet.",
+      "tierTitle": "Bis {deadline} vor Beginn",
+      "tierTitleAtStart": "Bis zum Beginn",
+      "tierDescription": "Bei Stornierung {rule} werden {percentage} % des Buchungspreises erstattet.",
       "lowestTierHint": "Diese Erstattung gilt auch bei einem geringeren Vorlauf bis unmittelbar vor dem Buchungsbeginn.",
       "createTitle": "Neue Erstattungsstufe anlegen",
       "editTitle": "Erstattungsstufe bearbeiten",
@@ -1437,7 +1438,7 @@
       "create": "Anlegen",
       "save": "Speichern",
       "deleteTitle": "Erstattungsstufe löschen?",
-      "deleteDescription": "Die Erstattungsstufe „{deadline} vor Beginn“ wird entfernt.",
+      "deleteDescription": "Die Erstattungsstufe „{rule}“ wird entfernt.",
       "nonNegativeDeadline": "Der Wert darf nicht negativ sein",
       "uniqueDeadline": "Für diese Frist existiert bereits eine Stufe, auch 1 Tag und 24 Stunden sind dieselbe Frist",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
@@ -1736,6 +1737,36 @@
       "error": {
         "title": "Fehler beim Stornieren",
         "message": "Die Buchung konnte nicht storniert werden."
+      },
+      "dialog": {
+        "request": {
+          "title": "Buchungsanfrage ablehnen",
+          "question": "Sind Sie sicher, dass Sie die Buchungsanfrage {id} ablehnen wollen?",
+          "reasonLabel": "Begründung der Ablehnung",
+          "reasonPlaceholder": "Aus welchem Grund wird die Anfrage abgelehnt?"
+        },
+        "booking": {
+          "title": "Buchung stornieren",
+          "question": "Sind Sie sicher, dass Sie die Buchung {id} stornieren wollen?",
+          "reasonLabel": "Begründung der Stornierung",
+          "reasonPlaceholder": "Aus welchem Grund wird die Stornierung durchgeführt?"
+        },
+        "payment": {
+          "free": "Kostenfreie Buchung",
+          "paid": "Bereits bezahlt: {amount}",
+          "unpaid": "Noch nicht bezahlt",
+          "refund": "Der Buchende bekommt {amount} zurück. Die Rückerstattung bleibt offen, bis Sie sie an der Buchung als erfolgt vermerken.",
+          "noRefund": "Der Buchende bekommt nichts zurück. Damit ist alles erledigt.",
+          "refundUnknown": "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht.",
+          "feeDue": "Der Buchende muss noch den Einbehalt von {amount} zahlen.",
+          "feeUnknown": "Betrag unbekannt: Der Einbehalt konnte nicht berechnet werden. Er fällt trotzdem nach der Staffel des Mandanten an.",
+          "settled": "Der Buchende zahlt nichts und bekommt nichts zurück. Damit ist alles erledigt.",
+          "request": {
+            "paid": "Buchung bereits bezahlt",
+            "refund": "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Der vollständige Betrag von {amount} wird zurückerstattet.",
+            "settled": "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Es steht somit keine Zahlung mehr aus."
+          }
+        }
       }
     },
     "userCancellation": {
@@ -1760,9 +1791,10 @@
       "timeDaysAndHours": "{days} und {hours}",
       "inDays": "{n} Tag | {n} Tagen",
       "startsIn": "Die Buchung beginnt in {time}.",
-      "tierAtStart": "Bis zum Beginn",
       "tierRule": "bis {deadline} vor Beginn",
       "tierRuleAtStart": "bis zum Beginn",
+      "tierRuleBelow": "unter {deadline} vor Beginn",
+      "tierRuleAfterStart": "nach Beginn",
       "policyPercentage": "Vorschlag",
       "override": "Erstattung manuell überschreiben",
       "overridePercentage": "Einheitliche Erstattung",
@@ -1770,15 +1802,22 @@
       "singlePolicy": "Bei Stornierung {time} vor Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
       "singlePolicyWithTier": "Es gilt die Erstattungsstufe „{tier}“: Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "singlePolicyWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
+      "singlePolicyAfterStart": "Die Buchung hat bereits begonnen. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
+      "singlePolicyAfterStartWithTier": "Die Buchung hat bereits begonnen. Es gilt die Erstattungsstufe „{tier}“: Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "userPolicySummary": "Sie stornieren {time} vor Beginn der Buchung.\n\nDie Erstattung beträgt voraussichtlich {percentage} %.",
       "userPolicySummaryWithTier": "Sie stornieren {time} vor Beginn der Buchung. Es gilt die Erstattungsstufe: {tier}.\n\nDie Erstattung beträgt voraussichtlich {percentage} %.",
       "userPolicySummaryWithoutTimeSpan": "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt {percentage} %.",
+      "userPolicySummaryAfterStart": "Die Buchung hat bereits begonnen.\n\nDie Erstattung beträgt voraussichtlich {percentage} %.",
+      "userPolicySummaryAfterStartWithTier": "Die Buchung hat bereits begonnen. Es gilt die Erstattungsstufe: {tier}.\n\nDie Erstattung beträgt voraussichtlich {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
+      "rejectionAudit": "Die Anfrage wurde abgelehnt. Das Ablehnen war für den Buchenden kostenfrei: Es wurde kein Betrag einbehalten.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
       "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
       "cancelGroup": "Gesamte Serie stornieren",
       "cancelSingle": "Nur diese Buchung stornieren",
+      "rejectGroup": "Gesamte Serie ablehnen",
+      "rejectSingle": "Nur diese Buchung ablehnen",
       "bankDetailsTitle": "Bankverbindung des Kunden (optional)",
       "bankDetailsHintSingle": "Diese Buchung wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden angeben.",
       "bankDetailsHintGroup": "Mindestens eine Buchung der Serie wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden für die Sammel-Stornorechnung angeben.",
@@ -2455,9 +2494,9 @@
     "address_blacklisted": {
       "title": "Buchung nicht möglich",
       "registrationTitle": "Registrierung nicht möglich",
-      "registrationNotice": "Mit dieser E-Mail-Adresse ist keine Registrierung möglich. Bei Fragen wende dich per Mail an {contact}.",
-      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an den Betreiber dieses Angebots.",
-      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wende dich per Mail an {contact}.",
+      "registrationNotice": "Mit dieser E-Mail-Adresse ist keine Registrierung möglich. Bei Fragen wenden Sie sich per Mail an {contact}.",
+      "message": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an den Betreiber dieses Angebots.",
+      "notice": "Mit dieser E-Mail-Adresse ist keine Buchung möglich. Bei Fragen wenden Sie sich per Mail an {contact}.",
       "operator": "den Betreiber dieses Angebots",
       "copy": "Mailadresse kopieren",
       "copied": "Mailadresse kopiert",
@@ -2526,7 +2565,9 @@
           "message": "Leider ist bei der Einlösung des Rabattcodes ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
         }
       }
-    }
+    },
+    "commitBooking": "Zahlungspflichtig buchen",
+    "commitBookingFree": "Verbindlich buchen"
   },
   "session": {
     "expired": {
@@ -3096,7 +3137,6 @@
       "apiCredentials": "API-Zugangsdaten",
       "apiToken": "API-Token",
       "apiTokenPlaceholder": "Nuki Web API Token",
-      "apiTokenUnchanged": "•••••••• (unverändert)",
       "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
       "apiBaseUrl": "API Base-URL",
       "permissionsTitle": "Benötigte Token-Berechtigungen",
@@ -3127,14 +3167,12 @@
         "clientId": "Client-ID",
         "clientSecret": "Client-Secret",
         "clientSecretPlaceholder": "Salto KS Client-Secret",
-        "clientSecretUnchanged": "•••••••• (unverändert)",
         "clientSecretHint": "Es ist bereits ein Secret hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
         "username": "System-User (E-Mail)",
         "usernamePlaceholder": "z. B. service-user@example.com",
         "usernameHint": "E-Mail des Salto-KS-System-Users mit der Rolle „site_admin“ für alle relevanten Sites.",
         "password": "System-User-Passwort",
         "passwordPlaceholder": "Salto KS System-User-Passwort",
-        "passwordUnchanged": "•••••••• (unverändert)",
         "passwordHint": "Es ist bereits ein Passwort hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
         "systemUserMissing": "System-User fehlt – ohne E-Mail und Passwort ist keine Verbindung möglich. Bitte tragen Sie die Zugangsdaten des KS-System-Users ein und speichern Sie.",
         "siteId": "Site-ID",
@@ -3547,7 +3585,7 @@
       "notListed": "Nicht dabei? „{text}“ auf der Karte setzen",
       "noHit": "Kein Treffer. „{text}“ auf der Karte setzen",
       "notListedHint": "Der Text kommt in den Zusatz.",
-      "unavailable": "Suche gerade nicht erreichbar, setze den Punkt auf der Karte",
+      "unavailable": "Suche gerade nicht erreichbar, setzen Sie den Punkt auf der Karte",
       "searchText": "Text suchen"
     },
     "fields": {
@@ -3566,7 +3604,7 @@
       "none": "Kein Punkt",
       "missing": "Punkt fehlt.",
       "missingText": "Gespeichert ist nur der Text „{text}“.",
-      "missingAddress": "Setze den Punkt auf der Karte oder suche die Anschrift.",
+      "missingAddress": "Setzen Sie den Punkt auf der Karte oder suchen Sie die Anschrift.",
       "clear": "Standort leeren"
     },
     "suggestion": {
@@ -3578,16 +3616,16 @@
       "keepPoint": "Punkt behalten"
     },
     "map": {
-      "place": "Klicke in die Karte, wo „{text}“ liegt.",
+      "place": "Klicken Sie in die Karte, wo „{text}“ liegt.",
       "cancel": "Abbrechen",
       "unavailable": "Karte gerade nicht erreichbar",
       "sources": "Datenquellen",
       "search": "Suche"
     },
     "reason": {
-      "pointNotSet": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
-      "addressWithoutPoint": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
-      "oldTextWithoutPoint": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+      "pointNotSet": "Ort ohne Punkt. Setzen Sie den Punkt auf der Karte.",
+      "addressWithoutPoint": "Anschrift ohne Punkt. Setzen Sie den Punkt auf der Karte.",
+      "oldTextWithoutPoint": "Standort ohne Punkt. Suchen Sie den Text oder setzen Sie den Punkt auf der Karte."
     }
   },
   "invoice": {
@@ -3618,7 +3656,7 @@
   "supervision": {
     "pending-banner": {
       "title": "Freigabe ausstehend.",
-      "text": "Der Betreiber prüft den Mandanten ‚{name}‘. Du kannst Angebote vollständig vorbereiten; öffentlich wird nichts, bis der Betreiber freigegeben hat. Du erhältst eine Mail."
+      "text": "Der Betreiber prüft den Mandanten ‚{name}‘. Sie können Angebote vollständig vorbereiten; öffentlich wird nichts, bis der Betreiber freigegeben hat. Sie erhalten eine Mail."
     },
     "declined-tenant": {
       "declined": "Vom Betreiber abgewiesen.",
@@ -3626,7 +3664,7 @@
       "reason": "Begründung: „{reason}“",
       "toast": {
         "title": "Mandant abgewiesen",
-        "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+        "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Sie haben keinen Verwaltungszugriff mehr."
       }
     },
     "offer-types": {
@@ -3975,5 +4013,10 @@
     "list": {
       "search": "Name, Beschreibung oder Ressource"
     }
+  },
+  "secretField": {
+    "remove": "Gespeicherten Wert entfernen",
+    "show": "Eingabe anzeigen",
+    "hide": "Eingabe verbergen"
   }
 }

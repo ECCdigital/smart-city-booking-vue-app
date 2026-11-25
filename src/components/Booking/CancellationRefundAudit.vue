@@ -26,11 +26,17 @@ export default {
   computed: {
     /**
      * The refund was fixed at the cancellation, so the audit names no tier
-     * and no time before the start - only that the administration overrode
-     * the tenant's rule, where it did.
+     * and no time before the start - only that a rejected request was free
+     * of charge, or that the administration overrode the tenant's rule.
      */
     policySummary() {
-      if (!this.audit?.adminOverride) return "";
+      if (!this.audit) return "";
+
+      if (this.audit.rejection) {
+        return this.$t("booking.cancellationRefund.rejectionAudit");
+      }
+
+      if (!this.audit.adminOverride) return "";
       return this.$t("booking.cancellationRefund.auditOverride", {
         suggested: this.audit.suggestedRefundPercentage,
         applied: this.audit.appliedRefundPercentage,

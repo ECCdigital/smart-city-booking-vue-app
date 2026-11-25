@@ -40,7 +40,7 @@ describe("CancellationRefundPreview", () => {
         appliedTierHours: 26,
       })
     ).toBe(
-      "Die Buchung beginnt in 1 Tag und 6 Stunden. Es gilt die Erstattungsstufe „26 Stunden“: Die Mandantenregel schlägt 11 % Erstattung vor."
+      "Die Buchung beginnt in 1 Tag und 6 Stunden. Es gilt die Erstattungsstufe „bis 26 Stunden vor Beginn“: Die Mandantenregel schlägt 11 % Erstattung vor."
     );
   });
 
@@ -51,10 +51,10 @@ describe("CancellationRefundPreview", () => {
         refundAmountEur: 12.5,
         suggestedRefundPercentage: 50,
         hoursBeforeStart: 77,
-        appliedTierHours: 168,
+        appliedTierHours: 72,
       })
     ).toBe(
-      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „7 Tage“: Die Mandantenregel schlägt 50 % Erstattung vor."
+      "Die Buchung beginnt in 3 Tagen. Es gilt die Erstattungsstufe „bis 3 Tage vor Beginn“: Die Mandantenregel schlägt 50 % Erstattung vor."
     );
   });
 
@@ -82,5 +82,33 @@ describe("CancellationRefundPreview", () => {
     ).toBe(
       "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
     );
+  });
+});
+
+/**
+ * An override percentage refunds what `refundAtPercentage` names - the
+ * preview rounds the refund no other way than the payment hint does.
+ */
+describe("CancellationRefundPreview with an override percentage", () => {
+  it("refunds the amount refundAtPercentage names", async () => {
+    const wrapper = mountComponent(CancellationRefundPreview, {
+      propsData: {
+        preview: {
+          originalAmountEur: 33.33,
+          refundAmountEur: 33.33,
+          suggestedRefundPercentage: 100,
+          daysBeforeStart: 3,
+        },
+      },
+    });
+
+    await wrapper.find("input[type=checkbox]").setChecked(true);
+    await wrapper.find("input[type=number]").setValue(50);
+
+    const refund = wrapper
+      .find(".refund-amounts__value--refund")
+      .text()
+      .replace(/\u00a0/g, " ");
+    expect(refund).toBe("16,67 €");
   });
 });

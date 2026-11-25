@@ -520,6 +520,55 @@ describe("BookableFlow on a wide screen", () => {
     delete Element.prototype.scrollIntoView;
   });
 
+  // ECCdigital/tickets#558: the row of the location leads to its field.
+  it("goes to the field of the location from another step", async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = function () {
+      scrolled(this);
+    };
+    const wrapper = mountComponent(BookableFlow, {
+      propsData: {
+        bookable: bookable({
+          id: "b1",
+          title: "Saal",
+          location: {
+            address: {
+              street: "Gasstraße",
+              house_number: "4",
+              postcode: "03172",
+              city: "Guben",
+              country_code: "DE",
+            },
+            display_address: "Gasstraße 4, 03172 Guben",
+            meta: { additional: null },
+          },
+        }),
+        isNew: false,
+      },
+      stubs: {
+        ...STUBS,
+        // The anchor of the real step (BookableEditIdentity.vue).
+        BookableEditIdentity: {
+          name: "BookableEditIdentity",
+          render(h) {
+            return h("div", { attrs: { "data-field": "location" } });
+          },
+        },
+      },
+    });
+
+    await find(wrapper, "overview-heading-price").trigger("click");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
+
+    await find(wrapper, "overview-row-location").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+    const [field] = scrolled.mock.calls[scrolled.mock.calls.length - 1];
+    expect(field.getAttribute("data-field")).toBe("location");
+    delete Element.prototype.scrollIntoView;
+  });
+
   it("opens the area of a row of Weitere Einstellungen", async () => {
     const reveal = vi.fn();
     const wrapper = mountComponent(BookableFlow, {

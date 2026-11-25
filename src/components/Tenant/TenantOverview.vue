@@ -170,7 +170,6 @@ import TenantPermissionService from "@/services/permissions/TenantPermissionServ
 import {
   createLockAndAccessAppDefaults,
   findTenantApp,
-  withoutUnchangedSecrets,
 } from "@/utilities/access-apps";
 
 export default {
@@ -197,10 +196,14 @@ export default {
     TenantEditSupervision,
   },
   mixins: [unsavedChangesGuard],
+  provide() {
+    return { secretsSaved: this.secretsSaved };
+  },
   data() {
     return {
       isLoading: false,
       inProgress: false,
+      secretsSaved: { count: 0 },
       validRoot: true,
       defaultPdfBookingLayout: DEFAULT_PDF_BOOKING_LAYOUT,
       activeTab: 0,
@@ -311,6 +314,7 @@ export default {
           paymentProjectId: "",
           paymentSecret: "",
           paymentPurposeSuffix: "",
+          paymentMode: "",
           active: false,
         },
         pmPayment: {
@@ -492,9 +496,7 @@ export default {
       this.apps = map;
     },
     replaceApps() {
-      this.tenant.applications = Object.values(this.apps).map(
-        withoutUnchangedSecrets
-      );
+      this.tenant.applications = Object.values(this.apps);
     },
     async fetchWorkflow() {
       const data = await ApiWorkflowService.getWorkflow(this.tenant.id);
@@ -625,6 +627,7 @@ export default {
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
         });
+        this.secretsSaved.count += 1;
 
         await this.addToast({
           message: "Änderungen wurden erfolgreich gespeichert.",

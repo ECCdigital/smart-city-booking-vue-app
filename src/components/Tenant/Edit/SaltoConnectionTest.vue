@@ -59,10 +59,11 @@ function iqSummary(iqs) {
 
 /**
  * The connection test of Salto KS: the button, what it tests with, and the
- * answer. A secret field left empty is sent empty; the backend then takes the
- * stored secret, as long as it belongs to the client id, system user and
- * environment in the form, and answers `missing_secret` with the reason per
- * secret otherwise. The text next to the button follows the same rule.
+ * answer. A stored secret goes out as the backend's marker; the backend then
+ * takes the stored secret, as long as it belongs to the client id, system
+ * user and environment in the form, and answers `missing_secret` with the
+ * reason per secret otherwise. The text next to the button follows the same
+ * rule.
  *
  * A test that ran is a checklist under the button: a headline, one row per
  * check with sign, value and, where needed, what to do, and where each secret
@@ -78,8 +79,6 @@ export default {
     app: { type: Object, required: true },
     /** The stored Salto KS application, whose identity the secrets are for. */
     stored: { type: Object, default: null },
-    secretConfigured: { type: Boolean, default: false },
-    passwordConfigured: { type: Boolean, default: false },
     /** Whether the activation of the IQs is on the page to jump to. */
     activationShown: { type: Boolean, default: false },
   },
@@ -93,10 +92,7 @@ export default {
   computed: {
     /** Per secret: `form`, `stored`, or `missing` with the reason. */
     sources() {
-      return saltoSecretSources(this.app, this.stored, {
-        clientSecret: this.secretConfigured,
-        password: this.passwordConfigured,
-      });
+      return saltoSecretSources(this.app, this.stored);
     },
     basisText() {
       const missing = Object.entries(this.sources)

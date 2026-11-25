@@ -39,6 +39,26 @@ class BookingPermissionService {
   }
 
   /**
+   * The transitions - Freigeben, Als bezahlt markieren, Ablehnen /
+   * Stornieren, Widerruf akzeptieren, Wiederherstellen, of a booking and of
+   * a series: the backend's `booking.commit`, `pay`, `reject`,
+   * `acceptWithdrawal` and `update` (reinstate), and the same on
+   * `groupBooking`, all `manageBookings.updateAny` with no variant for the
+   * own booking. `updateOwn` does not open them.
+   */
+  static allowTransition() {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return !!permissions.manageBookings?.updateAny;
+  }
+
+  /**
    * Reissuing a receipt or cancellation receipt (spec E8): the backend's
    * `booking.reprint` - the booking's own user, or `manageBookings.updateAny`.
    */
@@ -58,7 +78,7 @@ class BookingPermissionService {
   }
 
   /**
-   * The Reichweite of CONTEXT.md: *any* for the instance owner, the tenant
+   * The Reichweite of GLOSSARY.md: *any* for the instance owner, the tenant
    * owner and `manageBookings.readAny` at the current tenant, *own* for every
    * other member. The Buchungsseite words a 404 by it.
    */

@@ -15,7 +15,7 @@
               >mdi-view-grid-plus-outline</v-icon
             >
             <div class="grey--text mt-2">
-              Wähle links eine Reihe oder einen Baustein.
+              Wählen Sie links eine Reihe oder einen Baustein.
             </div>
           </div>
 

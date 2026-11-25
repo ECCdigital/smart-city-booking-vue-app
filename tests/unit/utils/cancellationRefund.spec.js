@@ -3,15 +3,18 @@ import {
   bookingStartsInText,
   filterBookingsByRefundState,
   getCancellationRefundAudit,
-  formatAppliedTier,
   formatAppliedTierRule,
   formatTierDeadline,
+  formatTierRule,
   formatTimeBeforeStart,
   formatTimeBeforeStartForBooker,
+  hasBegun,
+  refundAtPercentage,
   refundPolicyText,
   refundStateMarker,
   tierDeadline,
   refundStateOf,
+  rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 
 const audit = { cancelledFrom: "confirmed", refundPercentage: 50 };
@@ -159,6 +162,28 @@ describe("refundPolicyText", () => {
       "Die Buchung hat keinen festen Zeitraum. Die Erstattung beträgt 0 %."
     );
   });
+
+  it("says the booking has begun instead of a negative time", () => {
+    expect(
+      refundPolicyText("userPolicySummary", {
+        time: null,
+        tier: "nach Beginn",
+        begun: true,
+        percentage: 0,
+      })
+    ).toBe(
+      "Die Buchung hat bereits begonnen. Es gilt die Erstattungsstufe: nach Beginn.\n\nDie Erstattung beträgt voraussichtlich 0 %."
+    );
+    expect(
+      refundPolicyText("singlePolicy", {
+        time: null,
+        begun: true,
+        percentage: 20,
+      })
+    ).toBe(
+      "Die Buchung hat bereits begonnen. Die Mandantenregel schlägt 20 % Erstattung vor."
+    );
+  });
 });
 
 /**
@@ -182,6 +207,16 @@ describe("tierDeadline", () => {
   });
 });
 
+describe("hasBegun", () => {
+  it("reads a negative time before the start as begun", () => {
+    expect(hasBegun({ hoursBeforeStart: -1 })).toBe(true);
+    expect(hasBegun({ hoursBeforeStart: 0 })).toBe(false);
+    expect(hasBegun({ daysBeforeStart: -2 })).toBe(true);
+    expect(hasBegun({ hoursBeforeStart: null })).toBe(false);
+    expect(hasBegun(null)).toBe(false);
+  });
+});
+
 describe("formatTimeBeforeStart", () => {
   it("names whole days from one day on and hours below", () => {
     expect(formatTimeBeforeStart({ hoursBeforeStart: 47 })).toBe("1 Tag");
@@ -193,26 +228,24 @@ describe("formatTimeBeforeStart", () => {
     expect(formatTimeBeforeStart({ daysBeforeStart: 3 })).toBe("3 Tage");
   });
 
+  it("answers null once the booking has begun, as the backend does", () => {
+    expect(formatTimeBeforeStart({ hoursBeforeStart: -3 })).toBeNull();
+    expect(formatTimeBeforeStart({ daysBeforeStart: -1 })).toBeNull();
+    expect(formatTimeBeforeStartForBooker({ hoursBeforeStart: -3 })).toBeNull();
+    expect(formatTimeBeforeStart({ hoursBeforeStart: 0 })).toBe("0 Stunden");
+  });
+
   it("answers null without a time span", () => {
     expect(formatTimeBeforeStart({ hoursBeforeStart: null })).toBeNull();
     expect(formatTimeBeforeStart(null)).toBeNull();
   });
 });
 
-describe("formatAppliedTier", () => {
-  it("names the deadline of the tier that applied", () => {
-    expect(formatAppliedTier({ appliedTierHours: 26 })).toBe("26 Stunden");
-    expect(formatAppliedTier({ appliedTierHours: 48 })).toBe("2 Tage");
-    expect(formatAppliedTier({ appliedTierHours: 0 })).toBe("Bis zum Beginn");
-  });
-
-  it("names the days of an audit from before", () => {
-    expect(formatAppliedTier({ appliedTierDays: 3 })).toBe("3 Tage");
-  });
-
-  it("answers null where no tier applied", () => {
-    expect(formatAppliedTier({ appliedTierHours: null })).toBeNull();
-    expect(formatAppliedTier(null)).toBeNull();
+describe("formatTierRule", () => {
+  it("names a tier as „bis … vor Beginn“, the lowest at 0 hours as „bis zum Beginn“", () => {
+    expect(formatTierRule(26)).toBe("bis 26 Stunden vor Beginn");
+    expect(formatTierRule(48)).toBe("bis 2 Tage vor Beginn");
+    expect(formatTierRule(0)).toBe("bis zum Beginn");
   });
 });
 
@@ -262,6 +295,36 @@ describe("formatAppliedTierRule", () => {
     );
     expect(formatAppliedTierRule({ appliedTierHours: null })).toBeNull();
   });
+
+  it("says „unter“ below the lowest deadline, as mail and PDF do", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 5, appliedTierHours: 12 })
+    ).toBe("unter 12 Stunden vor Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 30, appliedTierHours: 48 })
+    ).toBe("unter 2 Tagen vor Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 10, appliedTierHours: 24 })
+    ).toBe("unter 1 Tag vor Beginn");
+    expect(
+      formatAppliedTierRule({ daysBeforeStart: 1, appliedTierDays: 3 })
+    ).toBe("unter 3 Tagen vor Beginn");
+  });
+
+  it("says „nach Beginn“ once the booking has begun at a tier of 0 hours", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: -3, appliedTierHours: 0 })
+    ).toBe("nach Beginn");
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 0, appliedTierHours: 0 })
+    ).toBe("bis zum Beginn");
+  });
+
+  it("says „bis“ at or above the deadline", () => {
+    expect(
+      formatAppliedTierRule({ hoursBeforeStart: 12, appliedTierHours: 12 })
+    ).toBe("bis 12 Stunden vor Beginn");
+  });
 });
 
 describe("bookingStartsInText", () => {
@@ -283,5 +346,92 @@ describe("bookingStartsInText", () => {
     expect(startsIn(null)).toBeNull();
     expect(startsIn(0)).toBeNull();
     expect(startsIn(-5)).toBeNull();
+  });
+});
+
+/** The one cent rounding of a refund at a percentage, as preview and payment hint share it. */
+describe("refundAtPercentage", () => {
+  it("rounds the refund to the cent", () => {
+    expect(refundAtPercentage(33.33, 50)).toBe(16.67);
+  });
+});
+
+/**
+ * A preview that failed to load leaves the amount unknown, while the
+ * cancellation still follows the tenant's tiers: the hint says so.
+ */
+describe("rejectPaymentOutcome without a preview", () => {
+  it("warns of an unknown refund on a paid booking once the preview failed", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Bereits bezahlt: 40,00\u00a0€",
+      text: "Betrag unbekannt: Die Erstattung konnte nicht berechnet werden. Der Buchende bekommt trotzdem zurück, was die Staffel des Mandanten vorsieht.",
+    });
+  });
+
+  it("warns of an unknown fee on an unpaid booking once the preview failed", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: false,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Noch nicht bezahlt",
+      text: "Betrag unbekannt: Der Einbehalt konnte nicht berechnet werden. Er fällt trotzdem nach der Staffel des Mandanten an.",
+    });
+  });
+
+  it("names no amount while the preview is still loading", () => {
+    expect(
+      rejectPaymentOutcome({
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: false,
+      })
+    ).toEqual({
+      type: "info",
+      status: "Bereits bezahlt: 40,00\u00a0€",
+      text: "",
+    });
+  });
+
+  it("leaves a rejected request free of charge, without any tiers", () => {
+    expect(
+      rejectPaymentOutcome({
+        request: true,
+        paid: true,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "warning",
+      status: "Buchung bereits bezahlt",
+      text: "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Der vollständige Betrag von 40,00\u00a0€ wird zurückerstattet.",
+    });
+    expect(
+      rejectPaymentOutcome({
+        request: true,
+        paid: false,
+        priceEur: 40,
+        refundAmountEur: null,
+        previewFailed: true,
+      })
+    ).toEqual({
+      type: "success",
+      status: "Noch nicht bezahlt",
+      text: "Die abgelehnte Buchungsanfrage ist für den Buchenden kostenfrei. Es steht somit keine Zahlung mehr aus.",
+    });
   });
 });
