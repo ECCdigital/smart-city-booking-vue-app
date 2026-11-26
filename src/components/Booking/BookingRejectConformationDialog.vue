@@ -124,6 +124,7 @@ import CancellationRefundPreview from "@/components/Booking/CancellationRefundPr
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import {
   expectedRefundEur,
+  refundsNothing,
   rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 import {
@@ -240,7 +241,9 @@ export default {
         this.toReject.status === BOOKING_STATUS.CONFIRMED &&
         typeof this.toReject.priceEur === "number" &&
         this.toReject.priceEur > 0 &&
-        this.skipCancellation === false
+        this.skipCancellation === false &&
+        // Nothing comes back: no account to pay it to (data economy).
+        !refundsNothing(this.refundPreview, this.refundPercentage)
       );
     },
     canSubmit() {

@@ -303,6 +303,24 @@ export function expectedRefundEur(preview, refundPercentage) {
 }
 
 /**
+ * The administration's cancellation keeps everything: an override of 0 %,
+ * or, without one, a preview that refunds nothing on any booking. A preview
+ * still loading, failed or without amounts is not known to refund nothing,
+ * so the bank details stay asked for.
+ */
+export function refundsNothing(preview, refundPercentage) {
+  if (!preview) return false;
+  if (refundPercentage !== undefined) return Number(refundPercentage) === 0;
+  const entries = Array.isArray(preview.bookings)
+    ? preview.bookings
+    : [preview];
+  return (
+    entries.length > 0 &&
+    entries.every((entry) => entry && entry.refundAmountEur === 0)
+  );
+}
+
+/**
  * The headings and notes of the refund panel on the pages of the
  * cancellation link. A booking not paid yet gets nothing back: its texts
  * speak of what drops away and what is still due, not of a refund.

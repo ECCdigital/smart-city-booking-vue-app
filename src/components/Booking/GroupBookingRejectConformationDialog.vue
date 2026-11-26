@@ -161,6 +161,7 @@ import {
 } from "@/utils/bookingStatus";
 import {
   expectedRefundEur,
+  refundsNothing,
   rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 
@@ -313,6 +314,10 @@ export default {
     },
     canProvideBankDetails() {
       if (!this.toReject || this.skipCancellation !== false) return false;
+      // Nothing comes back: no account to pay it to (data economy).
+      if (refundsNothing(this.refundPreview, this.refundPercentage)) {
+        return false;
+      }
       // Bank details are asked for a paid cancellation: `confirmed` with a
       // price, and for the whole series only where every member is confirmed.
       const members = this.membersOf(this.cancellationScope);
