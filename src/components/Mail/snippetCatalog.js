@@ -153,63 +153,12 @@ export const SNIPPET_CATALOG = [
   {
     key: "booking-cancel",
     title: "Stornierungsmitteilung",
-    description: "Stornierungsmitteilung an den Buchenden.",
+    description:
+      "Stornierungsmitteilung an den Buchenden. Die Beträge der Stornierung stehen fest unter den Buchungsdetails.",
     icon: "mdi-cancel",
-    defaultTemplate: `<p>Die nachfolgende Buchung wurde storniert:</p>
-
-{{#if hasRefundPreview}}
-  <p>
-    {{#if alreadyPaid}}
-      <strong>Erstattung</strong>:
-      {{priceFormatted refundAmountEur}}
-      ({{refundPercentage}}&nbsp;%)
-      {{#if hasCancellationFee}}
-        <br />
-        Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
-      {{/if}}
-    {{else}}
-      <strong>Entfallener Betrag</strong>:
-      {{priceFormatted refundAmountEur}}
-      von
-      {{priceFormatted originalAmountEur}}
-      ({{refundPercentage}}&nbsp;%)
-      {{#if hasCancellationFee}}
-        <br />
-        Noch ausstehend: {{priceFormatted cancellationFeeEur}}
-      {{/if}}
-    {{/if}}
-  </p>
-{{/if}}
-`,
+    defaultTemplate: "<p>Die nachfolgende Buchung wurde storniert:</p>",
     defaultBlocks: [
-      row([
-        txt(`<p>Die nachfolgende Buchung wurde storniert:</p>
-
-{{#if hasRefundPreview}}
-  <p>
-    {{#if alreadyPaid}}
-      <strong>Erstattung</strong>:
-      {{priceFormatted refundAmountEur}}
-      ({{refundPercentage}}&nbsp;%)
-      {{#if hasCancellationFee}}
-        <br />
-        Einbehaltener Betrag: {{priceFormatted cancellationFeeEur}}
-      {{/if}}
-    {{else}}
-      <strong>Entfallener Betrag</strong>:
-      {{priceFormatted refundAmountEur}}
-      von
-      {{priceFormatted originalAmountEur}}
-      ({{refundPercentage}}&nbsp;%)
-      {{#if hasCancellationFee}}
-        <br />
-        Noch ausstehend: {{priceFormatted cancellationFeeEur}}
-      {{/if}}
-    {{/if}}
-  </p>
-{{/if}}
-`),
-      ]),
+      row([txt("<p>Die nachfolgende Buchung wurde storniert:</p>")]),
     ],
   },
   {

@@ -186,16 +186,11 @@
             ></v-text-field>
           </div>
           <!-- Last before the button: what the cancellation leaves the customer. -->
-          <v-alert
+          <CancellationPaymentHint
             v-if="paymentOutcome"
-            :type="paymentOutcome.type"
-            text
-            dense
-            class="text-left text-body-2 mt-4 mb-0"
-          >
-            <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
-            <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
-          </v-alert>
+            :outcome="paymentOutcome"
+            class="text-left"
+          />
           <!-- Right above the button: the amount is fixed at the confirmation. -->
           <div
             v-if="showFinalAmountHint"
@@ -238,24 +233,12 @@
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import CancellationPaymentHint from "@/components/Booking/CancellationPaymentHint.vue";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import customerCancellation from "@/mixins/customerCancellation";
 import FormatService from "@/services/FormatService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
-import {
-  BOOKING_STATUS,
-  isFree,
-  isPaid,
-  isRejectedOrCancelled,
-} from "@/utils/bookingStatus";
-import {
-  customerRefundWording,
-  expectedRefundEur,
-  formatAppliedTierRule,
-  formatTimeBeforeStartForBooker,
-  hasBegun,
-  refundPolicyText,
-  rejectPaymentOutcome,
-} from "@/utils/cancellationRefund";
+import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 
 /** The 403 `request-reject` answers with when the tenant's policy forbids it. */
 const USER_CANCELLATION_DISABLED = "booking_user_cancellation_disabled";
@@ -293,7 +276,8 @@ function isValidIban(value) {
 
 export default {
   name: "RequestRejectBooking",
-  components: { CancellationRefundPanel },
+  components: { CancellationPaymentHint, CancellationRefundPanel },
+  mixins: [customerCancellation],
   props: {
     tenantId: {
       type: String,
@@ -311,7 +295,6 @@ export default {
       valid: false,
       loadingStatus: true,
       statusError: false,
-      bookingStatus: null,
       refundPreview: null,
       loadingRefundPreview: false,
       refundPreviewError: false,
@@ -358,45 +341,6 @@ export default {
         this.refundPreviewError ||
         (this.refundPreview && Number(this.refundPreview.originalAmountEur) > 0)
       );
-    },
-    /** A price is set but not paid yet: nothing comes back. */
-    unpaid() {
-      return (
-        !!this.bookingStatus &&
-        !isFree(this.bookingStatus) &&
-        !isPaid(this.bookingStatus)
-      );
-    },
-    /** Shown with the refund panel, under everything else. */
-    showFinalAmountHint() {
-      return (
-        !this.loadingRefundPreview &&
-        !!this.refundPreview &&
-        Number(this.refundPreview.originalAmountEur) > 0
-      );
-    },
-    refundWording() {
-      return customerRefundWording(this.unpaid);
-    },
-    paymentOutcome() {
-      if (!this.bookingStatus) return null;
-      return rejectPaymentOutcome({
-        customer: true,
-        free: isFree(this.bookingStatus),
-        paid: isPaid(this.bookingStatus),
-        priceEur: this.bookingStatus.priceEur,
-        refundAmountEur: expectedRefundEur(this.refundPreview),
-        previewFailed: this.refundPreviewError,
-      });
-    },
-    refundPolicySummary() {
-      if (!this.refundPreview) return "";
-      return refundPolicyText(this.refundWording.policyKey, {
-        time: formatTimeBeforeStartForBooker(this.refundPreview),
-        tier: formatAppliedTierRule(this.refundPreview),
-        begun: hasBegun(this.refundPreview),
-        percentage: this.refundPreview.suggestedRefundPercentage,
-      });
     },
     /** A refund is only owed at `confirmed` with a price (spec E12). */
     requiresBankDetails() {
@@ -579,16 +523,7 @@ export default {
       this.loadingStatus = true;
       this.statusError = false;
       try {
-        const bookingStatusResponse = await ApiBookingService.getBookingStatus(
-          this.bookingNumber,
-          this.tenantId
-        );
-        const data = bookingStatusResponse && bookingStatusResponse.data;
-        const status = Array.isArray(data)
-          ? data.find(
-              (entry) => entry && entry.bookingId === this.bookingNumber
-            ) || data[0]
-          : data;
+        const status = await this.fetchBookingStatus();
         if (!status) {
           this.statusError = true;
           return;
