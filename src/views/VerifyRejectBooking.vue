@@ -30,12 +30,23 @@
         <CancellationRefundPanel
           v-if="showRefundPanel"
           class="text-left mt-4"
-          :title="$t('booking.cancellationRefund.expectedTitle')"
+          :title="refundWording.title"
           :original-amount-eur="refundPreview.originalAmountEur"
           :refund-amount-eur="refundPreview.refundAmountEur"
           :cancellation-fee-eur="refundPreview.cancellationFeeEur"
           :policy-summary="refundPolicySummary"
+          :unpaid="unpaid"
         />
+        <v-alert
+          v-if="paymentOutcome"
+          :type="paymentOutcome.type"
+          text
+          dense
+          class="text-left text-body-2 mt-4 mb-0"
+        >
+          <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
+          <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
+        </v-alert>
       </v-card-text>
 
       <v-card-text class="text-center" v-else-if="rejectError">
@@ -76,12 +87,12 @@
         <CancellationRefundPanel
           v-else-if="showRefundPanel"
           class="text-left mt-4"
-          :title="$t('booking.cancellationRefund.expectedTitle')"
+          :title="refundWording.title"
           :original-amount-eur="refundPreview.originalAmountEur"
           :refund-amount-eur="refundPreview.refundAmountEur"
           :cancellation-fee-eur="refundPreview.cancellationFeeEur"
           :policy-summary="refundPolicySummary"
-          :footer="$t('booking.cancellationRefund.finalAmountHint')"
+          :unpaid="unpaid"
         />
         <v-alert
           v-else-if="refundPreviewError"
@@ -90,8 +101,25 @@
           dense
           class="mt-4 mb-0 text-left"
         >
-          {{ $t("booking.cancellationRefund.previewError") }}
+          {{ refundWording.previewError }}
         </v-alert>
+        <v-alert
+          v-if="paymentOutcome"
+          :type="paymentOutcome.type"
+          text
+          dense
+          class="text-left text-body-2 mt-4 mb-0"
+        >
+          <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
+          <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
+        </v-alert>
+        <!-- Right above the button: the amount is fixed at the confirmation. -->
+        <div
+          v-if="showFinalAmountHint"
+          class="text-left text-caption text--secondary mt-2"
+        >
+          {{ refundWording.footer }}
+        </div>
 
         <div
           class="mt-4"
@@ -113,11 +141,15 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import { isFree, isPaid } from "@/utils/bookingStatus";
 import {
+  customerRefundWording,
+  expectedRefundEur,
   formatAppliedTierRule,
   formatTimeBeforeStartForBooker,
   hasBegun,
   refundPolicyText,
+  rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 
 export default {
@@ -141,6 +173,10 @@ export default {
       refundPreview: null,
       loadingRefundPreview: false,
       refundPreviewError: false,
+      // The booking's state and price from the public status route: whether
+      // it is paid. `null` while unknown - the page then words the preview
+      // as before and leaves the payment hint out.
+      bookingStatus: null,
     };
   },
   computed: {
@@ -149,9 +185,35 @@ export default {
         this.refundPreview && Number(this.refundPreview.originalAmountEur) > 0
       );
     },
+    /** A price is set but not paid yet: nothing comes back. */
+    unpaid() {
+      return (
+        !!this.bookingStatus &&
+        !isFree(this.bookingStatus) &&
+        !isPaid(this.bookingStatus)
+      );
+    },
+    /** Shown with the refund panel, under everything else. */
+    showFinalAmountHint() {
+      return !this.loadingRefundPreview && !!this.showRefundPanel;
+    },
+    refundWording() {
+      return customerRefundWording(this.unpaid);
+    },
+    paymentOutcome() {
+      if (!this.bookingStatus) return null;
+      return rejectPaymentOutcome({
+        customer: true,
+        free: isFree(this.bookingStatus),
+        paid: isPaid(this.bookingStatus),
+        priceEur: this.bookingStatus.priceEur,
+        refundAmountEur: expectedRefundEur(this.refundPreview),
+        previewFailed: this.refundPreviewError,
+      });
+    },
     refundPolicySummary() {
       if (!this.refundPreview) return "";
-      return refundPolicyText("userPolicySummary", {
+      return refundPolicyText(this.refundWording.policyKey, {
         time: formatTimeBeforeStartForBooker(this.refundPreview),
         tier: formatAppliedTierRule(this.refundPreview),
         begun: hasBegun(this.refundPreview),
@@ -160,6 +222,25 @@ export default {
     },
   },
   methods: {
+    /** Only informs the hint: a failure leaves it out, nothing else. */
+    async loadBookingStatus() {
+      if (!this.bookingNumber || !this.tenantId) return;
+      try {
+        const response = await ApiBookingService.getBookingStatus(
+          this.bookingNumber,
+          this.tenantId
+        );
+        const data = response && response.data;
+        this.bookingStatus =
+          (Array.isArray(data)
+            ? data.find((entry) => entry?.bookingId === this.bookingNumber) ||
+              data[0]
+            : data) || null;
+      } catch (error) {
+        console.error(error);
+        this.bookingStatus = null;
+      }
+    },
     async loadRefundPreview() {
       if (!this.bookingNumber || !this.tenantId || !this.hookId) {
         return;
@@ -209,7 +290,7 @@ export default {
     },
   },
   async mounted() {
-    await this.loadRefundPreview();
+    await Promise.all([this.loadBookingStatus(), this.loadRefundPreview()]);
   },
 };
 </script>

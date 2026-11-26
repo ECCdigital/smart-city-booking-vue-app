@@ -15,6 +15,7 @@
       :original-amount-eur="originalAmountEur"
       :refund-amount-eur="refundAmountEur"
       :cancellation-fee-eur="cancellationFeeEur"
+      :unpaid="unpaid"
     />
 
     <slot />
@@ -74,6 +75,11 @@ export default {
       default: "",
     },
     showDivider: {
+      type: Boolean,
+      default: false,
+    },
+    /** Words the amounts for a booking not paid yet. */
+    unpaid: {
       type: Boolean,
       default: false,
     },

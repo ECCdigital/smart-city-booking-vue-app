@@ -303,6 +303,24 @@ export function expectedRefundEur(preview, refundPercentage) {
 }
 
 /**
+ * The headings and notes of the refund panel on the pages of the
+ * cancellation link. A booking not paid yet gets nothing back: its texts
+ * speak of what drops away and what is still due, not of a refund.
+ *
+ * @returns {{ title: string, footer: string, previewError: string, policyKey: string }} `policyKey` goes to `refundPolicyText`
+ */
+export function customerRefundWording(unpaid) {
+  const suffix = unpaid ? "Unpaid" : "";
+  const t = (key) => i18n.t(`booking.cancellationRefund.${key}${suffix}`);
+  return {
+    title: t("expectedTitle"),
+    footer: t("finalAmountHint"),
+    previewError: t("previewError"),
+    policyKey: `userPolicySummary${suffix}`,
+  };
+}
+
+/**
  * The payment hint of the reject dialogs: whether the customer has paid, and
  * what the cancellation leaves them - money back, a fee still to pay, or
  * nothing more, all settled. Mirrors the cancellation document: a paid
@@ -311,6 +329,8 @@ export function expectedRefundEur(preview, refundPercentage) {
  * preview to weigh. `refundAmountEur` is `null` while no
  * preview is at hand; `previewFailed` tells a failed preview from one still
  * loading - the amount is then unknown, though the tenant's tiers still apply.
+ * `customer` words the same outcome for the booker on the pages of the
+ * cancellation link, addressing them directly.
  *
  * @returns {{ type: string, status: string, text: string }} The alert's type, its bold line and the line under it
  */
@@ -321,9 +341,12 @@ export function rejectPaymentOutcome({
   priceEur,
   refundAmountEur,
   previewFailed,
+  customer = false,
 }) {
-  const t = (key, values) =>
-    i18n.t(`booking.reject.dialog.payment.${key}`, values);
+  const scope = customer
+    ? "booking.userCancellation.payment"
+    : "booking.reject.dialog.payment";
+  const t = (key, values) => i18n.t(`${scope}.${key}`, values);
   const currency = (value) => FormatService.currency(Number(value || 0));
 
   if (free) {
@@ -363,5 +386,5 @@ export function rejectPaymentOutcome({
   const fee = Math.round((Number(priceEur || 0) - refundAmountEur) * 100) / 100;
   return fee > 0
     ? { type: "warning", status, text: t("feeDue", { amount: currency(fee) }) }
-    : { type: "success", status, text: t("settled") };
+    : { type: "success", status, text: t("dropped") };
 }

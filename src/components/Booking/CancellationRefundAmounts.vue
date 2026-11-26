@@ -25,7 +25,7 @@
         </div>
         <div class="refund-amounts__content">
           <span class="refund-amounts__label">
-            {{ $t("booking.cancellationRefund.refundAmount") }}
+            {{ $t(`booking.cancellationRefund.${refundLabelKey}`) }}
           </span>
           <span class="refund-amounts__value refund-amounts__value--refund">
             {{ currency(refundAmountEur) }}
@@ -54,7 +54,7 @@
         </div>
         <div class="refund-amounts__content">
           <span class="refund-amounts__label">
-            {{ $t("booking.cancellationRefund.cancellationFee") }}
+            {{ $t(`booking.cancellationRefund.${feeLabelKey}`) }}
           </span>
           <span class="refund-amounts__value">
             {{ currency(cancellationFeeEur) }}
@@ -94,8 +94,22 @@ export default {
       type: Number,
       default: 0,
     },
+    /**
+     * Nothing has been paid yet: nothing comes back. The share that is
+     * refunded on a paid booking drops away, the rest is still due.
+     */
+    unpaid: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
+    refundLabelKey() {
+      return this.unpaid ? "droppedAmount" : "refundAmount";
+    },
+    feeLabelKey() {
+      return this.unpaid ? "dueAmount" : "cancellationFee";
+    },
     refundSharePercent() {
       const original = Number(this.originalAmountEur) || 0;
       if (original <= 0) return 0;
@@ -112,7 +126,8 @@ export default {
     },
     refundShareLabel() {
       if (!this.showSplitBar) return "";
-      return this.$t("booking.cancellationRefund.refundShare", {
+      const key = this.unpaid ? "droppedShare" : "refundShare";
+      return this.$t(`booking.cancellationRefund.${key}`, {
         percentage: this.refundSharePercent,
       });
     },

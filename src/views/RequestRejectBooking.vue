@@ -116,12 +116,12 @@
             <CancellationRefundPanel
               v-else-if="refundPreview"
               show-divider
-              :title="$t('booking.cancellationRefund.expectedTitle')"
+              :title="refundWording.title"
               :original-amount-eur="refundPreview.originalAmountEur"
               :refund-amount-eur="refundPreview.refundAmountEur"
               :cancellation-fee-eur="refundPreview.cancellationFeeEur"
               :policy-summary="refundPolicySummary"
-              :footer="$t('booking.cancellationRefund.finalAmountHint')"
+              :unpaid="unpaid"
             />
             <v-alert
               v-else-if="refundPreviewError"
@@ -130,7 +130,7 @@
               dense
               class="mt-3 mb-0"
             >
-              {{ $t("booking.cancellationRefund.previewError") }}
+              {{ refundWording.previewError }}
             </v-alert>
           </div>
 
@@ -185,6 +185,24 @@
               :disabled="fetching"
             ></v-text-field>
           </div>
+          <!-- Last before the button: what the cancellation leaves the customer. -->
+          <v-alert
+            v-if="paymentOutcome"
+            :type="paymentOutcome.type"
+            text
+            dense
+            class="text-left text-body-2 mt-4 mb-0"
+          >
+            <div class="font-weight-bold">{{ paymentOutcome.status }}</div>
+            <div v-if="paymentOutcome.text">{{ paymentOutcome.text }}</div>
+          </v-alert>
+          <!-- Right above the button: the amount is fixed at the confirmation. -->
+          <div
+            v-if="showFinalAmountHint"
+            class="text-left text-caption text--secondary mt-2"
+          >
+            {{ refundWording.footer }}
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-btn
@@ -223,12 +241,20 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
-import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 import {
+  BOOKING_STATUS,
+  isFree,
+  isPaid,
+  isRejectedOrCancelled,
+} from "@/utils/bookingStatus";
+import {
+  customerRefundWording,
+  expectedRefundEur,
   formatAppliedTierRule,
   formatTimeBeforeStartForBooker,
   hasBegun,
   refundPolicyText,
+  rejectPaymentOutcome,
 } from "@/utils/cancellationRefund";
 
 /** The 403 `request-reject` answers with when the tenant's policy forbids it. */
@@ -333,9 +359,39 @@ export default {
         (this.refundPreview && Number(this.refundPreview.originalAmountEur) > 0)
       );
     },
+    /** A price is set but not paid yet: nothing comes back. */
+    unpaid() {
+      return (
+        !!this.bookingStatus &&
+        !isFree(this.bookingStatus) &&
+        !isPaid(this.bookingStatus)
+      );
+    },
+    /** Shown with the refund panel, under everything else. */
+    showFinalAmountHint() {
+      return (
+        !this.loadingRefundPreview &&
+        !!this.refundPreview &&
+        Number(this.refundPreview.originalAmountEur) > 0
+      );
+    },
+    refundWording() {
+      return customerRefundWording(this.unpaid);
+    },
+    paymentOutcome() {
+      if (!this.bookingStatus) return null;
+      return rejectPaymentOutcome({
+        customer: true,
+        free: isFree(this.bookingStatus),
+        paid: isPaid(this.bookingStatus),
+        priceEur: this.bookingStatus.priceEur,
+        refundAmountEur: expectedRefundEur(this.refundPreview),
+        previewFailed: this.refundPreviewError,
+      });
+    },
     refundPolicySummary() {
       if (!this.refundPreview) return "";
-      return refundPolicyText("userPolicySummary", {
+      return refundPolicyText(this.refundWording.policyKey, {
         time: formatTimeBeforeStartForBooker(this.refundPreview),
         tier: formatAppliedTierRule(this.refundPreview),
         begun: hasBegun(this.refundPreview),
