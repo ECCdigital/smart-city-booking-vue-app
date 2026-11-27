@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Added
+
+-   Glass effect of the login cards ([ECCdigital/tickets#1365](https://github.com/ECCdigital/tickets/issues/1365)): the section „Anmeldeseiten“ of the tab „Portal“ gets the switch „Glas-Effekt“ (`branding.authCardStyle`, `glass` as today or `solid`); the login card in light and dark beside it shows it. Needs the backend and storefront with ECCdigital/tickets#1365
+
 ### Changed
 
 -   The Admin UI addresses users with „Sie“ throughout ([ECCdigital/tickets#1183](https://github.com/ECCdigital/tickets/issues/1183)), as the storefront does after ECCdigital/tickets#928: the blacklist notices of the booking, the declined and pending tenant, the location input, the invitation dialog, the mail and PDF template editors, media, empty lists and hints in the settings

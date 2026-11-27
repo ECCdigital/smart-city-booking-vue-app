@@ -201,6 +201,25 @@ describe("brandingForSave with the size of the logo on the auth pages", () => {
   });
 });
 
+describe("brandingForSave with the card style of the auth pages", () => {
+  it("sends glass for a branding that never stored a style, as today", () => {
+    const stored = { active: false, theme: { colors: { primary: "" } } };
+
+    const payload = brandingForSave({ ...defaultBranding(), ...stored });
+
+    expect(payload.authCardStyle).toBe("glass");
+  });
+
+  it("sends the chosen style", () => {
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      authCardStyle: "solid",
+    });
+
+    expect(payload.authCardStyle).toBe("solid");
+  });
+});
+
 describe("defaultBranding", () => {
   it("reads a branding without font as the system font", () => {
     expect(defaultBranding().font).toBeNull();
