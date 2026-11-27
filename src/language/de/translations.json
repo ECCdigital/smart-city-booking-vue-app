@@ -1791,6 +1791,7 @@
       "expectedTitle": "Erwartete Erstattung",
       "expectedTitleUnpaid": "Voraussichtliche Abrechnung",
       "auditTitle": "Erstattung bei Stornierung",
+      "auditTitleUnpaid": "Abrechnung der Stornierung",
       "originalAmount": "Ursprungs\u00adbetrag",
       "refundAmount": "Erstattung",
       "cancellationFee": "Einbehalt",
@@ -1850,6 +1851,25 @@
       "ibanHint": "z. B. DE89 3704 0044 0532 0130 00",
       "bic": "BIC (optional)",
       "bankName": "Name der Bank (optional)"
+    },
+    "paymentState": {
+      "label": "Restzahlung",
+      "value": {
+        "open": "offen",
+        "completed": "erhalten"
+      },
+      "marker": {
+        "open": "Restzahlung offen",
+        "completed": "Restzahlung erhalten"
+      },
+      "due": "Die Buchung wurde vor der Zahlung storniert. Der Buchende muss noch {amount} zahlen.",
+      "mark": "Restzahlung erhalten",
+      "completedBy": "Abgehakt am {date} von {user}",
+      "completedAt": "Abgehakt am {date}",
+      "error": {
+        "title": "Restzahlung nicht gespeichert",
+        "message": "Der Stand der Restzahlung konnte nicht gespeichert werden."
+      }
     },
     "refundState": {
       "label": "Rückerstattung",

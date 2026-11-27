@@ -322,6 +322,12 @@
               :booking="booking"
               @reload="reload"
             />
+            <CancellationRefundState
+              class="mt-3"
+              kind="payment"
+              :booking="booking"
+              @reload="reload"
+            />
           </div>
 
           <div class="booking-page__documents">

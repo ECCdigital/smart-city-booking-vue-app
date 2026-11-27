@@ -172,14 +172,15 @@
             {{ freeChip.label }}
           </v-chip>
           <v-chip
-            v-if="refundMarker(item)"
+            v-for="marker in settlementMarkers(item)"
+            :key="marker.label"
             small
-            :color="refundMarker(item).color"
-            :text-color="refundMarker(item).textColor"
+            :color="marker.color"
+            :text-color="marker.textColor"
             class="font-weight-medium ml-1"
           >
-            <v-icon left x-small>{{ refundMarker(item).icon }}</v-icon>
-            {{ refundMarker(item).label }}
+            <v-icon left x-small>{{ marker.icon }}</v-icon>
+            {{ marker.label }}
           </v-chip>
         </template>
 
@@ -303,7 +304,7 @@ import {
   statusRank,
   bookingTransitionActions,
 } from "@/utils/bookingStatus";
-import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
+import { settlementMarkers } from "@/utils/cancellationRefund";
 import { BOOKED_VIA } from "@/utils/bookedVia";
 import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
@@ -392,10 +393,8 @@ export default {
     statusIcon,
     statusLabel,
     bookingTransitionActions,
-    /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
-    refundMarker(booking) {
-      return refundStateMarker(refundStateOf(booking));
-    },
+    /** The chips of refund (glossary „Erstattungsstand“) and remaining payment beside the state. */
+    settlementMarkers,
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {
         dateStyle: "short",

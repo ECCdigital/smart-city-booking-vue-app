@@ -97,6 +97,12 @@ export default {
       { refundState }
     );
   },
+  setPaymentState(id, paymentState) {
+    return ApiClient.put(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/payment-state`,
+      { paymentState }
+    );
+  },
   async getCancellationRefundPreview(id, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.get(

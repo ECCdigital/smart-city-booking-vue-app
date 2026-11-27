@@ -1,18 +1,20 @@
 <template>
   <CancellationRefundPanel
     v-if="audit"
-    :title="$t('booking.cancellationRefund.auditTitle')"
+    :title="title"
     icon="mdi-history"
     :original-amount-eur="Number(audit.originalAmountEur || 0)"
     :refund-amount-eur="Number(audit.refundAmountEur || 0)"
     :cancellation-fee-eur="Number(audit.cancellationFeeEur || 0)"
     :policy-summary="policySummary"
     :footer="cancelledAtFooter"
+    :unpaid="unpaid"
   />
 </template>
 
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import { isUnpaidCancellation } from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundAudit",
@@ -24,6 +26,17 @@ export default {
     },
   },
   computed: {
+    /** Cancelled before it was paid: what dropped away and what is owed. */
+    unpaid() {
+      return isUnpaidCancellation(this.audit);
+    },
+    title() {
+      return this.$t(
+        this.unpaid
+          ? "booking.cancellationRefund.auditTitleUnpaid"
+          : "booking.cancellationRefund.auditTitle"
+      );
+    },
     /**
      * The refund was fixed at the cancellation, so the audit names no tier
      * and no time before the start - only that a rejected request was free

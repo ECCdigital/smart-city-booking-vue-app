@@ -1,6 +1,6 @@
 import i18n from "@/language/index";
 import FormatService from "@/services/FormatService";
-import { isRejectedOrCancelled } from "@/utils/bookingStatus";
+import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 
 /**
  * The refund state of a cancelled booking (glossary „Erstattungsstand“):
@@ -14,26 +14,65 @@ export const REFUND_STATE = Object.freeze({
   COMPLETED: "completed",
 });
 
-const REFUND_STATE_MARKERS = {
-  [REFUND_STATE.OPEN]: {
-    color: "warning",
-    textColor: "white",
-    icon: "mdi-cash-refund",
+/**
+ * What a cancellation leaves to settle by hand, each a marker beside
+ * Storniert with the values of `REFUND_STATE`:
+ *
+ * - `refund`: whether the refund of a paid booking has been paid out;
+ * - `payment`: whether the share kept of a booking cancelled before it was
+ *   paid has come in („Restzahlung“).
+ *
+ * The backend writes `open` at the cancellation where one is due and drops it
+ * with a reinstatement; the administration sets `completed` by hand. Both are
+ * left out for a reader whose reach is *own*.
+ */
+const SETTLEMENTS = {
+  refund: {
+    field: "refundState",
+    texts: "booking.refundState",
+    openIcon: "mdi-cash-refund",
   },
-  [REFUND_STATE.COMPLETED]: {
-    color: "grey lighten-1",
-    textColor: "grey darken-3",
-    icon: "mdi-cash-check",
+  payment: {
+    field: "paymentState",
+    texts: "booking.paymentState",
+    openIcon: "mdi-cash-clock",
   },
 };
 
-/**
- * The booking's refund state, or `null` where none is due - and where the
- * reader's reach is *own*, since the backend leaves it out for them.
- */
-export function refundStateOf(booking) {
-  const state = booking?.cancellationRefund?.refundState;
+function settlementStateOf(booking, kind) {
+  const state = booking?.cancellationRefund?.[SETTLEMENTS[kind].field];
   return Object.values(REFUND_STATE).includes(state) ? state : null;
+}
+
+/** The chip of a settlement state, as `freeMarker()`; `null` for none. */
+function settlementMarker(kind, state) {
+  if (!Object.values(REFUND_STATE).includes(state)) return null;
+  const look =
+    state === REFUND_STATE.OPEN
+      ? {
+          color: "warning",
+          textColor: "white",
+          icon: SETTLEMENTS[kind].openIcon,
+        }
+      : {
+          color: "grey lighten-1",
+          textColor: "grey darken-3",
+          icon: "mdi-cash-check",
+        };
+  return {
+    label: i18n.t(`${SETTLEMENTS[kind].texts}.marker.${state}`),
+    ...look,
+  };
+}
+
+/** The booking's refund state, or `null` where none is due. */
+export function refundStateOf(booking) {
+  return settlementStateOf(booking, "refund");
+}
+
+/** The booking's payment state („Restzahlung“), or `null` where none is owed. */
+export function paymentStateOf(booking) {
+  return settlementStateOf(booking, "payment");
 }
 
 /** The list's refund filter: the bookings whose refund state is among `states`. */
@@ -41,13 +80,16 @@ export function filterBookingsByRefundState(bookings, states) {
   return bookings.filter((booking) => states.includes(refundStateOf(booking)));
 }
 
-/** The chip of a refund state beside the booking's state, as `freeMarker()`; `null` for none. */
+/** The chip of a refund state; `null` for none. */
 export function refundStateMarker(state) {
-  if (!REFUND_STATE_MARKERS[state]) return null;
-  return {
-    label: i18n.t(`booking.refundState.marker.${state}`),
-    ...REFUND_STATE_MARKERS[state],
-  };
+  return settlementMarker("refund", state);
+}
+
+/** The chips beside Storniert: refund, then remaining payment, each where one is set. */
+export function settlementMarkers(booking) {
+  return Object.keys(SETTLEMENTS)
+    .map((kind) => settlementMarker(kind, settlementStateOf(booking, kind)))
+    .filter(Boolean);
 }
 
 export const HOURS_PER_DAY = 24;
@@ -270,6 +312,30 @@ export function getCancellationRefundAudit(booking) {
     );
 
   return cancellationAttachments[0]?.cancellation || null;
+}
+
+/**
+ * Whether the audit is of a booking cancelled before it was paid: nothing
+ * comes back, the share kept is still owed. `false` for a rejected request
+ * and for an audit that does not say where the booking was cancelled from.
+ */
+export function isUnpaidCancellation(audit) {
+  return (
+    !!audit &&
+    !audit.rejection &&
+    !!audit.cancelledFrom &&
+    audit.cancelledFrom !== BOOKING_STATUS.CONFIRMED
+  );
+}
+
+/**
+ * The share an audit leaves owed: what was kept of a booking cancelled
+ * before it was paid, `0` where nothing is owed. Read off the cancellation
+ * alone - whether the customer paid since is not recorded.
+ */
+export function amountDueOf(audit) {
+  if (!isUnpaidCancellation(audit)) return 0;
+  return Math.max(0, Number(audit.cancellationFeeEur) || 0);
 }
 
 /**
